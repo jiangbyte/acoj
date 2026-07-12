@@ -30,14 +30,6 @@ export function grantResources(data: any) {
   return http.post<any>(`${rolePrefix}/grant-resource`, data)
 }
 
-export function ownPermissions(roleId: string) {
-  return http.get<any>(`${rolePrefix}/own-permission-detail`, { params: { id: roleId } })
-}
-
-export function grantPermissions(data: any) {
-  return http.post<any>(`${rolePrefix}/grant-permission`, data)
-}
-
 export function ownUsers(roleId: string) {
   return http.get<any>(`${rolePrefix}/own-user`, { params: { id: roleId } })
 }

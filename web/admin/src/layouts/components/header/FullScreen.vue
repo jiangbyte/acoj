@@ -27,6 +27,6 @@ useMagicKeys({
         />
       </CommonWrapper>
     </template>
-    {{ 'Fullscreen' }}
+    全屏
   </n-tooltip>
 </template>

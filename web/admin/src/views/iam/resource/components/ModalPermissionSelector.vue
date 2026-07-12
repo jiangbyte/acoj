@@ -43,7 +43,7 @@ const firstShowMap = computed<Record<string, number[]>>(() => {
 
 const columns = computed<DataTableColumns<any>>(() => [
   {
-    title: 'Permission Group',
+    title: '权限分组',
     key: 'prefix',
     fixed: 'left',
     width: 220,
@@ -54,7 +54,7 @@ const columns = computed<DataTableColumns<any>>(() => [
     render: (row) => row.prefix,
   },
   {
-    title: 'Permission Key',
+    title: '权限标识',
     key: 'suffix',
     minWidth: 360,
     filter: true,
@@ -62,7 +62,7 @@ const columns = computed<DataTableColumns<any>>(() => [
       <div class="permission-selector-filter">
         <NInput
           value={state.searchText}
-          placeholder={'Enter permission key or name'}
+          placeholder={'输入权限标识或名称'}
           onUpdateValue={(value) => {
             state.searchText = value
           }}
@@ -82,7 +82,7 @@ const columns = computed<DataTableColumns<any>>(() => [
               hide()
             }}
           >
-            {'Search'}
+            {'搜索'}
           </NButton>
           <NButton
             size="small"
@@ -91,7 +91,7 @@ const columns = computed<DataTableColumns<any>>(() => [
               hide()
             }}
           >
-            {'Reset'}
+            {'重置'}
           </NButton>
         </NInputGroup>
       </div>
@@ -101,14 +101,14 @@ const columns = computed<DataTableColumns<any>>(() => [
         <span>{row.suffix}</span>
         {row.permission_key === state.currentKey ? (
           <NTag size="small" type="success" bordered={false}>
-            {'Selected'}
+            {'已选择'}
           </NTag>
         ) : null}
       </div>
     ),
   },
   {
-    title: 'Permission Name',
+    title: '权限名称',
     key: 'name',
     minWidth: 200,
     ellipsis: {
@@ -116,13 +116,13 @@ const columns = computed<DataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Operation',
+    title: '操作',
     key: 'actions',
     width: 100,
     fixed: 'right',
     render: (row) => (
       <NButton type="primary" size="small" text={true} onClick={() => selectPermission(row)}>
-        {'Select Permission'}
+        {'选择权限'}
       </NButton>
     ),
   },
@@ -193,7 +193,7 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="'Select Permission'"
+    :title="'选择权限'"
     style="width: 980px"
     :segmented="{ content: true, action: true }"
   >
@@ -223,7 +223,7 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ 'Close' }}
+          关闭
         </NButton>
       </NSpace>
     </template>

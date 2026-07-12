@@ -2,7 +2,7 @@
 import type { FormInst, FormRules } from 'naive-ui'
 import ImageUpload from '@/components/upload/ImageUpload.vue'
 import { bannerApi } from '@/api'
-import { createRequiredRule, toNullableString } from '@/utils'
+import { createRequiredRule, formatDateTime, toNullableString } from '@/utils'
 import { computed, reactive, ref } from 'vue'
 
 const emit = defineEmits<{
@@ -35,18 +35,18 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? 'Edit Display Image' : 'Add Display Image',
+  state.dataId ? '编辑展示图' : '新增展示图',
 )
 
 const rules = computed<FormRules>(() => ({
-  title: createRequiredRule('Title', 'input'),
-  image: createRequiredRule('Image', 'input'),
-  link_type: createRequiredRule('Link Type', 'change'),
-  category: createRequiredRule('Category', 'change'),
-  type: createRequiredRule('Type', 'change'),
-  position: createRequiredRule('Position', 'change'),
-  display_scope: createRequiredRule('Display Scope', 'change'),
-  status: createRequiredRule('Status', 'change'),
+  title: createRequiredRule('标题', 'input'),
+  image: createRequiredRule('图片', 'input'),
+  link_type: createRequiredRule('链接类型', 'change'),
+  category: createRequiredRule('分类', 'change'),
+  type: createRequiredRule('类型', 'change'),
+  position: createRequiredRule('岗位', 'change'),
+  display_scope: createRequiredRule('展示范围', 'change'),
+  status: createRequiredRule('状态', 'change'),
 }))
 
 async function openModal(id?: string) {
@@ -63,7 +63,10 @@ async function fetchDetail(id: string) {
   state.loading = true
   try {
     const response = await bannerApi.detail({ id })
-    state.formModel = Object.assign({}, defaultFormData, response.data)
+    state.formModel = Object.assign({}, defaultFormData, response.data, {
+      start_at: formatDateTime(response.data?.start_at, ''),
+      end_at: formatDateTime(response.data?.end_at, ''),
+    })
   } finally {
     state.loading = false
   }
@@ -93,10 +96,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success('Updated successfully')
+      window.$message.success('更新成功')
     } else {
       await bannerApi.create(payload)
-      window.$message.success('Created successfully')
+      window.$message.success('创建成功')
     }
 
     closeModal()
@@ -131,50 +134,50 @@ defineExpose({
           label-width="100"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="'Title'" path="title">
+          <NFormItem :label="'标题'" path="title">
             <NInput v-model:value="state.formModel.title" />
           </NFormItem>
-          <NFormItem :label="'Image'" path="image">
+          <NFormItem :label="'图片'" path="image">
             <ImageUpload v-model:value="state.formModel.image" />
           </NFormItem>
-          <NFormItem :label="'Target URL'" path="url">
+          <NFormItem :label="'目标URL'" path="url">
             <NInput v-model:value="state.formModel.url" />
           </NFormItem>
-          <NFormItem :label="'Link Type'" path="link_type">
+          <NFormItem :label="'链接类型'" path="link_type">
             <DictSelect
               v-model="state.formModel.link_type"
               dict-code="BANNER_LINK_TYPE"
               type="radio"
             />
           </NFormItem>
-          <NFormItem :label="'Category'" path="category">
+          <NFormItem :label="'分类'" path="category">
             <DictSelect v-model="state.formModel.category" dict-code="BANNER_CATEGORY" />
           </NFormItem>
-          <NFormItem :label="'Type'" path="type">
+          <NFormItem :label="'类型'" path="type">
             <DictSelect v-model="state.formModel.type" dict-code="BANNER_TYPE" />
           </NFormItem>
-          <NFormItem :label="'Position'" path="position">
+          <NFormItem :label="'岗位'" path="position">
             <DictSelect v-model="state.formModel.position" dict-code="BANNER_POSITION" />
           </NFormItem>
-          <NFormItem :label="'Display Scope'" path="display_scope">
+          <NFormItem :label="'展示范围'" path="display_scope">
             <DictSelect v-model="state.formModel.display_scope" dict-code="BANNER_DISPLAY_SCOPE" />
           </NFormItem>
-          <NFormItem :label="'Sort'" path="sort">
+          <NFormItem :label="'排序'" path="sort">
             <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
           </NFormItem>
-          <NFormItem :label="'Status'" path="status">
+          <NFormItem :label="'状态'" path="status">
             <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
           </NFormItem>
-          <NFormItem :label="'Start At'" path="start_at">
+          <NFormItem :label="'开始时间'" path="start_at">
             <NInput v-model:value="state.formModel.start_at" />
           </NFormItem>
-          <NFormItem :label="'End At'" path="end_at">
+          <NFormItem :label="'结束时间'" path="end_at">
             <NInput v-model:value="state.formModel.end_at" />
           </NFormItem>
-          <NFormItem :label="'Summary'" path="summary">
+          <NFormItem :label="'摘要'" path="summary">
             <NInput v-model:value="state.formModel.summary" />
           </NFormItem>
-          <NFormItem :label="'Description'" path="description">
+          <NFormItem :label="'描述'" path="description">
             <NInput
               v-model:value="state.formModel.description"
               type="textarea"
@@ -188,10 +191,10 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ 'Cancel' }}
+          取消
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ 'Confirm' }}
+          确认
         </NButton>
       </NSpace>
     </template>

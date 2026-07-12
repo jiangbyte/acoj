@@ -45,37 +45,37 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? 'Edit Account' : 'Add Account',
+  state.dataId ? '编辑账号' : '新增账号',
 )
 
 function validateEmailIdentity(_rule: FormItemRule, value: string) {
   const text = String(value ?? '').trim()
   if (!text) {
     return state.formModel.email_login_enabled
-      ? new Error('Please enter Email')
+      ? new Error('请输入邮箱')
       : true
   }
   if (!isValidEmail(text)) {
-    return new Error('Please enter a valid email')
+    return new Error('请输入有效邮箱')
   }
   return true
 }
 
 const rules = computed<FormRules>(() => ({
-  account: createRequiredRule('Account', 'input'),
+  account: createRequiredRule('账号', 'input'),
   password: [
     {
       validator: (_rule, value) => {
         if (!state.dataId && !String(value ?? '').trim()) {
-          return new Error('Please enter Password')
+          return new Error('请输入密码')
         }
         return true
       },
       trigger: ['input', 'blur'],
     },
   ],
-  account_type: createRequiredRule('Account Type', 'change'),
-  account_status: createRequiredRule('Account Status', 'change'),
+  account_type: createRequiredRule('账号类型', 'change'),
+  account_status: createRequiredRule('账号状态', 'change'),
   email: [
     {
       validator: validateEmailIdentity,
@@ -182,10 +182,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success('Updated successfully')
+      window.$message.success('更新成功')
     } else {
       await accountApi.create(payload)
-      window.$message.success('Created successfully')
+      window.$message.success('创建成功')
     }
 
     closeModal()
@@ -221,21 +221,21 @@ defineExpose({
           :disabled="state.loading || state.submitLoading"
         >
           <NTabs type="line" animated>
-            <NTabPane name="account" :tab="'Account Info'">
-              <NFormItem :label="'Password'" path="password">
+            <NTabPane name="account" :tab="'账号信息'">
+              <NFormItem :label="'密码'" path="password">
                 <NInput
                   v-model:value="state.formModel.password"
                   type="password"
                   show-password-on="click"
                   :placeholder="
-                    state.dataId ? 'Leave blank to keep current password' : undefined
+                    state.dataId ? '留空则保持当前密码' : undefined
                   "
                 />
               </NFormItem>
-              <NFormItem :label="'Account Type'" path="account_type">
+              <NFormItem :label="'账号类型'" path="account_type">
                 <DictSelect v-model="state.formModel.account_type" dict-code="ACCOUNT_TYPE" />
               </NFormItem>
-              <NFormItem :label="'Account Status'" path="account_status">
+              <NFormItem :label="'账号状态'" path="account_status">
                 <DictSelect
                   v-model="state.formModel.account_status"
                   dict-code="ACCOUNT_STATUS"
@@ -244,35 +244,35 @@ defineExpose({
               </NFormItem>
             </NTabPane>
 
-            <NTabPane name="identity" :tab="'Login Identity'">
-              <NFormItem :label="'Account'" path="account">
+            <NTabPane name="identity" :tab="'登录身份'">
+              <NFormItem :label="'账号'" path="account">
                 <NInput v-model:value="state.formModel.account" />
               </NFormItem>
-              <NFormItem :label="'Email'" path="email">
+              <NFormItem :label="'邮箱'" path="email">
                 <NInput v-model:value="state.formModel.email" />
               </NFormItem>
-              <NFormItem :label="'Enable Email Login'">
+              <NFormItem :label="'启用邮箱登录'">
                 <NSwitch v-model:value="state.formModel.email_login_enabled" />
               </NFormItem>
-              <NFormItem :label="'Phone'" path="phone">
+              <NFormItem :label="'手机号'" path="phone">
                 <NInput v-model:value="state.formModel.phone" />
               </NFormItem>
-              <NFormItem :label="'Enable Phone Login'">
+              <NFormItem :label="'启用手机号登录'">
                 <NSwitch v-model:value="state.formModel.phone_login_enabled" />
               </NFormItem>
             </NTabPane>
 
-            <NTabPane name="profile" :tab="'User Profile'">
-              <NFormItem :label="'Name'" path="name">
+            <NTabPane name="profile" :tab="'用户资料'">
+              <NFormItem :label="'名称'" path="name">
                 <NInput v-model:value="state.formModel.name" />
               </NFormItem>
-              <NFormItem :label="'Nickname'" path="nickname">
+              <NFormItem :label="'昵称'" path="nickname">
                 <NInput v-model:value="state.formModel.nickname" />
               </NFormItem>
-              <NFormItem :label="'Avatar'" path="avatar">
+              <NFormItem :label="'头像'" path="avatar">
                 <ImageUpload v-model:value="state.formModel.avatar" />
               </NFormItem>
-              <NFormItem :label="'Signature'" path="signature">
+              <NFormItem :label="'签名'" path="signature">
                 <NInput
                   v-model:value="state.formModel.signature"
                   type="textarea"
@@ -281,28 +281,28 @@ defineExpose({
               </NFormItem>
               <NFormItem
                 v-if="state.formModel.account_type === 'ADMIN'"
-                :label="'Employee No.'"
+                :label="'工号'"
                 path="employee_no"
               >
                 <NInput v-model:value="state.formModel.employee_no" />
               </NFormItem>
               <NFormItem
                 v-if="state.formModel.account_type === 'ADMIN'"
-                :label="'Title'"
+                :label="'标题'"
                 path="title"
               >
                 <NInput v-model:value="state.formModel.title" />
               </NFormItem>
               <NFormItem
                 v-if="state.formModel.account_type === 'PORTAL'"
-                :label="'Level'"
+                :label="'等级'"
                 path="level"
               >
                 <NInput v-model:value="state.formModel.level" />
               </NFormItem>
               <NFormItem
                 v-if="state.formModel.account_type === 'PORTAL'"
-                :label="'Bio'"
+                :label="'简介'"
                 path="bio"
               >
                 <NInput
@@ -313,7 +313,7 @@ defineExpose({
               </NFormItem>
               <NFormItem
                 v-if="state.formModel.account_type === 'ADMIN'"
-                :label="'Remark'"
+                :label="'备注'"
                 path="remark"
               >
                 <NInput
@@ -331,10 +331,10 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ 'Cancel' }}
+          取消
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ 'Confirm' }}
+          确认
         </NButton>
       </NSpace>
     </template>

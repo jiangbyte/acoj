@@ -131,13 +131,13 @@ async function loadDetail() {
   if (type.value === 'notification') {
     detail.value = await messageApi.myNotificationDetail({ id: id.value })
     await messageApi
-      .readNotifications({ ids: [id.value] })
+      .readNotification({ ids: [id.value] })
       .catch(() => undefined)
   } else if (type.value === 'todo') {
     detail.value = await messageApi.myTodoDetail({ id: id.value })
   } else {
     detail.value = { id: id.value }
-    const page = await messageApi.myThreadMessages({
+    const page = await messageApi.myThreadMessage({
       thread_id: id.value,
       current: 1,
       size: 50,

@@ -34,18 +34,18 @@ const state = reactive({
 
 const modalTitle = computed(() => {
   const action = state.formModel.id
-    ? 'Edit Button'
-    : 'Add Button'
+    ? '编辑按钮'
+    : '新增按钮'
   return state.parent?.name
     ? `${action} - ${state.parent.name}`
     : action
 })
 const rules = computed<FormRules>(() => ({
-  code: createRequiredRule('Resource Code', 'input'),
-  name: createRequiredRule('Resource Name', 'input'),
-  permission_key: createRequiredRule('Permission Key', 'change'),
-  data_scope: createRequiredRule('Data Scope', 'change'),
-  status: createRequiredRule('Status', 'change'),
+  code: createRequiredRule('资源编码', 'input'),
+  name: createRequiredRule('资源名称', 'input'),
+  permission_key: createRequiredRule('权限标识', 'change'),
+  data_scope: createRequiredRule('数据范围', 'change'),
+  status: createRequiredRule('状态', 'change'),
 }))
 
 async function openModal(parent: any, row?: any) {
@@ -114,10 +114,10 @@ async function submitForm() {
         ...payload,
         id: state.formModel.id,
       })
-      window.$message.success('Updated successfully')
+      window.$message.success('更新成功')
     } else {
       await resourceApi.buttonCreate(payload)
-      window.$message.success('Created successfully')
+      window.$message.success('创建成功')
     }
 
     closeModal()
@@ -151,26 +151,26 @@ defineExpose({
         label-width="120"
         :disabled="state.submitLoading"
       >
-        <NFormItem :label="'Resource Name'" path="name">
+        <NFormItem :label="'资源名称'" path="name">
           <NInput v-model:value="state.formModel.name" />
         </NFormItem>
-        <NFormItem :label="'Resource Code'" path="code">
+        <NFormItem :label="'资源编码'" path="code">
           <NInput v-model:value="state.formModel.code" />
         </NFormItem>
-        <NFormItem :label="'Permission Key'" path="permission_key">
+        <NFormItem :label="'权限标识'" path="permission_key">
           <NInputGroup>
             <NInput v-model:value="state.formModel.permission_key" readonly />
             <NButton type="primary" secondary @click="openPermissionSelector">
-              {{ 'Select Permission' }}
+              选择权限
             </NButton>
           </NInputGroup>
         </NFormItem>
-        <NFormItem :label="'Data Scope'" path="data_scope">
+        <NFormItem :label="'数据范围'" path="data_scope">
           <DictSelect v-model="state.formModel.data_scope" dict-code="DATA_SCOPE" />
         </NFormItem>
         <NFormItem
           v-if="state.formModel.data_scope === 'CUSTOM'"
-          :label="'Custom Departments'"
+          :label="'自定义部门'"
           path="custom_scope_dept_ids"
         >
           <NTreeSelect
@@ -186,13 +186,13 @@ defineExpose({
             children-field="children"
           />
         </NFormItem>
-        <NFormItem :label="'Sort'" path="sort">
+        <NFormItem :label="'排序'" path="sort">
           <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
         </NFormItem>
-        <NFormItem :label="'Status'" path="status">
+        <NFormItem :label="'状态'" path="status">
           <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
         </NFormItem>
-        <NFormItem :label="'Description'" path="description">
+        <NFormItem :label="'描述'" path="description">
           <NInput
             v-model:value="state.formModel.description"
             type="textarea"
@@ -205,10 +205,10 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ 'Cancel' }}
+          取消
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ 'Confirm' }}
+          确认
         </NButton>
       </NSpace>
     </template>

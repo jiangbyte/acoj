@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { fileApi } from '@/api'
-import { displayValue, resolveFileUrl } from '@/utils'
+import { displayValue, formatDateTime, resolveFileUrl } from '@/utils'
 import { computed, reactive } from 'vue'
 import { dictTypeData } from '@/utils/dict'
 
@@ -11,7 +11,7 @@ const state = reactive({
 })
 
 const fileUrl = computed(() => resolveFileUrl(state.file?.url))
-const imageAlt = computed(() => state.file?.original_name ?? 'Preview')
+const imageAlt = computed(() => state.file?.original_name ?? '预览')
 const isImage = computed(() => String(state.file?.content_type || '').startsWith('image/'))
 
 async function openModal(id: string) {
@@ -83,13 +83,13 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="'File Detail'"
+    :title="'File 详情'"
     style="width: 700px"
   >
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="'Preview'">
+          <NDescriptionsItem :label="'预览'">
             <NImage
               v-if="isImage && fileUrl"
               class="file-detail-image"
@@ -100,64 +100,64 @@ defineExpose({
               object-fit="cover"
             />
             <NButton v-else-if="fileUrl" type="primary" text @click="openFile">
-              {{ 'Open' }}
+              打开
             </NButton>
             <template v-else> - </template>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'File ID'">
+          <NDescriptionsItem :label="'文件ID'">
             {{ displayValue(state.file.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'File Name'">
+          <NDescriptionsItem :label="'文件名'">
             {{ displayValue(state.file.original_name) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Object Path'">
+          <NDescriptionsItem :label="'对象路径'">
             <NFlex align="center" :size="8">
               <NEllipsis class="file-detail-text">
                 {{ displayValue(state.file.object_name) }}
               </NEllipsis>
               <NButton size="small" text type="primary" @click="copyText(state.file.object_name)">
-                {{ 'Copy' }}
+                复制
               </NButton>
             </NFlex>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Access URL'">
+          <NDescriptionsItem :label="'访问URL'">
             <NFlex align="center" :size="8">
               <NEllipsis class="file-detail-text">
                 {{ displayValue(fileUrl) }}
               </NEllipsis>
               <NButton v-if="fileUrl" size="small" text type="primary" @click="openFile">
-                {{ 'Open' }}
+                打开
               </NButton>
               <NButton v-if="fileUrl" size="small" text type="primary" @click="copyText(fileUrl)">
-                {{ 'Copy' }}
+                复制
               </NButton>
             </NFlex>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Storage Provider'">
+          <NDescriptionsItem :label="'存储提供商'">
             {{
               dictTypeData('STORAGE_PROVIDER', state.file.storage_provider) ||
               displayValue(state.file.storage_provider)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Bucket'">
+          <NDescriptionsItem :label="'存储桶'">
             {{ displayValue(state.file.bucket) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Content Type'">
+          <NDescriptionsItem :label="'内容 类型'">
             {{ displayValue(state.file.content_type) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'File Size'">
+          <NDescriptionsItem :label="'文件大小'">
             {{ formatFileSize(state.file.size) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Created At'">
-            {{ displayValue(state.file.created_at) }}
+          <NDescriptionsItem :label="'创建时间'">
+            {{ formatDateTime(state.file.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Created By'">
+          <NDescriptionsItem :label="'创建人'">
             {{ displayValue(state.file.created_by) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Updated At'">
-            {{ displayValue(state.file.updated_at) }}
+          <NDescriptionsItem :label="'更新时间'">
+            {{ formatDateTime(state.file.updated_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Updated By'">
+          <NDescriptionsItem :label="'更新人'">
             {{ displayValue(state.file.updated_by) }}
           </NDescriptionsItem>
         </NDescriptions>

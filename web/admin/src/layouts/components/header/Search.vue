@@ -196,7 +196,7 @@ function handleMouseEnter(index: number) {
     <template #header>
       <n-input
         v-model:value="searchValue"
-        :placeholder="'Search menu / path / code'"
+        :placeholder="'搜索菜单、路径或编码'"
         clearable
         size="large"
         @input="handleInputChange"
@@ -237,7 +237,7 @@ function handleMouseEnter(index: number) {
         v-else
         size="large"
         class="h-450px flex-center"
-        :description="'No results'"
+        :description="'暂无结果'"
       />
     </n-scrollbar>
 
@@ -245,16 +245,16 @@ function handleMouseEnter(index: number) {
       <n-flex class="items-center">
         <span class="flex-y-center gap-1">
           <n-tag size="small" round>Enter</n-tag>
-          <span>{{ 'Choose' }}</span>
+          <span>选择</span>
         </span>
         <span class="flex-y-center gap-1">
           <n-tag size="small" round>↑</n-tag>
           <n-tag size="small" round>↓</n-tag>
-          <span>{{ 'Navigate' }}</span>
+          <span>导航</span>
         </span>
         <span class="flex-y-center gap-1">
           <n-tag size="small" round>Esc</n-tag>
-          <span>{{ 'Close' }}</span>
+          <span>关闭</span>
         </span>
       </n-flex>
     </template>

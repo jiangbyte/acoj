@@ -19,10 +19,10 @@ const form = reactive({
 function validateRequiredEmail(_rule: FormItemRule, value: string) {
   const text = String(value ?? '').trim()
   if (!text) {
-    return new Error('Please enter login email')
+    return new Error('请输入登录邮箱')
   }
   if (!isValidEmail(text)) {
-    return new Error('Please enter a valid email')
+    return new Error('请输入有效邮箱')
   }
   return true
 }
@@ -37,7 +37,7 @@ const rules = computed<FormRules>(() => ({
   captcha_value: [
     {
       required: true,
-      message: 'Please enter captcha',
+      message: '请输入验证码',
       trigger: ['input', 'blur'],
     },
   ],
@@ -57,7 +57,7 @@ async function handleSubmit() {
       captcha_id: form.captcha_id,
       captcha_value: form.captcha_value,
     })
-    window.$message.success('Password reset link sent')
+    window.$message.success('密码重置链接已发送')
     await captchaRef.value?.refresh()
   } catch {
     await captchaRef.value?.refresh()
@@ -68,21 +68,21 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <AuthLayout :title="'Recover Password'" :subtitle="'Send a password reset link to your enabled portal login email.'">
+  <AuthLayout :title="'找回密码'" :subtitle="'向已启用的门户登录邮箱发送密码重置链接。'">
     <n-alert class="auth-alert" type="info" :bordered="false">
-      {{ 'Use the email address enabled for portal login.' }}
+      请使用已启用门户登录的邮箱地址。
     </n-alert>
 
     <n-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="handleSubmit">
-      <n-form-item path="email" :label="'Login Email'">
-        <n-input v-model:value="form.email" :placeholder="'Enter login email'" clearable>
+      <n-form-item path="email" :label="'登录邮箱'">
+        <n-input v-model:value="form.email" :placeholder="'请输入登录邮箱'" clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:mail" />
           </template>
         </n-input>
       </n-form-item>
 
-      <n-form-item path="captcha_value" :label="'Captcha'">
+      <n-form-item path="captcha_value" :label="'验证码'">
         <CaptchaInput
           ref="captchaRef"
           v-model:captcha-id="form.captcha_id"
@@ -91,11 +91,11 @@ async function handleSubmit() {
       </n-form-item>
 
       <n-button type="primary" size="large" block attr-type="submit" :loading="loading">
-        {{ 'Send Reset Link' }}
+        发送重置链接
       </n-button>
 
       <div class="auth-links">
-        <RouterLink to="/auth/login">{{ 'Back to sign in' }}</RouterLink>
+        <RouterLink to="/auth/login">返回登录</RouterLink>
       </div>
     </n-form>
   </AuthLayout>

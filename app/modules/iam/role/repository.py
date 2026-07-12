@@ -24,9 +24,7 @@ from app.modules.iam.role.schema import (
     RoleAdminPageQuery,
     RoleGrantResourceRequest,
     RoleGrantUserRequest,
-    RoleGrantPermissionRequest,
     RoleResourceGrantInfo,
-    RolePermissionGrantInfo,
     RoleCreateRequest,
     RoleUpdateRequest,
 )
@@ -118,28 +116,6 @@ class RoleRepository:
             return []
         stmt = select(SysRole).where(SysRole.id.in_(unique_ids))
         return list((await self.db.execute(stmt)).scalars().all())
-
-    async def list_permission_grants(self, role_id: str) -> list[RolePermissionGrantInfo]:
-        await self.get_required(role_id)
-        stmt = (
-            select(SysIamRelation)
-            .where(
-                SysIamRelation.subject_type == GrantSubjectType.ROLE.value,
-                SysIamRelation.subject_id == role_id,
-                SysIamRelation.relation_type == IamRelationType.SUBJECT_PERMISSION_GRANT.value,
-                SysIamRelation.target_type == IamRelationTargetType.PERMISSION.value,
-            )
-            .order_by(SysIamRelation.id.asc())
-        )
-        grants = list((await self.db.execute(stmt)).scalars().all())
-        return [
-            RolePermissionGrantInfo(
-                permission_key=grant.target_key,
-                data_scope=grant.data_scope,
-                custom_scope_dept_ids=list(grant.custom_scope_dept_ids),
-            )
-            for grant in grants
-        ]
 
     async def list_resource_grants(self, role_id: str) -> list[RoleResourceGrantInfo]:
         await self.get_required(role_id)
@@ -335,22 +311,3 @@ class RoleRepository:
             SysIamRelation.target_id == role_id,
         )
         return [str(value) for value in (await self.db.execute(stmt)).scalars().all()]
-
-    async def replace_permission_grants(self, payload: RoleGrantPermissionRequest) -> None:
-        await self.get_required(payload.id)
-        await self.relations.delete_subject_relations(
-            GrantSubjectType.ROLE.value,
-            payload.id,
-            IamRelationType.SUBJECT_PERMISSION_GRANT,
-        )
-        for grant in payload.grant_info_list:
-            self.db.add(
-                self.relations.subject_permission_grant(
-                    GrantSubjectType.ROLE,
-                    payload.id,
-                    grant.permission_key,
-                    grant.data_scope,
-                    list(grant.custom_scope_dept_ids),
-                )
-            )
-        await self.db.flush()

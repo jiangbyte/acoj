@@ -20,21 +20,21 @@ const activeType = ref<LoginType>('ACCOUNT')
 const loginTypes: Array<{ key: LoginType; label: string; icon: string; placeholder: string }> = [
   {
     key: 'ACCOUNT',
-    label: 'Account',
+    label: '账号',
     icon: 'icon-park-outline:user',
-    placeholder: 'Enter account',
+    placeholder: '请输入账号',
   },
   {
     key: 'EMAIL',
-    label: 'Email',
+    label: '邮箱',
     icon: 'icon-park-outline:mail',
-    placeholder: 'Enter login email',
+    placeholder: '请输入登录邮箱',
   },
   {
     key: 'PHONE',
-    label: 'Phone',
+    label: '手机号',
     icon: 'icon-park-outline:phone',
-    placeholder: 'Enter login phone',
+    placeholder: '请输入登录手机号',
   },
 ]
 
@@ -54,10 +54,10 @@ const activeField = computed(() => activeType.value.toLowerCase() as 'account' |
 function validateLoginIdentity(_rule: FormItemRule, value: string) {
   const text = String(value ?? '').trim()
   if (!text) {
-    return new Error(`Please enter ${currentLogin.value.label.toLowerCase()}`)
+    return new Error(`请输入${currentLogin.value.label}`)
   }
   if (activeType.value === 'EMAIL' && !isValidEmail(text)) {
-    return new Error('Please enter a valid email')
+    return new Error('请输入有效邮箱')
   }
   return true
 }
@@ -72,14 +72,14 @@ const rules = computed<FormRules>(() => ({
   password: [
     {
       required: true,
-      message: 'Please enter password',
+      message: '请输入密码',
       trigger: ['input', 'blur'],
     },
   ],
   captcha_value: [
     {
       required: true,
-      message: 'Please enter captcha',
+      message: '请输入验证码',
       trigger: ['input', 'blur'],
     },
   ],
@@ -107,7 +107,7 @@ async function handleSubmit() {
         captcha_value: form.captcha_value,
       },
     )
-    window.$message.success('Signed in')
+    window.$message.success('登录成功')
   } catch {
     await captchaRef.value?.refresh()
   } finally {
@@ -117,7 +117,7 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <AuthLayout :title="'Sign in to Enterprise Portal'" :subtitle="'Choose the identity type you enabled for portal access.'">
+  <AuthLayout :title="'登录企业门户'" :subtitle="'请选择已启用的门户登录身份。'">
     <n-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="handleSubmit">
       <n-tabs v-model:value="activeType" type="segment" animated class="auth-login-tabs">
         <n-tab-pane
@@ -140,12 +140,12 @@ async function handleSubmit() {
         </n-tab-pane>
       </n-tabs>
 
-      <n-form-item path="password" :label="'Password'">
+      <n-form-item path="password" :label="'密码'">
         <n-input
           v-model:value="form.password"
           type="password"
           show-password-on="click"
-          :placeholder="'Enter password'"
+          :placeholder="'请输入密码'"
         >
           <template #prefix>
             <NovaIcon icon="icon-park-outline:lock" />
@@ -153,7 +153,7 @@ async function handleSubmit() {
         </n-input>
       </n-form-item>
 
-      <n-form-item path="captcha_value" :label="'Captcha'">
+      <n-form-item path="captcha_value" :label="'验证码'">
         <CaptchaInput
           ref="captchaRef"
           v-model:captcha-id="form.captcha_id"
@@ -163,9 +163,9 @@ async function handleSubmit() {
 
       <div class="auth-form-row">
         <n-checkbox v-model:checked="form.remember">
-          {{ 'Remember me' }}
+          记住我
         </n-checkbox>
-        <RouterLink to="/auth/forgot-password">{{ 'Forgot password?' }}</RouterLink>
+        <RouterLink to="/auth/forgot-password">忘记密码？</RouterLink>
       </div>
 
       <n-button
@@ -176,12 +176,12 @@ async function handleSubmit() {
         attr-type="submit"
         :loading="loading"
       >
-        {{ 'Sign In' }}
+        登录
       </n-button>
 
       <p class="auth-switch">
-        {{ 'No account yet?' }}
-        <RouterLink to="/auth/register">{{ 'Create one' }}</RouterLink>
+        还没有账号？
+        <RouterLink to="/auth/register">创建账号</RouterLink>
       </p>
     </n-form>
   </AuthLayout>

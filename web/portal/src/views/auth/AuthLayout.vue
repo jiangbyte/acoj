@@ -25,18 +25,18 @@ const isDarkTheme = computed(
 const highlights = computed(() => [
   {
     icon: 'icon-park-outline:shield',
-    title: 'Secure Access',
-    text: 'Clear sign-in and recovery flows',
+    title: '安全访问',
+    text: '清晰的登录与找回流程',
   },
   {
     icon: 'icon-park-outline:code-computer',
-    title: 'Portal Workspace',
-    text: 'Designed for general enterprise access',
+    title: '门户端工作台',
+    text: '面向通用企业访问场景设计',
   },
   {
     icon: 'icon-park-outline:chart-line',
-    title: 'Service Insight',
-    text: 'Fast entry to data and business services',
+    title: '服务洞察',
+    text: '快速进入数据与业务服务',
   },
 ])
 
@@ -63,9 +63,9 @@ function handleShellScroll(event: any) {
     <section class="auth-content" :class="{ 'auth-content--wide': wide }">
       <aside class="auth-visual" aria-hidden="true">
         <div class="auth-visual-inner">
-          <p class="auth-kicker">{{ 'Enterprise Portal' }}</p>
-          <h1>{{ 'One secure entry for organization services' }}</h1>
-          <p class="auth-hero-text">{{ 'A stable identity entry for teams and collaborators with theme-aware and mobile-ready access.' }}</p>
+          <p class="auth-kicker">企业门户</p>
+          <h1>组织服务的安全统一入口</h1>
+          <p class="auth-hero-text">为团队与协作者提供稳定的身份入口，支持主题适配和移动端访问。</p>
 
           <div class="auth-highlights">
             <div v-for="item in highlights" :key="item.title" class="auth-highlight">

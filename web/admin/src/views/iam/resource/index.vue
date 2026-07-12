@@ -2,7 +2,7 @@
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { resourceApi, resourceModuleApi } from '@/api'
-import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { NButton, NDropdown, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -44,17 +44,17 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: 'Resource Code',
+    title: '资源编码',
     path: 'code',
     field: 'input',
   },
   {
-    title: 'Resource Name',
+    title: '资源名称',
     path: 'name',
     field: 'input',
   },
   {
-    title: 'Resource Type',
+    title: '资源类型',
     path: 'resource_type',
     field: 'select',
     fieldProps: {
@@ -62,7 +62,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: 'Resource Module',
+    title: '资源模块',
     path: 'module_id',
     field: 'select',
     fieldProps: {
@@ -70,12 +70,12 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: 'Parent Resource ID',
+    title: '父级资源ID',
     path: 'parent_id',
     field: 'input',
   },
   {
-    title: 'Status',
+    title: '状态',
     path: 'status',
     field: 'select',
     fieldProps: {
@@ -90,7 +90,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'left',
   },
   {
-    title: 'Resource Name',
+    title: '资源名称',
     path: 'name',
     width: 220,
     render: (row) => row.name,
@@ -99,7 +99,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Resource Code',
+    title: '资源编码',
     path: 'code',
     width: 180,
     ellipsis: {
@@ -107,13 +107,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Resource Type',
+    title: '资源类型',
     path: 'resource_type',
     width: 130,
     render: (row) => dictTypeData('RESOURCE_TYPE', row.resource_type) || row.resource_type,
   },
   {
-    title: 'Resource Module',
+    title: '资源模块',
     path: 'module_id_name',
     width: 130,
     ellipsis: {
@@ -122,7 +122,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     render: (row) => row.module_id_name || row.module_id || '-',
   },
   {
-    title: 'Path',
+    title: '路由路径',
     path: 'path',
     width: 210,
     ellipsis: {
@@ -130,7 +130,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Component',
+    title: '组件',
     path: 'component',
     width: 150,
     ellipsis: {
@@ -138,19 +138,32 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Sort',
+    title: '颜色',
+    path: 'color',
+    width: 120,
+    render: (row) =>
+      row.color ? (
+        <NTag color={createTagColor(row.color)} bordered={false}>
+          {row.color}
+        </NTag>
+      ) : (
+        '-'
+      ),
+  },
+  {
+    title: '排序',
     path: 'sort',
     width: 90,
   },
   {
-    title: 'Visible',
+    title: '可见',
     path: 'is_visible',
     width: 90,
     render: (row) =>
-      row.is_visible ? 'Yes' : 'No',
+      row.is_visible ? '是' : '否',
   },
   {
-    title: 'Status',
+    title: '状态',
     path: 'status',
     width: 110,
     render: (row) => (
@@ -160,15 +173,16 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Updated At',
+    title: '更新时间',
     path: 'updated_at',
     width: 190,
     ellipsis: {
       tooltip: true,
     },
+    render: (row) => formatDateTime(row.updated_at),
   },
   {
-    title: 'Operation',
+    title: '操作',
     key: 'actions',
     width: 150,
     fixed: 'right',
@@ -274,13 +288,13 @@ function resourceMoreOptions(row: any) {
   const options = []
   if (hasPermission('iam:resource:create')) {
     options.push({
-      label: 'Add Child Resource',
+      label: '新增子资源',
       key: 'add-child',
     })
   }
   if (hasPermission('iam:resource:list')) {
     options.push({
-      label: 'Button Permissions',
+      label: '按钮权限',
       key: 'button-permissions',
     })
   }
@@ -307,14 +321,14 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? 'Batch Delete' : 'Delete',
+    title: isBatch ? '批量删除' : '删除',
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? `Delete ${ids.length} selected resources?`
-      : 'Delete this resource?',
-    positiveText: 'Confirm',
-    negativeText: 'Cancel',
+      ? `删除 ${ids.length} 个资源?`
+      : '删除该资源?',
+    positiveText: '确认',
+    negativeText: '取消',
     onPositiveClick: () => deleteData(ids),
   })
 }
@@ -322,7 +336,7 @@ function confirmDelete(value: string | string[]) {
 async function deleteData(ids: string[]) {
   await resourceApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
-  window.$message.success('Deleted successfully')
+  window.$message.success('删除成功')
   await fetchTree()
 }
 
@@ -387,12 +401,12 @@ function flattenResourceTree(items: any[]) {
       <ProSearchForm
         :form="searchForm"
         :columns="searchColumns"
-        :reset-button-props="{ content: 'Reset' }"
-        :search-button-props="{ content: 'Search' }"
+        :reset-button-props="{ content: '重置' }"
+        :search-button-props="{ content: '搜索' }"
         :collapse-button-props="{
           content: searchForm.collapsed.value
-            ? 'Expand'
-            : 'Collapse',
+            ? '展开'
+            : '收起',
         }"
       />
     </ProCard>
@@ -416,7 +430,7 @@ function flattenResourceTree(items: any[]) {
 
     <ProDataTable
       class="min-h-0 flex-1"
-      :title="'Resource Management'"
+      :title="'资源管理'"
       row-key="id"
       :scroll-x="1800"
       :columns="tableColumns"
@@ -429,14 +443,14 @@ function flattenResourceTree(items: any[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('iam:resource:create')" type="primary" text :title="'Add'" :aria-label="'Add'" @click="openCreateModal()">
+          <NButton v-if="hasPermission('iam:resource:create')" type="primary" text :title="'新增'" :aria-label="'新增'" @click="openCreateModal()">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchTree">
+          <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchTree">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -447,8 +461,8 @@ function flattenResourceTree(items: any[]) {
             v-if="hasPermission('iam:resource:delete')"
             type="error"
             text
-            :title="'Batch Delete'"
-            :aria-label="'Batch Delete'"
+            :title="'批量删除'"
+            :aria-label="'批量删除'"
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >

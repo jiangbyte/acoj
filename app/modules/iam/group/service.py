@@ -15,23 +15,18 @@ from app.modules.iam.group.repository import GroupRepository
 from app.modules.iam.group.schema import (
     GroupAdminPageQuery,
     GroupCreateRequest,
-    GroupGrantPermissionRequest,
     GroupGrantResourceRequest,
     GroupGrantRoleRequest,
     GroupGrantUserRequest,
-    GroupOwnPermissionDetailResponse,
-    GroupOwnPermissionResponse,
     GroupOwnResourceResponse,
     GroupOwnRoleResponse,
     GroupOwnUserResponse,
-    GroupPermissionGrantInfo,
     GroupResourceGrantInfo,
     GroupRoleAssignRequest,
     GroupUpdateRequest,
     SysGroupRoleRelSchema,
     SysGroupSchema,
 )
-from app.modules.iam.permission.service import ensure_registered_permissions
 from app.modules.iam.resource.service import ResourceService
 from app.modules.iam.relation.model import SysIamRelation
 from app.modules.iam.relation.repository import IamRelationRepository
@@ -206,67 +201,6 @@ class GroupService:
             )
         await self._refresh_accounts(account_ids)
 
-    async def own_permission(
-        self,
-        query: IdQuery,
-        session: SessionPayload | None = None,
-    ) -> GroupOwnPermissionResponse:
-        if session is not None:
-            await self._ensure_groups_visible(session, "iam:group:ownpermission", [query.id])
-        return GroupOwnPermissionResponse(
-            id=query.id,
-            grant_info_list=[
-                GroupPermissionGrantInfo.model_validate(grant)
-                for grant in await self.relation_repo.list_subject_permission_grants(
-                    GrantSubjectType.GROUP,
-                    query.id,
-                )
-            ],
-        )
-
-    async def own_permission_detail(
-        self,
-        query: IdQuery,
-        session: SessionPayload | None = None,
-    ) -> GroupOwnPermissionDetailResponse:
-        if session is not None:
-            await self._ensure_groups_visible(session, "iam:group:ownpermission", [query.id])
-        return GroupOwnPermissionDetailResponse(
-            id=query.id,
-            permissions=await ResourceService(self.db).list_permission_registry_items(),
-            grant_info_list=[
-                GroupPermissionGrantInfo.model_validate(grant)
-                for grant in await self.relation_repo.list_subject_permission_grants(
-                    GrantSubjectType.GROUP,
-                    query.id,
-                )
-            ],
-        )
-
-    async def grant_permission(
-        self,
-        payload: GroupGrantPermissionRequest,
-        session: SessionPayload | None = None,
-    ) -> None:
-        if session is not None:
-            await self._ensure_groups_visible(session, "iam:group:grantpermission", [payload.id])
-            await self._ensure_depts_visible(
-                session,
-                "iam:group:grantpermission",
-                _grant_custom_dept_ids(payload.grant_info_list),
-            )
-        await ensure_registered_permissions(
-            [grant.permission_key for grant in payload.grant_info_list]
-        )
-        async with transactional(self.db):
-            account_ids = await self.repo.list_account_ids_by_group(payload.id)
-            await self.relation_repo.replace_subject_permission_grants(
-                GrantSubjectType.GROUP,
-                payload.id,
-                payload.grant_info_list,
-            )
-        await self._refresh_accounts(account_ids)
-
     async def _refresh_accounts(self, account_ids: list[str]) -> None:
         await AccountSessionService(self.db).refresh_accounts_sessions(sorted(set(account_ids)))
 
@@ -356,11 +290,3 @@ class GroupService:
         allowed_ids = set(visible_dept_ids)
         if any(dept_id not in allowed_ids for dept_id in unique_ids):
             raise AuthorizationError("Dept is outside current data scope")
-
-
-def _grant_custom_dept_ids(grant_info_list: list) -> list[str]:
-    return [
-        dept_id
-        for grant in grant_info_list
-        for dept_id in grant.custom_scope_dept_ids
-    ]

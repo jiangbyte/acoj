@@ -50,7 +50,7 @@ export function createRequiredRule(
 ) {
   return {
     required: true,
-    message: `Please enter ${field}`,
+    message: `请输入${field}`,
     trigger,
   }
 }

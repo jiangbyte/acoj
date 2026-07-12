@@ -14,9 +14,6 @@ from app.modules.iam.role.schema import (
     RoleAdminPageQuery,
     RoleGrantResourceRequest,
     RoleGrantUserRequest,
-    RoleOwnPermissionDetailResponse,
-    RoleGrantPermissionRequest,
-    RoleOwnPermissionResponse,
     RoleOwnResourceResponse,
     RoleOwnUserResponse,
     RoleCreateRequest,
@@ -123,73 +120,6 @@ async def page(
         status=status,
     )
     return success(await RoleService(db).page_admin(query, session))
-
-
-@router.get(
-    "/sys/roles/permission-tree-selector",
-    dependencies=[
-        Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("iam:role:permissiontree")),
-    ],
-    response_model=ApiResponse[list[str]],
-    summary="获取权限授权树",
-)
-async def permission_tree_selector(
-    db: Annotated[AsyncSession, Depends(get_db_session)],
-) -> ApiResponse[list[str]]:
-    return success(await RoleService(db).permission_tree_selector())
-
-
-@router.get(
-    "/sys/roles/own-permission",
-    dependencies=[
-        Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("iam:role:ownpermission")),
-    ],
-    response_model=ApiResponse[RoleOwnPermissionResponse],
-    summary="获取角色拥有权限",
-)
-async def own_permission(
-    db: Annotated[AsyncSession, Depends(get_db_session)],
-    session: Annotated[SessionPayload, Depends(get_current_session)],
-    id: Annotated[Id, Query()],
-) -> ApiResponse[RoleOwnPermissionResponse]:
-    return success(await RoleService(db).own_permission(IdQuery(id=id), session))
-
-
-@router.get(
-    "/sys/roles/own-permission-detail",
-    dependencies=[
-        Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("iam:role:ownpermission")),
-    ],
-    response_model=ApiResponse[RoleOwnPermissionDetailResponse],
-    summary="获取角色拥有权限和可授权权限列表",
-)
-async def own_permission_detail(
-    db: Annotated[AsyncSession, Depends(get_db_session)],
-    session: Annotated[SessionPayload, Depends(get_current_session)],
-    id: Annotated[Id, Query()],
-) -> ApiResponse[RoleOwnPermissionDetailResponse]:
-    return success(await RoleService(db).own_permission_detail(IdQuery(id=id), session))
-
-
-@router.post(
-    "/sys/roles/grant-permission",
-    dependencies=[
-        Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("iam:role:grantpermission")),
-    ],
-    response_model=ApiResponse[None],
-    summary="给角色授权权限",
-)
-async def grant_permission(
-    payload: RoleGrantPermissionRequest,
-    db: Annotated[AsyncSession, Depends(get_db_session)],
-    session: Annotated[SessionPayload, Depends(get_current_session)],
-) -> ApiResponse[None]:
-    await RoleService(db).grant_permission(payload, session)
-    return success()
 
 
 @router.get(

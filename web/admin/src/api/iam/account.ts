@@ -57,11 +57,3 @@ export function ownResources(accountId: string) {
 export function grantResources(data: any) {
   return http.post<any>(`${accountPrefix}/grant-resource`, data)
 }
-
-export function ownPermissions(accountId: string) {
-  return http.get<any>(`${accountPrefix}/own-permission-detail`, { params: { id: accountId } })
-}
-
-export function grantPermissions(data: any) {
-  return http.post<any>(`${accountPrefix}/grant-permission`, data)
-}

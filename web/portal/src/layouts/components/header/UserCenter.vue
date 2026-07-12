@@ -15,12 +15,12 @@ const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 
 const options = computed<DropdownOption[]>(() => [
   {
-    label: 'User Center',
+    label: '个人中心',
     key: 'userCenter',
     icon: renderIcon('icon-park-outline:user'),
   },
   {
-    label: 'My Space',
+    label: '我的空间',
     key: 'mySpace',
     icon: renderIcon('icon-park-outline:user-positioning'),
   },
@@ -29,7 +29,7 @@ const options = computed<DropdownOption[]>(() => [
     key: 'divider-1',
   },
   {
-    label: 'Log Out',
+    label: '退出登录',
     key: 'logout',
     icon: renderIcon('icon-park-outline:logout'),
   },
@@ -44,13 +44,13 @@ function handleSelect(key: string | number) {
   }
   if (key === 'logout') {
     window.$dialog.info({
-      title: 'Log Out',
-      content: 'Log out of the current account?',
-      positiveText: 'Confirm',
-      negativeText: 'Cancel',
+      title: '退出登录',
+      content: '确定退出当前账号？',
+      positiveText: '确认',
+      negativeText: '取消',
       onPositiveClick: async () => {
         await authStore.logout()
-        window.$message.success('Logged out')
+        window.$message.success('已退出登录')
       },
     })
   }

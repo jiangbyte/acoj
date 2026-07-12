@@ -4,18 +4,18 @@
       <u-card>
         <template #head>
           <CardHead
-            title="Create Portal Account"
-            sub-title="Create an account with email login enabled."
+            title="创建门户账号"
+            sub-title="创建可使用邮箱登录的账号。"
           />
         </template>
         <template #body>
           <u-form :model="form">
             <u-form-item>
               <view class="form-field">
-                <text>Account</text>
+                <text>账号</text>
                 <u-input
                   v-model="form.account"
-                  placeholder="Enter account"
+                  placeholder="请输入账号"
                   border="surround"
                   clearable
                 ></u-input>
@@ -23,10 +23,10 @@
             </u-form-item>
             <u-form-item>
               <view class="form-field">
-                <text>Nickname</text>
+                <text>昵称</text>
                 <u-input
                   v-model="form.nickname"
-                  placeholder="Enter nickname"
+                  placeholder="请输入昵称"
                   border="surround"
                   clearable
                 ></u-input>
@@ -34,10 +34,10 @@
             </u-form-item>
             <u-form-item>
               <view class="form-field">
-                <text>Email</text>
+                <text>邮箱</text>
                 <u-input
                   v-model="form.email"
-                  placeholder="Enter email"
+                  placeholder="请输入邮箱"
                   border="surround"
                   clearable
                 ></u-input>
@@ -45,29 +45,29 @@
             </u-form-item>
             <u-form-item>
               <view class="form-field">
-                <text>Password</text>
+                <text>密码</text>
                 <u-input
                   v-model="form.password"
                   type="password"
-                  placeholder="At least 8 characters"
+                  placeholder="至少 8 个字符"
                   border="surround"
                 ></u-input>
               </view>
             </u-form-item>
             <u-form-item>
               <view class="form-field">
-                <text>Confirm Password</text>
+                <text>确认密码</text>
                 <u-input
                   v-model="form.confirmPassword"
                   type="password"
-                  placeholder="Enter password again"
+                  placeholder="请再次输入密码"
                   border="surround"
                 ></u-input>
               </view>
             </u-form-item>
             <u-form-item>
               <view class="form-field">
-                <text>Captcha</text>
+                <text>验证码</text>
                 <CaptchaField
                   ref="captchaRef"
                   v-model:captcha-id="form.captcha_id"
@@ -79,12 +79,12 @@
         </template>
         <template #foot>
           <u-button
-            text="Register"
+            text="注册"
             type="primary"
             :loading="loading"
             @click="submit"
           ></u-button>
-          <u-button text="Back to Sign In" plain @click="openLogin"></u-button>
+          <u-button text="返回登录" plain @click="openLogin"></u-button>
         </template>
       </u-card>
     </view>

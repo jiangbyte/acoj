@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { GlobalThemeOverrides } from 'naive-ui'
 import { usePreferredDark } from '@vueuse/core'
-import { darkTheme, dateEnUS } from 'naive-ui'
+import { darkTheme, dateZhCN, zhCN } from 'naive-ui'
 import { computed } from 'vue'
 import { useAppStore } from './stores'
 import themeConfig from './stores/app/theme.json'
@@ -22,7 +22,8 @@ const naiveTheme = computed(() =>
     inline-theme-disabled
     :theme="naiveTheme"
     :theme-overrides="theme"
-    :date-locale="dateEnUS"
+    :locale="zhCN"
+    :date-locale="dateZhCN"
   >
     <naive-provider>
       <router-view />

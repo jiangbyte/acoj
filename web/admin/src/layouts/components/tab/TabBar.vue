@@ -63,36 +63,36 @@ const options = computed<DropdownOption[]>(() => {
 
   return [
     {
-      label: 'Reload',
+      label: '刷新',
       key: 'reload',
       icon: renderIcon('icon-park-outline:redo'),
     },
     {
-      label: 'Close current',
+      label: '关闭当前',
       key: 'closeCurrent',
       icon: renderIcon('icon-park-outline:close'),
       disabled: disabledCurrent,
     },
     {
-      label: 'Close others',
+      label: '关闭其他',
       key: 'closeOther',
       icon: renderIcon('icon-park-outline:delete-four'),
       disabled: disabledCurrent || disabledNormal,
     },
     {
-      label: 'Close left',
+      label: '关闭左侧',
       key: 'closeLeft',
       icon: renderIcon('icon-park-outline:to-left'),
       disabled: disabledCurrent || disabledNormal,
     },
     {
-      label: 'Close right',
+      label: '关闭右侧',
       key: 'closeRight',
       icon: renderIcon('icon-park-outline:to-right'),
       disabled: disabledCurrent || disabledNormal,
     },
     {
-      label: 'Close all',
+      label: '关闭全部',
       key: 'closeAll',
       icon: renderIcon('icon-park-outline:fullwidth'),
       disabled: disabledNormal,

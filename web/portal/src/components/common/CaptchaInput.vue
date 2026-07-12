@@ -30,14 +30,14 @@ defineExpose({ refresh })
 
 <template>
   <div class="captcha-input">
-    <NInput v-model:value="captchaValue" :placeholder="'Enter captcha'" clearable>
+    <NInput v-model:value="captchaValue" :placeholder="'请输入验证码'" clearable>
       <template #prefix>
         <NovaIcon icon="icon-park-outline:check-correct" />
       </template>
     </NInput>
     <button class="captcha-image" type="button" :disabled="loading" @click="refresh">
       <NSpin :show="loading" size="small">
-        <img v-if="imageSrc" :src="imageSrc" alt="Captcha" />
+        <img v-if="imageSrc" :src="imageSrc" alt="验证码" />
       </NSpin>
     </button>
   </div>

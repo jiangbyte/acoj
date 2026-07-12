@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { deptApi } from '@/api'
-import { createTagColor, displayValue } from '@/utils'
+import { createTagColor, displayValue, formatDateTime } from '@/utils'
 import { reactive } from 'vue'
 import { dictTypeData, dictTypeColor } from '@/utils/dict'
 
@@ -37,43 +37,43 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="'Department Detail'"
+    :title="'部门详情'"
     style="width: 680px"
   >
     <NScrollbar class="max-h-[min(640px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="'Department ID'">
+          <NDescriptionsItem :label="'部门 ID'">
             {{ displayValue(state.dept.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Department Name'">
+          <NDescriptionsItem :label="'部门名称'">
             {{ displayValue(state.dept.name) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Department Code'">
+          <NDescriptionsItem :label="'部门编码'">
             {{ displayValue(state.dept.code) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Department Category'">
+          <NDescriptionsItem :label="'部门分类'">
             {{
               dictTypeData('DEPT_CATEGORY', state.dept.category) ||
               displayValue(state.dept.category)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Parent Department ID'">
+          <NDescriptionsItem :label="'父级部门ID'">
             {{ displayValue(state.dept.parent_id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Master ID'">
+          <NDescriptionsItem :label="'负责人ID'">
             {{ displayValue(state.dept.master_id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Deputy Master ID'">
+          <NDescriptionsItem :label="'副负责人ID'">
             {{ displayValue(state.dept.deputy_master_id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Sort'">
+          <NDescriptionsItem :label="'排序'">
             {{ displayValue(state.dept.sort) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Virtual Department'">
-            {{ state.dept.is_virtual ? 'Yes' : 'No' }}
+          <NDescriptionsItem :label="'虚拟部门'">
+            {{ state.dept.is_virtual ? '是' : '否' }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Status'">
+          <NDescriptionsItem :label="'状态'">
             <NTag
               :color="createTagColor(dictTypeColor('COMMON_STATUS', state.dept.status))"
               :bordered="false"
@@ -83,16 +83,16 @@ defineExpose({
               }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Created At'">
-            {{ displayValue(state.dept.created_at) }}
+          <NDescriptionsItem :label="'创建时间'">
+            {{ formatDateTime(state.dept.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Created By'">
+          <NDescriptionsItem :label="'创建人'">
             {{ displayValue(state.dept.created_by) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Updated At'">
-            {{ displayValue(state.dept.updated_at) }}
+          <NDescriptionsItem :label="'更新时间'">
+            {{ formatDateTime(state.dept.updated_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Updated By'">
+          <NDescriptionsItem :label="'更新人'">
             {{ displayValue(state.dept.updated_by) }}
           </NDescriptionsItem>
         </NDescriptions>

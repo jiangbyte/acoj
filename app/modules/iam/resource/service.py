@@ -347,6 +347,7 @@ class ResourceService:
             component=None,
             redirect=None,
             icon=None,
+            color=None,
             href=None,
             sort=payload.sort,
             is_visible=False,

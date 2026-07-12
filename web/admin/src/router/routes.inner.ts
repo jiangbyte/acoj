@@ -29,13 +29,13 @@ export const routes: RouteRecordRaw[] = [
     path: '/auth/login',
     name: 'auth-login',
     component: () => import('@/views/auth/Login.vue'),
-    meta: { name: 'Login' },
+    meta: { name: '登录' },
   },
   {
     path: '/auth/forgot-password',
     name: 'auth-forgot-password',
     component: () => import('@/views/auth/ForgotPassword.vue'),
-    meta: { name: 'Forgot Password' },
+    meta: { name: '忘记密码' },
   },
   {
     // 兜底路由必须放在最后。动态路由注册完成后，守卫会重新匹配原始目标地址。

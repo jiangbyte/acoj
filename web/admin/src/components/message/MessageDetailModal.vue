@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { messageApi } from '@/api'
-import { createTagColor, displayValue } from '@/utils'
+import { createTagColor, displayValue, formatDateTime } from '@/utils'
 import { dictTypeColor, dictTypeData } from '@/utils/dict'
 import { computed, reactive } from 'vue'
 
@@ -23,12 +23,12 @@ const state = reactive({
 
 const title = computed(() => {
   if (state.type === 'notification') {
-    return 'Notification Detail'
+    return '通知 详情'
   }
   if (state.type === 'message') {
-    return 'Message Detail'
+    return '消息 详情'
   }
-  return 'Todo Detail'
+  return '待办 详情'
 })
 
 async function open(type: DetailType, source: any) {
@@ -56,7 +56,7 @@ async function fetchDetail() {
       return
     }
     state.detail = state.source
-    const response = await messageApi.myThreadMessages({
+    const response = await messageApi.myThreadMessage({
       thread_id: state.source.id,
       current: 1,
       size: 20,
@@ -74,7 +74,7 @@ async function markNotificationRead() {
   }
   state.actionLoading = true
   try {
-    await messageApi.readNotifications({ ids: [id] })
+    await messageApi.readNotification({ ids: [id] })
     state.detail.is_read = true
     state.source.is_read = true
     emit('changed', { type: 'notification', id })
@@ -89,7 +89,7 @@ async function acknowledgeOpen() {
     return
   }
   if (state.type === 'notification' && !(state.detail.is_read || state.source.is_read)) {
-    await messageApi.readNotifications({ ids: [id] })
+    await messageApi.readNotification({ ids: [id] })
     state.detail.is_read = true
     state.source.is_read = true
     emit('changed', { type: 'notification', id })
@@ -108,7 +108,7 @@ async function acknowledgeOpen() {
 async function replyMessage() {
   const content = state.replyContent.trim()
   if (!content) {
-    window.$message.warning('Please enter a reply')
+    window.$message.warning('请输入回复内容')
     return
   }
   state.actionLoading = true
@@ -181,10 +181,10 @@ defineExpose({ open })
       <NSpin :show="state.loading">
         <template v-if="state.type === 'notification'">
           <NDescriptions label-placement="left" bordered :column="1">
-            <NDescriptionsItem :label="'Title'">
+            <NDescriptionsItem :label="'标题'">
               {{ displayValue(state.detail.title || state.source.title) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="'Severity'">
+            <NDescriptionsItem :label="'严重级别'">
               <NTag
                 :color="
                   createTagColor(dictTypeColor('NOTIFICATION_SEVERITY', state.detail.severity))
@@ -197,29 +197,29 @@ defineExpose({ open })
                 }}
               </NTag>
             </NDescriptionsItem>
-            <NDescriptionsItem :label="'Status'">
+            <NDescriptionsItem :label="'状态'">
               <NTag
                 :type="state.detail.is_read || state.source.is_read ? 'success' : 'warning'"
                 :bordered="false"
               >
                 {{
                   state.detail.is_read || state.source.is_read
-                    ? 'Read'
-                    : 'Unread'
+                    ? '已读'
+                    : '未读'
                 }}
               </NTag>
             </NDescriptionsItem>
-            <NDescriptionsItem :label="'Published At'">
-              {{ displayValue(state.detail.publish_at || state.source.publish_at) }}
+            <NDescriptionsItem :label="'发布时间'">
+              {{ formatDateTime(state.detail.publish_at || state.source.publish_at) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="'Content'">
+            <NDescriptionsItem :label="'内容'">
               {{ displayValue(state.detail.content || state.source.content) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="'Created At'">
-              {{ displayValue(state.detail.created_at) }}
+            <NDescriptionsItem :label="'创建时间'">
+              {{ formatDateTime(state.detail.created_at) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="'Updated At'">
-              {{ displayValue(state.detail.updated_at) }}
+            <NDescriptionsItem :label="'更新时间'">
+              {{ formatDateTime(state.detail.updated_at) }}
             </NDescriptionsItem>
           </NDescriptions>
           <NSpace class="mt-4" justify="end">
@@ -229,17 +229,17 @@ defineExpose({ open })
               :loading="state.actionLoading"
               @click="markNotificationRead"
             >
-              {{ 'Mark as Read' }}
+              标记已读
             </NButton>
           </NSpace>
         </template>
 
         <template v-else-if="state.type === 'message'">
           <NDescriptions label-placement="left" bordered :column="1">
-            <NDescriptionsItem :label="'Thread Title'">
+            <NDescriptionsItem :label="'会话标题'">
               {{ displayValue(state.detail.title || state.source.title) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="'Thread Type'">
+            <NDescriptionsItem :label="'会话类型'">
               <NTag
                 :color="
                   createTagColor(
@@ -259,8 +259,8 @@ defineExpose({ open })
                 }}
               </NTag>
             </NDescriptionsItem>
-            <NDescriptionsItem :label="'Updated At'">
-              {{ displayValue(state.detail.updated_at || state.source.updated_at) }}
+            <NDescriptionsItem :label="'更新时间'">
+              {{ formatDateTime(state.detail.updated_at || state.source.updated_at) }}
             </NDescriptionsItem>
           </NDescriptions>
           <NDivider />
@@ -271,36 +271,36 @@ defineExpose({ open })
                   {{
                     item.sender_name ||
                     item.sender_account_id ||
-                    'System'
+                    '系统'
                   }}
                 </template>
                 <template #description>
-                  {{ displayValue(item.created_at) }}
+                  {{ formatDateTime(item.created_at) }}
                 </template>
                 {{ displayValue(item.content) }}
               </NThing>
             </NListItem>
           </NList>
-          <NEmpty v-else class="py-32px" :description="'No messages'" />
+          <NEmpty v-else class="py-32px" :description="'暂无消息'" />
           <NInput
             v-model:value="state.replyContent"
             class="mt-4"
             type="textarea"
-            :placeholder="'Enter a reply'"
+            :placeholder="'请输入回复内容'"
           />
           <NSpace class="mt-3" justify="end">
             <NButton type="primary" :loading="state.actionLoading" @click="replyMessage">
-              {{ 'Reply' }}
+              回复
             </NButton>
           </NSpace>
         </template>
 
         <template v-else>
           <NDescriptions label-placement="left" bordered :column="1">
-            <NDescriptionsItem :label="'Title'">
+            <NDescriptionsItem :label="'标题'">
               {{ displayValue(state.detail.title || state.source.title) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="'Priority'">
+            <NDescriptionsItem :label="'优先级'">
               <NTag
                 :color="createTagColor(dictTypeColor('TODO_PRIORITY', state.detail.priority))"
                 :bordered="false"
@@ -311,7 +311,7 @@ defineExpose({ open })
                 }}
               </NTag>
             </NDescriptionsItem>
-            <NDescriptionsItem :label="'Status'">
+            <NDescriptionsItem :label="'状态'">
               <NTag
                 :color="createTagColor(dictTypeColor('TODO_STATUS', state.detail.status))"
                 :bordered="false"
@@ -322,7 +322,7 @@ defineExpose({ open })
                 }}
               </NTag>
             </NDescriptionsItem>
-            <NDescriptionsItem :label="'Assignee Status'">
+            <NDescriptionsItem :label="'处理人状态'">
               <NTag
                 :color="createTagColor(dictTypeColor('TODO_STATUS', todoAssigneeStatus()))"
                 :bordered="false"
@@ -333,17 +333,17 @@ defineExpose({ open })
                 }}
               </NTag>
             </NDescriptionsItem>
-            <NDescriptionsItem :label="'Due At'">
-              {{ displayValue(state.detail.due_at || state.source.due_at) }}
+            <NDescriptionsItem :label="'截止时间'">
+              {{ formatDateTime(state.detail.due_at || state.source.due_at) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="'Content'">
+            <NDescriptionsItem :label="'内容'">
               {{ displayValue(state.detail.content || state.source.content) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="'Created At'">
-              {{ displayValue(state.detail.created_at) }}
+            <NDescriptionsItem :label="'创建时间'">
+              {{ formatDateTime(state.detail.created_at) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="'Updated At'">
-              {{ displayValue(state.detail.updated_at) }}
+            <NDescriptionsItem :label="'更新时间'">
+              {{ formatDateTime(state.detail.updated_at) }}
             </NDescriptionsItem>
           </NDescriptions>
           <NSpace class="mt-4" justify="end">
@@ -353,7 +353,7 @@ defineExpose({ open })
               :loading="state.actionLoading"
               @click="updateTodo('start')"
             >
-              {{ 'Start Task' }}
+              开始任务
             </NButton>
             <NButton
               v-if="canCompleteTodo()"
@@ -361,7 +361,7 @@ defineExpose({ open })
               :loading="state.actionLoading"
               @click="updateTodo('complete')"
             >
-              {{ 'Complete Task' }}
+              完成任务
             </NButton>
             <NButton
               v-if="canCancelTodo()"
@@ -369,7 +369,7 @@ defineExpose({ open })
               :loading="state.actionLoading"
               @click="updateTodo('cancel')"
             >
-              {{ 'Cancel Task' }}
+              取消任务
             </NButton>
           </NSpace>
         </template>

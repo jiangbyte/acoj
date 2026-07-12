@@ -18,8 +18,8 @@ export {
   Logo,
   MobileDrawer,
   ModuleSwitch,
-  Notices,
   Search,
   TabBar,
   UserCenter,
+  Notices,
 }

@@ -16,11 +16,9 @@ from app.modules.iam.account.schema import (
     AccountDeptGrantInfo,
     AccountGrantDeptRequest,
     AccountGrantGroupRequest,
-    AccountGrantPermissionRequest,
     AccountGrantRoleRequest,
     AccountGroupAssignRequest,
     AccountIdentityUpsertPayload,
-    AccountPermissionGrantInfo,
     AccountRoleAssignRequest,
     AccountUpdateRequest,
 )
@@ -28,7 +26,6 @@ from app.modules.iam.dept.model import SysDept
 from app.modules.iam.enums import (
     AccountIdentityBindStatus,
     AccountIdentityType,
-    GrantSubjectType,
     IamRelationSubjectType,
     IamRelationTargetType,
     IamRelationType,
@@ -670,44 +667,3 @@ class AccountRepository:
             SysIamRelation.target_type == IamRelationTargetType.DEPT.value,
         )
         return [str(value) for value in (await self.db.execute(stmt)).scalars().all()]
-
-    async def list_permission_grants(self, account_id: str) -> list[AccountPermissionGrantInfo]:
-        await self.get_required(account_id)
-        stmt = (
-            select(SysIamRelation)
-            .where(
-                SysIamRelation.subject_type == GrantSubjectType.ACCOUNT.value,
-                SysIamRelation.subject_id == account_id,
-                SysIamRelation.relation_type == IamRelationType.SUBJECT_PERMISSION_GRANT.value,
-                SysIamRelation.target_type == IamRelationTargetType.PERMISSION.value,
-            )
-            .order_by(SysIamRelation.id.asc())
-        )
-        grants = list((await self.db.execute(stmt)).scalars().all())
-        return [
-            AccountPermissionGrantInfo(
-                permission_key=grant.target_key,
-                data_scope=grant.data_scope,
-                custom_scope_dept_ids=list(grant.custom_scope_dept_ids),
-            )
-            for grant in grants
-        ]
-
-    async def replace_permission_grants(self, payload: AccountGrantPermissionRequest) -> None:
-        await self.get_required(payload.id)
-        await self.relations.delete_subject_relations(
-            GrantSubjectType.ACCOUNT.value,
-            payload.id,
-            IamRelationType.SUBJECT_PERMISSION_GRANT,
-        )
-        for grant in payload.grant_info_list:
-            self.db.add(
-                self.relations.subject_permission_grant(
-                    GrantSubjectType.ACCOUNT,
-                    payload.id,
-                    grant.permission_key,
-                    grant.data_scope,
-                    list(grant.custom_scope_dept_ids),
-                )
-            )
-        await self.db.flush()

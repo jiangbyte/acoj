@@ -15,6 +15,6 @@ const appStore = useAppStore()
         />
       </CommonWrapper>
     </template>
-    {{ 'Toggle sidebar' }}
+    切换侧边栏
   </n-tooltip>
 </template>

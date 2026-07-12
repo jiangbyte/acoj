@@ -28,14 +28,14 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? 'Edit Position' : 'Add Position',
+  state.dataId ? '编辑 岗位' : '新增 岗位',
 )
 
 const rules = computed<FormRules>(() => ({
-  name: createRequiredRule('Position Name', 'input'),
-  code: createRequiredRule('Position Code', 'input'),
-  category: createRequiredRule('Position Category', 'change'),
-  status: createRequiredRule('Status', 'change'),
+  name: createRequiredRule('岗位名称', 'input'),
+  code: createRequiredRule('岗位编码', 'input'),
+  category: createRequiredRule('岗位分类', 'change'),
+  status: createRequiredRule('状态', 'change'),
 }))
 
 async function openModal(id?: string) {
@@ -85,10 +85,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success('Updated successfully')
+      window.$message.success('更新成功')
     } else {
       await positionApi.create(payload)
-      window.$message.success('Created successfully')
+      window.$message.success('创建成功')
     }
 
     closeModal()
@@ -123,25 +123,25 @@ defineExpose({
           label-width="110"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="'Position Name'" path="name">
+          <NFormItem :label="'岗位名称'" path="name">
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
-          <NFormItem :label="'Position Code'" path="code">
+          <NFormItem :label="'岗位编码'" path="code">
             <NInput v-model:value="state.formModel.code" />
           </NFormItem>
-          <NFormItem :label="'Position Category'" path="category">
+          <NFormItem :label="'岗位分类'" path="category">
             <DictSelect v-model="state.formModel.category" dict-code="POSITION_CATEGORY" />
           </NFormItem>
-          <NFormItem :label="'Sort'" path="sort">
+          <NFormItem :label="'排序'" path="sort">
             <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
           </NFormItem>
-          <NFormItem :label="'Virtual Position'" path="is_virtual">
+          <NFormItem :label="'虚拟岗位'" path="is_virtual">
             <NSwitch v-model:value="state.formModel.is_virtual" />
           </NFormItem>
-          <NFormItem :label="'Status'" path="status">
+          <NFormItem :label="'状态'" path="status">
             <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
           </NFormItem>
-          <NFormItem :label="'Description'" path="description">
+          <NFormItem :label="'描述'" path="description">
             <NInput
               v-model:value="state.formModel.description"
               type="textarea"
@@ -155,10 +155,10 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ 'Cancel' }}
+          取消
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ 'Confirm' }}
+          确认
         </NButton>
       </NSpace>
     </template>

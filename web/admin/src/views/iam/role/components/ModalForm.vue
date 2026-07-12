@@ -30,15 +30,15 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? 'Edit Role' : 'Add Role',
+  state.dataId ? '编辑角色' : '新增角色',
 )
 
 const rules = computed<FormRules>(() => ({
-  code: createRequiredRule('Role Code', 'input'),
-  name: createRequiredRule('Role Name', 'input'),
-  category: createRequiredRule('Role Category', 'change'),
-  scope_type: createRequiredRule('Scope Type', 'change'),
-  status: createRequiredRule('Status', 'change'),
+  code: createRequiredRule('角色编码', 'input'),
+  name: createRequiredRule('角色名称', 'input'),
+  category: createRequiredRule('角色分类', 'change'),
+  scope_type: createRequiredRule('范围类型', 'change'),
+  status: createRequiredRule('状态', 'change'),
 }))
 
 async function openModal(id?: string) {
@@ -90,10 +90,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success('Updated successfully')
+      window.$message.success('更新成功')
     } else {
       await roleApi.create(payload)
-      window.$message.success('Created successfully')
+      window.$message.success('创建成功')
     }
 
     closeModal()
@@ -128,31 +128,31 @@ defineExpose({
           label-width="110"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="'Role Code'" path="code">
+          <NFormItem :label="'角色编码'" path="code">
             <NInput v-model:value="state.formModel.code" />
           </NFormItem>
-          <NFormItem :label="'Role Name'" path="name">
+          <NFormItem :label="'角色名称'" path="name">
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
-          <NFormItem :label="'Role Category'" path="category">
+          <NFormItem :label="'角色分类'" path="category">
             <DictSelect v-model="state.formModel.category" dict-code="SYS_BIZ_CATEGORY" />
           </NFormItem>
-          <NFormItem :label="'Scope Type'" path="scope_type">
+          <NFormItem :label="'范围类型'" path="scope_type">
             <DictSelect v-model="state.formModel.scope_type" dict-code="ROLE_SCOPE_TYPE" />
           </NFormItem>
-          <NFormItem :label="'Owner Department ID'" path="owner_dept_id">
+          <NFormItem :label="'所属部门ID'" path="owner_dept_id">
             <NInput v-model:value="state.formModel.owner_dept_id" />
           </NFormItem>
-          <NFormItem :label="'Sort'" path="sort">
+          <NFormItem :label="'排序'" path="sort">
             <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
           </NFormItem>
-          <NFormItem :label="'Builtin Role'" path="is_builtin">
+          <NFormItem :label="'内置角色'" path="is_builtin">
             <NSwitch v-model:value="state.formModel.is_builtin" />
           </NFormItem>
-          <NFormItem :label="'Status'" path="status">
+          <NFormItem :label="'状态'" path="status">
             <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
           </NFormItem>
-          <NFormItem :label="'Description'" path="description">
+          <NFormItem :label="'描述'" path="description">
             <NInput
               v-model:value="state.formModel.description"
               type="textarea"
@@ -166,10 +166,10 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ 'Cancel' }}
+          取消
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ 'Confirm' }}
+          确认
         </NButton>
       </NSpace>
     </template>

@@ -53,9 +53,6 @@ class AccountAuthorizationRecord(TypedDict):
 
 
 _PERMISSION_PRIORITY_RESOURCE = 0
-_PERMISSION_PRIORITY_ROLE = 10
-_PERMISSION_PRIORITY_GROUP = 20
-_PERMISSION_PRIORITY_ACCOUNT = 30
 
 
 def account_dept_condition(relation_model=SysIamRelation, account_id_column=None):
@@ -378,9 +375,6 @@ class IamRelationRepository:
             account_ids_by_role,
         )
         permission_grants_by_account = await self._list_permission_grants_by_account(
-            unique_account_ids,
-            account_ids_by_group,
-            account_ids_by_role,
             resource_grants_by_account,
         )
         for account_id in unique_account_ids:
@@ -545,58 +539,6 @@ class IamRelationRepository:
             )
         await self.db.flush()
 
-    async def list_subject_permission_grants(
-        self,
-        subject_type: GrantSubjectType,
-        subject_id: str,
-    ) -> list[PermissionGrantRecord]:
-        await self._ensure_subject_exists(subject_type.value, subject_id)
-        stmt = (
-            select(SysIamRelation)
-            .where(
-                SysIamRelation.subject_type == subject_type.value,
-                SysIamRelation.subject_id == subject_id,
-                SysIamRelation.relation_type == IamRelationType.SUBJECT_PERMISSION_GRANT.value,
-                SysIamRelation.target_type == IamRelationTargetType.PERMISSION.value,
-            )
-            .order_by(SysIamRelation.id.asc())
-        )
-        return [
-            {
-                "permission_key": grant.target_key,
-                "data_scope": grant.data_scope,
-                "custom_scope_dept_ids": list(grant.custom_scope_dept_ids),
-                "effect": grant.effect,
-                "source_type": grant.subject_type,
-                "source_id": grant.subject_id,
-            }
-            for grant in (await self.db.execute(stmt)).scalars().all()
-        ]
-
-    async def replace_subject_permission_grants(
-        self,
-        subject_type: GrantSubjectType,
-        subject_id: str,
-        grant_info_list,
-    ) -> None:
-        await self._ensure_subject_exists(subject_type.value, subject_id)
-        await self.delete_subject_relations(
-            subject_type.value,
-            subject_id,
-            IamRelationType.SUBJECT_PERMISSION_GRANT,
-        )
-        for grant in grant_info_list:
-            self.db.add(
-                self.subject_permission_grant(
-                    subject_type,
-                    subject_id,
-                    grant.permission_key,
-                    grant.data_scope,
-                    list(grant.custom_scope_dept_ids),
-                )
-            )
-        await self.db.flush()
-
     async def _get_account_role_and_group_ids(self, account_id: str) -> tuple[list[str], list[str]]:
         group_rows = (
             await self.db.execute(
@@ -687,9 +629,6 @@ class IamRelationRepository:
 
     async def _list_permission_grants_by_account(
         self,
-        account_ids: list[str],
-        account_ids_by_group: dict[str, set[str]],
-        account_ids_by_role: dict[str, set[str]],
         resource_grants_by_account: dict[str, list[AccountResourceGrantRecord]],
     ) -> dict[str, list[PermissionGrantRecord]]:
         cascade_resource_ids = sorted(
@@ -738,50 +677,6 @@ class IamRelationRepository:
                         },
                     )
 
-        subject_conditions = [
-            (SysIamRelation.subject_type == GrantSubjectType.ACCOUNT.value)
-            & (SysIamRelation.subject_id.in_(account_ids))
-        ]
-        if account_ids_by_group:
-            subject_conditions.append(
-                (SysIamRelation.subject_type == GrantSubjectType.GROUP.value)
-                & (SysIamRelation.subject_id.in_(account_ids_by_group.keys()))
-            )
-        if account_ids_by_role:
-            subject_conditions.append(
-                (SysIamRelation.subject_type == GrantSubjectType.ROLE.value)
-                & (SysIamRelation.subject_id.in_(account_ids_by_role.keys()))
-            )
-        exception_stmt = select(SysIamRelation).where(
-            SysIamRelation.relation_type == IamRelationType.SUBJECT_PERMISSION_GRANT.value,
-            SysIamRelation.target_type == IamRelationTargetType.PERMISSION.value,
-            SysIamRelation.status == StatusEnum.ENABLED.value,
-            or_(SysIamRelation.expired_at.is_(None), SysIamRelation.expired_at > datetime.now(UTC)),
-            or_(*subject_conditions),
-        )
-        for grant in (await self.db.execute(exception_stmt)).scalars().all():
-            if grant.subject_type == GrantSubjectType.ACCOUNT.value:
-                target_account_ids = {grant.subject_id}
-            elif grant.subject_type == GrantSubjectType.GROUP.value:
-                target_account_ids = account_ids_by_group.get(grant.subject_id, set())
-            elif grant.subject_type == GrantSubjectType.ROLE.value:
-                target_account_ids = account_ids_by_role.get(grant.subject_id, set())
-            else:
-                target_account_ids = set()
-            for account_id in target_account_ids:
-                self._apply_permission_record(
-                    permission_map_by_account[account_id],
-                    self._permission_priority(str(grant.subject_type)),
-                    {
-                        "permission_key": grant.target_key,
-                        "data_scope": grant.data_scope,
-                        "custom_scope_dept_ids": list(grant.custom_scope_dept_ids),
-                        "effect": grant.effect,
-                        "source_type": grant.subject_type,
-                        "source_id": grant.subject_id,
-                    },
-                )
-
         return {
             account_id: [
                 record
@@ -803,15 +698,6 @@ class IamRelationRepository:
         current = permission_map.get(record["permission_key"])
         if current is None or priority >= current[0]:
             permission_map[record["permission_key"]] = (priority, record)
-
-    def _permission_priority(self, subject_type: str) -> int:
-        if subject_type == GrantSubjectType.ACCOUNT.value:
-            return _PERMISSION_PRIORITY_ACCOUNT
-        if subject_type == GrantSubjectType.GROUP.value:
-            return _PERMISSION_PRIORITY_GROUP
-        if subject_type == GrantSubjectType.ROLE.value:
-            return _PERMISSION_PRIORITY_ROLE
-        return _PERMISSION_PRIORITY_RESOURCE
 
     async def _ensure_subject_exists(self, subject_type: str, subject_id: str) -> None:
         entity: object | None

@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import type { GlobalThemeOverrides } from 'naive-ui'
 import type { ProConfigProviderProps } from 'pro-naive-ui'
-import { darkTheme, dateEnUS } from 'naive-ui'
-import { ProConfigProvider, enUS as proEnUS } from 'pro-naive-ui'
+import { darkTheme, dateZhCN, zhCN } from 'naive-ui'
+import { ProConfigProvider, zhCN as proZhCN } from 'pro-naive-ui'
 import { computed } from 'vue'
 import { useAppStore } from './stores'
 import themeConfig from './stores/app/theme.json'
 
 const appStore = useAppStore()
 const theme = themeConfig as GlobalThemeOverrides
+const chinaTimeZone = 'Asia/Shanghai'
 const proConfigProviderProps = computed<ProConfigProviderProps>(() => ({
   abstract: true,
-  locale: proEnUS,
-  dateLocale: dateEnUS,
+  locale: proZhCN,
+  dateLocale: dateZhCN,
   propOverrides: {
     ProButton: {
       focusable: false,
@@ -29,6 +30,11 @@ const proConfigProviderProps = computed<ProConfigProviderProps>(() => ({
       labelPlacement: 'left',
       labelWidth: '100',
     },
+    ProTime: {
+      fieldProps: {
+        timeZone: chinaTimeZone,
+      },
+    },
   },
 }))
 </script>
@@ -39,7 +45,8 @@ const proConfigProviderProps = computed<ProConfigProviderProps>(() => ({
     inline-theme-disabled
     :theme="appStore.naiveTheme === 'dark' ? darkTheme : null"
     :theme-overrides="theme"
-    :date-locale="dateEnUS"
+    :locale="zhCN"
+    :date-locale="dateZhCN"
   >
     <naive-provider>
       <ProConfigProvider v-bind="proConfigProviderProps">

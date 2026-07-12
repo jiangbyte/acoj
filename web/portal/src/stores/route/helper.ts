@@ -16,7 +16,7 @@ const clickableResourceTypes: AppRoute.ResourceType[] = ['MENU', 'PAGE']
  */
 export function createRoutes(resources: AppRoute.RowRoute[]): RouteRecordRaw[] {
   const modules = import.meta.glob('@/views/**/*.vue')
-  const routes = standardizedRoutes(resources)
+  const routes = standardizeRoutes(resources)
     .map((item) => {
       const resourceComponent = item.meta.component
 
@@ -44,7 +44,7 @@ export function createRoutes(resources: AppRoute.RowRoute[]): RouteRecordRaw[] {
  * 菜单只展示 is_visible=true 的资源；隐藏页面仍可生成路由，但不会出现在导航中。
  */
 export function createMenus(resources: AppRoute.RowRoute[]): AppRoute.MenuOption[] {
-  const visibleMenus = standardizedRoutes(resources).filter((route) => route.meta.is_visible)
+  const visibleMenus = standardizeRoutes(resources).filter((route) => route.meta.is_visible)
   return arrayToTree(transformRoutesToMenus(visibleMenus))
 }
 
@@ -75,7 +75,7 @@ export function isClickableResource(resourceType?: AppRoute.ResourceType) {
  *
  * route.name 使用 module_id + code，meta 保留完整 SysResource 字段，避免跨模块同 code 冲突。
  */
-function standardizedRoutes(resources: AppRoute.RowRoute[]) {
+function standardizeRoutes(resources: AppRoute.RowRoute[]) {
   return resources.filter(isRouteResource).map((resource) => {
     const route: AppRoute.Route = {
       id: resource.id,

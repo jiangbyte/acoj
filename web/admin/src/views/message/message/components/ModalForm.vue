@@ -21,7 +21,7 @@ const state = reactive({
 })
 
 const rules = computed<FormRules>(() => ({
-  content: createRequiredRule('Content', 'input'),
+  content: createRequiredRule('内容', 'input'),
 }))
 
 function openModal(threadId: string) {
@@ -43,10 +43,10 @@ async function submitForm() {
     await messageApi.sendSystemMessage({
       thread_id: state.formModel.thread_id,
       content: state.formModel.content,
-      sender_name: 'System',
+      sender_name: '系统',
       attachments: state.formModel.attachments,
     })
-    window.$message.success('Sent successfully')
+    window.$message.success('发送成功')
     closeModal()
     emit('saved')
   } finally {
@@ -80,7 +80,7 @@ function removeAttachment(index: number) {
     preset="card"
     draggable
     :mask-closable="false"
-    :title="'Send System Message'"
+    :title="'发送系统消息'"
     style="width: 640px"
     :segmented="{ content: true, action: true }"
   >
@@ -92,17 +92,17 @@ function removeAttachment(index: number) {
       label-width="100"
       :disabled="state.submitLoading"
     >
-      <NFormItem :label="'Thread ID'" path="thread_id">
+      <NFormItem :label="'会话ID'" path="thread_id">
         <NInput v-model:value="state.formModel.thread_id" disabled />
       </NFormItem>
-      <NFormItem :label="'Content'" path="content">
+      <NFormItem :label="'内容'" path="content">
         <NInput
           v-model:value="state.formModel.content"
           type="textarea"
           :autosize="{ minRows: 4, maxRows: 8 }"
         />
       </NFormItem>
-      <NFormItem :label="'Attachments'">
+      <NFormItem :label="'附件'">
         <NFlex vertical class="w-full">
           <FileUpload compact @uploaded="appendAttachment" />
           <NList v-if="state.formModel.attachments.length" bordered>
@@ -110,7 +110,7 @@ function removeAttachment(index: number) {
               <NThing :title="item.name" :description="item.content_type || undefined">
                 <template #header-extra>
                   <NButton size="small" text type="error" @click="removeAttachment(index)">
-                    {{ 'Delete' }}
+                    删除
                   </NButton>
                 </template>
               </NThing>
@@ -122,9 +122,9 @@ function removeAttachment(index: number) {
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton @click="closeModal">{{ 'Cancel' }}</NButton>
+        <NButton @click="closeModal">取消</NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ 'Confirm' }}
+          确认
         </NButton>
       </NSpace>
     </template>

@@ -19,7 +19,7 @@ export const routes: RouteRecordRaw[] = [
         name: 'home',
         component: () => import('@/views/home/index.vue'),
         meta: {
-          name: 'Home',
+          name: '首页',
           public: true,
           icon: 'icon-park-outline:home',
         },
@@ -29,7 +29,7 @@ export const routes: RouteRecordRaw[] = [
         name: 'usercenter',
         component: () => import('@/views/usercenter/index.vue'),
         meta: {
-          name: 'User Center',
+          name: '个人中心',
           icon: 'icon-park-outline:user',
         },
       },
@@ -38,7 +38,7 @@ export const routes: RouteRecordRaw[] = [
         name: 'messages',
         component: () => import('@/views/messages/index.vue'),
         meta: {
-          name: 'Message Center',
+          name: '消息中心',
           icon: 'icon-park-outline:message',
         },
       },
@@ -47,7 +47,7 @@ export const routes: RouteRecordRaw[] = [
         name: 'my-space',
         component: () => import('@/views/space/index.vue'),
         meta: {
-          name: 'My Space',
+          name: '我的空间',
           icon: 'icon-park-outline:user-positioning',
         },
       },
@@ -56,7 +56,7 @@ export const routes: RouteRecordRaw[] = [
         name: 'space',
         component: () => import('@/views/space/index.vue'),
         meta: {
-          name: 'Profile',
+          name: '个人资料',
           public: true,
           icon: 'icon-park-outline:user-positioning',
         },
@@ -67,7 +67,7 @@ export const routes: RouteRecordRaw[] = [
     path: '/not-found',
     name: 'not-found',
     component: () => import('@/views/error/NotFound.vue'),
-    meta: { name: 'Not Found', public: true },
+    meta: { name: '未找到页面', public: true },
   },
   {
     path: '/auth',
@@ -79,31 +79,31 @@ export const routes: RouteRecordRaw[] = [
     path: '/auth/login',
     name: 'auth-login',
     component: () => import('@/views/auth/Login.vue'),
-    meta: { name: 'Login', public: true },
+    meta: { name: '登录', public: true },
   },
   {
     path: '/auth/register',
     name: 'auth-register',
     component: () => import('@/views/auth/Register.vue'),
-    meta: { name: 'Register', public: true },
+    meta: { name: '注册', public: true },
   },
   {
     path: '/auth/forgot-password',
     name: 'auth-forgot-password',
     component: () => import('@/views/auth/ForgotPassword.vue'),
-    meta: { name: 'Forgot Password', public: true },
+    meta: { name: '忘记密码', public: true },
   },
   {
     path: '/auth/reset-password',
     name: 'auth-reset-password',
     component: () => import('@/views/auth/ResetPassword.vue'),
-    meta: { name: 'Reset Password', public: true },
+    meta: { name: '重置密码', public: true },
   },
   {
     // 兜底路由必须放在最后。动态路由注册完成后，守卫会重新匹配原始目标地址。
     path: '/:pathMatch(.*)*',
     name: 'not-found-catch',
     component: () => import('@/views/error/NotFound.vue'),
-    meta: { name: 'Not Found', public: true },
+    meta: { name: '未找到页面', public: true },
   },
 ]

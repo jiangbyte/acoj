@@ -56,12 +56,10 @@ import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
 import Layout from '@/layouts/index.vue'
 import { messageApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
-import { useDictStore } from '@/stores/dict'
-import { dictTypeData } from '@/utils/dict'
+import { dictTypeData, isDictLoaded, refreshDict } from '@/utils/dict'
 import { formatDateTime } from '@/utils/format'
 
 const authStore = useAuthStore()
-const dictStore = useDictStore()
 const tabs = [{ name: '通知' }, { name: '站内信' }, { name: '待办' }]
 const active = ref(0)
 const summary = ref<Record<string, any>>({})
@@ -82,8 +80,8 @@ onShow(async () => {
     uni.navigateTo({ url: '/pages/auth/login' })
     return
   }
-  if (!dictStore.loaded) {
-    await dictStore.refreshDict()
+  if (!isDictLoaded()) {
+    await refreshDict()
   }
   await refresh()
 })
@@ -112,7 +110,7 @@ async function loadPage(append: boolean) {
     const params = { current: current.value, size: 20 }
     const page =
       active.value === 0
-        ? await messageApi.myNotifications(params)
+        ? await messageApi.myNotification(params)
         : active.value === 1
           ? await messageApi.myThreads(params)
           : await messageApi.myTodos(params)

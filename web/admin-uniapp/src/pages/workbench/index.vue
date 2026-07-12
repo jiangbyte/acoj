@@ -46,8 +46,8 @@ import { computed } from 'vue'
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import Layout from '@/layouts/index.vue'
 import { useAuthStore } from '@/stores/auth'
-import { useDictStore } from '@/stores/dict'
 import { type ResourceItem, useRouteStore } from '@/stores/route'
+import { isDictLoaded, refreshDict } from '@/utils/dict'
 import { arrayToTree, flattenTree } from '@/utils/tree'
 
 interface CatalogCard {
@@ -59,7 +59,6 @@ interface CatalogCard {
 
 const authStore = useAuthStore()
 const routeStore = useRouteStore()
-const dictStore = useDictStore()
 
 const moduleTabs = computed(() =>
   routeStore.modules.map((mod) => ({ name: mod.name }))
@@ -125,8 +124,8 @@ onPullDownRefresh(async () => {
 })
 
 async function bootstrap() {
-  if (!dictStore.loaded) {
-    await dictStore.refreshDict()
+  if (!isDictLoaded()) {
+    await refreshDict()
   }
   if (!routeStore.modules.length) {
     await routeStore.initRoutes()

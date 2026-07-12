@@ -1,12 +1,4 @@
-export function formatDateTime(value?: string | null) {
-  if (!value) {
-    return '-'
-  }
-  return String(value)
-    .replace('T', ' ')
-    .replace(/\.\d+Z?$/, '')
-    .replace(/Z$/, '')
-}
+export { formatDateTime, normalizeBackendTime, normalizeDateTime } from './time'
 
 export function displayValue(value: unknown) {
   if (value === null || value === undefined || value === '') {

@@ -4,8 +4,8 @@
       <u-card>
         <template #head>
           <CardHead
-            title="Enterprise Portal"
-            sub-title="One entry for teams, workflows, and services."
+            title="企业门户"
+            sub-title="团队、流程与服务的统一入口。"
           />
         </template>
         <template #body>
@@ -15,19 +15,19 @@
             @click="openBanner"
           ></u-swiper>
           <view class="status-line">
-            <text>Portal Access</text>
-            <text>{{ authStore.isLogin ? displayName : 'Guest' }}</text>
+            <text>门户访问</text>
+            <text>{{ authStore.isLogin ? displayName : '访客' }}</text>
           </view>
         </template>
         <template #foot>
           <u-button
-            :text="authStore.isLogin ? 'Open User Center' : 'Sign In'"
+            :text="authStore.isLogin ? '打开个人中心' : '登录'"
             type="primary"
             @click="openPrimary"
           ></u-button>
           <u-button
             v-if="!authStore.isLogin"
-            text="Register"
+            text="注册"
             plain
             @click="openRegister"
           ></u-button>
@@ -70,11 +70,10 @@ import Layout from '@/layouts/index.vue'
 import CardHead from '@/components/common/CardHead.vue'
 import { bannerApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
-import { useDictStore } from '@/stores/dict'
 import { useRouteStore, type ResourceItem } from '@/stores/route'
+import { refreshDict } from '@/utils/dict'
 
 const authStore = useAuthStore()
-const dictStore = useDictStore()
 const routeStore = useRouteStore()
 const banners = ref<any[]>([])
 
@@ -83,7 +82,7 @@ const displayName = computed(
     authStore.userInfo?.nickname ||
     authStore.userInfo?.name ||
     authStore.userInfo?.account ||
-    'Portal User'
+    '门户用户'
 )
 const bannerImages = computed(() =>
   banners.value
@@ -116,16 +115,16 @@ const entries = computed(() => {
 })
 const features = [
   {
-    title: 'Workflow Access',
-    description: 'Business workflows and personal work entry points.',
+    title: '工作流入口',
+    description: '业务流程和个人工作入口。',
   },
   {
-    title: 'Team Collaboration',
-    description: 'Messages, notifications, and todos in one place.',
+    title: '团队协作',
+    description: '消息、通知和待办集中处理。',
   },
   {
-    title: 'Public Space',
-    description: 'Profile, intro, and public information display.',
+    title: '公开空间',
+    description: '个人资料、简介与公开信息展示。',
   },
 ]
 
@@ -140,7 +139,7 @@ async function bootstrap() {
   await Promise.all([
     loadBanners(),
     routeStore.initRoutes().catch(() => undefined),
-    dictStore.refreshDict().catch(() => undefined),
+    refreshDict().catch(() => undefined),
   ])
 }
 

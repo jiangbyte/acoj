@@ -29,22 +29,22 @@ const signature = computed(() => displayValue(state.profile?.signature))
 const bio = computed(() => displayValue(state.profile?.bio))
 
 const stats = computed(() => [
-  { label: 'Posts', value: '0' },
-  { label: 'Following', value: '0' },
-  { label: 'Followers', value: '0' },
+  { label: '动态', value: '0' },
+  { label: '关注', value: '0' },
+  { label: '粉丝', value: '0' },
 ])
 
 const showcaseItems = computed(() => [
   {
     key: 'intro',
     icon: 'icon-park-outline:topic',
-    title: 'Intro',
+    title: '简介',
     text: bio.value,
   },
   {
     key: 'signature',
     icon: 'icon-park-outline:quote',
-    title: 'Signature',
+    title: '签名',
     text: signature.value,
   },
 ])
@@ -52,18 +52,18 @@ const showcaseItems = computed(() => [
 const homeFeeds = computed(() => [
   {
     id: 'feed-1',
-    type: 'Posted video',
-    title: 'New content is being organized',
-    text: 'Public videos, posts, and update history will appear here.',
-    time: 'Just now',
+    type: '发布视频',
+    title: '新内容正在整理',
+    text: '公开视频、动态和更新记录将在这里展示。',
+    time: '刚刚',
     icon: 'icon-park-outline:video-two',
   },
   {
     id: 'feed-2',
-    type: 'Posted update',
-    title: 'Public profile is live',
-    text: 'Public details, intro, and featured content are collected in this space.',
-    time: 'Today',
+    type: '发布动态',
+    title: '公开资料已上线',
+    text: '公开资料、简介和精选内容会集中展示在这个空间中。',
+    time: '今天',
     icon: 'icon-park-outline:doc-detail',
   },
 ])
@@ -71,22 +71,22 @@ const homeFeeds = computed(() => [
 const videos = computed(() => [
   {
     id: 'video-1',
-    title: 'Getting Started',
+    title: '快速开始',
     meta: '03:28',
   },
   {
     id: 'video-2',
-    title: 'Practice Log',
+    title: '实践日志',
     meta: '08:16',
   },
   {
     id: 'video-3',
-    title: 'Experience Share',
+    title: '经验分享',
     meta: '12:04',
   },
   {
     id: 'video-4',
-    title: 'Q&A Picks',
+    title: '问答精选',
     meta: '05:42',
   },
 ])
@@ -94,35 +94,35 @@ const videos = computed(() => [
 const collections = computed(() => [
   {
     id: 'collection-1',
-    title: 'Featured',
-    desc: 'Representative public content for quickly understanding this space.',
-    count: '4 items',
+    title: '精选',
+    desc: '帮助快速了解该空间的代表性公开内容。',
+    count: '4 项',
   },
   {
     id: 'collection-2',
-    title: 'Learning Log',
-    desc: 'A long-running collection organized by topic.',
-    count: '6 items',
+    title: '学习记录',
+    desc: '按主题长期整理的内容合集。',
+    count: '6 项',
   },
 ])
 
 const likes = computed(() => [
   {
     id: 'like-1',
-    title: 'Worth Rewatching',
-    source: 'From public videos',
+    title: '值得回看',
+    source: '来自公开视频',
     icon: 'icon-park-outline:like',
   },
   {
     id: 'like-2',
-    title: 'Saved Collection',
-    source: 'From community picks',
+    title: '收藏集',
+    source: '来自社区精选',
     icon: 'icon-park-outline:star',
   },
   {
     id: 'like-3',
-    title: 'Followed Topic',
-    source: 'From discussions',
+    title: '关注话题',
+    source: '来自讨论内容',
     icon: 'icon-park-outline:bookmark',
   },
 ])
@@ -146,7 +146,7 @@ async function loadSpace() {
 }
 
 function displayValue(value: unknown) {
-  return value ? String(value) : 'Not set'
+  return value ? String(value) : '未设置'
 }
 </script>
 
@@ -217,7 +217,7 @@ function displayValue(value: unknown) {
 
       <section class="space-tabs w-full min-w-0">
         <NTabs v-model:value="state.activeTab" type="line" animated pane-class="space-pane">
-          <NTabPane name="home" :tab="'Home'">
+          <NTabPane name="home" :tab="'首页'">
             <div class="grid gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-8">
               <div class="min-w-0 space-y-4">
                 <div class="grid gap-4 lg:hidden">
@@ -225,13 +225,13 @@ function displayValue(value: unknown) {
                     class="rounded border border-[var(--border-color)] bg-[var(--card-color)] p-5"
                   >
                     <h2 class="m-0 text-base font-750">
-                      {{ 'Public Profile' }}
+                      公开资料
                     </h2>
                     <NDescriptions class="mt-4" :column="1" label-placement="left" size="small">
-                      <NDescriptionsItem :label="'Nickname'">
+                      <NDescriptionsItem :label="'昵称'">
                         {{ displayValue(state.profile?.nickname) }}
                       </NDescriptionsItem>
-                      <NDescriptionsItem :label="'Level'">
+                      <NDescriptionsItem :label="'等级'">
                         {{ displayValue(state.profile?.level) }}
                       </NDescriptionsItem>
                     </NDescriptions>
@@ -241,7 +241,7 @@ function displayValue(value: unknown) {
                     class="rounded border border-[var(--border-color)] bg-[var(--card-color)] p-5"
                   >
                     <h2 class="m-0 text-base font-750">
-                      {{ 'About' }}
+                      关于
                     </h2>
                     <p
                       class="mt-4 whitespace-pre-wrap text-sm leading-7 text-[var(--text-color-2)]"
@@ -278,7 +278,7 @@ function displayValue(value: unknown) {
                 <article class="rounded border border-[var(--border-color)] bg-[var(--card-color)]">
                   <div class="border-b border-[var(--border-color)] px-5 py-4">
                     <h2 class="m-0 text-base font-750">
-                      {{ 'Recent' }}
+                      最近动态
                     </h2>
                   </div>
                   <div class="divide-y divide-[var(--border-color)]">
@@ -312,13 +312,13 @@ function displayValue(value: unknown) {
                   class="rounded border border-[var(--border-color)] bg-[var(--card-color)] p-5"
                 >
                   <h2 class="m-0 text-base font-750">
-                    {{ 'Public Profile' }}
+                    公开资料
                   </h2>
                   <NDescriptions class="mt-4" :column="1" label-placement="left" size="small">
-                    <NDescriptionsItem :label="'Nickname'">
+                    <NDescriptionsItem :label="'昵称'">
                       {{ displayValue(state.profile?.nickname) }}
                     </NDescriptionsItem>
-                    <NDescriptionsItem :label="'Level'">
+                    <NDescriptionsItem :label="'等级'">
                       {{ displayValue(state.profile?.level) }}
                     </NDescriptionsItem>
                   </NDescriptions>
@@ -328,7 +328,7 @@ function displayValue(value: unknown) {
                   class="rounded border border-[var(--border-color)] bg-[var(--card-color)] p-5"
                 >
                   <h2 class="m-0 text-base font-750">
-                    {{ 'About' }}
+                    关于
                   </h2>
                   <p class="mt-4 whitespace-pre-wrap text-sm leading-7 text-[var(--text-color-2)]">
                     {{ bio }}
@@ -338,12 +338,12 @@ function displayValue(value: unknown) {
             </div>
           </NTabPane>
 
-          <NTabPane name="videos" :tab="'Videos'">
+          <NTabPane name="videos" :tab="'视频'">
             <div class="px-4 py-4 sm:px-6 lg:px-8">
               <article class="rounded border border-[var(--border-color)] bg-[var(--card-color)]">
                 <div class="border-b border-[var(--border-color)] px-5 py-4">
                   <h2 class="m-0 text-base font-750">
-                    {{ 'Videos' }}
+                    视频
                   </h2>
                 </div>
                 <div class="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -373,12 +373,12 @@ function displayValue(value: unknown) {
             </div>
           </NTabPane>
 
-          <NTabPane name="collections" :tab="'Collections'">
+          <NTabPane name="collections" :tab="'合集'">
             <div class="px-4 py-4 sm:px-6 lg:px-8">
               <article class="rounded border border-[var(--border-color)] bg-[var(--card-color)]">
                 <div class="border-b border-[var(--border-color)] px-5 py-4">
                   <h2 class="m-0 text-base font-750">
-                    {{ 'Collections' }}
+                    合集
                   </h2>
                 </div>
                 <div class="grid gap-4 p-5 md:grid-cols-2">
@@ -415,12 +415,12 @@ function displayValue(value: unknown) {
             </div>
           </NTabPane>
 
-          <NTabPane name="likes" :tab="'Likes'">
+          <NTabPane name="likes" :tab="'喜欢'">
             <div class="px-4 py-4 sm:px-6 lg:px-8">
               <article class="rounded border border-[var(--border-color)] bg-[var(--card-color)]">
                 <div class="border-b border-[var(--border-color)] px-5 py-4">
                   <h2 class="m-0 text-base font-750">
-                    {{ 'Likes' }}
+                    喜欢
                   </h2>
                 </div>
                 <div class="grid gap-3 p-5 md:grid-cols-3">

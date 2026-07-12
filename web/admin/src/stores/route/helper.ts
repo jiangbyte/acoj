@@ -17,7 +17,7 @@ const innerAppRoutes: RouteRecordRaw[] = [
     component: () => import('@/views/usercenter/index.vue'),
     meta: {
       code: 'usercenter',
-      name: 'User Center',
+      name: '个人中心',
       resource_type: 'PAGE',
       is_visible: false,
       is_cache: false,
@@ -34,7 +34,7 @@ const innerAppRoutes: RouteRecordRaw[] = [
  * 这里通过 import.meta.glob 建立组件映射，再把 MENU/PAGE 资源转换成真实组件路由。
  */
 export function createRoutes(resources: AppRoute.RowRoute[]): RouteRecordRaw {
-  let resultRoutes = standardizedRoutes(resources)
+  let resultRoutes = standardizeRoutes(resources)
 
   // Vite 会在构建时静态分析 glob，只有存在于 src/views 下的页面组件能被加载。
   const modules = import.meta.glob('@/views/**/*.vue')
@@ -70,7 +70,7 @@ export function createRoutes(resources: AppRoute.RowRoute[]): RouteRecordRaw {
  * 菜单只展示 is_visible=true 的资源；隐藏页面仍可生成路由，但不会出现在侧边菜单中。
  */
 export function createMenus(resources: AppRoute.RowRoute[]): AppRoute.MenuOption[] {
-  const visibleMenus = standardizedRoutes(resources).filter((route) => route.meta.is_visible)
+  const visibleMenus = standardizeRoutes(resources).filter((route) => route.meta.is_visible)
   return arrayToTree(transformRoutesToMenus(visibleMenus))
 }
 
@@ -147,7 +147,7 @@ export function isClickableResource(resourceType?: AppRoute.ResourceType) {
  *
  * route.name 使用 module_id + code，meta 保留完整 SysResource 字段，避免跨模块同 code 冲突。
  */
-function standardizedRoutes(resources: AppRoute.RowRoute[]) {
+function standardizeRoutes(resources: AppRoute.RowRoute[]) {
   return resources.filter(isRouteResource).map((resource) => {
     const route: AppRoute.Route = {
       id: resource.id,

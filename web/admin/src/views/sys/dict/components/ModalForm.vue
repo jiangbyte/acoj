@@ -33,7 +33,7 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? 'Edit Dict' : 'Add Dict',
+  state.dataId ? '编辑字典' : '新增字典',
 )
 const parentTreeOptions = computed(() =>
   buildTreeOptions(
@@ -44,23 +44,23 @@ const parentTreeOptions = computed(() =>
 
 const rules = computed<FormRules>(() => ({
   code: [
-    createRequiredRule('Code', 'input'),
+    createRequiredRule('编码', 'input'),
     {
       pattern: /^[A-Z0-9_]+$/,
-      message: 'Code can only contain uppercase letters, numbers, and underscores',
+      message: '编码只能包含大写字母、数字和下划线',
       trigger: ['input', 'blur'],
     },
   ],
-  label: createRequiredRule('Label', 'input'),
+  label: createRequiredRule('标签', 'input'),
   color: [
     {
       validator: (_rule, value) => isHexColor(value),
-      message: 'Please select a valid hex color',
+      message: '请选择有效的十六进制颜色',
       trigger: ['change', 'blur'],
     },
   ],
-  category: createRequiredRule('Category', 'change'),
-  status: createRequiredRule('Status', 'change'),
+  category: createRequiredRule('分类', 'change'),
+  status: createRequiredRule('状态', 'change'),
 }))
 
 async function openModal(id?: string, options?: { category?: string; parentId?: string | null }) {
@@ -119,10 +119,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success('Updated successfully')
+      window.$message.success('更新成功')
     } else {
       await dictApi.create(payload)
-      window.$message.success('Created successfully')
+      window.$message.success('创建成功')
     }
 
     emit('saved')
@@ -225,7 +225,7 @@ defineExpose({
         label-width="100"
         :disabled="state.loading || state.submitLoading"
       >
-        <NFormItem :label="'Category'" path="category">
+        <NFormItem :label="'分类'" path="category">
           <DictSelect
             v-model="state.formModel.category"
             dict-code="SYS_BIZ_CATEGORY"
@@ -233,36 +233,36 @@ defineExpose({
             @change="updateCategory"
           />
         </NFormItem>
-        <NFormItem :label="'Parent Dict'" path="parent_id">
+        <NFormItem :label="'父级字典'" path="parent_id">
           <NTreeSelect
             v-model:value="state.formModel.parent_id"
             clearable
             filterable
             :options="parentTreeOptions"
-            :placeholder="'Top Level'"
+            :placeholder="'Top 等级'"
             key-field="key"
             label-field="label"
           />
         </NFormItem>
-        <NFormItem :label="'Code'" path="code">
+        <NFormItem :label="'编码'" path="code">
           <NInput :value="state.formModel.code" @update:value="updateCode" />
         </NFormItem>
-        <NFormItem :label="'Label'" path="label">
+        <NFormItem :label="'标签'" path="label">
           <NInput v-model:value="state.formModel.label" />
         </NFormItem>
-        <NFormItem :label="'Value'" path="value">
+        <NFormItem :label="'值'" path="value">
           <NInput v-model:value="state.formModel.value" />
         </NFormItem>
-        <NFormItem :label="'Color'" path="color">
+        <NFormItem :label="'颜色'" path="color">
           <CommonColorPicker
             v-model="state.formModel.color"
             :disabled="state.loading || state.submitLoading"
           />
         </NFormItem>
-        <NFormItem :label="'Sort'" path="sort">
+        <NFormItem :label="'排序'" path="sort">
           <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
         </NFormItem>
-        <NFormItem :label="'Status'" path="status">
+        <NFormItem :label="'状态'" path="status">
           <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
         </NFormItem>
       </NForm>
@@ -271,10 +271,10 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ 'Cancel' }}
+          取消
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ 'Confirm' }}
+          确认
         </NButton>
       </NSpace>
     </template>

@@ -1,4 +1,41 @@
-import { dictTreeState } from '@/stores/dict'
+import { shallowRef } from 'vue'
+
+const DICT_TREE_STORAGE_KEY = 'hei:admin-uniapp:dict-tree'
+
+export const dictTreeState = shallowRef<any[]>([])
+
+let refreshDictPromise: Promise<void> | null = null
+
+export function syncDictTree() {
+  dictTreeState.value = readStoredDictTree()
+  return dictTreeState.value
+}
+
+export function isDictLoaded() {
+  return dictTreeState.value.length > 0 || syncDictTree().length > 0
+}
+
+export async function refreshDict() {
+  if (refreshDictPromise) {
+    return refreshDictPromise
+  }
+
+  refreshDictPromise = (async () => {
+    try {
+      const dictApi = await import('@/api/sys/dict')
+      setDictTree(await dictApi.tree())
+    } finally {
+      refreshDictPromise = null
+    }
+  })()
+
+  return refreshDictPromise
+}
+
+export function clearDict() {
+  dictTreeState.value = []
+  uni.removeStorageSync(DICT_TREE_STORAGE_KEY)
+}
 
 export function dictDataAll() {
   return dictTreeState.value
@@ -97,3 +134,24 @@ function findNodeByValue(node: any, value?: string | number | null): any {
 
   return undefined
 }
+
+function setDictTree(tree: any[]) {
+  dictTreeState.value = Array.isArray(tree) ? tree : []
+  uni.setStorageSync(DICT_TREE_STORAGE_KEY, JSON.stringify(dictTreeState.value))
+}
+
+function readStoredDictTree() {
+  const raw = uni.getStorageSync(DICT_TREE_STORAGE_KEY)
+  if (!raw) {
+    return []
+  }
+  try {
+    const tree = JSON.parse(String(raw))
+    return Array.isArray(tree) ? tree : []
+  } catch {
+    uni.removeStorageSync(DICT_TREE_STORAGE_KEY)
+    return []
+  }
+}
+
+syncDictTree()

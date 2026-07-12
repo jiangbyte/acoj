@@ -53,12 +53,12 @@ const avatarUrl = computed(() => resolveFileUrl(state.profileForm.avatar))
 const displayName = computed(() => state.me?.nickname || '-')
 const contactText = computed(() => {
   const parts = [profile.value.phone, profile.value.email].filter(Boolean)
-  return parts.length ? parts.join(' / ') : 'Not set'
+  return parts.length ? parts.join(' / ') : '未设置'
 })
 const bindConfirmTitle = computed(() =>
   state.bindConfirm.type === 'phone'
-    ? 'Confirm Phone Update'
-    : 'Confirm Email Update',
+    ? '确认更新手机号'
+    : '确认更新邮箱',
 )
 const emailRules = computed<FormRules>(() => ({
   email: [
@@ -107,7 +107,7 @@ async function saveProfile() {
       bio: state.profileForm.bio || null,
     })
     await refreshMe()
-    window.$message.success('Saved')
+    window.$message.success('保存成功')
   } finally {
     state.savingProfile = false
   }
@@ -115,7 +115,7 @@ async function saveProfile() {
 
 async function savePassword() {
   if (state.passwordForm.new_password !== state.passwordForm.confirm_password) {
-    window.$message.warning('The new passwords do not match')
+    window.$message.warning('两次输入的新密码不一致')
     return
   }
   state.savingPassword = true
@@ -132,7 +132,7 @@ async function savePassword() {
     state.passwordForm.old_password = ''
     state.passwordForm.new_password = ''
     state.passwordForm.confirm_password = ''
-    window.$message.success('Password updated')
+    window.$message.success('密码已更新')
   } finally {
     state.savingPassword = false
   }
@@ -155,11 +155,11 @@ function validateEmailForm(_rule: FormItemRule, value: string) {
   const text = String(value ?? '').trim()
   if (!text) {
     return state.emailForm.email_login_enabled
-      ? new Error('Please enter email')
+      ? new Error('请输入邮箱')
       : true
   }
   if (!isValidEmail(text)) {
-    return new Error('Please enter a valid email')
+    return new Error('请输入有效邮箱')
   }
   return true
 }
@@ -172,7 +172,7 @@ function openBindConfirm(type: 'phone' | 'email') {
 
 async function confirmBind() {
   if (!state.bindConfirm.password) {
-    window.$message.warning('Please enter the current password')
+    window.$message.warning('请输入当前密码')
     return
   }
   const isPhone = state.bindConfirm.type === 'phone'
@@ -199,7 +199,7 @@ async function confirmBind() {
     state.bindConfirm.show = false
     state.bindConfirm.password = ''
     await refreshMe()
-    window.$message.success('Binding updated')
+    window.$message.success('绑定已更新')
   } finally {
     state.bindConfirm.loading = false
     state.savingPhone = false
@@ -214,7 +214,7 @@ async function refreshMe() {
 }
 
 function displayValue(value: unknown) {
-  return value ? String(value) : 'Not set'
+  return value ? String(value) : '未设置'
 }
 </script>
 
@@ -240,7 +240,7 @@ function displayValue(value: unknown) {
               <button
                 class="avatar-trigger"
                 type="button"
-                :title="'Change Avatar'"
+                :title="'更换头像'"
                 @click="state.avatarModalShow = true"
               >
                 <NAvatar
@@ -265,10 +265,10 @@ function displayValue(value: unknown) {
             <NDivider />
 
             <NDescriptions :column="1" label-placement="left" size="small">
-              <NDescriptionsItem :label="'Contact'">
+              <NDescriptionsItem :label="'联系方式'">
                 {{ contactText }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Level'">
+              <NDescriptionsItem :label="'等级'">
                 {{ displayValue(profile.level) }}
               </NDescriptionsItem>
             </NDescriptions>
@@ -276,7 +276,7 @@ function displayValue(value: unknown) {
             <NDivider />
 
             <div class="text-sm font-medium">
-              {{ 'Signature' }}
+              签名
             </div>
             <div
               class="mt-2 min-h-18 rounded border border-[var(--border-color)] p-3 text-sm text-[var(--text-color-3)]"
@@ -284,7 +284,7 @@ function displayValue(value: unknown) {
               {{ displayValue(profile.signature) }}
             </div>
             <div class="mt-4 text-sm font-medium">
-              {{ 'Bio' }}
+              简介
             </div>
             <div
               class="mt-2 min-h-22 rounded border border-[var(--border-color)] p-3 text-sm text-[var(--text-color-3)]"
@@ -307,48 +307,48 @@ function displayValue(value: unknown) {
               animated
               class="user-center-tabs w-full min-w-0"
             >
-              <NTabPane name="basic_info" :tab="'Basic Info'">
+              <NTabPane name="basic_info" :tab="'基本信息'">
                 <NForm class="user-center-form w-full min-w-0" label-placement="top">
-                  <NFormItem :label="'Account'">
+                  <NFormItem :label="'账号'">
                     <NInput :value="state.me?.account" disabled />
                   </NFormItem>
-                  <NFormItem :label="'Name'">
+                  <NFormItem :label="'名称'">
                     <NInput v-model:value="state.profileForm.name" />
                   </NFormItem>
-                  <NFormItem :label="'Nickname'">
+                  <NFormItem :label="'昵称'">
                     <NInput v-model:value="state.profileForm.nickname" />
                   </NFormItem>
-                  <NFormItem :label="'Signature'">
+                  <NFormItem :label="'签名'">
                     <NInput v-model:value="state.profileForm.signature" type="textarea" />
                   </NFormItem>
-                  <NFormItem :label="'Bio'">
+                  <NFormItem :label="'简介'">
                     <NInput v-model:value="state.profileForm.bio" type="textarea" />
                   </NFormItem>
                   <NFormItem :show-label="false">
                     <NButton type="primary" :loading="state.savingProfile" @click="saveProfile">
-                      {{ 'Save' }}
+                      保存
                     </NButton>
                   </NFormItem>
                 </NForm>
               </NTabPane>
 
-              <NTabPane name="password" :tab="'Password'">
+              <NTabPane name="password" :tab="'密码'">
                 <NForm class="user-center-form w-full min-w-0" label-placement="top">
-                  <NFormItem :label="'Old Password'">
+                  <NFormItem :label="'旧密码'">
                     <NInput
                       v-model:value="state.passwordForm.old_password"
                       type="password"
                       show-password-on="click"
                     />
                   </NFormItem>
-                  <NFormItem :label="'New Password'">
+                  <NFormItem :label="'新密码'">
                     <NInput
                       v-model:value="state.passwordForm.new_password"
                       type="password"
                       show-password-on="click"
                     />
                   </NFormItem>
-                  <NFormItem :label="'Confirm Password'">
+                  <NFormItem :label="'确认密码'">
                     <NInput
                       v-model:value="state.passwordForm.confirm_password"
                       type="password"
@@ -357,29 +357,29 @@ function displayValue(value: unknown) {
                   </NFormItem>
                   <NFormItem :show-label="false">
                     <NButton type="primary" :loading="state.savingPassword" @click="savePassword">
-                      {{ 'Update Password' }}
+                      修改密码
                     </NButton>
                   </NFormItem>
                 </NForm>
               </NTabPane>
 
-              <NTabPane name="phone" :tab="'Phone'">
+              <NTabPane name="phone" :tab="'手机号'">
                 <NForm class="user-center-form w-full min-w-0" label-placement="top">
-                  <NFormItem :label="'Phone'">
+                  <NFormItem :label="'手机号'">
                     <NInput v-model:value="state.phoneForm.phone" />
                   </NFormItem>
-                  <NFormItem :label="'Enable Phone Login'">
+                  <NFormItem :label="'启用手机号登录'">
                     <NSwitch v-model:value="state.phoneForm.phone_login_enabled" />
                   </NFormItem>
                   <NFormItem :show-label="false">
                     <NButton type="primary" :loading="state.savingPhone" @click="savePhone">
-                      {{ 'Update Phone' }}
+                      修改手机号
                     </NButton>
                   </NFormItem>
                 </NForm>
               </NTabPane>
 
-              <NTabPane name="email" :tab="'Email'">
+              <NTabPane name="email" :tab="'邮箱'">
                 <NForm
                   ref="emailFormRef"
                   class="user-center-form w-full min-w-0"
@@ -387,15 +387,15 @@ function displayValue(value: unknown) {
                   :rules="emailRules"
                   label-placement="top"
                 >
-                  <NFormItem :label="'Email'" path="email">
+                  <NFormItem :label="'邮箱'" path="email">
                     <NInput v-model:value="state.emailForm.email" />
                   </NFormItem>
-                  <NFormItem :label="'Enable Email Login'">
+                  <NFormItem :label="'启用邮箱登录'">
                     <NSwitch v-model:value="state.emailForm.email_login_enabled" />
                   </NFormItem>
                   <NFormItem :show-label="false">
                     <NButton type="primary" :loading="state.savingEmail" @click="saveEmail">
-                      {{ 'Update Email' }}
+                      修改邮箱
                     </NButton>
                   </NFormItem>
                 </NForm>
@@ -415,12 +415,12 @@ function displayValue(value: unknown) {
       :mask-closable="false"
     >
       <NForm label-placement="top">
-        <NFormItem :label="'Current Password'">
+        <NFormItem :label="'当前密码'">
           <NInput
             v-model:value="state.bindConfirm.password"
             type="password"
             show-password-on="click"
-            :placeholder="'Enter current password'"
+            :placeholder="'请输入当前密码'"
             @keydown.enter="confirmBind"
           />
         </NFormItem>
@@ -428,10 +428,10 @@ function displayValue(value: unknown) {
       <template #footer>
         <NSpace justify="end">
           <NButton @click="state.bindConfirm.show = false">
-            {{ 'Cancel' }}
+            取消
           </NButton>
           <NButton type="primary" :loading="state.bindConfirm.loading" @click="confirmBind">
-            {{ 'Confirm' }}
+            确认
           </NButton>
         </NSpace>
       </template>

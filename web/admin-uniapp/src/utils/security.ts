@@ -41,7 +41,7 @@ async function encryptText(publicKey: RsaPublicKey, value: string) {
 async function oaepEncode(message: Uint8Array, keyLength: number) {
   const hashLength = 32
   if (message.length > keyLength - 2 * hashLength - 2) {
-    throw new Error('Password is too long to encrypt')
+    throw new Error('密码过长，无法加密')
   }
 
   const labelHash = sha256(new Uint8Array())
@@ -88,7 +88,7 @@ function readDerElement(
 ) {
   const tag = bytes[offset]
   if (tag !== expectedTag) {
-    throw new Error('Invalid public key')
+    throw new Error('公钥无效')
   }
   const lengthByte = bytes[offset + 1]
   let length = lengthByte
@@ -381,7 +381,7 @@ async function randomBytes(length: number) {
     })
   }
 
-  throw new Error('Secure random generator is unavailable')
+  throw new Error('安全随机数生成器不可用')
 }
 
 function base64ToBytes(value: string) {

@@ -18,13 +18,13 @@ const state = reactive({
 
 const modalTitle = computed(() =>
   state.parent?.name
-    ? `${'Button Permissions'} - ${state.parent.name}`
-    : 'Button Permissions',
+    ? `${'按钮权限'} - ${state.parent.name}`
+    : '按钮权限',
 )
 
 const columns = computed<DataTableColumns<any>>(() => [
   {
-    title: 'Resource Name',
+    title: '资源名称',
     key: 'name',
     minWidth: 160,
     render: (row) => row.name,
@@ -33,7 +33,7 @@ const columns = computed<DataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Resource Code',
+    title: '资源编码',
     key: 'code',
     minWidth: 160,
     ellipsis: {
@@ -41,7 +41,7 @@ const columns = computed<DataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Permission Key',
+    title: '权限标识',
     key: 'permission_key',
     minWidth: 220,
     ellipsis: {
@@ -50,18 +50,18 @@ const columns = computed<DataTableColumns<any>>(() => [
     render: (row) => row.permission_key || '-',
   },
   {
-    title: 'Data Scope',
+    title: '数据范围',
     key: 'data_scope',
     width: 140,
     render: (row) => dictTypeData('DATA_SCOPE', row.data_scope) || row.data_scope || '-',
   },
   {
-    title: 'Sort',
+    title: '排序',
     key: 'sort',
     width: 90,
   },
   {
-    title: 'Status',
+    title: '状态',
     key: 'status',
     width: 110,
     render: (row) => (
@@ -71,7 +71,7 @@ const columns = computed<DataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Operation',
+    title: '操作',
     key: 'actions',
     width: 130,
     fixed: 'right',
@@ -127,19 +127,19 @@ function openForm(row?: any) {
 
 function confirmDelete(id: string) {
   window.$dialog.warning({
-    title: 'Delete',
+    title: '删除',
     draggable: true,
     maskClosable: false,
-    content: 'Delete this button?',
-    positiveText: 'Confirm',
-    negativeText: 'Cancel',
+    content: '删除该按钮?',
+    positiveText: '确认',
+    negativeText: '取消',
     onPositiveClick: () => deleteButton(id),
   })
 }
 
 async function deleteButton(id: string) {
   await resourceApi.buttonRemove({ ids: [id] })
-  window.$message.success('Deleted successfully')
+  window.$message.success('删除成功')
   await fetchButtons()
 }
 
@@ -165,8 +165,8 @@ defineExpose({
             v-if="hasPermission('iam:resource:create') && hasPermission('iam:resource:grant')"
             type="primary"
             text
-            :title="'Add Button'"
-            :aria-label="'Add Button'"
+            :title="'新增按钮'"
+            :aria-label="'新增按钮'"
             @click="openForm()"
           >
             <template #icon>
@@ -175,7 +175,7 @@ defineExpose({
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchButtons">
+          <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchButtons">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -201,7 +201,7 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ 'Close' }}
+          关闭
         </NButton>
       </NSpace>
     </template>

@@ -20,17 +20,13 @@ from app.modules.iam.account.schema import (
     AccountDeptAssignRequest,
     AccountGrantDeptRequest,
     AccountGrantGroupRequest,
-    AccountGrantPermissionRequest,
     AccountGrantResourceRequest,
     AccountGrantRoleRequest,
     AccountGroupAssignRequest,
     AccountOwnDeptResponse,
     AccountOwnGroupResponse,
-    AccountOwnPermissionDetailResponse,
-    AccountOwnPermissionResponse,
     AccountOwnResourceResponse,
     AccountOwnRoleResponse,
-    AccountPermissionGrantInfo,
     AccountResourceGrantInfo,
     AccountRoleAssignRequest,
     AccountUpdateRequest,
@@ -44,7 +40,6 @@ from app.modules.iam.group.model import SysGroup
 from app.modules.iam.group.repository import GroupRepository
 from app.modules.iam.relation.model import SysIamRelation
 from app.modules.iam.relation.repository import IamRelationRepository
-from app.modules.iam.permission.service import ensure_registered_permissions
 from app.modules.iam.resource.service import ResourceService
 from app.modules.iam.role.model import SysRole
 from app.modules.iam.role.repository import RoleRepository
@@ -199,70 +194,6 @@ class AccountService:
                 SysAccountDeptRelSchema,
                 await self.repo.assign_account_to_dept(payload),
             )
-
-    async def own_permission(
-        self,
-        query: IdQuery,
-        session: SessionPayload | None = None,
-    ) -> AccountOwnPermissionResponse:
-        if session is not None:
-            await self._ensure_accounts_visible(session, "iam:account:ownpermission", [query.id])
-        return AccountOwnPermissionResponse(
-            id=query.id,
-            grant_info_list=[
-                AccountPermissionGrantInfo.model_validate(grant)
-                for grant in await self.relation_repo.list_subject_permission_grants(
-                    GrantSubjectType.ACCOUNT,
-                    query.id,
-                )
-            ],
-        )
-
-    async def grant_permission(
-        self,
-        payload: AccountGrantPermissionRequest,
-        session: SessionPayload | None = None,
-    ) -> None:
-        if session is not None:
-            await self._ensure_accounts_visible(
-                session,
-                "iam:account:grantpermission",
-                [payload.id],
-            )
-            await self._ensure_grant_custom_depts_visible(
-                session,
-                "iam:account:grantpermission",
-                _grant_custom_dept_ids(payload.grant_info_list),
-            )
-        await ensure_registered_permissions(
-            [grant.permission_key for grant in payload.grant_info_list]
-        )
-        async with transactional(self.db):
-            await self.relation_repo.replace_subject_permission_grants(
-                GrantSubjectType.ACCOUNT,
-                payload.id,
-                payload.grant_info_list,
-            )
-        await self._refresh_accounts([payload.id])
-
-    async def own_permission_detail(
-        self,
-        query: IdQuery,
-        session: SessionPayload | None = None,
-    ) -> AccountOwnPermissionDetailResponse:
-        if session is not None:
-            await self._ensure_accounts_visible(session, "iam:account:ownpermission", [query.id])
-        return AccountOwnPermissionDetailResponse(
-            id=query.id,
-            permissions=await ResourceService(self.db).list_permission_registry_items(),
-            grant_info_list=[
-                AccountPermissionGrantInfo.model_validate(grant)
-                for grant in await self.relation_repo.list_subject_permission_grants(
-                    GrantSubjectType.ACCOUNT,
-                    query.id,
-                )
-            ],
-        )
 
     async def own_resource(
         self,
@@ -478,14 +409,6 @@ class AccountService:
         if any(dept_id not in set(visible_dept_ids) for dept_id in unique_ids):
             raise AuthorizationError("Dept is outside current data scope")
 
-    async def _ensure_grant_custom_depts_visible(
-        self,
-        session: SessionPayload,
-        permission_key: str,
-        dept_ids: list[str],
-    ) -> None:
-        await self._ensure_depts_visible(session, permission_key, dept_ids)
-
     def _admin_profile_payload(
         self,
         account_id: str,
@@ -539,11 +462,3 @@ class AccountService:
             return password
         decrypted = (await decrypt_passwords(password_key_id, password))[0]
         return decrypted or ""
-
-
-def _grant_custom_dept_ids(grant_info_list: list) -> list[str]:
-    return [
-        dept_id
-        for grant in grant_info_list
-        for dept_id in grant.custom_scope_dept_ids
-    ]

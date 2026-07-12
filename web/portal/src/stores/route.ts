@@ -48,7 +48,7 @@ interface RouteActions {
  * 授权路由 store。
  *
  * 这里使用 defineStore 显式泛型，是为了避免 Pinia 自动推断深层递归类型时触发
- * “Type instantiation is excessively deep and possibly infinite”。
+ * “类型 instantiation is excessively deep and possibly infinite”。
  */
 export const useRouteStore = defineStore<'route-store', RouteState, RouteGetters, RouteActions>(
   'route-store',

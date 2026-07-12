@@ -1,6 +1,7 @@
 import type { RouteLocationNormalized, Router } from 'vue-router'
-import { useAuthStore, useDictStore, useRouteStore, useTabStore } from '@/stores'
+import { useAuthStore, useRouteStore, useTabStore } from '@/stores'
 import { getRouteTitle } from '@/stores/route'
+import { isDictLoaded, refreshDict, syncDictTree } from '@/utils/dict'
 
 // 浏览器标题后缀，来自应用环境配置。
 const appTitle = import.meta.env.VITE_APP_TITLE
@@ -17,9 +18,8 @@ const loginPath = '/auth/login'
 export function setupRouterGuard(router: Router) {
   router.beforeEach(async (to) => {
     const authStore = useAuthStore()
-    const dictStore = useDictStore()
     const routeStore = useRouteStore()
-    dictStore.syncDictTree()
+    syncDictTree()
 
     // 资源配置了 href 时视为外链。打开新窗口后阻止当前路由继续跳转。
     if (to.meta.href) {
@@ -59,7 +59,7 @@ export function setupRouterGuard(router: Router) {
     // 登录后首次进入系统时注册授权路由。注册完成后，如果当前命中的是 404 兜底路由，需要重新匹配一次目标路径。
     if (!routeStore.isInitAuthRoute) {
       try {
-        await Promise.all([routeStore.initAuthRoute(), dictStore.refreshDict()])
+        await Promise.all([routeStore.initAuthRoute(), refreshDict()])
         if (isFallbackRoute(to)) {
           return {
             path: to.fullPath,
@@ -78,6 +78,10 @@ export function setupRouterGuard(router: Router) {
           },
         }
       }
+    }
+
+    if (!isDictLoaded()) {
+      await refreshDict()
     }
   })
 

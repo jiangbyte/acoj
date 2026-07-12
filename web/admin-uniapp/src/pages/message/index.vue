@@ -30,9 +30,7 @@
         v-for="item in records"
         :key="item.id"
         :title="item.title || item.subject || item.name"
-        :sub-title="
-          item.created_at || item.updated_at || item.publish_at || '-'
-        "
+        :sub-title="formatDateTime(item.created_at || item.updated_at || item.publish_at)"
         @click="openItem(item)"
       >
         <template #body>
@@ -79,11 +77,10 @@ import { onReachBottom, onShow } from '@dcloudio/uni-app'
 import Layout from '@/layouts/index.vue'
 import { messageApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
-import { useDictStore } from '@/stores/dict'
-import { dictTypeData } from '@/utils/dict'
+import { dictTypeData, isDictLoaded, refreshDict } from '@/utils/dict'
+import { formatDateTime } from '@/utils/format'
 
 const authStore = useAuthStore()
-const dictStore = useDictStore()
 const tabs = [{ name: '通知' }, { name: '站内信' }, { name: '待办' }]
 const active = ref(0)
 const summary = ref<Record<string, any>>({})
@@ -107,8 +104,8 @@ onShow(async () => {
     uni.reLaunch({ url: '/pages/auth/login/login' })
     return
   }
-  if (!dictStore.loaded) {
-    await dictStore.refreshDict()
+  if (!isDictLoaded()) {
+    await refreshDict()
   }
   await refresh()
 })
@@ -132,7 +129,7 @@ async function loadPage(append: boolean) {
     const params = { current: current.value, size: 20 }
     const page =
       active.value === 0
-        ? await messageApi.myNotifications(params)
+        ? await messageApi.myNotification(params)
         : active.value === 1
           ? await messageApi.myThreads(params)
           : await messageApi.myTodos(params)
@@ -202,20 +199,20 @@ function buildDetailRows(item: any) {
     return [
       { label: '内容', value: item.content || '-' },
       { label: '级别', value: statusText(item) || '-' },
-      { label: '发布时间', value: item.publish_at || item.created_at || '-' },
+      { label: '发布时间', value: formatDateTime(item.publish_at || item.created_at) },
     ]
   }
   if (active.value === 1) {
     return [
       { label: '最近消息', value: item.last_message?.content || item.content || '-' },
       { label: '未读', value: String(item.unread_count ?? 0) },
-      { label: '时间', value: item.last_message_at || item.updated_at || '-' },
+      { label: '时间', value: formatDateTime(item.last_message_at || item.updated_at) },
     ]
   }
   return [
     { label: '内容', value: item.content || '-' },
     { label: '状态', value: statusText(item) || '-' },
-    { label: '截止时间', value: item.due_at || '-' },
+    { label: '截止时间', value: formatDateTime(item.due_at) },
   ]
 }
 </script>

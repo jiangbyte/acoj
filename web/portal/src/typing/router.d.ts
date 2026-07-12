@@ -41,6 +41,9 @@ declare module 'vue-router' {
     // Iconify 图标名。
     icon?: string | null
 
+    // 资源颜色。
+    color?: string | null
+
     // 外链地址；存在 href 时路由守卫会打开新窗口并阻止当前页面跳转。
     href?: string | null
 
@@ -98,6 +101,7 @@ declare global {
       component?: string | null
       redirect?: string | null
       icon?: string | null
+      color?: string | null
       href?: string | null
       sort: number
       is_visible: boolean
@@ -136,7 +140,7 @@ declare global {
      * 轻量菜单类型。
      *
      * 不直接使用 naive-ui 的 MenuOption，是为了避免 Pinia store state 展开过深类型，
-     * 触发 Type instantiation is excessively deep and possibly infinite。
+     * 触发 类型 instantiation is excessively deep and possibly infinite。
      */
     interface MenuOption {
       // 菜单唯一键，当前使用资源 path，便于和路由路径同步高亮。

@@ -3,21 +3,21 @@ import { computed } from 'vue'
 
 
 const stats = computed(() => [
-  { label: 'Routes', value: '1' },
-  { label: 'Menu Pages', value: 'Visible pages' },
-  { label: 'Cached Pages', value: 'OFF' },
+  { label: '路由', value: '1' },
+  { label: '菜单页面', value: '可见页面' },
+  { label: '缓存页面', value: '关闭' },
 ])
 
 const actions = computed(() => [
   {
     icon: 'icon-park-outline:connection-point',
-    title: 'Route Initialization',
-    text: 'Load the static route table',
+    title: '路由初始化',
+    text: '加载静态路由表',
   },
   {
     icon: 'icon-park-outline:tree-diagram',
-    title: 'Menu Generation',
-    text: 'Generate sidebar menus from RowRoute',
+    title: '菜单生成',
+    text: '根据路由配置生成侧边栏菜单',
   },
 ])
 </script>
@@ -29,11 +29,11 @@ const actions = computed(() => [
         class="mb-4 inline-flex items-center gap-2 rounded-2 border border-[var(--border-color)] bg-[var(--card-color)] px-3 py-1 text-sm font-600 text-[var(--primary-color)]"
       >
         <NovaIcon icon="icon-park-outline:experiment-one" />
-        {{ 'Static example' }}
+        静态示例
       </div>
-      <h1 class="text-3xl font-800 sm:text-4xl">{{ 'Demo' }}</h1>
+      <h1 class="text-3xl font-800 sm:text-4xl">示例</h1>
       <p class="mt-3 max-w-160 text-base leading-7 text-[var(--text-color-2)]">
-        {{ 'Static route, menu, and tab examples' }}
+        静态路由、菜单和标签页示例
       </p>
     </div>
 

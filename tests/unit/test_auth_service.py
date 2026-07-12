@@ -12,7 +12,6 @@ from app.modules.auth.schema import LoginPayload
 from app.modules.auth.service import AuthService
 from app.modules.iam.enums import (
     AccountIdentityType,
-    GrantEffect,
     GrantSubjectType,
     ResourceType,
     RoleScopeType,
@@ -114,7 +113,7 @@ async def test_portal_account_cannot_login_admin_account_type(db_session):
         )
 
 
-async def test_permission_grant_priority_group_over_role_and_account_deny(db_session):
+async def test_legacy_subject_permission_grants_are_ignored(db_session):
     account = SysAccount(
         password_hash=hash_password("Admin@123456"),
         account_type=AccountType.ADMIN.value,
@@ -148,32 +147,14 @@ async def test_permission_grant_priority_group_over_role_and_account_deny(db_ses
                 data_scope=DataScope.CUSTOM.value,
                 custom_scope_dept_ids=["dept_2"],
             ),
+            subject_permission_grant(
+                GrantSubjectType.ACCOUNT,
+                account.id,
+                "sys:file:page",
+                data_scope=DataScope.ALL.value,
+                custom_scope_dept_ids=[],
+            ),
         ]
-    )
-    await db_session.commit()
-
-    authorization = await IamRelationRepository(db_session).get_account_authorization(account.id)
-    assert authorization["permission_grants"] == [
-        {
-            "permission_key": "sys:file:page",
-            "data_scope": DataScope.CUSTOM.value,
-            "custom_scope_dept_ids": ["dept_2"],
-            "effect": GrantEffect.ALLOW.value,
-            "source_type": GrantSubjectType.GROUP.value,
-            "source_id": group.id,
-        }
-    ]
-    assert authorization["permission_keys"] == ["sys:file:page"]
-
-    db_session.add(
-        subject_permission_grant(
-            GrantSubjectType.ACCOUNT,
-            account.id,
-            "sys:file:page",
-            data_scope=DataScope.ALL.value,
-            custom_scope_dept_ids=[],
-            effect=GrantEffect.DENY.value,
-        )
     )
     await db_session.commit()
 

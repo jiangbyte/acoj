@@ -212,7 +212,7 @@ export const fallbackDicts: Record<string, OptionItem[]> = {
   ],
 }
 
-const baseActions = (
+const baseAction = (
   resource: string,
   grants: GrantActionConfig[] = [],
   extra: RowActionConfig[] = []
@@ -345,7 +345,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
       'created_at',
       'updated_at',
     ].map((prop) => ({ prop, label: detailLabel(prop) })),
-    actions: baseActions('iam:account', [
+    actions: baseAction('iam:account', [
       {
         key: 'grantRole',
         label: '角色',
@@ -392,16 +392,6 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
         ownApi: '/sys/accounts/own-resource',
         grantApi: '/sys/accounts/grant-resource',
         idField: 'resource_ids',
-      },
-      {
-        key: 'grantPermission',
-        label: '权限',
-        icon: 'lock',
-        permission: 'iam:account:grantpermission',
-        mode: 'permission',
-        ownApi: '/sys/accounts/own-permission-detail',
-        grantApi: '/sys/accounts/grant-permission',
-        idField: 'permission_keys',
       },
     ]),
   },
@@ -481,7 +471,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
       'created_at',
       'updated_at',
     ].map((prop) => ({ prop, label: detailLabel(prop) })),
-    actions: baseActions('iam:role', [
+    actions: baseAction('iam:role', [
       {
         key: 'grantUser',
         label: '用户',
@@ -504,16 +494,6 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
         ownApi: '/sys/roles/own-resource',
         grantApi: '/sys/roles/grant-resource',
         idField: 'resource_ids',
-      },
-      {
-        key: 'grantPermission',
-        label: '权限',
-        icon: 'lock',
-        permission: 'iam:role:grantpermission',
-        mode: 'permission',
-        ownApi: '/sys/roles/own-permission-detail',
-        grantApi: '/sys/roles/grant-permission',
-        idField: 'permission_keys',
       },
     ]),
   },
@@ -597,7 +577,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
       'created_at',
       'updated_at',
     ].map((prop) => ({ prop, label: detailLabel(prop) })),
-    actions: baseActions('iam:group', [
+    actions: baseAction('iam:group', [
       {
         key: 'grantUser',
         label: '用户',
@@ -633,16 +613,6 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
         ownApi: '/sys/groups/own-resource',
         grantApi: '/sys/groups/grant-resource',
         idField: 'resource_ids',
-      },
-      {
-        key: 'grantPermission',
-        label: '权限',
-        icon: 'lock',
-        permission: 'iam:group:grantpermission',
-        mode: 'permission',
-        ownApi: '/sys/groups/own-permission-detail',
-        grantApi: '/sys/groups/grant-permission',
-        idField: 'permission_keys',
       },
     ]),
   },
@@ -694,7 +664,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
     primaryField: 'name',
     descriptionField: 'code',
     statusField: 'status',
-    cardFields: ['resource_type', 'module_id_name', 'path', 'sort'],
+    cardFields: ['resource_type', 'module_id_name', 'path', 'color', 'sort'],
     searchFields: [
       { prop: 'code', label: '资源编码' },
       { prop: 'name', label: '资源名称' },
@@ -733,6 +703,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
       { prop: 'component', label: '组件' },
       { prop: 'redirect', label: '重定向' },
       { prop: 'icon', label: '图标' },
+      { prop: 'color', label: '颜色' },
       { prop: 'href', label: '外链' },
       { prop: 'sort', label: '排序', type: 'number', defaultValue: 99 },
       {
@@ -773,6 +744,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
       'component',
       'redirect',
       'icon',
+      'color',
       'href',
       'sort',
       'is_visible',
@@ -783,7 +755,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
       'created_at',
       'updated_at',
     ].map((prop) => ({ prop, label: detailLabel(prop) })),
-    actions: baseActions(
+    actions: baseAction(
       'iam:resource',
       [],
       [
@@ -863,7 +835,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
       'created_at',
       'updated_at',
     ].map((prop) => ({ prop, label: detailLabel(prop) })),
-    actions: baseActions('iam:resourcemodule'),
+    actions: baseAction('iam:resourcemodule'),
   },
   dict: {
     key: 'dict',
@@ -929,7 +901,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
       'created_at',
       'updated_at',
     ].map((prop) => ({ prop, label: detailLabel(prop) })),
-    actions: baseActions('sys:dict'),
+    actions: baseAction('sys:dict'),
   },
   banner: {
     key: 'banner',
@@ -1037,7 +1009,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
       'created_at',
       'updated_at',
     ].map((prop) => ({ prop, label: detailLabel(prop) })),
-    actions: baseActions('sys:banner'),
+    actions: baseAction('sys:banner'),
   },
   file: {
     key: 'file',
@@ -1069,7 +1041,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
       'created_at',
       'updated_at',
     ].map((prop) => ({ prop, label: detailLabel(prop) })),
-    actions: baseActions('sys:file').filter(
+    actions: baseAction('sys:file').filter(
       (item) => item.type !== 'edit' || item.permission === 'sys:file:update'
     ),
   },
@@ -1189,7 +1161,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
       'created_at',
       'updated_at',
     ].map((prop) => ({ prop, label: detailLabel(prop) })),
-    actions: baseActions(
+    actions: baseAction(
       'message:notification',
       [],
       [
@@ -1308,7 +1280,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
       'created_at',
       'updated_at',
     ].map((prop) => ({ prop, label: detailLabel(prop) })),
-    actions: baseActions('message:group'),
+    actions: baseAction('message:group'),
   },
   todo: {
     key: 'todo',
@@ -1386,7 +1358,7 @@ export const resourceConfigs: Record<ResourceKey, ResourceConfig> = {
       'created_at',
       'updated_at',
     ].map((prop) => ({ prop, label: detailLabel(prop) })),
-    actions: baseActions(
+    actions: baseAction(
       'message:todo',
       [],
       [
@@ -1509,7 +1481,7 @@ function simpleOrgConfig(
       'created_at',
       'updated_at',
     ].map((prop) => ({ prop, label: detailLabel(prop) })),
-    actions: baseActions(permissionPrefix),
+    actions: baseAction(permissionPrefix),
   }
 }
 
@@ -1535,7 +1507,7 @@ export const adminResourceApis = {
   messageThread: {
     page: messageApi.threadPage,
     detail: (params: any) =>
-      messageApi.threadMessages({ thread_id: params.id, current: 1, size: 20 }),
+      messageApi.threadMessage({ thread_id: params.id, current: 1, size: 20 }),
     create: messageApi.sendSystemMessage,
   },
   messageGroup: {

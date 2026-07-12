@@ -1,7 +1,6 @@
 <script setup lang="tsx">
 import type { DataTableColumns } from 'naive-ui'
 import { roleApi } from '@/api'
-import { } from '@/utils'
 import { NCheckbox } from 'naive-ui'
 import { computed, reactive } from 'vue'
 
@@ -22,8 +21,8 @@ const state = reactive({
 
 const modalTitle = computed(() =>
   state.subject?.name
-    ? `${state.title || 'Grant Resources'} - ${state.subject.name}`
-    : state.title || 'Grant Resources',
+    ? `${state.title || '分配资源'} - ${state.subject.name}`
+    : state.title || '分配资源',
 )
 const activeModule = computed(
   () => state.modules.find((item) => item.id === state.activeModuleId) ?? state.modules[0],
@@ -42,7 +41,7 @@ const firstShowMap = computed<Record<string, number[]>>(() => {
 })
 const columns = computed<DataTableColumns<any>>(() => [
   {
-    title: 'Parent Resource',
+    title: '父级资源',
     key: 'parent_id_name',
     fixed: 'left',
     width: 180,
@@ -60,7 +59,7 @@ const columns = computed<DataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Menu',
+    title: '菜单',
     key: 'title',
     width: 220,
     render: (row) => (
@@ -73,7 +72,7 @@ const columns = computed<DataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Button Grant',
+    title: '按钮授权',
     key: 'button',
     minWidth: 520,
     render: (row) => {
@@ -132,7 +131,7 @@ async function submitGrant() {
       id: state.subject.id,
       grant_info_list: convertData(),
     })
-    window.$message.success('Grant saved successfully')
+    window.$message.success('授权保存成功')
     closeModal()
     emit('saved')
   } finally {
@@ -230,7 +229,7 @@ defineExpose({
   >
     <NDrawerContent :title="modalTitle" closable :native-scrollbar="false">
       <NAlert type="warning" :bordered="false" class="mb-10px">
-        {{ 'Non-super-admin roles cannot be granted system module menu resources.' }}
+        非超级管理员角色不能授权系统模块菜单资源。
       </NAlert>
       <NSpin :show="state.loading">
         <NRadioGroup v-model:value="state.activeModuleId" size="small" class="mb-10px">
@@ -257,10 +256,10 @@ defineExpose({
       <template #footer>
         <NSpace justify="end" align="center">
           <NButton @click="closeModal">
-            {{ 'Close' }}
+            关闭
           </NButton>
           <NButton type="primary" :loading="state.submitLoading" @click="submitGrant">
-            {{ 'Save' }}
+            保存
           </NButton>
         </NSpace>
       </template>

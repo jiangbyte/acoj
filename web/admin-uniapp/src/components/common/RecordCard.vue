@@ -23,7 +23,7 @@
     <template v-if="actions.length" #foot>
       <view class="record-actions" @click.stop>
         <u-button
-          v-for="action in visibleActions"
+          v-for="action in visibleAction"
           :key="action.key"
           :text="action.label"
           :icon="action.icon"
@@ -31,7 +31,7 @@
           @click="$emit('action', action)"
         ></u-button>
         <u-button
-          v-if="actions.length > visibleActions.length"
+          v-if="actions.length > visibleAction.length"
           text="更多"
           icon="more-dot-fill"
           plain
@@ -61,7 +61,7 @@ defineEmits<{
   (event: 'more'): void
 }>()
 
-const visibleActions = computed(() => props.actions.slice(0, 3))
+const visibleAction = computed(() => props.actions.slice(0, 3))
 </script>
 
 <style lang="scss" scoped>

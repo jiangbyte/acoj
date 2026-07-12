@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { messageApi } from '@/api'
-import { } from '@/utils'
 import MessageDetailModal from '@/components/message/MessageDetailModal.vue'
+import { formatDateTime } from '@/utils'
 import NoticeList, { type NoticeItem } from '../common/NoticeList.vue'
 
 const noticeTypes = [0, 1, 2] as const
@@ -150,7 +150,7 @@ async function loadTab(type: NoticeType, page = 1, mode: LoadMode = 'replace') {
 
 function fetchHistoryPage(type: NoticeType, current: number, size: number) {
   if (type === 0) {
-    return messageApi.myNotifications({ current, size })
+    return messageApi.myNotification({ current, size })
   }
   if (type === 1) {
     return messageApi.myThreads({ current, size })
@@ -282,7 +282,7 @@ function mapHistoryItem(type: NoticeType, item: any): NoticeSource {
       tagTitle: translateTag(severity, item.severity),
       tagType: notificationTagType(severity),
       description: item.content,
-      date: item.publish_at || item.created_at || '',
+      date: formatDateTime(item.publish_at || item.created_at),
       sourceType: 'notification',
       sourceId: item.id,
       isRead: Boolean(item.is_read),
@@ -293,12 +293,12 @@ function mapHistoryItem(type: NoticeType, item: any): NoticeSource {
     return {
       id: `message:${item.id}`,
       type,
-      title: item.title || 'Thread Title',
+      title: item.title || '会话标题',
       icon: 'icon-park-outline:message',
       tagTitle: translateTag(threadType, item.thread_type),
       tagType: 'info',
       description: item.last_message?.content,
-      date: item.last_message_at || item.updated_at || item.created_at || '',
+      date: formatDateTime(item.last_message_at || item.updated_at || item.created_at),
       sourceType: 'message',
       sourceId: item.id,
       isRead: (item.unread_count ?? 0) <= 0,
@@ -314,7 +314,7 @@ function mapHistoryItem(type: NoticeType, item: any): NoticeSource {
     tagTitle: translateTag(priority, item.priority),
     tagType: priorityTagType(priority),
     description: item.content,
-    date: item.due_at || item.updated_at || item.created_at || '',
+    date: formatDateTime(item.due_at || item.updated_at || item.created_at),
     sourceType: 'todo',
     sourceId: item.id,
     isRead: Boolean(item.assignee_status),
@@ -371,7 +371,7 @@ function priorityTagType(priority: string): NoticeItem['tagType'] {
             </n-badge>
           </CommonWrapper>
         </template>
-        {{ 'Notifications' }}
+        通知
       </n-tooltip>
     </template>
     <n-tabs
@@ -384,7 +384,7 @@ function priorityTagType(priority: string): NoticeItem['tagType'] {
       <n-tab-pane :name="0">
         <template #tab>
           <n-space class="w-130px" justify="center">
-            {{ 'Notifications' }}
+            通知
             <n-badge type="info" :value="summary.notification_unread" :max="99" />
           </n-space>
         </template>
@@ -399,7 +399,7 @@ function priorityTagType(priority: string): NoticeItem['tagType'] {
       <n-tab-pane :name="1">
         <template #tab>
           <n-space class="w-130px" justify="center">
-            {{ 'Messages' }}
+            消息
             <n-badge type="warning" :value="summary.message_unread" :max="99" />
           </n-space>
         </template>
@@ -414,7 +414,7 @@ function priorityTagType(priority: string): NoticeItem['tagType'] {
       <n-tab-pane :name="2">
         <template #tab>
           <n-space class="w-130px" justify="center">
-            {{ 'Todos' }}
+            待办
             <n-badge type="error" :value="summary.todo_pending" :max="99" />
           </n-space>
         </template>

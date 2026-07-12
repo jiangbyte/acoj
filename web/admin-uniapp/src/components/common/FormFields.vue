@@ -78,8 +78,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
-import type { FieldConfig, OptionItem } from '@/config/resource'
-import { useDictStore } from '@/stores/dict'
+import { fallbackDicts, type FieldConfig, type OptionItem } from '@/config/resource'
 import { dictList } from '@/utils/dict'
 import { uploadFile } from '@/api'
 
@@ -93,7 +92,6 @@ const emit = defineEmits<{
   (event: 'update:modelValue', value: Record<string, any>): void
 }>()
 
-const dictStore = useDictStore()
 const localModel = reactive<Record<string, any>>({})
 const inputTypes = ['text', 'password']
 
@@ -146,7 +144,7 @@ function fieldOptions(field: FieldConfig) {
   const remoteOptions = field.dictCode ? dictList(field.dictCode) : []
   return remoteOptions.length
     ? remoteOptions
-    : dictStore.options(field.dictCode)
+    : (field.dictCode ? fallbackDicts[field.dictCode] ?? [] : [])
 }
 
 function selectedText(field: FieldConfig) {

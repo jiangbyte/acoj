@@ -18,6 +18,7 @@ class ResourceCreateRequest(ApiSchema):
     component: str | None = Field(default=None, max_length=255)
     redirect: str | None = Field(default=None, max_length=255)
     icon: str | None = Field(default=None, max_length=255)
+    color: str | None = Field(default=None, max_length=32)
     href: str | None = Field(default=None, max_length=255)
     sort: int = 99
     is_visible: bool = True
@@ -64,6 +65,7 @@ class SysResourceSchema(ApiSchema):
     component: str | None = None
     redirect: str | None = None
     icon: str | None = None
+    color: str | None = None
     href: str | None = None
     sort: int
     is_visible: bool

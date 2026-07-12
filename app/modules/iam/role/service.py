@@ -9,7 +9,6 @@ from app.modules.auth.session_service import AccountSessionService
 from app.modules.iam.account.model import SysAccount
 from app.modules.iam.account.query_service import AccountQueryService
 from app.modules.iam.account.repository import AccountRepository
-from app.modules.iam.permission.service import PermissionService, ensure_registered_permissions
 from app.modules.iam.resource.service import ResourceService
 from app.modules.iam.relation.model import SysIamRelation
 from app.modules.iam.role.model import SysRole
@@ -17,11 +16,8 @@ from app.modules.iam.role.repository import RoleRepository
 from app.modules.iam.role.schema import (
     RoleAdminPageQuery,
     RoleCreateRequest,
-    RoleGrantPermissionRequest,
     RoleGrantResourceRequest,
     RoleGrantUserRequest,
-    RoleOwnPermissionDetailResponse,
-    RoleOwnPermissionResponse,
     RoleOwnResourceResponse,
     RoleOwnUserResponse,
     RoleUpdateRequest,
@@ -84,54 +80,6 @@ class RoleService:
         )
         items, total = await self.repo.page_admin(query, data_scope_filter)
         return build_page(query.pagination, total, to_schema_list(SysRoleSchema, items))
-
-    async def permission_tree_selector(self) -> list[str]:
-        return await PermissionService().list_permission_resources()
-
-    async def own_permission(
-        self,
-        query: IdQuery,
-        session: SessionPayload | None = None,
-    ) -> RoleOwnPermissionResponse:
-        if session is not None:
-            await self._ensure_roles_visible(session, "iam:role:ownpermission", [query.id])
-        return RoleOwnPermissionResponse(
-            id=query.id,
-            grant_info_list=await self.repo.list_permission_grants(query.id),
-        )
-
-    async def own_permission_detail(
-        self,
-        query: IdQuery,
-        session: SessionPayload | None = None,
-    ) -> RoleOwnPermissionDetailResponse:
-        if session is not None:
-            await self._ensure_roles_visible(session, "iam:role:ownpermission", [query.id])
-        return RoleOwnPermissionDetailResponse(
-            id=query.id,
-            permissions=await ResourceService(self.db).list_permission_registry_items(),
-            grant_info_list=await self.repo.list_permission_grants(query.id),
-        )
-
-    async def grant_permission(
-        self,
-        payload: RoleGrantPermissionRequest,
-        session: SessionPayload | None = None,
-    ) -> None:
-        if session is not None:
-            await self._ensure_roles_visible(session, "iam:role:grantpermission", [payload.id])
-            await self._ensure_depts_visible(
-                session,
-                "iam:role:grantpermission",
-                _grant_custom_dept_ids(payload.grant_info_list),
-            )
-        await ensure_registered_permissions(
-            [grant.permission_key for grant in payload.grant_info_list]
-        )
-        async with transactional(self.db):
-            old_account_ids = await self.repo.list_account_ids_by_role(payload.id)
-            await self.repo.replace_permission_grants(payload)
-        await self._refresh_accounts(old_account_ids)
 
     async def own_resource(
         self,
@@ -257,11 +205,3 @@ class RoleService:
         allowed_ids = set(visible_dept_ids)
         if any(dept_id not in allowed_ids for dept_id in unique_ids):
             raise AuthorizationError("Dept is outside current data scope")
-
-
-def _grant_custom_dept_ids(grant_info_list: list) -> list[str]:
-    return [
-        dept_id
-        for grant in grant_info_list
-        for dept_id in grant.custom_scope_dept_ids
-    ]

@@ -4,7 +4,7 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { NButton, NFlex, NIcon, NImage, NTag } from 'naive-ui'
 import { bannerApi } from '@/api'
-import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
@@ -39,7 +39,7 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: 'Display Scope',
+    title: '展示范围',
     path: 'display_scope',
     field: 'select',
     fieldProps: {
@@ -47,7 +47,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: 'Category',
+    title: '分类',
     path: 'category',
     field: 'select',
     fieldProps: {
@@ -55,7 +55,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: 'Type',
+    title: '类型',
     path: 'type',
     field: 'select',
     fieldProps: {
@@ -63,7 +63,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: 'Position',
+    title: '岗位',
     path: 'position',
     field: 'select',
     fieldProps: {
@@ -71,7 +71,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: 'Status',
+    title: '状态',
     path: 'status',
     field: 'select',
     fieldProps: {
@@ -86,7 +86,7 @@ const pagination = computed<PaginationProps>(() => ({
   itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => `${itemCount} total`,
+  prefix: ({ itemCount }) => `${itemCount} 条`,
   onUpdatePage: (value) => {
     state.page = value
     fetchPage()
@@ -112,7 +112,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Title',
+    title: '标题',
     path: 'title',
     width: 180,
     ellipsis: {
@@ -120,13 +120,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Image',
+    title: '图片',
     key: 'image',
     width: 130,
     render: (row) => (
       <NImage
         src={row.image}
-        alt={row.title || 'Image'}
+        alt={row.title || '图片'}
         width={96}
         height={42}
         objectFit="cover"
@@ -134,7 +134,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Display Scope',
+    title: '展示范围',
     path: 'display_scope',
     width: 120,
     render: (row) => (
@@ -147,41 +147,41 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Category',
+    title: '分类',
     path: 'category',
     width: 150,
     render: (row) => dictTypeData('BANNER_CATEGORY', row.category),
   },
   {
-    title: 'Type',
+    title: '类型',
     path: 'type',
     width: 120,
     render: (row) => dictTypeData('BANNER_TYPE', row.type),
   },
   {
-    title: 'Position',
+    title: '岗位',
     path: 'position',
     width: 160,
     render: (row) => dictTypeData('BANNER_POSITION', row.position),
   },
   {
-    title: 'Link Type',
+    title: '链接类型',
     path: 'link_type',
     width: 110,
     render: (row) => dictTypeData('BANNER_LINK_TYPE', row.link_type),
   },
   {
-    title: 'Sort',
+    title: '排序',
     path: 'sort',
     width: 90,
   },
   {
-    title: 'Interactions',
+    title: '互动次数',
     path: 'interaction_count',
     width: 120,
   },
   {
-    title: 'Status',
+    title: '状态',
     path: 'status',
     width: 110,
     render: (row) => (
@@ -191,15 +191,16 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Updated At',
+    title: '更新时间',
     path: 'updated_at',
     width: 190,
     ellipsis: {
       tooltip: true,
     },
+    render: (row) => formatDateTime(row.updated_at),
   },
   {
-    title: 'Operation',
+    title: '操作',
     key: 'actions',
     width: 120,
     fixed: 'right',
@@ -273,14 +274,14 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? 'Batch Delete' : 'Delete',
+    title: isBatch ? '批量删除' : '删除',
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? `Delete ${ids.length} selected display images?`
-      : 'Delete this display image?',
-    positiveText: 'Confirm',
-    negativeText: 'Cancel',
+      ? `删除 ${ids.length} 张展示图?`
+      : '删除该展示图?',
+    positiveText: '确认',
+    negativeText: '取消',
     onPositiveClick: () => deleteData(ids),
   })
 }
@@ -289,7 +290,7 @@ async function deleteData(ids: string[]) {
   await bannerApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
-  window.$message.success('Deleted successfully')
+  window.$message.success('删除成功')
   await fetchPage()
   if (!state.banners.length && state.total > 0 && state.page > 1) {
     state.page -= 1
@@ -304,12 +305,12 @@ async function deleteData(ids: string[]) {
       <ProSearchForm
         :form="searchForm"
         :columns="searchColumns"
-        :reset-button-props="{ content: 'Reset' }"
-        :search-button-props="{ content: 'Search' }"
+        :reset-button-props="{ content: '重置' }"
+        :search-button-props="{ content: '搜索' }"
         :collapse-button-props="{
           content: searchForm.collapsed.value
-            ? 'Expand'
-            : 'Collapse',
+            ? '展开'
+            : '收起',
         }"
       />
     </ProCard>
@@ -317,7 +318,7 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="'Display Image Page'"
+      :title="'展示图管理'"
       row-key="id"
       :scroll-x="1780"
       :columns="tableColumns"
@@ -329,14 +330,14 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('sys:banner:create')" type="primary" text :title="'Add'" :aria-label="'Add'" @click="openCreateModal">
+          <NButton v-if="hasPermission('sys:banner:create')" type="primary" text :title="'新增'" :aria-label="'新增'" @click="openCreateModal">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchPage">
+          <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -347,8 +348,8 @@ async function deleteData(ids: string[]) {
             v-if="hasPermission('sys:banner:delete')"
             type="error"
             text
-            :title="'Batch Delete'"
-            :aria-label="'Batch Delete'"
+            :title="'批量删除'"
+            :aria-label="'批量删除'"
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >

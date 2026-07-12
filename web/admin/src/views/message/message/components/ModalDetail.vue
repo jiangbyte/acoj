@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { messageApi } from '@/api'
-import { displayValue, resolveFileUrl } from '@/utils'
+import { displayValue, formatDateTime, resolveFileUrl } from '@/utils'
 import { dictTypeData } from '@/utils/dict'
 import { reactive, ref } from 'vue'
 
@@ -9,13 +9,13 @@ const state = reactive({
   showModal: false,
   loading: false,
   detailData: {} as any,
-  detailMessages: [] as any[],
+  detailMessage: [] as any[],
 })
 
 async function openModal(row: any, tab: 'threads' | 'groups') {
   activeTab.value = tab
   state.detailData = row
-  state.detailMessages = []
+  state.detailMessage = []
   state.showModal = true
   await fetchDetail(row)
 }
@@ -24,12 +24,12 @@ async function fetchDetail(row: any) {
   state.loading = true
   try {
     if (activeTab.value === 'threads') {
-      const response = await messageApi.threadMessages({
+      const response = await messageApi.threadMessage({
         thread_id: row.id,
         current: 1,
         size: 10,
       })
-      state.detailMessages = response.data?.records ?? []
+      state.detailMessage = response.data?.records ?? []
     } else {
       const response = await messageApi.groupDetail({ id: row.id })
       state.detailData = response.data ?? row
@@ -56,7 +56,7 @@ function openAttachment(url: string) {
     preset="card"
     draggable
     :mask-closable="false"
-    :title="'Message Detail'"
+    :title="'消息 详情'"
     style="width: 720px"
   >
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
@@ -67,13 +67,13 @@ function openAttachment(url: string) {
           </NDescriptionsItem>
           <NDescriptionsItem
             v-if="activeTab === 'threads'"
-            :label="'Thread Title'"
+            :label="'会话标题'"
           >
             {{ displayValue(state.detailData.title) }}
           </NDescriptionsItem>
           <NDescriptionsItem
             v-if="activeTab === 'threads'"
-            :label="'Thread Type'"
+            :label="'会话类型'"
           >
             {{
               dictTypeData('MESSAGE_THREAD_TYPE', state.detailData.thread_type) ||
@@ -82,33 +82,33 @@ function openAttachment(url: string) {
           </NDescriptionsItem>
           <NDescriptionsItem
             v-if="activeTab === 'groups'"
-            :label="'Group Name'"
+            :label="'用户组名称'"
           >
             {{ displayValue(state.detailData.name) }}
           </NDescriptionsItem>
           <NDescriptionsItem
             v-if="activeTab === 'groups'"
-            :label="'Members'"
+            :label="'成员数'"
           >
             {{ displayValue(state.detailData.member_count) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Status'">
+          <NDescriptionsItem :label="'状态'">
             {{ displayValue(state.detailData.status) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Updated At'">
-            {{ displayValue(state.detailData.updated_at) }}
+          <NDescriptionsItem :label="'更新时间'">
+            {{ formatDateTime(state.detailData.updated_at) }}
           </NDescriptionsItem>
         </NDescriptions>
 
         <NDivider v-if="activeTab === 'threads'" />
-        <NList v-if="activeTab === 'threads' && state.detailMessages.length" bordered>
-          <NListItem v-for="item in state.detailMessages" :key="item.id">
+        <NList v-if="activeTab === 'threads' && state.detailMessage.length" bordered>
+          <NListItem v-for="item in state.detailMessage" :key="item.id">
             <NThing>
               <template #header>
-                {{ item.sender_name || item.sender_account_id || 'System' }}
+                {{ item.sender_name || item.sender_account_id || '系统' }}
               </template>
               <template #description>
-                {{ item.created_at }}
+                {{ formatDateTime(item.created_at) }}
               </template>
               {{ item.content }}
               <template v-if="item.attachments?.length" #footer>
@@ -129,7 +129,7 @@ function openAttachment(url: string) {
         <NEmpty
           v-else-if="activeTab === 'threads'"
           class="py-32px"
-          :description="'No messages'"
+          :description="'暂无消息'"
         />
       </NSpin>
     </NScrollbar>

@@ -1,6 +1,7 @@
 import type { RouteLocationNormalized, Router } from 'vue-router'
-import { useAuthStore, useDictStore, useRouteStore } from '@/stores'
+import { useAuthStore, useRouteStore } from '@/stores'
 import { getRouteTitle } from '@/stores/route'
+import { isDictLoaded, refreshDict, syncDictTree } from '@/utils/dict'
 
 // 浏览器标题后缀，来自应用环境配置。
 const appTitle = import.meta.env.VITE_APP_TITLE
@@ -18,9 +19,8 @@ const publicRoutePaths = parsePublicRoutePaths(import.meta.env.VITE_PUBLIC_ROUTE
 export function setupRouterGuard(router: Router) {
   router.beforeEach(async (to) => {
     const authStore = useAuthStore()
-    const dictStore = useDictStore()
     const routeStore = useRouteStore()
-    dictStore.syncDictTree()
+    syncDictTree()
 
     // 资源配置了 href 时视为外链。打开新窗口后阻止当前路由继续跳转。
     if (to.meta.href) {
@@ -40,7 +40,7 @@ export function setupRouterGuard(router: Router) {
     // portal 资源是公开资源，非认证页都需要先注册动态路由和菜单。
     if (!isAuthRoute(to) && !routeStore.isInitAuthRoute) {
       try {
-        await Promise.all([routeStore.initAuthRoute(), dictStore.refreshDict()])
+        await Promise.all([routeStore.initAuthRoute(), refreshDict()])
         if (isFallbackRoute(to)) {
           return {
             path: to.fullPath,
@@ -80,8 +80,8 @@ export function setupRouterGuard(router: Router) {
       }
     }
 
-    if (!dictStore.loaded) {
-      await dictStore.refreshDict()
+    if (!isDictLoaded()) {
+      await refreshDict()
     }
   })
 

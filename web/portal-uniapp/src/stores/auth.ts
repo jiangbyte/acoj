@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import * as authApi from '@/api/auth'
 import { getStorage, setStorage } from '@/utils/storage'
+import { clearDict } from '@/utils/dict'
 import { encryptPasswords } from '@/utils/security'
 import {
   clearSessionStorage,
@@ -122,6 +123,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   function resetSession() {
     clearSessionStorage()
+    clearDict()
   }
 
   async function logout() {

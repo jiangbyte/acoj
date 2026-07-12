@@ -25,10 +25,10 @@ const form = reactive({
 
 function validateConfirmPassword(_rule: FormItemRule, value: string) {
   if (!value) {
-    return new Error('Please confirm password')
+    return new Error('请确认密码')
   }
   if (value !== form.password) {
-    return new Error('The two passwords do not match')
+    return new Error('两次输入的密码不一致')
   }
   return true
 }
@@ -36,10 +36,10 @@ function validateConfirmPassword(_rule: FormItemRule, value: string) {
 function validateRequiredEmail(_rule: FormItemRule, value: string) {
   const text = String(value ?? '').trim()
   if (!text) {
-    return new Error('Please enter login email')
+    return new Error('请输入登录邮箱')
   }
   if (!isValidEmail(text)) {
-    return new Error('Please enter a valid email')
+    return new Error('请输入有效邮箱')
   }
   return true
 }
@@ -54,12 +54,12 @@ const rules = computed<FormRules>(() => ({
   password: [
     {
       required: true,
-      message: 'Please enter new password',
+      message: '请输入新密码',
       trigger: ['input', 'blur'],
     },
     {
       min: 8,
-      message: 'Password must be at least 8 characters',
+      message: '密码至少 8 个字符',
       trigger: ['input', 'blur'],
     },
   ],
@@ -73,7 +73,7 @@ const rules = computed<FormRules>(() => ({
   captcha_value: [
     {
       required: true,
-      message: 'Please enter captcha',
+      message: '请输入验证码',
       trigger: ['input', 'blur'],
     },
   ],
@@ -97,7 +97,7 @@ async function handleSubmit() {
       captcha_id: form.captcha_id,
       captcha_value: form.captcha_value,
     })
-    window.$message.success('Password reset. Please sign in again')
+    window.$message.success('密码已重置，请重新登录')
     router.push('/auth/login')
   } catch {
     await captchaRef.value?.refresh()
@@ -108,35 +108,35 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <AuthLayout :title="'Reset Password'" :subtitle="'Use the email reset link to set a new password.'">
+  <AuthLayout :title="'重置密码'" :subtitle="'使用邮件重置链接设置新密码。'">
     <n-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="handleSubmit">
-      <n-form-item path="email" :label="'Login Email'">
-        <n-input v-model:value="form.email" :placeholder="'Enter login email'" :disabled="Boolean(form.token)" clearable>
+      <n-form-item path="email" :label="'登录邮箱'">
+        <n-input v-model:value="form.email" :placeholder="'请输入登录邮箱'" :disabled="Boolean(form.token)" clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:mail" />
           </template>
         </n-input>
       </n-form-item>
 
-      <n-form-item path="password" :label="'New Password'">
+      <n-form-item path="password" :label="'新密码'">
         <n-input
           v-model:value="form.password"
           type="password"
           show-password-on="click"
-          :placeholder="'At least 8 characters'"
+          :placeholder="'至少 8 个字符'"
         />
       </n-form-item>
 
-      <n-form-item path="confirmPassword" :label="'Confirm Password'">
+      <n-form-item path="confirmPassword" :label="'确认密码'">
         <n-input
           v-model:value="form.confirmPassword"
           type="password"
           show-password-on="click"
-          :placeholder="'Enter password again'"
+          :placeholder="'请再次输入密码'"
         />
       </n-form-item>
 
-      <n-form-item path="captcha_value" :label="'Captcha'">
+      <n-form-item path="captcha_value" :label="'验证码'">
         <CaptchaInput
           ref="captchaRef"
           v-model:captcha-id="form.captcha_id"
@@ -145,11 +145,11 @@ async function handleSubmit() {
       </n-form-item>
 
       <n-button type="primary" size="large" block attr-type="submit" :loading="loading">
-        {{ 'Reset Password' }}
+        重置密码
       </n-button>
 
       <p class="auth-switch">
-        <RouterLink to="/auth/login">{{ 'Back to sign in' }}</RouterLink>
+        <RouterLink to="/auth/login">返回登录</RouterLink>
       </p>
     </n-form>
   </AuthLayout>

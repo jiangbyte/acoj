@@ -12,9 +12,6 @@ from app.modules.dashboard.schema import (
     DashboardTrendPoint,
 )
 from app.modules.iam.account.model import SysAccount
-from app.modules.message.enums import NotificationStatus
-from app.modules.message.notification.model import MsgNotification
-from app.modules.sys.banner.model import SysBanner
 from app.modules.sys.file.model import SysFile
 
 
@@ -29,18 +26,11 @@ class DashboardService:
         online_sessions = len(await session_store.list_sessions_by_tokens(await session_store.list_tokens()))
         file_total = await self._count(SysFile.id)
         file_size = int((await self.db.execute(select(func.coalesce(func.sum(SysFile.size), 0)))).scalar_one())
-        banner_total = await self._count(SysBanner.id)
-        notification_published = await self._count(
-            MsgNotification.id,
-            MsgNotification.status == NotificationStatus.PUBLISHED.value,
-        )
         return DashboardOverviewResponse(
             metrics=[
                 DashboardMetric(key="accounts", value=account_total, trend_value=account_new),
                 DashboardMetric(key="online_sessions", value=online_sessions),
                 DashboardMetric(key="files", value=file_total, trend_value=file_size),
-                DashboardMetric(key="banners", value=banner_total),
-                DashboardMetric(key="notifications", value=notification_published),
             ],
             account_trend=await self._daily_trend(SysAccount.created_at, since, "accounts"),
             file_type_share=await self._file_type_share(),

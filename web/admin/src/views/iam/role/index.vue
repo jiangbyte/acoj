@@ -3,21 +3,19 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { roleApi } from '@/api'
-import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { NButton, NDropdown, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
-import ModalGrantPermission from './components/ModalGrantPermission.vue'
 import ModalGrantResource from './components/ModalGrantResource.vue'
 import ModalGrantUser from './components/ModalGrantUser.vue'
 
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
 const grantResourceModalRef = ref<any>(null)
-const grantPermissionModalRef = ref<any>(null)
 const grantUserModalRef = ref<any>(null)
 const state = reactive({
   roles: [] as any[],
@@ -48,17 +46,17 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: 'Role Code',
+    title: '角色编码',
     path: 'code',
     field: 'input',
   },
   {
-    title: 'Role Name',
+    title: '角色名称',
     path: 'name',
     field: 'input',
   },
   {
-    title: 'Role Category',
+    title: '角色分类',
     path: 'category',
     field: 'select',
     fieldProps: {
@@ -66,7 +64,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: 'Scope Type',
+    title: '范围类型',
     path: 'scope_type',
     field: 'select',
     fieldProps: {
@@ -74,7 +72,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: 'Status',
+    title: '状态',
     path: 'status',
     field: 'select',
     fieldProps: {
@@ -89,7 +87,7 @@ const pagination = computed<PaginationProps>(() => ({
   itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => `${itemCount} total`,
+  prefix: ({ itemCount }) => `${itemCount} 条`,
   onUpdatePage: (value) => {
     state.page = value
     fetchPage()
@@ -115,7 +113,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Role Code',
+    title: '角色编码',
     path: 'code',
     width: 150,
     ellipsis: {
@@ -123,7 +121,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Role Name',
+    title: '角色名称',
     path: 'name',
     width: 160,
     ellipsis: {
@@ -131,19 +129,19 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Role Category',
+    title: '角色分类',
     path: 'category',
     width: 130,
     render: (row) => dictTypeData('SYS_BIZ_CATEGORY', row.category) || row.category,
   },
   {
-    title: 'Scope Type',
+    title: '范围类型',
     path: 'scope_type',
     width: 130,
     render: (row) => dictTypeData('ROLE_SCOPE_TYPE', row.scope_type) || row.scope_type,
   },
   {
-    title: 'Owner Department ID',
+    title: '所属部门ID',
     path: 'owner_dept_id',
     width: 150,
     ellipsis: {
@@ -151,18 +149,18 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Sort',
+    title: '排序',
     path: 'sort',
     width: 90,
   },
   {
-    title: 'Builtin Role',
+    title: '内置角色',
     path: 'is_builtin',
     width: 110,
-    render: (row) => (row.is_builtin ? 'Yes' : 'No'),
+    render: (row) => (row.is_builtin ? '是' : '否'),
   },
   {
-    title: 'Status',
+    title: '状态',
     path: 'status',
     width: 110,
     render: (row) => (
@@ -172,15 +170,16 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Updated At',
+    title: '更新时间',
     path: 'updated_at',
     width: 190,
     ellipsis: {
       tooltip: true,
     },
+    render: (row) => formatDateTime(row.updated_at),
   },
   {
-    title: 'Operation',
+    title: '操作',
     key: 'actions',
     width: 150,
     fixed: 'right',
@@ -223,17 +222,12 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
 const grantOptions = computed(() =>
   [
     {
-      label: 'Grant Resources',
+      label: '分配资源',
       key: 'resource',
       permission: 'iam:role:grantresource',
     },
     {
-      label: 'Grant Permissions',
-      key: 'permission',
-      permission: 'iam:role:grantpermission',
-    },
-    {
-      label: 'Grant Users',
+      label: '分配用户',
       key: 'user',
       permission: 'iam:role:grantuser',
     },
@@ -286,8 +280,6 @@ function openGrantModal(type: string, row: any) {
   }
   if (type === 'resource') {
     grantResourceModalRef.value?.openModal(role)
-  } else if (type === 'permission') {
-    grantPermissionModalRef.value?.openModal(role)
   } else if (type === 'user') {
     grantUserModalRef.value?.openModal(role)
   }
@@ -305,14 +297,14 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? 'Batch Delete' : 'Delete',
+    title: isBatch ? '批量删除' : '删除',
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? `Delete ${ids.length} selected roles?`
-      : 'Delete this role?',
-    positiveText: 'Confirm',
-    negativeText: 'Cancel',
+      ? `删除 ${ids.length} 个角色?`
+      : '删除该角色?',
+    positiveText: '确认',
+    negativeText: '取消',
     onPositiveClick: () => deleteData(ids),
   })
 }
@@ -321,7 +313,7 @@ async function deleteData(ids: string[]) {
   await roleApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
-  window.$message.success('Deleted successfully')
+  window.$message.success('删除成功')
   await fetchPage()
   if (!state.roles.length && state.total > 0 && state.page > 1) {
     state.page -= 1
@@ -336,12 +328,12 @@ async function deleteData(ids: string[]) {
       <ProSearchForm
         :form="searchForm"
         :columns="searchColumns"
-        :reset-button-props="{ content: 'Reset' }"
-        :search-button-props="{ content: 'Search' }"
+        :reset-button-props="{ content: '重置' }"
+        :search-button-props="{ content: '搜索' }"
         :collapse-button-props="{
           content: searchForm.collapsed.value
-            ? 'Expand'
-            : 'Collapse',
+            ? '展开'
+            : '收起',
         }"
       />
     </ProCard>
@@ -349,7 +341,7 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="'Role Management'"
+      :title="'角色管理'"
       row-key="id"
       :scroll-x="1600"
       :columns="tableColumns"
@@ -361,14 +353,14 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('iam:role:create')" type="primary" text :title="'Add'" :aria-label="'Add'" @click="openCreateModal">
+          <NButton v-if="hasPermission('iam:role:create')" type="primary" text :title="'新增'" :aria-label="'新增'" @click="openCreateModal">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchPage">
+          <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -379,8 +371,8 @@ async function deleteData(ids: string[]) {
             v-if="hasPermission('iam:role:delete')"
             type="error"
             text
-            :title="'Batch Delete'"
-            :aria-label="'Batch Delete'"
+            :title="'批量删除'"
+            :aria-label="'批量删除'"
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >
@@ -397,7 +389,6 @@ async function deleteData(ids: string[]) {
     <ModalForm ref="formModalRef" @saved="fetchPage" />
     <ModalDetail ref="detailModalRef" />
     <ModalGrantResource ref="grantResourceModalRef" @saved="fetchPage" />
-    <ModalGrantPermission ref="grantPermissionModalRef" @saved="fetchPage" />
     <ModalGrantUser ref="grantUserModalRef" @saved="fetchPage" />
   </NFlex>
 </template>

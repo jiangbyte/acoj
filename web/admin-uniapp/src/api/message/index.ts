@@ -10,7 +10,7 @@ export function headerItems() {
   return http.get<any[]>(`${prefix}/header-items`)
 }
 
-export function myNotifications(params?: any) {
+export function myNotification(params?: any) {
   return http.get<any>(`${prefix}/notifications/my-page`, params)
 }
 
@@ -18,11 +18,11 @@ export function myNotificationDetail(params: any) {
   return http.get<any>(`${prefix}/notifications/my-detail`, params)
 }
 
-export function readNotifications(data: any) {
+export function readNotification(data: any) {
   return http.post<any>(`${prefix}/notifications/read`, data)
 }
 
-export function readAllNotifications() {
+export function readAllNotification() {
   return http.post<any>(`${prefix}/notifications/read-all`)
 }
 
@@ -62,7 +62,7 @@ export function threadPage(params?: any) {
   return http.get<any>(`${prefix}/threads/page`, params)
 }
 
-export function threadMessages(params?: any) {
+export function threadMessage(params?: any) {
   return http.get<any>(`${prefix}/threads/messages`, params)
 }
 

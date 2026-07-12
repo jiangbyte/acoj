@@ -53,11 +53,3 @@ export function ownResource(id: string) {
 export function grantResource(data: any) {
   return http.post<any>(`${prefix}/grant-resource`, data)
 }
-
-export function ownPermission(id: string) {
-  return http.get<any>(`${prefix}/own-permission-detail`, { id })
-}
-
-export function grantPermission(data: any) {
-  return http.post<any>(`${prefix}/grant-permission`, data)
-}

@@ -3,7 +3,7 @@ interface Props {
   show: boolean
   text?: string
 }
-const { text = 'Watermark' } = defineProps<Props>()
+const { text = '水印' } = defineProps<Props>()
 </script>
 
 <template>

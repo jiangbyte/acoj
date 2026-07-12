@@ -24,49 +24,44 @@ const metricMeta: Record<string, { icon: string; color: string }> = {
   accounts: { icon: 'icon-park-outline:people', color: '#2563eb' },
   online_sessions: { icon: 'icon-park-outline:connection', color: '#0891b2' },
   files: { icon: 'icon-park-outline:file-code', color: '#0f766e' },
-  banners: { icon: 'icon-park-outline:ad-product', color: '#7c3aed' },
-  notifications: { icon: 'icon-park-outline:tips-one', color: '#16a34a' },
 }
 const metricTitleMap: Record<string, string> = {
-  accounts: 'Accounts',
-  online_sessions: 'Online Devices',
-  files: 'Files',
-  banners: 'Banners',
-  notifications: 'Published Notices',
+  accounts: '账号',
+  online_sessions: '在线设备数',
+  files: '文件',
 }
 const metricHelperMap: Record<string, string> = {
-  accounts: 'Accounts created today are tracked separately',
-  online_sessions: 'Current online tokens in Redis',
-  files: 'File count and storage usage',
-  banners: 'Total banner configurations',
-  notifications: 'Notices currently published',
+  accounts: '今日新增账号单独统计',
+  online_sessions: '当前 Redis 在线令牌数',
+  files: '文件数量与存储用量',
 }
 const metricUnitMap: Record<string, { one: string; other: string }> = {
-  accounts: { one: 'account', other: 'accounts' },
-  online_sessions: { one: 'device', other: 'devices' },
-  files: { one: 'file', other: 'files' },
-  banners: { one: 'banner', other: 'banners' },
-  notifications: { one: 'notice', other: 'notices' },
+  accounts: { one: '个账号', other: '个账号' },
+  online_sessions: { one: '台设备', other: '台设备' },
+  files: { one: '个文件', other: '个文件' },
 }
+const visibleMetricKeys = new Set(['accounts', 'online_sessions', 'files'])
 
 const metricCards = computed(() =>
-  state.overview.metrics.map((item) => {
-    const meta = metricMeta[item.key] ?? { icon: 'icon-park-outline:analysis', color: '#64748b' }
-    return {
-      ...item,
-      title: metricTitleMap[item.key] ?? item.key,
-      helper: metricHelperMap[item.key] ?? '',
-      value: item.value ?? 0,
-      unitText: formatMetricUnit(item),
-      ...meta,
-    }
-  }),
+  state.overview.metrics
+    .filter((item) => visibleMetricKeys.has(item.key))
+    .map((item) => {
+      const meta = metricMeta[item.key] ?? { icon: 'icon-park-outline:analysis', color: '#64748b' }
+      return {
+        ...item,
+        title: metricTitleMap[item.key] ?? item.key,
+        helper: metricHelperMap[item.key] ?? '',
+        value: item.value ?? 0,
+        unitText: formatMetricUnit(item),
+        ...meta,
+      }
+    }),
 )
 
 const trendData = computed(() => [
   ...state.overview.account_trend.map((item) => ({
     ...item,
-    type: 'New Accounts',
+    type: '新增账号',
   })),
 ])
 
@@ -180,8 +175,8 @@ async function renderFileChart() {
     <n-el class="dashboard-page">
       <div class="dashboard-header">
         <div class="min-w-0">
-          <h1>{{ 'Operations Workbench' }}</h1>
-          <p>{{ 'A live system overview for accounts, online sessions, files, banners, and published notices.' }}</p>
+          <h1>运营工作台</h1>
+          <p>实时查看账号、在线会话和文件的系统概览。</p>
         </div>
         <NButton text :loading="state.loading" @click="fetchOverview">
           <template #icon>
@@ -192,7 +187,7 @@ async function renderFileChart() {
         </NButton>
       </div>
 
-      <NGrid cols="1 s:2 m:3 xl:5" responsive="screen" :x-gap="16" :y-gap="16">
+      <NGrid cols="1 s:2 m:3 xl:3" responsive="screen" :x-gap="16" :y-gap="16">
         <NGridItem v-for="item in metricCards" :key="item.key">
           <NCard class="metric-card" :bordered="false">
             <div class="metric-card__top">
@@ -217,7 +212,7 @@ async function renderFileChart() {
         <NGridItem span="1 xl:16">
           <NCard
             class="dashboard-card"
-            title="Last 7 Days"
+            title="最近 7 天"
             :bordered="false"
           >
             <div ref="trendChartRef" class="chart-box" />
@@ -226,7 +221,7 @@ async function renderFileChart() {
         <NGridItem span="1 xl:8">
           <NCard
             class="dashboard-card"
-            title="File Types"
+            title="文件类型"
             :bordered="false"
           >
             <div ref="fileChartRef" class="chart-box chart-box--small" />
@@ -235,7 +230,7 @@ async function renderFileChart() {
       </NGrid>
 
       <NAlert v-if="state.chartLoadError" class="mt-4" type="warning" :show-icon="false">
-        {{ 'Chart runtime failed to load. Refresh the page or restart the dev server.' }}
+        图表运行时加载失败，请刷新页面或重启开发服务。
       </NAlert>
     </n-el>
   </NSpin>

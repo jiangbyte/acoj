@@ -2,11 +2,10 @@ from datetime import datetime
 
 from pydantic import Field
 
-from app.core.config.enums import DataScope, StatusEnum
+from app.core.config.enums import StatusEnum
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
 from app.modules.iam.schema import (
-    PermissionRegistryItem,
     ResourceGrantModuleOption,
     RoleOption,
     SysAccountSchema,
@@ -64,12 +63,6 @@ class GroupResourceGrantInfo(ApiSchema):
     permission_keys: list[str] = Field(default_factory=list)
 
 
-class GroupPermissionGrantInfo(ApiSchema):
-    permission_key: str = Field(min_length=1, max_length=128)
-    data_scope: DataScope = DataScope.SELF
-    custom_scope_dept_ids: list[str] = Field(default_factory=list)
-
-
 class GroupOwnUserResponse(ApiSchema):
     id: str
     users: list[SysAccountSchema] = Field(default_factory=list)
@@ -102,18 +95,3 @@ class GroupGrantResourceRequest(ApiSchema):
     id: str = Field(min_length=1, max_length=64)
     grant_info_list: list[GroupResourceGrantInfo] = Field(default_factory=list)
 
-
-class GroupOwnPermissionResponse(ApiSchema):
-    id: str
-    grant_info_list: list[GroupPermissionGrantInfo] = Field(default_factory=list)
-
-
-class GroupOwnPermissionDetailResponse(ApiSchema):
-    id: str
-    permissions: list[PermissionRegistryItem] = Field(default_factory=list)
-    grant_info_list: list[GroupPermissionGrantInfo] = Field(default_factory=list)
-
-
-class GroupGrantPermissionRequest(ApiSchema):
-    id: str = Field(min_length=1, max_length=64)
-    grant_info_list: list[GroupPermissionGrantInfo] = Field(default_factory=list)

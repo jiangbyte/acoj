@@ -20,7 +20,7 @@ interface TabState {
 /**
  * 标签页快照。
  *
- * 这里只保存标签栏渲染和跳转需要的最小路由信息，避免把完整 Route 对象放入持久化状态。
+ * 这里只保存标签栏渲染和跳转需要的最小路由信息，避免把完整 路由 对象放入持久化状态。
  */
 export interface AppTab {
   // Vue Router 的路由名称；当前资源路由使用 module_id + code 作为 route.name。
@@ -41,7 +41,7 @@ interface TabGetters {
   allTabs: (state: TabState) => AppTab[]
 }
 
-interface TabActions {
+interface TabAction {
   // 根据当前路由添加标签页；非页面资源或已存在的标签不会重复添加。
   addTab: (route: RouteLocationNormalizedLoaded) => void
 
@@ -213,7 +213,7 @@ export const useTabStore = defineStore('tab-store', {
     // 标签页属于当前浏览器会话状态，使用 sessionStorage 比 localStorage 更符合预期。
     storage: sessionStorage,
   },
-}) as StoreDefinition<'tab-store', TabState, TabGetters, TabActions>
+}) as StoreDefinition<'tab-store', TabState, TabGetters, TabAction>
 
 // 只有真实页面资源才进入标签栏；目录和权限节点不应该生成可访问标签。
 function isTabResource(resourceType?: AppRoute.ResourceType) {

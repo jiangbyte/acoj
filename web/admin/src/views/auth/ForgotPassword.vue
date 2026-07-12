@@ -26,10 +26,10 @@ const isResetMode = computed(() => Boolean(form.token))
 
 function validateConfirmPassword(_rule: FormItemRule, value: string) {
   if (!value) {
-    return new Error('Please confirm password')
+    return new Error('请确认密码')
   }
   if (value !== form.password) {
-    return new Error('The two passwords do not match')
+    return new Error('两次输入的密码不一致')
   }
   return true
 }
@@ -37,10 +37,10 @@ function validateConfirmPassword(_rule: FormItemRule, value: string) {
 function validateRequiredEmail(_rule: FormItemRule, value: string) {
   const text = String(value ?? '').trim()
   if (!text) {
-    return new Error('Please enter login email')
+    return new Error('请输入登录邮箱')
   }
   if (!isValidEmail(text)) {
-    return new Error('Please enter a valid email')
+    return new Error('请输入有效邮箱')
   }
   return true
 }
@@ -55,12 +55,12 @@ const rules = computed<FormRules>(() => ({
   password: [
     {
       required: isResetMode.value,
-      message: 'Please enter new password',
+      message: '请输入新密码',
       trigger: ['input', 'blur'],
     },
     {
       min: 8,
-      message: 'Password must be at least 8 characters',
+      message: '密码至少 8 个字符',
       trigger: ['input', 'blur'],
     },
   ],
@@ -74,7 +74,7 @@ const rules = computed<FormRules>(() => ({
   captcha_value: [
     {
       required: true,
-      message: 'Please enter captcha',
+      message: '请输入验证码',
       trigger: ['input', 'blur'],
     },
   ],
@@ -88,7 +88,7 @@ async function sendLink() {
       return
     }
     if (!form.captcha_value.trim()) {
-      window.$message.warning('Please enter captcha')
+      window.$message.warning('请输入验证码')
       return
     }
   } else {
@@ -105,7 +105,7 @@ async function sendLink() {
       captcha_id: form.captcha_id,
       captcha_value: form.captcha_value,
     })
-    window.$message.success('Password reset link sent')
+    window.$message.success('密码重置链接已发送')
     await captchaRef.value?.refresh()
   } catch {
     await captchaRef.value?.refresh()
@@ -131,7 +131,7 @@ async function resetPassword() {
       captcha_id: form.captcha_id,
       captcha_value: form.captcha_value,
     })
-    window.$message.success('Password reset. Please sign in again')
+    window.$message.success('密码已重置，请重新登录')
     router.push('/auth/login')
   } catch {
     await captchaRef.value?.refresh()
@@ -142,13 +142,13 @@ async function resetPassword() {
 </script>
 
 <template>
-  <AuthLayout :title="isResetMode ? 'Reset Admin Password' : 'Recover Admin Password'" :subtitle="isResetMode ? 'Set a new password from your email reset link.' : 'Send a password reset link to your enabled admin login email.'">
+  <AuthLayout :title="isResetMode ? '重置管理端密码' : '找回管理端密码'" :subtitle="isResetMode ? '使用邮件重置链接设置新密码。' : '向已启用的管理端登录邮箱发送密码重置链接。'">
     <n-alert class="auth-alert" type="info" :bordered="false">
-      {{ isResetMode ? 'This reset link can be used once before it expires.' : 'A reset link will be sent only when this email is enabled for admin login.' }}
+      {{ isResetMode ? '该重置链接在过期前仅可使用一次。' : '仅当该邮箱已启用管理端登录时，系统才会发送重置链接。' }}
     </n-alert>
 
     <n-form ref="formRef" :model="form" :rules="rules" size="large">
-      <n-form-item path="email" :label="'Login Email'">
+      <n-form-item path="email" :label="'登录邮箱'">
         <n-input v-model:value="form.email" :disabled="isResetMode" clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:mail" />
@@ -157,15 +157,15 @@ async function resetPassword() {
       </n-form-item>
 
       <template v-if="isResetMode">
-        <n-form-item path="password" :label="'New Password'">
+        <n-form-item path="password" :label="'新密码'">
           <n-input v-model:value="form.password" type="password" show-password-on="click" />
         </n-form-item>
-        <n-form-item path="confirmPassword" :label="'Confirm Password'">
+        <n-form-item path="confirmPassword" :label="'确认密码'">
           <n-input v-model:value="form.confirmPassword" type="password" show-password-on="click" />
         </n-form-item>
       </template>
 
-      <n-form-item path="captcha_value" :label="'Captcha'">
+      <n-form-item path="captcha_value" :label="'验证码'">
         <CaptchaInput
           ref="captchaRef"
           v-model:captcha-id="form.captcha_id"
@@ -180,13 +180,13 @@ async function resetPassword() {
         :loading="loading"
         @click="isResetMode ? resetPassword() : sendLink()"
       >
-        {{ isResetMode ? 'Reset Password' : 'Send Reset Link' }}
+        {{ isResetMode ? '重置密码' : '发送重置链接' }}
       </n-button>
 
       <div class="auth-links">
-        <RouterLink to="/auth/login">{{ 'Back to sign in' }}</RouterLink>
+        <RouterLink to="/auth/login">返回登录</RouterLink>
         <n-button v-if="isResetMode" text type="primary" @click="sendLink">
-          {{ 'Send a new link' }}
+          发送新链接
         </n-button>
       </div>
     </n-form>

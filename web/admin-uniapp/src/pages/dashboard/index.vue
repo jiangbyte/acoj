@@ -34,17 +34,9 @@
       <view class="mx-4 mt-3 bg-white rounded-lg overflow-hidden">
         <text class="block px-4 py-3 text-base font-bold text-gray-900">核心指标</text>
         <view class="flex flex-nowrap">
-          <view class="flex flex-col items-center gap-1 py-2 px-1 flex-1" v-for="metric in metricsFirstRow" :key="metric.key">
+          <view class="flex flex-col items-center gap-1 py-2 px-1 flex-1" v-for="metric in visibleMetrics" :key="metric.key">
             <u-icon :name="metricIcon(metric.key)" size="28" color="#2563eb" />
-            <text class="text-xs text-gray-500">{{ metric.key }}</text>
-            <text class="text-lg font-bold text-gray-900">{{ metric.value }}</text>
-            <text class="text-xs" :class="trendClass(metric.trend_value)">{{ trendText(metric.trend_value) }}</text>
-          </view>
-        </view>
-        <view class="flex flex-nowrap justify-center pb-3">
-          <view class="flex flex-col items-center gap-1 py-2 px-1 flex-1" v-for="metric in metricsSecondRow" :key="metric.key">
-            <u-icon :name="metricIcon(metric.key)" size="28" color="#2563eb" />
-            <text class="text-xs text-gray-500">{{ metric.key }}</text>
+            <text class="text-xs text-gray-500">{{ metricLabel(metric.key) }}</text>
             <text class="text-lg font-bold text-gray-900">{{ metric.value }}</text>
             <text class="text-xs" :class="trendClass(metric.trend_value)">{{ trendText(metric.trend_value) }}</text>
           </view>
@@ -87,16 +79,16 @@ import uCharts from '@qiun/ucharts'
 import Layout from '@/layouts/index.vue'
 import { dashboardApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
-import { useDictStore } from '@/stores/dict'
 import { useRouteStore } from '@/stores/route'
+import { isDictLoaded, refreshDict } from '@/utils/dict'
 
 const authStore = useAuthStore()
-const dictStore = useDictStore()
 const routeStore = useRouteStore()
 const instance = getCurrentInstance()
 const metrics = ref<any[]>([])
 const accountTrend = ref<any[]>([])
 const fileTypeShare = ref<any[]>([])
+const visibleMetricKeys = new Set(['accounts', 'online_sessions', 'files'])
 
 const displayName = computed(
   () =>
@@ -106,8 +98,9 @@ const displayName = computed(
     '管理员'
 )
 
-const metricsFirstRow = computed(() => metrics.value.slice(0, 3))
-const metricsSecondRow = computed(() => metrics.value.slice(3, 5))
+const visibleMetrics = computed(() =>
+  metrics.value.filter((item) => visibleMetricKeys.has(item.key))
+)
 const roleNames = computed(() => authStore.userInfo?.roleIdNames ?? [])
 const deptNames = computed(() => authStore.userInfo?.deptIdNames ?? [])
 
@@ -132,7 +125,7 @@ function buildTrendChartData() {
   const dates = [...new Set(accountTrend.value.map((item: any) => item.date))]
   const types = [...new Set(accountTrend.value.map((item: any) => item.type))]
   const series = types.map((type: any) => ({
-    name: type,
+    name: trendTypeLabel(type),
     data: dates.map((date: any) => {
       const found = accountTrend.value.find(
         (i: any) => i.date === date && i.type === type
@@ -234,11 +227,15 @@ onUnmounted(() => {
 })
 
 const iconMap: Record<string, string> = {
-  Accounts: 'account',
-  'Online Devices': 'wifi',
-  Files: 'file-text',
-  Banners: 'photo',
-  'Published Notices': 'volume',
+  accounts: 'account',
+  online_sessions: 'wifi',
+  files: 'file-text',
+}
+
+const metricLabelMap: Record<string, string> = {
+  accounts: '账号',
+  online_sessions: '在线设备数',
+  files: '文件',
 }
 
 function metricIcon(key: string): string {
@@ -247,6 +244,14 @@ function metricIcon(key: string): string {
     if (mapKey.toLowerCase() === k) return icon
   }
   return 'grid'
+}
+
+function metricLabel(key: string): string {
+  return metricLabelMap[key] ?? key
+}
+
+function trendTypeLabel(type: string): string {
+  return type === 'accounts' ? '新增账号' : type
 }
 
 function trendClass(value: number | null | undefined): string {
@@ -274,8 +279,8 @@ onPullDownRefresh(async () => {
 })
 
 async function bootstrap() {
-  if (!dictStore.loaded) {
-    await dictStore.refreshDict()
+  if (!isDictLoaded()) {
+    await refreshDict()
   }
   if (!routeStore.modules.length) {
     await routeStore.initRoutes()

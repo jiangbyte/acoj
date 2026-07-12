@@ -1,5 +1,5 @@
 <script setup lang="ts">
-export interface NoticeItem {
+export interface BannerItem {
   id: string
   type: number
   title: string
@@ -12,7 +12,7 @@ export interface NoticeItem {
 }
 
 defineProps<{
-  list?: NoticeItem[]
+  list?: BannerItem[]
   loading?: boolean
   hasMore?: boolean
 }>()
@@ -28,7 +28,7 @@ const emit = defineEmits<{
     <n-empty
       v-if="!loading && !list?.length"
       class="h-full py-80px"
-      :description="'No data'"
+      :description="'暂无数据'"
     />
     <div v-else-if="loading && !list?.length" class="h-full flex items-center justify-center">
       <n-spin size="small" />
@@ -61,7 +61,7 @@ const emit = defineEmits<{
       </n-list-item>
       <div v-if="hasMore" class="py-12px text-center">
         <n-button text size="small" :loading="loading" @click.stop="emit('loadMore')">
-          {{ 'Load more' }}
+          加载更多
         </n-button>
       </div>
     </n-list>

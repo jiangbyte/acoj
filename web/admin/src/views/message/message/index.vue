@@ -3,7 +3,7 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { messageApi } from '@/api'
-import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
@@ -45,12 +45,12 @@ const availableTabs = computed(() =>
   [
     {
       name: 'threads',
-      tab: 'Threads',
+      tab: '会话',
       permission: 'message:thread:page',
     },
     {
       name: 'groups',
-      tab: 'Groups',
+      tab: '群组',
       permission: 'message:group:page',
     },
   ].filter((item) => hasPermission(item.permission)),
@@ -60,7 +60,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() =>
   activeTab.value === 'threads'
     ? [
         {
-          title: 'Thread Type',
+          title: '会话类型',
           path: 'thread_type',
           field: 'select',
           fieldProps: {
@@ -70,12 +70,12 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() =>
       ]
     : [
         {
-          title: 'Group Name',
+          title: '用户组名称',
           path: 'name',
           field: 'input',
         },
         {
-          title: 'Status',
+          title: '状态',
           path: 'status',
           field: 'select',
           fieldProps: {
@@ -91,7 +91,7 @@ const pagination = computed<PaginationProps>(() => ({
   itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => `${itemCount} total`,
+  prefix: ({ itemCount }) => `${itemCount} 条`,
   onUpdatePage: (value) => {
     state.page = value
     fetchPage()
@@ -111,14 +111,14 @@ const threadColumns = computed<ProDataTableColumns<any>>(() => [
     ellipsis: { tooltip: true },
   },
   {
-    title: 'Thread Title',
+    title: '会话标题',
     path: 'title',
     width: 220,
     ellipsis: { tooltip: true },
     render: (row) => row.title || '-',
   },
   {
-    title: 'Thread Type',
+    title: '会话类型',
     path: 'thread_type',
     width: 130,
     render: (row) => (
@@ -131,26 +131,28 @@ const threadColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Group ID',
+    title: '用户组ID',
     path: 'group_id',
     width: 160,
     ellipsis: { tooltip: true },
     render: (row) => row.group_id || '-',
   },
   {
-    title: 'Last Message At',
+    title: '最近消息时间',
     path: 'last_message_at',
     width: 190,
     ellipsis: { tooltip: true },
+    render: (row) => formatDateTime(row.last_message_at),
   },
   {
-    title: 'Updated At',
+    title: '更新时间',
     path: 'updated_at',
     width: 190,
     ellipsis: { tooltip: true },
+    render: (row) => formatDateTime(row.updated_at),
   },
   {
-    title: 'Operation',
+    title: '操作',
     key: 'actions',
     width: 95,
     fixed: 'right',
@@ -179,25 +181,25 @@ const groupColumns = computed<ProDataTableColumns<any>>(() => [
     ellipsis: { tooltip: true },
   },
   {
-    title: 'Group Name',
+    title: '用户组名称',
     path: 'name',
     width: 220,
     ellipsis: { tooltip: true },
   },
   {
-    title: 'Group Avatar',
+    title: '用户组头像',
     path: 'avatar',
     width: 120,
     ellipsis: { tooltip: true },
     render: (row) => row.avatar || '-',
   },
   {
-    title: 'Members',
+    title: '成员数',
     path: 'member_count',
     width: 110,
   },
   {
-    title: 'Status',
+    title: '状态',
     path: 'status',
     width: 120,
     render: (row) => (
@@ -207,13 +209,14 @@ const groupColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Updated At',
+    title: '更新时间',
     path: 'updated_at',
     width: 190,
     ellipsis: { tooltip: true },
+    render: (row) => formatDateTime(row.updated_at),
   },
   {
-    title: 'Operation',
+    title: '操作',
     key: 'actions',
     width: 140,
     fixed: 'right',
@@ -298,15 +301,15 @@ function openGroupForm(id?: string) {
 
 function confirmDeleteGroup(id: string) {
   window.$dialog.warning({
-    title: 'Delete',
+    title: '删除',
     draggable: true,
     maskClosable: false,
-    content: 'Delete this group?',
-    positiveText: 'Confirm',
-    negativeText: 'Cancel',
+    content: '删除该用户组?',
+    positiveText: '确认',
+    negativeText: '取消',
     onPositiveClick: async () => {
       await messageApi.removeGroup({ ids: [id] })
-      window.$message.success('Deleted successfully')
+      window.$message.success('删除成功')
       await fetchPage()
     },
   })
@@ -324,12 +327,12 @@ function confirmDeleteGroup(id: string) {
           :key="activeTab"
           :form="searchForm"
           :columns="searchColumns"
-          :reset-button-props="{ content: 'Reset' }"
-          :search-button-props="{ content: 'Search' }"
+          :reset-button-props="{ content: '重置' }"
+          :search-button-props="{ content: '搜索' }"
           :collapse-button-props="{
             content: searchForm.collapsed.value
-              ? 'Expand'
-              : 'Collapse',
+              ? '展开'
+              : '收起',
           }"
         />
       </NFlex>
@@ -338,7 +341,7 @@ function confirmDeleteGroup(id: string) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="'Messages'"
+      :title="'消息'"
       row-key="id"
       :scroll-x="activeTab === 'threads' ? 1150 : 760"
       :columns="tableColumns"
@@ -352,8 +355,8 @@ function confirmDeleteGroup(id: string) {
             v-if="activeTab === 'groups' && hasPermission('message:group:create')"
             type="primary"
             text
-            :title="'Add Group'"
-            :aria-label="'Add Group'"
+            :title="'新增用户组'"
+            :aria-label="'新增用户组'"
             @click="openGroupForm()"
           >
             <template #icon>
@@ -362,7 +365,7 @@ function confirmDeleteGroup(id: string) {
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchPage">
+          <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />

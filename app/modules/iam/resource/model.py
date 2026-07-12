@@ -31,6 +31,7 @@ class SysResource(Base, TimestampMixin):
     component: Mapped[str | None] = mapped_column(String(255), comment="前端组件")
     redirect: Mapped[str | None] = mapped_column(String(255), comment="重定向地址")
     icon: Mapped[str | None] = mapped_column(String(255), comment="图标")
+    color: Mapped[str | None] = mapped_column(String(32), comment="颜色")
     href: Mapped[str | None] = mapped_column(String(255), comment="外链地址")
     sort: Mapped[int] = mapped_column(Integer, default=99, nullable=False, comment="排序")
     is_visible: Mapped[bool] = mapped_column(

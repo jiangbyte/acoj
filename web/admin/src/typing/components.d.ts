@@ -67,7 +67,6 @@ declare module 'vue' {
     NPopselect: typeof import('naive-ui')['NPopselect']
     NRadioButton: typeof import('naive-ui')['NRadioButton']
     NRadioGroup: typeof import('naive-ui')['NRadioGroup']
-    NResult: typeof import('naive-ui')['NResult']
     NScrollbar: typeof import('naive-ui')['NScrollbar']
     NSelect: typeof import('naive-ui')['NSelect']
     NSpace: typeof import('naive-ui')['NSpace']
@@ -86,6 +85,7 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     VideoUpload: typeof import('./../components/upload/VideoUpload.vue')['default']
     Watermark: typeof import('./../components/common/Watermark.vue')['default']
+    '水印': typeof import('./../components/common/Watermark.vue')['default']
   }
 }
 
@@ -146,7 +146,6 @@ declare global {
   const NPopselect: typeof import('naive-ui')['NPopselect']
   const NRadioButton: typeof import('naive-ui')['NRadioButton']
   const NRadioGroup: typeof import('naive-ui')['NRadioGroup']
-  const NResult: typeof import('naive-ui')['NResult']
   const NScrollbar: typeof import('naive-ui')['NScrollbar']
   const NSelect: typeof import('naive-ui')['NSelect']
   const NSpace: typeof import('naive-ui')['NSpace']
@@ -165,4 +164,5 @@ declare global {
   const RouterView: typeof import('vue-router')['RouterView']
   const VideoUpload: typeof import('./../components/upload/VideoUpload.vue')['default']
   const Watermark: typeof import('./../components/common/Watermark.vue')['default']
+  const '水印': typeof import('./../components/common/Watermark.vue')['default']
 }

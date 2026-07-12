@@ -32,8 +32,8 @@ const state = reactive({
 
 const modalTitle = computed(() =>
   state.subject?.name
-    ? `${state.title || 'Grant Users'} - ${state.subject.name}`
-    : state.title || 'Grant Users',
+    ? `${state.title || '分配用户'} - ${state.subject.name}`
+    : state.title || '分配用户',
 )
 const filteredUsers = computed(() => {
   const keyword = state.searchKey.trim().toLowerCase()
@@ -54,13 +54,13 @@ const tableUsers = computed(() => {
 const selectedIds = computed(() => new Set(state.selectedData.map((item) => String(item.id))))
 const secondaryTitle = computed(() =>
   state.searchFields.includes('code')
-    ? 'Role Code'
-    : 'Account',
+    ? '角色编码'
+    : '账号',
 )
 
 const userColumns = computed<DataTableColumns<any>>(() => [
   {
-    title: 'Operation',
+    title: '操作',
     key: 'action',
     align: 'center',
     width: 56,
@@ -77,7 +77,7 @@ const userColumns = computed<DataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Avatar',
+    title: '头像',
     key: 'avatar',
     width: 56,
     render: (row) => {
@@ -89,7 +89,7 @@ const userColumns = computed<DataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Name',
+    title: '名称',
     key: 'name',
     minWidth: 120,
     ellipsis: {
@@ -108,7 +108,7 @@ const userColumns = computed<DataTableColumns<any>>(() => [
 ])
 const selectedColumns = computed<DataTableColumns<any>>(() => [
   {
-    title: 'Operation',
+    title: '操作',
     key: 'action',
     align: 'center',
     width: 70,
@@ -119,7 +119,7 @@ const selectedColumns = computed<DataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Name',
+    title: '名称',
     key: 'name',
     minWidth: 120,
     ellipsis: {
@@ -169,7 +169,7 @@ async function submitGrant() {
       id: state.subject.id,
       [state.submitKey]: state.selectedData.map((item) => item.id),
     })
-    window.$message.success('Grant saved successfully')
+    window.$message.success('授权保存成功')
     closeModal()
     emit('saved')
   } finally {
@@ -228,23 +228,23 @@ defineExpose({
               <NInput
                 v-model:value="state.searchKey"
                 clearable
-                :placeholder="'Enter username'"
+                :placeholder="'请输入用户名'"
                 @keyup.enter="state.page = 1"
                 @clear="resetSearch"
               />
               <NButton type="primary" @click="state.page = 1">
-                {{ 'Search' }}
+                搜索
               </NButton>
               <NButton @click="resetSearch">
-                {{ 'Reset' }}
+                重置
               </NButton>
             </NInputGroup>
             <NFlex justify="space-between" align="center">
               <NText>
-                {{ `Pending list: ${filteredUsers.length}` }}
+                {{ `待处理列表: ${filteredUsers.length}` }}
               </NText>
               <NButton dashed size="small" @click="addAllPageRecord">
-                {{ 'Add Current Page' }}
+                新增当前页
               </NButton>
             </NFlex>
             <NDataTable
@@ -271,10 +271,10 @@ defineExpose({
           <NSpace vertical>
             <NFlex justify="space-between" align="center">
               <NText>{{
-                `Selected: ${state.selectedData.length}`
+                `已选择： ${state.selectedData.length}`
               }}</NText>
               <NButton dashed type="error" size="small" @click="delAllRecord">
-                {{ 'Remove All' }}
+                全部移除
               </NButton>
             </NFlex>
             <NDataTable
@@ -293,10 +293,10 @@ defineExpose({
       <template #footer>
         <NSpace justify="end" align="center">
           <NButton @click="closeModal">
-            {{ 'Close' }}
+            关闭
           </NButton>
           <NButton type="primary" :loading="state.submitLoading" @click="submitGrant">
-            {{ 'Save' }}
+            保存
           </NButton>
         </NSpace>
       </template>

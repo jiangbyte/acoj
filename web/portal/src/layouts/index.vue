@@ -18,7 +18,7 @@ const showMobileMenu = ref(false)
 const staticMenus = computed<MenuOption[]>(() => [
   {
     key: '/home',
-    label: () => h(RouterLink, { to: '/home' }, { default: () => 'Home' }),
+    label: () => h(RouterLink, { to: '/home' }, { default: () => '首页' }),
     icon: renderIcon('icon-park-outline:home'),
   },
 ])
@@ -89,7 +89,7 @@ function goLogin() {
           <MessageBell v-if="authStore.isLogin" />
           <UserCenter v-if="authStore.isLogin" />
           <n-button v-else type="primary" :focusable="false" @click="goLogin">
-            {{ 'Sign In' }}
+            登录
           </n-button>
         </div>
       </div>
@@ -108,7 +108,7 @@ function goLogin() {
           "
         >
           <div class="font-medium text-[var(--text-color-2)]">
-            {{ 'Enterprise Portal' }}
+            企业门户
           </div>
           <div>{{ copyright }}</div>
         </div>

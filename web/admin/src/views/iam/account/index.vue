@@ -3,7 +3,7 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { accountApi } from '@/api'
-import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { NButton, NDropdown, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -11,7 +11,6 @@ import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 import ModalGrantDept from './components/ModalGrantDept.vue'
-import ModalGrantPermission from '../role/components/ModalGrantPermission.vue'
 import ModalGrantResource from '../role/components/ModalGrantResource.vue'
 import ModalGrantUser from '../role/components/ModalGrantUser.vue'
 
@@ -21,7 +20,6 @@ const grantRoleModalRef = ref<any>(null)
 const grantGroupModalRef = ref<any>(null)
 const grantDeptModalRef = ref<any>(null)
 const grantResourceModalRef = ref<any>(null)
-const grantPermissionModalRef = ref<any>(null)
 const state = reactive({
   accounts: [] as any[],
   total: 0,
@@ -53,27 +51,27 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: 'Account',
+    title: '账号',
     path: 'account',
     field: 'input',
   },
   {
-    title: 'Name',
+    title: '名称',
     path: 'name',
     field: 'input',
   },
   {
-    title: 'Phone',
+    title: '手机号',
     path: 'phone',
     field: 'input',
   },
   {
-    title: 'Email',
+    title: '邮箱',
     path: 'email',
     field: 'input',
   },
   {
-    title: 'Account Type',
+    title: '账号类型',
     path: 'account_type',
     field: 'select',
     fieldProps: {
@@ -81,7 +79,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: 'Account Status',
+    title: '账号状态',
     path: 'account_status',
     field: 'select',
     fieldProps: {
@@ -96,7 +94,7 @@ const pagination = computed<PaginationProps>(() => ({
   itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => `${itemCount} total`,
+  prefix: ({ itemCount }) => `${itemCount} 条`,
   onUpdatePage: (value) => {
     state.page = value
     fetchPage()
@@ -122,7 +120,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Account',
+    title: '账号',
     path: 'account',
     width: 140,
     ellipsis: {
@@ -130,7 +128,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Name',
+    title: '名称',
     path: 'name',
     width: 130,
     ellipsis: {
@@ -138,7 +136,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Nickname',
+    title: '昵称',
     path: 'nickname',
     width: 130,
     ellipsis: {
@@ -146,7 +144,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Account Type',
+    title: '账号类型',
     path: 'account_type',
     width: 120,
     render: (row) => (
@@ -159,7 +157,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Account Status',
+    title: '账号状态',
     path: 'account_status',
     width: 120,
     render: (row) => (
@@ -172,12 +170,12 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Phone',
+    title: '手机号',
     path: 'phone',
     width: 150,
   },
   {
-    title: 'Email',
+    title: '邮箱',
     path: 'email',
     width: 220,
     ellipsis: {
@@ -185,23 +183,25 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Latest Login Time',
+    title: '最近登录时间',
     path: 'latest_login_time',
     width: 190,
     ellipsis: {
       tooltip: true,
     },
+    render: (row) => formatDateTime(row.latest_login_time),
   },
   {
-    title: 'Updated At',
+    title: '更新时间',
     path: 'updated_at',
     width: 190,
     ellipsis: {
       tooltip: true,
     },
+    render: (row) => formatDateTime(row.updated_at),
   },
   {
-    title: 'Operation',
+    title: '操作',
     key: 'actions',
     width: 150,
     fixed: 'right',
@@ -244,29 +244,24 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
 const grantOptions = computed(() =>
   [
     {
-      label: 'Grant Roles',
+      label: '分配角色',
       key: 'role',
       permission: 'iam:account:grantrole',
     },
     {
-      label: 'Grant Groups',
+      label: '分配用户组',
       key: 'group',
       permission: 'iam:account:grantgroup',
     },
     {
-      label: 'Grant Departments',
+      label: '分配部门',
       key: 'dept',
       permission: 'iam:account:grantdept',
     },
     {
-      label: 'Grant Resources',
+      label: '分配资源',
       key: 'resource',
       permission: 'iam:account:grantresource',
-    },
-    {
-      label: 'Grant Permissions',
-      key: 'permission',
-      permission: 'iam:account:grantpermission',
     },
   ].filter((item) => hasPermission(item.permission)),
 )
@@ -316,7 +311,7 @@ function openGrantModal(type: string, row: any) {
     name: row.nickname || '-',
   }
   if (type === 'role') {
-    grantRoleModalRef.value?.openModal(account, accountApi, 'Grant Roles', {
+    grantRoleModalRef.value?.openModal(account, accountApi, '分配角色', {
       ownMethod: 'ownRoles',
       grantMethod: 'grantRoles',
       listKey: 'roles',
@@ -328,7 +323,7 @@ function openGrantModal(type: string, row: any) {
     grantGroupModalRef.value?.openModal(
       account,
       accountApi,
-      'Grant Groups',
+      '分配用户组',
       {
         ownMethod: 'ownGroups',
         grantMethod: 'grantGroups',
@@ -344,13 +339,7 @@ function openGrantModal(type: string, row: any) {
     grantResourceModalRef.value?.openModal(
       account,
       accountApi,
-      'Grant Resources',
-    )
-  } else if (type === 'permission') {
-    grantPermissionModalRef.value?.openModal(
-      account,
-      accountApi,
-      'Grant Permissions',
+      '分配资源',
     )
   }
 }
@@ -367,14 +356,14 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? 'Batch Delete' : 'Delete',
+    title: isBatch ? '批量删除' : '删除',
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? `Delete ${ids.length} selected accounts?`
-      : 'Delete this account?',
-    positiveText: 'Confirm',
-    negativeText: 'Cancel',
+      ? `删除 ${ids.length} 个账号?`
+      : '删除该账号?',
+    positiveText: '确认',
+    negativeText: '取消',
     onPositiveClick: () => deleteData(ids),
   })
 }
@@ -383,7 +372,7 @@ async function deleteData(ids: string[]) {
   await accountApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
-  window.$message.success('Deleted successfully')
+  window.$message.success('删除成功')
   await fetchPage()
   if (!state.accounts.length && state.total > 0 && state.page > 1) {
     state.page -= 1
@@ -398,12 +387,12 @@ async function deleteData(ids: string[]) {
       <ProSearchForm
         :form="searchForm"
         :columns="searchColumns"
-        :reset-button-props="{ content: 'Reset' }"
-        :search-button-props="{ content: 'Search' }"
+        :reset-button-props="{ content: '重置' }"
+        :search-button-props="{ content: '搜索' }"
         :collapse-button-props="{
           content: searchForm.collapsed.value
-            ? 'Expand'
-            : 'Collapse',
+            ? '展开'
+            : '收起',
         }"
       />
     </ProCard>
@@ -411,7 +400,7 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="'Account Management'"
+      :title="'账号管理'"
       row-key="id"
       :scroll-x="1960"
       :columns="tableColumns"
@@ -423,14 +412,14 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('iam:account:create')" type="primary" text :title="'Add'" :aria-label="'Add'" @click="openCreateModal">
+          <NButton v-if="hasPermission('iam:account:create')" type="primary" text :title="'新增'" :aria-label="'新增'" @click="openCreateModal">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchPage">
+          <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -441,8 +430,8 @@ async function deleteData(ids: string[]) {
             v-if="hasPermission('iam:account:delete')"
             type="error"
             text
-            :title="'Batch Delete'"
-            :aria-label="'Batch Delete'"
+            :title="'批量删除'"
+            :aria-label="'批量删除'"
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >
@@ -462,7 +451,6 @@ async function deleteData(ids: string[]) {
     <ModalGrantUser ref="grantGroupModalRef" @saved="fetchPage" />
     <ModalGrantDept ref="grantDeptModalRef" @saved="fetchPage" />
     <ModalGrantResource ref="grantResourceModalRef" @saved="fetchPage" />
-    <ModalGrantPermission ref="grantPermissionModalRef" @saved="fetchPage" />
   </NFlex>
 </template>
 

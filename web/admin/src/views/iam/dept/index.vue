@@ -3,7 +3,7 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { deptApi } from '@/api'
-import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -43,17 +43,17 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: 'Department Name',
+    title: '部门名称',
     path: 'name',
     field: 'input',
   },
   {
-    title: 'Department Code',
+    title: '部门编码',
     path: 'code',
     field: 'input',
   },
   {
-    title: 'Department Category',
+    title: '部门分类',
     path: 'category',
     field: 'select',
     fieldProps: {
@@ -61,12 +61,12 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: 'Parent Department ID',
+    title: '父级部门ID',
     path: 'parent_id',
     field: 'input',
   },
   {
-    title: 'Status',
+    title: '状态',
     path: 'status',
     field: 'select',
     fieldProps: {
@@ -81,7 +81,7 @@ const pagination = computed<PaginationProps>(() => ({
   itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => `${itemCount} total`,
+  prefix: ({ itemCount }) => `${itemCount} 条`,
   onUpdatePage: (value) => {
     state.page = value
     fetchPage()
@@ -107,7 +107,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Department Name',
+    title: '部门名称',
     path: 'name',
     width: 160,
     ellipsis: {
@@ -115,7 +115,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Department Code',
+    title: '部门编码',
     path: 'code',
     width: 150,
     ellipsis: {
@@ -123,13 +123,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Department Category',
+    title: '部门分类',
     path: 'category',
     width: 130,
     render: (row) => dictTypeData('DEPT_CATEGORY', row.category) || row.category,
   },
   {
-    title: 'Parent Department ID',
+    title: '父级部门ID',
     path: 'parent_id',
     width: 160,
     ellipsis: {
@@ -137,18 +137,18 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Sort',
+    title: '排序',
     path: 'sort',
     width: 90,
   },
   {
-    title: 'Virtual Department',
+    title: '虚拟部门',
     path: 'is_virtual',
     width: 110,
-    render: (row) => (row.is_virtual ? 'Yes' : 'No'),
+    render: (row) => (row.is_virtual ? '是' : '否'),
   },
   {
-    title: 'Status',
+    title: '状态',
     path: 'status',
     width: 110,
     render: (row) => (
@@ -158,15 +158,16 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Updated At',
+    title: '更新时间',
     path: 'updated_at',
     width: 190,
     ellipsis: {
       tooltip: true,
     },
+    render: (row) => formatDateTime(row.updated_at),
   },
   {
-    title: 'Operation',
+    title: '操作',
     key: 'actions',
     width: 120,
     fixed: 'right',
@@ -243,14 +244,14 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? 'Batch Delete' : 'Delete',
+    title: isBatch ? '批量删除' : '删除',
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? `Delete ${ids.length} selected departments?`
-      : 'Delete this department?',
-    positiveText: 'Confirm',
-    negativeText: 'Cancel',
+      ? `删除 ${ids.length} 个部门?`
+      : '删除该部门?',
+    positiveText: '确认',
+    negativeText: '取消',
     onPositiveClick: () => deleteData(ids),
   })
 }
@@ -259,7 +260,7 @@ async function deleteData(ids: string[]) {
   await deptApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
-  window.$message.success('Deleted successfully')
+  window.$message.success('删除成功')
   await fetchPage()
   if (!state.depts.length && state.total > 0 && state.page > 1) {
     state.page -= 1
@@ -274,12 +275,12 @@ async function deleteData(ids: string[]) {
       <ProSearchForm
         :form="searchForm"
         :columns="searchColumns"
-        :reset-button-props="{ content: 'Reset' }"
-        :search-button-props="{ content: 'Search' }"
+        :reset-button-props="{ content: '重置' }"
+        :search-button-props="{ content: '搜索' }"
         :collapse-button-props="{
           content: searchForm.collapsed.value
-            ? 'Expand'
-            : 'Collapse',
+            ? '展开'
+            : '收起',
         }"
       />
     </ProCard>
@@ -287,7 +288,7 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="'Department Management'"
+      :title="'部门管理'"
       row-key="id"
       :scroll-x="1440"
       :columns="tableColumns"
@@ -299,14 +300,14 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('iam:dept:create')" type="primary" text :title="'Add'" :aria-label="'Add'" @click="openCreateModal">
+          <NButton v-if="hasPermission('iam:dept:create')" type="primary" text :title="'新增'" :aria-label="'新增'" @click="openCreateModal">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchPage">
+          <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -317,8 +318,8 @@ async function deleteData(ids: string[]) {
             v-if="hasPermission('iam:dept:delete')"
             type="error"
             text
-            :title="'Batch Delete'"
-            :aria-label="'Batch Delete'"
+            :title="'批量删除'"
+            :aria-label="'批量删除'"
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >

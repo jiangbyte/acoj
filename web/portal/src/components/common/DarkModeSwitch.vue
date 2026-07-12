@@ -8,17 +8,17 @@ const appStore = useAppStore()
 
 const options = computed(() => [
   {
-    label: 'Light',
+    label: '浅色',
     value: 'light',
     icon: 'icon-park-outline:sun-one',
   },
   {
-    label: 'Dark',
+    label: '深色',
     value: 'dark',
     icon: 'icon-park-outline:moon',
   },
   {
-    label: 'System',
+    label: '系统',
     value: 'auto',
     icon: 'icon-park-outline:laptop-computer',
   },

@@ -4,8 +4,8 @@
       <u-card>
         <template #head>
           <CardHead
-            title="Sign in to Enterprise Portal"
-            sub-title="Choose a portal login identity."
+            title="登录企业门户"
+            sub-title="请选择门户登录身份。"
           />
         </template>
         <template #body>
@@ -28,18 +28,18 @@
             </u-form-item>
             <u-form-item>
               <view class="form-field">
-                <text>Password</text>
+                <text>密码</text>
                 <u-input
                   v-model="form.password"
                   type="password"
-                  placeholder="Enter password"
+                  placeholder="请输入密码"
                   border="surround"
                 ></u-input>
               </view>
             </u-form-item>
             <u-form-item>
               <view class="form-field">
-                <text>Captcha</text>
+                <text>验证码</text>
                 <CaptchaField
                   ref="captchaRef"
                   v-model:captcha-id="form.captcha_id"
@@ -51,13 +51,13 @@
         </template>
         <template #foot>
           <u-button
-            text="Sign In"
+            text="登录"
             type="primary"
             :loading="loading"
             @click="submit"
           ></u-button>
           <u-button
-            text="Create Account"
+            text="创建账号"
             plain
             @click="openRegister"
           ></u-button>
@@ -73,13 +73,12 @@ import Layout from '@/layouts/index.vue'
 import CardHead from '@/components/common/CardHead.vue'
 import CaptchaField from '@/components/common/CaptchaField.vue'
 import { useAuthStore } from '@/stores/auth'
-import { useDictStore } from '@/stores/dict'
 import { useRouteStore } from '@/stores/route'
+import { refreshDict } from '@/utils/dict'
 
 type LoginType = 'ACCOUNT' | 'EMAIL' | 'PHONE'
 
 const authStore = useAuthStore()
-const dictStore = useDictStore()
 const routeStore = useRouteStore()
 const loading = ref(false)
 const activeType = ref<LoginType>('ACCOUNT')
@@ -93,21 +92,21 @@ const loginTypes: Array<{
 }> = [
   {
     key: 'ACCOUNT',
-    name: 'Account',
-    label: 'Account',
-    placeholder: 'Enter account',
+    name: '账号',
+    label: '账号',
+    placeholder: '请输入账号',
   },
   {
     key: 'EMAIL',
-    name: 'Email',
-    label: 'Email',
-    placeholder: 'Enter login email',
+    name: '邮箱',
+    label: '邮箱',
+    placeholder: '请输入登录邮箱',
   },
   {
     key: 'PHONE',
-    name: 'Phone',
-    label: 'Phone',
-    placeholder: 'Enter login phone',
+    name: '手机号',
+    label: '手机号',
+    placeholder: '请输入登录手机号',
   },
 ]
 
@@ -168,7 +167,7 @@ async function submit() {
       captcha_value: form.captcha_value,
       identity_type: activeType.value,
     })
-    await Promise.all([dictStore.refreshDict(), routeStore.initRoutes()])
+    await Promise.all([refreshDict(), routeStore.initRoutes()])
     uni.switchTab({ url: '/pages/usercenter/index' })
   } catch {
     await captchaRef.value?.refresh()

@@ -5,7 +5,7 @@ import { Icon } from '@iconify/vue/offline'
 import { NButton, NFlex, NIcon, NImage, NTag } from 'naive-ui'
 import FileUpload from '@/components/upload/FileUpload.vue'
 import { fileApi } from '@/api'
-import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon, resolveFileUrl } from '@/utils'
+import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon, resolveFileUrl } from '@/utils'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
@@ -40,17 +40,17 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: 'File Name',
+    title: '文件名',
     path: 'original_name',
     field: 'input',
   },
   {
-    title: 'Object Path',
+    title: '对象路径',
     path: 'object_name',
     field: 'input',
   },
   {
-    title: 'Storage Provider',
+    title: '存储提供商',
     path: 'storage_provider',
     field: 'select',
     fieldProps: {
@@ -58,7 +58,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: 'Content Type',
+    title: '内容 类型',
     path: 'content_type',
     field: 'input',
   },
@@ -70,7 +70,7 @@ const pagination = computed<PaginationProps>(() => ({
   itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => `${itemCount} total`,
+  prefix: ({ itemCount }) => `${itemCount} 条`,
   onUpdatePage: (value) => {
     state.page = value
     fetchPage()
@@ -96,13 +96,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Preview',
+    title: '预览',
     key: 'preview',
     width: 120,
     render: (row) => renderPreview(row),
   },
   {
-    title: 'File Name',
+    title: '文件名',
     path: 'original_name',
     width: 220,
     ellipsis: {
@@ -110,7 +110,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Object Path',
+    title: '对象路径',
     path: 'object_name',
     width: 320,
     ellipsis: {
@@ -118,7 +118,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Storage Provider',
+    title: '存储提供商',
     path: 'storage_provider',
     width: 130,
     render: (row) => (
@@ -131,7 +131,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Bucket',
+    title: '存储桶',
     path: 'bucket',
     width: 150,
     ellipsis: {
@@ -139,7 +139,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'Content Type',
+    title: '内容 类型',
     path: 'content_type',
     width: 180,
     ellipsis: {
@@ -147,21 +147,22 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: 'File Size',
+    title: '文件大小',
     path: 'size',
     width: 120,
     render: (row) => formatFileSize(row.size),
   },
   {
-    title: 'Updated At',
+    title: '更新时间',
     path: 'updated_at',
     width: 190,
     ellipsis: {
       tooltip: true,
     },
+    render: (row) => formatDateTime(row.updated_at),
   },
   {
-    title: 'Operation',
+    title: '操作',
     key: 'actions',
     width: 150,
     fixed: 'right',
@@ -224,7 +225,7 @@ function renderPreview(row: any) {
   return (
     <NImage
       src={src}
-      alt={row.original_name || 'Preview'}
+      alt={row.original_name || '预览'}
       width={72}
       height={48}
       objectFit="cover"
@@ -279,14 +280,14 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? 'Batch Delete' : 'Delete',
+    title: isBatch ? '批量删除' : '删除',
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? `Delete ${ids.length} selected files?`
-      : 'Delete this file?',
-    positiveText: 'Confirm',
-    negativeText: 'Cancel',
+      ? `删除 ${ids.length} 个文件?`
+      : '删除该文件?',
+    positiveText: '确认',
+    negativeText: '取消',
     onPositiveClick: () => deleteData(ids),
   })
 }
@@ -295,7 +296,7 @@ async function deleteData(ids: string[]) {
   await fileApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
-  window.$message.success('Deleted successfully')
+  window.$message.success('删除成功')
   await fetchPage()
   if (!state.files.length && state.total > 0 && state.page > 1) {
     state.page -= 1
@@ -310,12 +311,12 @@ async function deleteData(ids: string[]) {
       <ProSearchForm
         :form="searchForm"
         :columns="searchColumns"
-        :reset-button-props="{ content: 'Reset' }"
-        :search-button-props="{ content: 'Search' }"
+        :reset-button-props="{ content: '重置' }"
+        :search-button-props="{ content: '搜索' }"
         :collapse-button-props="{
           content: searchForm.collapsed.value
-            ? 'Expand'
-            : 'Collapse',
+            ? '展开'
+            : '收起',
         }"
       />
     </ProCard>
@@ -323,7 +324,7 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="'File Management'"
+      :title="'文件管理'"
       row-key="id"
       :scroll-x="1890"
       :columns="tableColumns"
@@ -340,10 +341,10 @@ async function deleteData(ids: string[]) {
             compact
             mode="icon"
             icon="icon-park-outline:upload"
-            :button-text="'Upload File'"
+            :button-text="'上传文件'"
             @uploaded="fetchPage"
           />
-          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchPage">
+          <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -354,8 +355,8 @@ async function deleteData(ids: string[]) {
             v-if="hasPermission('sys:file:delete')"
             type="error"
             text
-            :title="'Batch Delete'"
-            :aria-label="'Batch Delete'"
+            :title="'批量删除'"
+            :aria-label="'批量删除'"
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >

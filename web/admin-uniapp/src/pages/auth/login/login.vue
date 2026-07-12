@@ -6,8 +6,8 @@
         src="/static/logo.png"
         mode="aspectFit"
       ></image>
-      <text class="login-header__title">Admin Console</text>
-      <text class="login-header__subtitle">Sign in to continue</text>
+      <text class="login-header__title">管理端控制台</text>
+      <text class="login-header__subtitle">登录后继续</text>
     </view>
 
     <u-card class="login-card" :show-head="false">
@@ -32,11 +32,11 @@
 
         <u-form-item :border-bottom="false">
           <view class="form-field">
-            <text class="form-field__label">Password</text>
+            <text class="form-field__label">密码</text>
             <u-input
               v-model="form.password"
               type="password"
-              placeholder="Enter password"
+              placeholder="请输入密码"
               border="surround"
             ></u-input>
           </view>
@@ -44,11 +44,11 @@
 
         <u-form-item :border-bottom="false">
           <view class="form-field">
-            <text class="form-field__label">Captcha</text>
+            <text class="form-field__label">验证码</text>
             <view class="captcha-row">
               <u-input
                 v-model="form.captcha_value"
-                placeholder="Enter captcha"
+                placeholder="请输入验证码"
                 border="surround"
               ></u-input>
               <image
@@ -65,7 +65,7 @@
 
       <view class="login-submit">
         <u-button
-          text="Sign In"
+          text="登录"
           type="primary"
           :loading="loading"
           @click="submit"
@@ -80,13 +80,12 @@ import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { authApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
-import { useDictStore } from '@/stores/dict'
 import { useRouteStore } from '@/stores/route'
+import { refreshDict } from '@/utils/dict'
 
 type LoginType = 'ACCOUNT' | 'EMAIL' | 'PHONE'
 
 const authStore = useAuthStore()
-const dictStore = useDictStore()
 const routeStore = useRouteStore()
 const loading = ref(false)
 const captchaImage = ref('')
@@ -100,21 +99,21 @@ const loginTypes: Array<{
 }> = [
   {
     key: 'ACCOUNT',
-    name: 'Account',
-    label: 'Account',
-    placeholder: 'Enter admin account',
+    name: '账号',
+    label: '账号',
+    placeholder: '请输入管理员账号',
   },
   {
     key: 'EMAIL',
-    name: 'Email',
-    label: 'Email',
-    placeholder: 'Enter login email',
+    name: '邮箱',
+    label: '邮箱',
+    placeholder: '请输入登录邮箱',
   },
   {
     key: 'PHONE',
-    name: 'Phone',
-    label: 'Phone',
-    placeholder: 'Enter login phone',
+    name: '手机号',
+    label: '手机号',
+    placeholder: '请输入登录手机号',
   },
 ]
 
@@ -171,7 +170,7 @@ async function submit() {
       captcha_value: form.captcha_value,
       identity_type: activeType.value,
     })
-    await Promise.all([dictStore.refreshDict(), routeStore.initRoutes()])
+    await Promise.all([refreshDict(), routeStore.initRoutes()])
     uni.switchTab({ url: '/pages/dashboard/index' })
   } catch {
     form.captcha_value = ''

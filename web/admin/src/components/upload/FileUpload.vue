@@ -37,8 +37,8 @@ const state = reactive({
 })
 
 const currentUrl = computed(() => resolveFileUrl(props.value))
-const currentName = computed(() => state.fileName || props.value || 'No file selected')
-const uploadText = computed(() => props.buttonText || 'Upload')
+const currentName = computed(() => state.fileName || props.value || '未选择文件')
+const uploadText = computed(() => props.buttonText || '上传')
 const actionIcon = computed(() => props.icon || 'icon-park-outline:upload')
 
 function triggerUpload() {
@@ -64,7 +64,7 @@ async function handleFileChange(event: Event) {
     state.fileName = uploaded.original_name || file.name
     emit('update:value', uploaded.url || uploaded.object_name || '')
     emit('uploaded', uploaded)
-    window.$message.success('Uploaded successfully')
+    window.$message.success('上传成功')
   } finally {
     state.loading = false
   }
@@ -112,7 +112,7 @@ async function handleFileChange(event: Event) {
         {{ uploadText }}
       </NButton>
       <NButton v-if="value" size="small" text type="error" @click="clearValue">
-        {{ 'Clear' }}
+        清除
       </NButton>
     </div>
   </div>

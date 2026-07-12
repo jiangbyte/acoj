@@ -13,12 +13,9 @@ from app.deps.db import get_db_session
 from app.modules.iam.group.schema import (
     GroupAdminPageQuery,
     GroupCreateRequest,
-    GroupGrantPermissionRequest,
     GroupGrantResourceRequest,
     GroupGrantRoleRequest,
     GroupGrantUserRequest,
-    GroupOwnPermissionDetailResponse,
-    GroupOwnPermissionResponse,
     GroupOwnResourceResponse,
     GroupOwnRoleResponse,
     GroupOwnUserResponse,
@@ -241,56 +238,4 @@ async def grant_resource(
     session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[None]:
     await GroupService(db).grant_resource(payload, session)
-    return success()
-
-
-@router.get(
-    "/sys/groups/own-permission",
-    dependencies=[
-        Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("iam:group:ownpermission")),
-    ],
-    response_model=ApiResponse[GroupOwnPermissionResponse],
-    summary="获取用户组拥有权限",
-)
-async def own_permission(
-    db: Annotated[AsyncSession, Depends(get_db_session)],
-    session: Annotated[SessionPayload, Depends(get_current_session)],
-    id: Annotated[Id, Query()],
-) -> ApiResponse[GroupOwnPermissionResponse]:
-    return success(await GroupService(db).own_permission(IdQuery(id=id), session))
-
-
-@router.get(
-    "/sys/groups/own-permission-detail",
-    dependencies=[
-        Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("iam:group:ownpermission")),
-    ],
-    response_model=ApiResponse[GroupOwnPermissionDetailResponse],
-    summary="获取用户组权限授权详情",
-)
-async def own_permission_detail(
-    db: Annotated[AsyncSession, Depends(get_db_session)],
-    session: Annotated[SessionPayload, Depends(get_current_session)],
-    id: Annotated[Id, Query()],
-) -> ApiResponse[GroupOwnPermissionDetailResponse]:
-    return success(await GroupService(db).own_permission_detail(IdQuery(id=id), session))
-
-
-@router.post(
-    "/sys/groups/grant-permission",
-    dependencies=[
-        Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("iam:group:grantpermission")),
-    ],
-    response_model=ApiResponse[None],
-    summary="给用户组授权权限",
-)
-async def grant_permission(
-    payload: GroupGrantPermissionRequest,
-    db: Annotated[AsyncSession, Depends(get_db_session)],
-    session: Annotated[SessionPayload, Depends(get_current_session)],
-) -> ApiResponse[None]:
-    await GroupService(db).grant_permission(payload, session)
     return success()

@@ -147,15 +147,15 @@
     },
     {
       "path": "pages/sys/banner/index",
-      "style": { "navigationBarTitleText": "Banner管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
+      "style": { "navigationBarTitleText": "展示图管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
     },
     {
       "path": "pages/sys/banner/form",
-      "style": { "navigationBarTitleText": "Banner表单", "navigationStyle": "custom" }
+      "style": { "navigationBarTitleText": "展示图表单", "navigationStyle": "custom" }
     },
     {
       "path": "pages/sys/banner/detail",
-      "style": { "navigationBarTitleText": "Banner详情", "navigationStyle": "custom" }
+      "style": { "navigationBarTitleText": "BannerDetail", "navigationStyle": "custom" }
     },
     {
       "path": "pages/sys/file/index",

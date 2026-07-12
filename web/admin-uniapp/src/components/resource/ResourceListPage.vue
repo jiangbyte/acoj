@@ -21,7 +21,7 @@
         v-for="item in records"
         :key="item.id"
         class="resource-card"
-        @click="openActions(item)"
+        @click="openAction(item)"
       >
         <view class="resource-card__head">
           <view class="resource-card__title-block">
@@ -194,7 +194,7 @@ function buildParams() {
 
 function subtitle(item: any) {
   if (!config.value.descriptionField) {
-    return displayValue(item.code || item.description || item.updated_at)
+    return item.code || item.description || formatDateTime(item.updated_at)
   }
   return displayField(item, config.value.descriptionField)
 }
@@ -208,14 +208,25 @@ function cardFields(item: any) {
 
 function displayField(item: any, field: string) {
   const value = item[field]
-  if (field.endsWith('_at')) {
+  const fieldMeta = fieldConfig(field)
+  if (isDateTimeField(field, fieldMeta)) {
     return formatDateTime(value)
   }
-  const fieldMeta = fieldConfig(field)
   if (fieldMeta?.dictCode) {
     return dictTypeData(fieldMeta.dictCode, value) || displayValue(value)
   }
   return displayValue(value)
+}
+
+function isDateTimeField(field: string, fieldMeta?: { type?: string }) {
+  return (
+    fieldMeta?.type === 'datetime' ||
+    field.endsWith('_at') ||
+    field.endsWith('_time') ||
+    field === 'expires_at' ||
+    field === 'last_active_at' ||
+    field === 'latest_active_at'
+  )
 }
 
 function fieldConfig(field: string) {
@@ -240,7 +251,7 @@ function openDetail(item: any) {
   uni.navigateTo({ url: `${props.basePath}/detail?${buildQueryString(item)}` })
 }
 
-function openActions(item: any) {
+function openAction(item: any) {
   const actions: Array<{ text: string; key: string }> = [
     { text: '详情', key: 'detail' },
   ]

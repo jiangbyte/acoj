@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { positionApi } from '@/api'
-import { createTagColor, displayValue } from '@/utils'
+import { createTagColor, displayValue, formatDateTime } from '@/utils'
 import { reactive } from 'vue'
 import { dictTypeData, dictTypeColor } from '@/utils/dict'
 
@@ -37,38 +37,38 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="'Position Detail'"
+    :title="'岗位详情'"
     style="width: 680px"
   >
     <NScrollbar class="max-h-[min(640px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="'Position ID'">
+          <NDescriptionsItem :label="'岗位 ID'">
             {{ displayValue(state.position.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Position Name'">
+          <NDescriptionsItem :label="'岗位名称'">
             {{ displayValue(state.position.name) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Position Code'">
+          <NDescriptionsItem :label="'岗位编码'">
             {{ displayValue(state.position.code) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Position Category'">
+          <NDescriptionsItem :label="'岗位分类'">
             {{
               dictTypeData('POSITION_CATEGORY', state.position.category) ||
               displayValue(state.position.category)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Sort'">
+          <NDescriptionsItem :label="'排序'">
             {{ displayValue(state.position.sort) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Virtual Position'">
+          <NDescriptionsItem :label="'虚拟岗位'">
             {{
               state.position.is_virtual
-                ? 'Yes'
-                : 'No'
+                ? '是'
+                : '否'
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Status'">
+          <NDescriptionsItem :label="'状态'">
             <NTag
               :color="createTagColor(dictTypeColor('COMMON_STATUS', state.position.status))"
               :bordered="false"
@@ -79,19 +79,19 @@ defineExpose({
               }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Description'">
+          <NDescriptionsItem :label="'描述'">
             {{ displayValue(state.position.description) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Created At'">
-            {{ displayValue(state.position.created_at) }}
+          <NDescriptionsItem :label="'创建时间'">
+            {{ formatDateTime(state.position.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Created By'">
+          <NDescriptionsItem :label="'创建人'">
             {{ displayValue(state.position.created_by) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Updated At'">
-            {{ displayValue(state.position.updated_at) }}
+          <NDescriptionsItem :label="'更新时间'">
+            {{ formatDateTime(state.position.updated_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Updated By'">
+          <NDescriptionsItem :label="'更新人'">
             {{ displayValue(state.position.updated_by) }}
           </NDescriptionsItem>
         </NDescriptions>

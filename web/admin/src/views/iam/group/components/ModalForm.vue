@@ -24,12 +24,12 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? 'Edit Group' : 'Add Group',
+  state.dataId ? '编辑用户组' : '新增用户组',
 )
 
 const rules = computed<FormRules>(() => ({
-  name: createRequiredRule('Group Name', 'input'),
-  status: createRequiredRule('Status', 'change'),
+  name: createRequiredRule('用户组名称', 'input'),
+  status: createRequiredRule('状态', 'change'),
 }))
 
 async function openModal(id?: string) {
@@ -76,10 +76,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success('Updated successfully')
+      window.$message.success('更新成功')
     } else {
       await groupApi.create(payload)
-      window.$message.success('Created successfully')
+      window.$message.success('创建成功')
     }
 
     closeModal()
@@ -114,13 +114,13 @@ defineExpose({
           label-width="100"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="'Group Name'" path="name">
+          <NFormItem :label="'用户组名称'" path="name">
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
-          <NFormItem :label="'Status'" path="status">
+          <NFormItem :label="'状态'" path="status">
             <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
           </NFormItem>
-          <NFormItem :label="'Description'" path="description">
+          <NFormItem :label="'描述'" path="description">
             <NInput
               v-model:value="state.formModel.description"
               type="textarea"
@@ -134,10 +134,10 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ 'Cancel' }}
+          取消
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ 'Confirm' }}
+          确认
         </NButton>
       </NSpace>
     </template>

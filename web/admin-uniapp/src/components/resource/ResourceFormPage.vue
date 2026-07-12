@@ -29,6 +29,7 @@ import {
   type FieldConfig,
   type ResourceKey,
 } from '@/config/resource'
+import { formatDateTime } from '@/utils/format'
 import { encryptPasswords } from '@/utils/security'
 
 const props = defineProps<{
@@ -117,7 +118,22 @@ async function submit() {
 }
 
 function normalizeDetail(data: any) {
-  return Array.isArray(data?.records) ? (data.records[0] ?? {}) : data
+  const detail = Array.isArray(data?.records) ? (data.records[0] ?? {}) : data
+  return normalizeDateTimeFields(detail ?? {})
+}
+
+function normalizeDateTimeFields(detail: Record<string, any>) {
+  const normalized = { ...detail }
+  config.value.formFields.forEach((field) => {
+    if (isDateTimeField(field) && normalized[field.prop] !== undefined) {
+      normalized[field.prop] = formatDateTime(normalized[field.prop], '')
+    }
+  })
+  return normalized
+}
+
+function isDateTimeField(field: FieldConfig) {
+  return field.type === 'datetime' || field.prop.endsWith('_at') || field.prop.endsWith('_time')
 }
 
 function isVisibleField(field: FieldConfig) {

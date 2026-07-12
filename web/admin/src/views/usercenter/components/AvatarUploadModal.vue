@@ -50,7 +50,7 @@ function onFileChange(event: Event) {
     return
   }
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-    window.$message.warning('JPG, PNG, and WebP images are supported. Upload after cropping.')
+    window.$message.warning('仅支持 JPG、PNG 和 WebP 图片，裁剪后上传')
     return
   }
   resetSource()
@@ -62,7 +62,7 @@ function onFileChange(event: Event) {
 async function uploadAvatar() {
   const canvas = cropperRef.value?.getResult?.().canvas
   if (!canvas) {
-    window.$message.warning('Please choose an avatar image first')
+    window.$message.warning('请先选择头像图片')
     return
   }
 
@@ -70,7 +70,7 @@ async function uploadAvatar() {
   try {
     const blob = await canvasToBlob(canvas)
     await authApi.uploadUserCenterAvatar(new File([blob], 'avatar.png', { type: 'image/png' }))
-    window.$message.success('Avatar updated')
+    window.$message.success('头像已更新')
     emit('uploaded')
     modalShow.value = false
   } finally {
@@ -97,7 +97,7 @@ function canvasToBlob(canvas: HTMLCanvasElement) {
           resolve(blob)
           return
         }
-        reject(new Error('Failed to export avatar image'))
+        reject(new Error('头像图片导出失败'))
       },
       'image/png',
       0.92,
@@ -119,7 +119,7 @@ function resetSource() {
   <NModal
     v-model:show="modalShow"
     preset="card"
-    :title="'Upload Avatar'"
+    :title="'上传头像'"
     class="max-w-150"
     :bordered="false"
     :mask-closable="!state.uploading"
@@ -149,7 +149,7 @@ function resetSource() {
             <img v-if="state.previewUrl" :src="state.previewUrl" alt="" />
           </div>
           <div class="mt-3 text-sm text-[var(--text-color-3)]">
-            {{ 'Live Preview' }}
+            实时预览
           </div>
         </div>
       </div>
@@ -162,7 +162,7 @@ function resetSource() {
           <template #icon>
             <NovaIcon icon="icon-park-outline:upload-picture" />
           </template>
-          {{ 'Choose Image' }}
+          选择图片
         </NButton>
       </div>
     </div>
@@ -170,17 +170,17 @@ function resetSource() {
     <template #footer>
       <NSpace justify="space-between" align="center">
         <div class="max-w-70 truncate text-sm text-[var(--text-color-3)]">
-          {{ state.fileName || 'JPG, PNG, and WebP images are supported. Upload after cropping.' }}
+          {{ state.fileName || '仅支持 JPG、PNG 和 WebP 图片，裁剪后上传' }}
         </div>
         <NSpace>
           <NButton @click="modalShow = false">
-            {{ 'Cancel' }}
+            取消
           </NButton>
           <NButton v-if="state.source" secondary @click="openFilePicker">
-            {{ 'Choose Again' }}
+            重新选择
           </NButton>
           <NButton type="primary" :loading="state.uploading" @click="uploadAvatar">
-            {{ 'Crop and Upload' }}
+            裁剪并上传
           </NButton>
         </NSpace>
       </NSpace>

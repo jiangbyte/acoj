@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { roleApi } from '@/api'
-import { createTagColor, displayValue } from '@/utils'
+import { createTagColor, displayValue, formatDateTime } from '@/utils'
 import { reactive } from 'vue'
 import { dictTypeData, dictTypeColor } from '@/utils/dict'
 
@@ -37,43 +37,43 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="'Role Detail'"
+    :title="'角色详情'"
     style="width: 680px"
   >
     <NScrollbar class="max-h-[min(640px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="'Role ID'">
+          <NDescriptionsItem :label="'角色ID'">
             {{ displayValue(state.role.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Role Code'">
+          <NDescriptionsItem :label="'角色编码'">
             {{ displayValue(state.role.code) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Role Name'">
+          <NDescriptionsItem :label="'角色名称'">
             {{ displayValue(state.role.name) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Role Category'">
+          <NDescriptionsItem :label="'角色分类'">
             {{
               dictTypeData('SYS_BIZ_CATEGORY', state.role.category) ||
               displayValue(state.role.category)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Scope Type'">
+          <NDescriptionsItem :label="'范围类型'">
             {{
               dictTypeData('ROLE_SCOPE_TYPE', state.role.scope_type) ||
               displayValue(state.role.scope_type)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Owner Department ID'">
+          <NDescriptionsItem :label="'所属部门ID'">
             {{ displayValue(state.role.owner_dept_id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Sort'">
+          <NDescriptionsItem :label="'排序'">
             {{ displayValue(state.role.sort) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Builtin Role'">
-            {{ state.role.is_builtin ? 'Yes' : 'No' }}
+          <NDescriptionsItem :label="'内置角色'">
+            {{ state.role.is_builtin ? '是' : '否' }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Status'">
+          <NDescriptionsItem :label="'状态'">
             <NTag
               :color="createTagColor(dictTypeColor('COMMON_STATUS', state.role.status))"
               :bordered="false"
@@ -83,19 +83,19 @@ defineExpose({
               }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Description'">
+          <NDescriptionsItem :label="'描述'">
             {{ displayValue(state.role.description) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Created At'">
-            {{ displayValue(state.role.created_at) }}
+          <NDescriptionsItem :label="'创建时间'">
+            {{ formatDateTime(state.role.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Created By'">
+          <NDescriptionsItem :label="'创建人'">
             {{ displayValue(state.role.created_by) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Updated At'">
-            {{ displayValue(state.role.updated_at) }}
+          <NDescriptionsItem :label="'更新时间'">
+            {{ formatDateTime(state.role.updated_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'Updated By'">
+          <NDescriptionsItem :label="'更新人'">
             {{ displayValue(state.role.updated_by) }}
           </NDescriptionsItem>
         </NDescriptions>

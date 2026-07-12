@@ -68,14 +68,25 @@ function buildDetailParams(query: Record<string, any>) {
 
 function valueText(prop: string) {
   const value = detail.value?.[prop]
-  if (prop.endsWith('_at')) {
+  const field = config.value.detailFields.find((item) => item.prop === prop)
+  if (isDateTimeField(prop, field)) {
     return formatDateTime(value)
   }
-  const field = config.value.detailFields.find((item) => item.prop === prop)
   if (field?.dictCode) {
     return dictTypeData(field.dictCode, value) || displayValue(value)
   }
   return displayValue(value)
+}
+
+function isDateTimeField(prop: string, field?: { type?: string }) {
+  return (
+    field?.type === 'datetime' ||
+    prop.endsWith('_at') ||
+    prop.endsWith('_time') ||
+    prop === 'expires_at' ||
+    prop === 'last_active_at' ||
+    prop === 'latest_active_at'
+  )
 }
 </script>
 

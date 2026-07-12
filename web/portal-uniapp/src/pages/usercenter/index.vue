@@ -73,13 +73,12 @@ import { onShow } from '@dcloudio/uni-app'
 import Layout from '@/layouts/index.vue'
 import CardHead from '@/components/common/CardHead.vue'
 import { useAuthStore } from '@/stores/auth'
-import { useDictStore } from '@/stores/dict'
 import { useRouteStore } from '@/stores/route'
+import { refreshDict } from '@/utils/dict'
 import { resolveFileUrl } from '@/utils/format'
 
 const authStore = useAuthStore()
 const routeStore = useRouteStore()
-const dictStore = useDictStore()
 const displayName = computed(
   () =>
     authStore.userInfo?.nickname ||
@@ -133,7 +132,7 @@ function names(items?: any[]) {
 
 async function refreshAuth() {
   await authStore.refreshUserInfo()
-  await Promise.all([dictStore.refreshDict(), routeStore.initRoutes()])
+  await Promise.all([refreshDict(), routeStore.initRoutes()])
   uni.showToast({ title: '已刷新', icon: 'success' })
 }
 

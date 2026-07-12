@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import Field
 
-from app.core.config.enums import AccountStatusEnum, AccountType, DataScope
+from app.core.config.enums import AccountStatusEnum, AccountType
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
 from app.modules.iam.enums import AccountIdentityBindStatus, AccountIdentityType
@@ -10,7 +10,6 @@ from app.modules.iam.schema import (
     AccountIdentitySchema as AccountIdentitySchema,
 )
 from app.modules.iam.schema import (
-    PermissionRegistryItem,
     ResourceGrantModuleOption,
     RoleOption,
 )
@@ -159,28 +158,6 @@ class SysAccountDeptRelSchema(ApiSchema):
     created_by: str | None = None
     updated_at: datetime
     updated_by: str | None = None
-
-
-class AccountPermissionGrantInfo(ApiSchema):
-    permission_key: str = Field(min_length=1, max_length=128)
-    data_scope: DataScope = DataScope.SELF
-    custom_scope_dept_ids: list[str] = Field(default_factory=list)
-
-
-class AccountOwnPermissionResponse(ApiSchema):
-    id: str
-    grant_info_list: list[AccountPermissionGrantInfo] = Field(default_factory=list)
-
-
-class AccountGrantPermissionRequest(ApiSchema):
-    id: str = Field(min_length=1, max_length=64)
-    grant_info_list: list[AccountPermissionGrantInfo] = Field(default_factory=list)
-
-
-class AccountOwnPermissionDetailResponse(ApiSchema):
-    id: str
-    permissions: list[PermissionRegistryItem] = Field(default_factory=list)
-    grant_info_list: list[AccountPermissionGrantInfo] = Field(default_factory=list)
 
 
 class AccountOwnResourceResponse(ApiSchema):

@@ -2,12 +2,11 @@ from datetime import datetime
 
 from pydantic import Field
 
-from app.core.config.enums import DataScope, StatusEnum
+from app.core.config.enums import StatusEnum
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
 from app.modules.iam.enums import RoleScopeType
 from app.modules.iam.schema import (
-    PermissionRegistryItem,
     ResourceGrantModuleOption,
     SysAccountSchema,
 )
@@ -57,22 +56,6 @@ class SysRoleSchema(ApiSchema):
     updated_by: str | None = None
 
 
-class RolePermissionGrantInfo(ApiSchema):
-    permission_key: str = Field(min_length=1, max_length=128)
-    data_scope: DataScope = DataScope.SELF
-    custom_scope_dept_ids: list[str] = Field(default_factory=list)
-
-
-class RoleOwnPermissionResponse(ApiSchema):
-    id: str
-    grant_info_list: list[RolePermissionGrantInfo] = Field(default_factory=list)
-
-
-class RoleGrantPermissionRequest(ApiSchema):
-    id: str = Field(min_length=1, max_length=64)
-    grant_info_list: list[RolePermissionGrantInfo] = Field(default_factory=list)
-
-
 class RoleResourceGrantInfo(ApiSchema):
     resource_id: str = Field(min_length=1, max_length=64)
     permission_keys: list[str] = Field(default_factory=list)
@@ -87,12 +70,6 @@ class RoleOwnResourceResponse(ApiSchema):
 class RoleGrantResourceRequest(ApiSchema):
     id: str = Field(min_length=1, max_length=64)
     grant_info_list: list[RoleResourceGrantInfo] = Field(default_factory=list)
-
-
-class RoleOwnPermissionDetailResponse(ApiSchema):
-    id: str
-    permissions: list[PermissionRegistryItem] = Field(default_factory=list)
-    grant_info_list: list[RolePermissionGrantInfo] = Field(default_factory=list)
 
 
 class RoleOwnUserResponse(ApiSchema):

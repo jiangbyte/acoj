@@ -8,13 +8,13 @@ const homePath = import.meta.env.VITE_HOME_PATH
 <template>
   <n-result
     status="404"
-    :title="'Page not found'"
-    :description="'Please check whether the URL is correct.'"
+    :title="'页面 not found'"
+    :description="'请检查访问地址是否正确。'"
     class="flex h-full w-full items-center justify-center flex-col"
   >
     <template #footer>
       <n-button type="primary" @click="router.push(homePath)">
-        {{ 'Back to workbench' }}
+        返回工作台
       </n-button>
     </template>
   </n-result>

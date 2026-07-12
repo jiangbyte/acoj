@@ -21,7 +21,7 @@ const state = reactive({
 })
 
 const rules = computed<FormRules>(() => ({
-  original_name: createRequiredRule('File Name', 'input'),
+  original_name: createRequiredRule('文件名', 'input'),
 }))
 
 async function openModal(id: string) {
@@ -59,7 +59,7 @@ async function submitForm() {
       id: state.dataId,
       original_name: state.formModel.original_name,
     })
-    window.$message.success('Updated successfully')
+    window.$message.success('更新成功')
     closeModal()
     emit('saved')
   } finally {
@@ -78,7 +78,7 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="'Edit File'"
+    :title="'编辑 File'"
     style="width: 560px"
     :segmented="{ content: true, action: true }"
   >
@@ -91,7 +91,7 @@ defineExpose({
         label-width="110"
         :disabled="state.loading || state.submitLoading"
       >
-        <NFormItem :label="'File Name'" path="original_name">
+        <NFormItem :label="'文件名'" path="original_name">
           <NInput v-model:value="state.formModel.original_name" />
         </NFormItem>
       </NForm>
@@ -100,10 +100,10 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ 'Cancel' }}
+          取消
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ 'Confirm' }}
+          确认
         </NButton>
       </NSpace>
     </template>

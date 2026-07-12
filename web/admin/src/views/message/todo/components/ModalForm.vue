@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FormInst, FormRules } from 'naive-ui'
 import { messageApi } from '@/api'
-import { createRequiredRule, toNullableString } from '@/utils'
+import { createRequiredRule, formatDateTime, toNullableString } from '@/utils'
 import { computed, reactive, ref } from 'vue'
 
 const emit = defineEmits<{
@@ -29,14 +29,14 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? 'Edit Todo' : 'Add Todo',
+  state.dataId ? '编辑 待办' : '新增 待办',
 )
 
 const rules = computed<FormRules>(() => ({
-  title: createRequiredRule('Title', 'input'),
-  priority: createRequiredRule('Priority', 'change'),
-  target_scope: createRequiredRule('Target Scope', 'change'),
-  status: createRequiredRule('Status', 'change'),
+  title: createRequiredRule('标题', 'input'),
+  priority: createRequiredRule('优先级', 'change'),
+  target_scope: createRequiredRule('目标范围', 'change'),
+  status: createRequiredRule('状态', 'change'),
 }))
 
 async function openModal(id?: string) {
@@ -52,7 +52,9 @@ async function fetchDetail(id: string) {
   state.loading = true
   try {
     const response = await messageApi.todoDetail({ id })
-    state.formModel = Object.assign({}, defaultFormData, response.data)
+    state.formModel = Object.assign({}, defaultFormData, response.data, {
+      due_at: formatDateTime(response.data?.due_at, ''),
+    })
   } finally {
     state.loading = false
   }
@@ -75,10 +77,10 @@ async function submitForm() {
     }
     if (state.dataId) {
       await messageApi.updateTodo({ ...payload, id: state.dataId })
-      window.$message.success('Updated successfully')
+      window.$message.success('更新成功')
     } else {
       await messageApi.createTodo(payload)
-      window.$message.success('Created successfully')
+      window.$message.success('创建成功')
     }
     closeModal()
     emit('saved')
@@ -110,32 +112,32 @@ defineExpose({ openModal })
           label-width="120"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="'Title'" path="title">
+          <NFormItem :label="'标题'" path="title">
             <NInput v-model:value="state.formModel.title" />
           </NFormItem>
-          <NFormItem :label="'Content'" path="content">
+          <NFormItem :label="'内容'" path="content">
             <NInput
               v-model:value="state.formModel.content"
               type="textarea"
               :autosize="{ minRows: 4, maxRows: 8 }"
             />
           </NFormItem>
-          <NFormItem :label="'Priority'" path="priority">
+          <NFormItem :label="'优先级'" path="priority">
             <DictSelect v-model="state.formModel.priority" dict-code="TODO_PRIORITY" />
           </NFormItem>
-          <NFormItem :label="'Target Scope'" path="target_scope">
+          <NFormItem :label="'目标范围'" path="target_scope">
             <DictSelect v-model="state.formModel.target_scope" dict-code="MESSAGE_TARGET_SCOPE" />
           </NFormItem>
           <NFormItem
-            :label="'Target Account Type'"
+            :label="'目标账号类型'"
             path="target_account_type"
           >
             <DictSelect v-model="state.formModel.target_account_type" dict-code="ACCOUNT_TYPE" />
           </NFormItem>
-          <NFormItem :label="'Target Account ID'" path="target_account_id">
+          <NFormItem :label="'目标账号ID'" path="target_account_id">
             <NInput v-model:value="state.formModel.target_account_id" clearable />
           </NFormItem>
-          <NFormItem :label="'Status'" path="status">
+          <NFormItem :label="'状态'" path="status">
             <DictSelect v-model="state.formModel.status" dict-code="TODO_STATUS" type="radio" />
           </NFormItem>
         </NForm>
@@ -144,9 +146,9 @@ defineExpose({ openModal })
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton @click="closeModal">{{ 'Cancel' }}</NButton>
+        <NButton @click="closeModal">取消</NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ 'Confirm' }}
+          确认
         </NButton>
       </NSpace>
     </template>

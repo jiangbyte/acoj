@@ -66,6 +66,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Watermark: typeof import('./../components/common/Watermark.vue')['default']
+    '水印': typeof import('./../components/common/Watermark.vue')['default']
   }
 }
 
@@ -125,4 +126,5 @@ declare global {
   const RouterLink: typeof import('vue-router')['RouterLink']
   const RouterView: typeof import('vue-router')['RouterView']
   const Watermark: typeof import('./../components/common/Watermark.vue')['default']
+  const '水印': typeof import('./../components/common/Watermark.vue')['default']
 }

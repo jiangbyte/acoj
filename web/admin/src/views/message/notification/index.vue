@@ -3,7 +3,7 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { messageApi } from '@/api'
-import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
@@ -41,12 +41,12 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: 'Title',
+    title: '标题',
     path: 'title',
     field: 'input',
   },
   {
-    title: 'Status',
+    title: '状态',
     path: 'status',
     field: 'select',
     fieldProps: {
@@ -54,7 +54,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: 'Target Account Type',
+    title: '目标账号类型',
     path: 'target_account_type',
     field: 'select',
     fieldProps: {
@@ -69,7 +69,7 @@ const pagination = computed<PaginationProps>(() => ({
   itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => `${itemCount} total`,
+  prefix: ({ itemCount }) => `${itemCount} 条`,
   onUpdatePage: (value) => {
     state.page = value
     fetchPage()
@@ -93,13 +93,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ellipsis: { tooltip: true },
   },
   {
-    title: 'Title',
+    title: '标题',
     path: 'title',
     width: 220,
     ellipsis: { tooltip: true },
   },
   {
-    title: 'Severity',
+    title: '严重级别',
     path: 'severity',
     width: 120,
     render: (row) => (
@@ -112,20 +112,20 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Target Scope',
+    title: '目标范围',
     path: 'target_scope',
     width: 130,
     render: (row) => dictTypeData('MESSAGE_TARGET_SCOPE', row.target_scope) || row.target_scope,
   },
   {
-    title: 'Target Account Type',
+    title: '目标账号类型',
     path: 'target_account_type',
     width: 140,
     render: (row) =>
       dictTypeData('ACCOUNT_TYPE', row.target_account_type) || row.target_account_type || '-',
   },
   {
-    title: 'Status',
+    title: '状态',
     path: 'status',
     width: 120,
     render: (row) => (
@@ -138,19 +138,21 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: 'Published At',
+    title: '发布时间',
     path: 'publish_at',
     width: 190,
     ellipsis: { tooltip: true },
+    render: (row) => formatDateTime(row.publish_at),
   },
   {
-    title: 'Updated At',
+    title: '更新时间',
     path: 'updated_at',
     width: 190,
     ellipsis: { tooltip: true },
+    render: (row) => formatDateTime(row.updated_at),
   },
   {
-    title: 'Operation',
+    title: '操作',
     key: 'actions',
     width: 180,
     fixed: 'right',
@@ -236,14 +238,14 @@ function confirmDelete(value: string | string[]) {
   }
   const isBatch = ids.length > 1
   window.$dialog.warning({
-    title: isBatch ? 'Batch Delete' : 'Delete',
+    title: isBatch ? '批量删除' : '删除',
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? `Delete ${ids.length} selected users?`
-      : `${'Delete '}${'?'}`,
-    positiveText: 'Confirm',
-    negativeText: 'Cancel',
+      ? `删除 ${ids.length} 条记录?`
+      : `${'删除 '}${'?'}`,
+    positiveText: '确认',
+    negativeText: '取消',
     onPositiveClick: () => deleteData(ids),
   })
 }
@@ -251,19 +253,19 @@ function confirmDelete(value: string | string[]) {
 async function deleteData(ids: string[]) {
   await messageApi.removeNotification({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
-  window.$message.success('Deleted successfully')
+  window.$message.success('删除成功')
   await fetchPage()
 }
 
 async function publishData(id: string) {
   await messageApi.publishNotification({ id })
-  window.$message.success('Published successfully')
+  window.$message.success('发布成功')
   await fetchPage()
 }
 
 async function revokeData(id: string) {
   await messageApi.revokeNotification({ id })
-  window.$message.success('Revoked successfully')
+  window.$message.success('撤回成功')
   await fetchPage()
 }
 </script>
@@ -274,12 +276,12 @@ async function revokeData(id: string) {
       <ProSearchForm
         :form="searchForm"
         :columns="searchColumns"
-        :reset-button-props="{ content: 'Reset' }"
-        :search-button-props="{ content: 'Search' }"
+        :reset-button-props="{ content: '重置' }"
+        :search-button-props="{ content: '搜索' }"
         :collapse-button-props="{
           content: searchForm.collapsed.value
-            ? 'Expand'
-            : 'Collapse',
+            ? '展开'
+            : '收起',
         }"
       />
     </ProCard>
@@ -287,7 +289,7 @@ async function revokeData(id: string) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="'Notifications'"
+      :title="'通知'"
       row-key="id"
       :scroll-x="1540"
       :columns="tableColumns"
@@ -299,14 +301,14 @@ async function revokeData(id: string) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('message:notification:create')" type="primary" text :title="'Add'" :aria-label="'Add'" @click="openCreateModal">
+          <NButton v-if="hasPermission('message:notification:create')" type="primary" text :title="'新增'" :aria-label="'新增'" @click="openCreateModal">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchPage">
+          <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -317,8 +319,8 @@ async function revokeData(id: string) {
             v-if="hasPermission('message:notification:delete')"
             type="error"
             text
-            :title="'Batch Delete'"
-            :aria-label="'Batch Delete'"
+            :title="'批量删除'"
+            :aria-label="'批量删除'"
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >

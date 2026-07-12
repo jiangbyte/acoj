@@ -45,11 +45,3 @@ export function ownResources(groupId: string) {
 export function grantResources(data: any) {
   return http.post<any>(`${groupPrefix}/grant-resource`, data)
 }
-
-export function ownPermissions(groupId: string) {
-  return http.get<any>(`${groupPrefix}/own-permission-detail`, { params: { id: groupId } })
-}
-
-export function grantPermissions(data: any) {
-  return http.post<any>(`${groupPrefix}/grant-permission`, data)
-}

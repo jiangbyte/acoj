@@ -30,14 +30,14 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? 'Edit Department' : 'Add Department',
+  state.dataId ? '编辑 部门' : '新增 部门',
 )
 
 const rules = computed<FormRules>(() => ({
-  name: createRequiredRule('Department Name', 'input'),
-  code: createRequiredRule('Department Code', 'input'),
-  category: createRequiredRule('Department Category', 'change'),
-  status: createRequiredRule('Status', 'change'),
+  name: createRequiredRule('部门名称', 'input'),
+  code: createRequiredRule('部门编码', 'input'),
+  category: createRequiredRule('部门分类', 'change'),
+  status: createRequiredRule('状态', 'change'),
 }))
 
 async function openModal(id?: string) {
@@ -91,10 +91,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success('Updated successfully')
+      window.$message.success('更新成功')
     } else {
       await deptApi.create(payload)
-      window.$message.success('Created successfully')
+      window.$message.success('创建成功')
     }
 
     closeModal()
@@ -129,31 +129,31 @@ defineExpose({
           label-width="110"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="'Department Name'" path="name">
+          <NFormItem :label="'部门名称'" path="name">
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
-          <NFormItem :label="'Department Code'" path="code">
+          <NFormItem :label="'部门编码'" path="code">
             <NInput v-model:value="state.formModel.code" />
           </NFormItem>
-          <NFormItem :label="'Department Category'" path="category">
+          <NFormItem :label="'部门分类'" path="category">
             <DictSelect v-model="state.formModel.category" dict-code="DEPT_CATEGORY" />
           </NFormItem>
-          <NFormItem :label="'Parent Department ID'" path="parent_id">
+          <NFormItem :label="'父级部门ID'" path="parent_id">
             <NInput v-model:value="state.formModel.parent_id" />
           </NFormItem>
-          <NFormItem :label="'Master ID'" path="master_id">
+          <NFormItem :label="'负责人ID'" path="master_id">
             <NInput v-model:value="state.formModel.master_id" />
           </NFormItem>
-          <NFormItem :label="'Deputy Master ID'" path="deputy_master_id">
+          <NFormItem :label="'副负责人ID'" path="deputy_master_id">
             <NInput v-model:value="state.formModel.deputy_master_id" />
           </NFormItem>
-          <NFormItem :label="'Sort'" path="sort">
+          <NFormItem :label="'排序'" path="sort">
             <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
           </NFormItem>
-          <NFormItem :label="'Virtual Department'" path="is_virtual">
+          <NFormItem :label="'虚拟部门'" path="is_virtual">
             <NSwitch v-model:value="state.formModel.is_virtual" />
           </NFormItem>
-          <NFormItem :label="'Status'" path="status">
+          <NFormItem :label="'状态'" path="status">
             <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
           </NFormItem>
         </NForm>
@@ -163,10 +163,10 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ 'Cancel' }}
+          取消
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ 'Confirm' }}
+          确认
         </NButton>
       </NSpace>
     </template>

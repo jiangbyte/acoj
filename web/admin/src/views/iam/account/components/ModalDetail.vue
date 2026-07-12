@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { accountApi } from '@/api'
-import { createTagColor, displayValue, resolveFileUrl } from '@/utils'
+import { createTagColor, displayValue, formatDateTime, resolveFileUrl } from '@/utils'
 import { computed, reactive } from 'vue'
 import { dictTypeData, dictTypeColor } from '@/utils/dict'
 
@@ -11,7 +11,7 @@ const state = reactive({
 })
 
 const avatarAlt = computed(
-  () => state.account?.nickname || 'Account avatar',
+  () => state.account?.nickname || '账号 avatar',
 )
 const avatarUrl = computed(() => resolveFileUrl(state.account?.avatar))
 const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
@@ -43,18 +43,18 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="'Account Detail'"
+    :title="'账号详情'"
     style="width: 680px"
   >
     <NScrollbar class="max-h-[min(640px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NTabs type="line" animated>
-          <NTabPane name="account" :tab="'Account Info'">
+          <NTabPane name="account" :tab="'账号信息'">
             <NDescriptions label-placement="left" bordered :column="1">
-              <NDescriptionsItem :label="'Account ID'">
+              <NDescriptionsItem :label="'账号 ID'">
                 {{ displayValue(state.account.id) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Account Type'">
+              <NDescriptionsItem :label="'账号类型'">
                 <NTag
                   :color="createTagColor(dictTypeColor('ACCOUNT_TYPE', state.account.account_type))"
                   :bordered="false"
@@ -62,7 +62,7 @@ defineExpose({
                   {{ dictTypeData('ACCOUNT_TYPE', state.account.account_type) }}
                 </NTag>
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Account Status'">
+              <NDescriptionsItem :label="'账号状态'">
                 <NTag
                   :color="
                     createTagColor(dictTypeColor('ACCOUNT_STATUS', state.account.account_status))
@@ -72,67 +72,67 @@ defineExpose({
                   {{ dictTypeData('ACCOUNT_STATUS', state.account.account_status) }}
                 </NTag>
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Cancelled At'">
-                {{ displayValue(state.account.cancelled_at) }}
+              <NDescriptionsItem :label="'注销时间'">
+                {{ formatDateTime(state.account.cancelled_at) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Cancelled By'">
+              <NDescriptionsItem :label="'注销人'">
                 {{ displayValue(state.account.cancelled_by) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Cancel Reason'">
+              <NDescriptionsItem :label="'注销原因'">
                 {{ displayValue(state.account.cancel_reason) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Last Login IP'">
+              <NDescriptionsItem :label="'上次登录IP'">
                 {{ displayValue(state.account.last_login_ip) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Last Login Address'">
+              <NDescriptionsItem :label="'上次登录地址'">
                 {{ displayValue(state.account.last_login_address) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Last Login Time'">
-                {{ displayValue(state.account.last_login_time) }}
+              <NDescriptionsItem :label="'上次登录时间'">
+                {{ formatDateTime(state.account.last_login_time) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Last Login Device'">
+              <NDescriptionsItem :label="'上次登录设备'">
                 {{ displayValue(state.account.last_login_device) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Latest Login IP'">
+              <NDescriptionsItem :label="'最近登录IP'">
                 {{ displayValue(state.account.latest_login_ip) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Latest Login Address'">
+              <NDescriptionsItem :label="'最近登录地址'">
                 {{ displayValue(state.account.latest_login_address) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Latest Login Time'">
-                {{ displayValue(state.account.latest_login_time) }}
+              <NDescriptionsItem :label="'最近登录时间'">
+                {{ formatDateTime(state.account.latest_login_time) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Latest Login Device'">
+              <NDescriptionsItem :label="'最近登录设备'">
                 {{ displayValue(state.account.latest_login_device) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Created At'">
-                {{ displayValue(state.account.created_at) }}
+              <NDescriptionsItem :label="'创建时间'">
+                {{ formatDateTime(state.account.created_at) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Updated At'">
-                {{ displayValue(state.account.updated_at) }}
+              <NDescriptionsItem :label="'更新时间'">
+                {{ formatDateTime(state.account.updated_at) }}
               </NDescriptionsItem>
             </NDescriptions>
           </NTabPane>
 
-          <NTabPane name="identity" :tab="'Login Identity'">
+          <NTabPane name="identity" :tab="'登录身份'">
             <NDescriptions label-placement="left" bordered :column="1">
-              <NDescriptionsItem :label="'Account'">
+              <NDescriptionsItem :label="'账号'">
                 {{ displayValue(state.account.account) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Email Login Identity'">
+              <NDescriptionsItem :label="'邮箱登录身份'">
                 {{ displayValue(state.account.email_identity) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Email Login Enabled'">
-                {{ state.account.email_login_enabled ? 'Yes' : 'No' }}
+              <NDescriptionsItem :label="'邮箱登录 启用'">
+                {{ state.account.email_login_enabled ? '是' : '否' }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Email Verified'">
+              <NDescriptionsItem :label="'邮箱已验证'">
                 {{
                   state.account.email_identity_verified
-                    ? 'Yes'
-                    : 'No'
+                    ? '是'
+                    : '否'
                 }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Email Bind Status'">
+              <NDescriptionsItem :label="'邮箱绑定状态'">
                 {{
                   dictTypeData(
                     'ACCOUNT_IDENTITY_BIND_STATUS',
@@ -140,20 +140,20 @@ defineExpose({
                   ) || displayValue(state.account.email_identity_bind_status)
                 }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Phone Login Identity'">
+              <NDescriptionsItem :label="'手机号登录身份'">
                 {{ displayValue(state.account.phone_identity) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Phone Login Enabled'">
-                {{ state.account.phone_login_enabled ? 'Yes' : 'No' }}
+              <NDescriptionsItem :label="'手机号登录 启用'">
+                {{ state.account.phone_login_enabled ? '是' : '否' }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Phone Verified'">
+              <NDescriptionsItem :label="'手机号已验证'">
                 {{
                   state.account.phone_identity_verified
-                    ? 'Yes'
-                    : 'No'
+                    ? '是'
+                    : '否'
                 }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Phone Bind Status'">
+              <NDescriptionsItem :label="'手机号绑定状态'">
                 {{
                   dictTypeData(
                     'ACCOUNT_IDENTITY_BIND_STATUS',
@@ -164,15 +164,15 @@ defineExpose({
             </NDescriptions>
           </NTabPane>
 
-          <NTabPane name="profile" :tab="'User Profile'">
+          <NTabPane name="profile" :tab="'用户资料'">
             <NDescriptions label-placement="left" bordered :column="1">
-              <NDescriptionsItem :label="'Name'">
+              <NDescriptionsItem :label="'名称'">
                 {{ displayValue(state.account.name) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Nickname'">
+              <NDescriptionsItem :label="'昵称'">
                 {{ displayValue(state.account.nickname) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Avatar'">
+              <NDescriptionsItem :label="'头像'">
                 <NAvatar
                   v-if="avatarUrl"
                   :src="avatarUrl"
@@ -181,28 +181,28 @@ defineExpose({
                 />
                 <template v-else> - </template>
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Signature'">
+              <NDescriptionsItem :label="'签名'">
                 {{ displayValue(state.account.signature) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Phone'">
+              <NDescriptionsItem :label="'手机号'">
                 {{ displayValue(state.account.phone) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Email'">
+              <NDescriptionsItem :label="'邮箱'">
                 {{ displayValue(state.account.email) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Employee No.'">
+              <NDescriptionsItem :label="'工号'">
                 {{ displayValue(state.account.employee_no) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Title'">
+              <NDescriptionsItem :label="'标题'">
                 {{ displayValue(state.account.title) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Level'">
+              <NDescriptionsItem :label="'等级'">
                 {{ displayValue(state.account.level) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Bio'">
+              <NDescriptionsItem :label="'简介'">
                 {{ displayValue(state.account.bio) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'Remark'">
+              <NDescriptionsItem :label="'备注'">
                 {{ displayValue(state.account.remark) }}
               </NDescriptionsItem>
             </NDescriptions>

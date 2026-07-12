@@ -61,7 +61,7 @@ function setupRealtime() {
   })
 }
 
-function openMessages() {
+function openMessage() {
   router.push('/messages')
 }
 </script>
@@ -69,12 +69,12 @@ function openMessages() {
 <template>
   <n-tooltip placement="bottom" trigger="hover">
     <template #trigger>
-      <CommonWrapper @click="openMessages">
+      <CommonWrapper @click="openMessage">
         <n-badge :value="unreadCount" :max="99" style="color: unset">
           <NovaIcon icon="icon-park-outline:remind" />
         </n-badge>
       </CommonWrapper>
     </template>
-    {{ 'Notifications' }}
+    通知
   </n-tooltip>
 </template>

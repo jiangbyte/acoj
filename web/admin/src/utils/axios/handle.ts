@@ -15,15 +15,15 @@ interface ApiResponse<T = unknown> {
 }
 
 const httpStatusMessageMap: Record<number, string> = {
-  400: 'Bad request',
-  401: 'Unauthorized, please sign in again',
-  403: 'Access denied',
-  404: 'Resource not found',
-  422: 'Validation failed',
-  500: 'Server error',
-  502: 'Bad gateway',
-  503: 'Service unavailable',
-  504: 'Gateway timeout',
+  400: '请求参数错误',
+  401: '登录已过期，请重新登录',
+  403: '无权访问',
+  404: '资源不存在',
+  422: '校验失败',
+  500: '服务器错误',
+  502: '网关错误',
+  503: '服务不可用',
+  504: '网关超时',
 }
 
 /**
@@ -42,7 +42,7 @@ export class ApiResponseError<T = unknown> extends Error {
   readonly rawData: ApiResponse<T>
 
   constructor(response: ApiResponse<T>) {
-    super(response.message || `Request failed with code ${response.code}`)
+    super(response.message || `请求失败，错误码 ${response.code}`)
     this.name = 'ApiResponseError'
     this.apiCode = response.code
     this.apiData = response.data
@@ -175,7 +175,7 @@ function getErrorMessage(error: AxiosError) {
 
   const status = error.response?.status
   if (status) {
-    return httpStatusMessageMap[status] ?? `Request failed (${status})`
+    return httpStatusMessageMap[status] ?? `请求失败(${status})`
   }
 
   return 'Network error. Please try again later.'

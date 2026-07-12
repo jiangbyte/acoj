@@ -18,8 +18,8 @@ const state = reactive({
 
 const modalTitle = computed(() =>
   state.account?.name
-    ? `${'Grant Departments'} - ${state.account.name}`
-    : 'Grant Departments',
+    ? `${'分配部门'} - ${state.account.name}`
+    : '分配部门',
 )
 const primaryOptions = computed(() =>
   buildDeptOptions(state.deptTree).filter((item) => state.deptIds.includes(item.value)),
@@ -69,7 +69,7 @@ async function submitGrant() {
         is_primary: deptId === primaryDeptId,
       })),
     })
-    window.$message.success('Grant saved successfully')
+    window.$message.success('授权保存成功')
     closeModal()
     emit('saved')
   } finally {
@@ -111,7 +111,7 @@ defineExpose({
     <NDrawerContent :title="modalTitle" closable :native-scrollbar="false">
       <NSpin :show="state.loading">
         <NSpace vertical>
-          <NFormItem :label="'Grant Departments'">
+          <NFormItem :label="'分配部门'">
             <NTreeSelect
               v-model:value="state.deptIds"
               multiple
@@ -125,7 +125,7 @@ defineExpose({
               children-field="children"
             />
           </NFormItem>
-          <NFormItem :label="'Primary Department'">
+          <NFormItem :label="'主部门'">
             <NSelect
               v-model:value="state.primaryDeptId"
               clearable
@@ -139,10 +139,10 @@ defineExpose({
       <template #footer>
         <NSpace justify="end" align="center">
           <NButton @click="closeModal">
-            {{ 'Close' }}
+            关闭
           </NButton>
           <NButton type="primary" :loading="state.submitLoading" @click="submitGrant">
-            {{ 'Save' }}
+            保存
           </NButton>
         </NSpace>
       </template>
