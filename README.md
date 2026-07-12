@@ -1,5 +1,16 @@
 # HEI FastAPI
 
+![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.116%2B-009688?logo=fastapi&logoColor=white)
+![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supported-4169E1?logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-6.2%2B-DC382D?logo=redis&logoColor=white)
+![RabbitMQ](https://img.shields.io/badge/RabbitMQ-Supported-FF6600?logo=rabbitmq&logoColor=white)
+![Celery](https://img.shields.io/badge/Celery-5.5%2B-37814A)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green)
+
 HEI FastAPI 是一个面向中后台、门户和通用业务系统的全栈脚手架。仓库包含 FastAPI 后端、管理端
 `web/admin`、门户端 `web/portal`，内置账号体系、RBAC、资源菜单、文件存储、消息通知、定时任务、
 数据库迁移和基础可观测能力。
