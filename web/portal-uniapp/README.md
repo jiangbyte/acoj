@@ -1,77 +1,103 @@
-# Hei Uniapp
+# HEI FastAPI Portal uni-app
 
-<img width="120" src="https://jiangbyte.github.io/hei-docs/logo.svg">
+`web/portal-uniapp` 是 HEI FastAPI 的门户端 uni-app 应用，面向移动端或 H5 门户场景。它使用 `PORTAL`
+账号体系，主要调用 `/api/v1/portal/*`、公共文件接口和公开空间接口。
 
-**Hei Uniapp** 是 HEI 快速开发框架的跨平台移动端解决方案，基于 UniApp + Vue 3 构建，一套代码可编译到 iOS、Android、H5、以及各类小程序平台。
+## 功能范围
 
-![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![UniApp](https://img.shields.io/badge/UniApp-3.x-brightgreen.svg)
-![Vue](https://img.shields.io/badge/Vue-3.3+-cyan.svg)
-
-## 简介
-
-Hei Uniapp 提供开箱即用的跨平台移动端开发解决方案，与 Hei Boot 后端框架配套使用，支持快速搭建移动端应用。项目采用 uni-app 生态，支持一套代码多端运行，覆盖 iOS、Android、H5、微信小程序、支付宝小程序等主流平台。
-
-**在线文档**: [https://jiangbyte.github.io/hei-docs/hei-uniapp/](https://jiangbyte.github.io/hei-docs/hei-uniapp/)
+- 首页、消息、用户中心。
+- 认证：登录、注册、退出、注销。
+- 用户中心：资料、安全设置。
+- 消息模块：消息列表、消息详情、待办操作。
+- 公开空间：按账号访问门户用户公开空间。
+- 字典、Banner、文件访问。
 
 ## 技术栈
 
-| 类型     | 技术                                       |
-| -------- | ------------------------------------------ |
-| 核心框架 | UniApp 3.x、Vue 3.3+                       |
-| 编译平台 | H5、iOS、Android、微信小程序、支付宝小程序 |
-| 状态管理 | Pinia                                      |
-| UI 组件  | uni-ui、ColorUI                            |
-| 网络请求 | uni-request、Axios                         |
-| 工具库   | Lodash、Day.js                             |
+- uni-app 3 / Vue 3
+- Vite / TypeScript
+- Pinia
+- uview-pro
+- UnoCSS / unocss-preset-weapp
 
-## 项目结构
+## 本地开发
 
-```
-hei-uniapp/
-├── src/
-│   ├── api/            # API 接口
-│   ├── components/     # 公共组件
-│   ├── pages/          # 页面文件
-│   ├── static/         # 静态资源
-│   ├── stores/         # 状态管理
-│   ├── styles/         # 全局样式
-│   ├── utils/          # 工具函数
-│   ├── App.vue         # 根组件
-│   └── main.js         # 入口文件
-├── package.json        # 项目配置
-├── manifest.json       # App 配置
-├── pages.json          # 页面路由配置
-└── uni.scss            # 全局样式变量
+```bash
+pnpm install
+pnpm dev:h5
 ```
 
-## 相关项目
+默认环境变量见 `.env`：
 
-- **[Hei Boot](../hei-boot)** - Java 后端框架
-- **[Hei Cloud](../hei-cloud)** - Java 微服务架构
-- **[Hei Admin Vue](../hei-admin-vue)** - Vue3 前端管理后台
+```env
+VITE_APP_TITLE="HEI Portal"
+VITE_API_URL="http://127.0.0.1:8000"
+VITE_PORT=5174
+```
 
-## 参与贡献
+开发模式下请求会直接发到 `VITE_API_URL`。后端默认地址是 `http://127.0.0.1:8000`，门户端主要接口
+前缀是 `/api/v1/portal/*`。
 
-我们非常欢迎社区贡献！
+## 常用命令
 
-1. Fork 本仓库
-2. 新建 `Feat_xxx` 分支
-3. 提交代码
-4. 创建 Pull Request
+```bash
+pnpm dev:h5
+pnpm dev:mp-weixin
+pnpm build:h5
+pnpm build:mp-weixin
+pnpm type-check
+pnpm lint
+pnpm lint:fix
+pnpm format
+pnpm format:check
+```
 
-感谢所有为 HEI 项目做出贡献的开发者！
+其他小程序平台命令见 `package.json`，例如 `dev:mp-alipay`、`build:mp-alipay`、
+`dev:mp-qq`、`build:mp-qq`。
 
-## 开源协议
+## 生产构建
 
-本项目采用 [MIT License](LICENSE) 开源协议
+```bash
+pnpm build:h5
+```
 
-## 联系方式
+生产构建读取 `.env.production`。当前生产配置中：
 
-- [Gitee](https://gitee.com/jiangbyte/hei-uniapp)
-- [GitHub](https://github.com/jiangbyte/hei-uniapp)
-- [掘金](https://juejin.cn/user/1968540037686224)
+```env
+VITE_API_URL=""
+```
 
----
+这表示 H5 产物使用同源 `/api/` 请求，需要由外层网关或 nginx 反向代理到后端。当前目录没有提供
+Dockerfile，部署时需要自行托管构建产物或接入现有前端网关。
 
-如果这个项目对你有帮助，请给一个 Star 支持！
+## 目录结构
+
+```text
+src/
+  api/          portal API 封装
+  components/   通用组件
+  config/       字典等配置
+  layouts/      门户布局
+  pages/        uni-app 页面
+  static/       静态资源
+  stores/       Pinia 状态
+  utils/        请求、会话、字典、安全、树结构等工具
+  App.vue       根组件
+  main.ts       入口
+  manifest.json 应用清单
+  pages.json    页面和 tabBar 配置
+```
+
+## API 边界
+
+- portal uni-app 不应调用 `/api/v1/admin/*`。
+- 登录、注册、注销和用户中心使用 `PORTAL` 账号体系。
+- 动态资源来自 `/api/v1/portal/sys/resources/current`。
+- 公开空间接口为 `/api/v1/portal/spaces/{account_id}`，由后端 `user.portal` 模块提供。
+- 文件访问默认走 `/api/v1/files/*`，也兼容对象存储返回的外部 URL。
+
+## 注意事项
+
+- `web/admin-uniapp` 和 `web/portal-uniapp` 默认都使用 `VITE_PORT=5174`，同时运行时需要修改其中一个端口。
+- `manifest.json` 中的应用名、appid 和各小程序平台 appid 仍需要按实际发布目标调整。
+- 小程序端请求域名、上传域名和业务域名需要在对应平台后台配置。

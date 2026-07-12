@@ -128,7 +128,7 @@ portal 前端不应调用 `/api/v1/admin/*`。当前主要接口前缀：
 - Banner：`/api/v1/portal/sys/banners/list`
 - 消息：`/api/v1/portal/message/*`
 - 实时事件：`/api/v1/portal/message/realtime/events`
-- 公开空间：`/api/v1/portal/spaces/{account_id}`
+- 公开空间：`/api/v1/portal/spaces/{account_id}`，由后端 `user.portal` 模块提供。
 - 文件访问：默认 `/api/v1/files/*`
 
 ## 路由和菜单
