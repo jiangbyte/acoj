@@ -13,8 +13,10 @@ onLaunch(() => {
 @import 'uview-pro/index.scss';
 
 page {
-  background: #f8f9fa;
-  color: #111827;
-  font-size: 14px;
+  background: var(--color-neutral-50);
+  color: var(--color-neutral-900);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  line-height: 1.5;
 }
 </style>

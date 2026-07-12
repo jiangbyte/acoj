@@ -1,7 +1,7 @@
 <template>
   <Layout title="首页">
     <view class="flex flex-col ">
-      <view class="flex items-center gap-3 mx-4 p-4 rounded-md text-white bg-gradient-to-r from-blue-600 to-blue-400">
+      <view class="dashboard-hero">
         <u-avatar
           :src="authStore.userInfo?.avatar || ''"
           size="48"
@@ -9,7 +9,7 @@
         />
         <view class="flex flex-col gap-1 flex-1">
           <text class="text-2xl font-bold">你好，{{ displayName }}</text>
-          <text class="text-sm opacity-85">管理端数据总览</text>
+          <text class="dashboard-hero__subtitle">管理端数据总览</text>
           <view class="flex flex-wrap gap-1 mt-1">
             <u-tag
               v-for="role in roleNames"
@@ -119,7 +119,7 @@ function getCanvasInfo(canvasId: string): Promise<{ node: any; width: number } |
     const query = uni.createSelectorQuery().in(instance?.proxy)
     query
       .select(`#${canvasId}`)
-      .fields({ node: true, size: true })
+      .fields({ node: true, size: true }, () => {})
       .exec((res: any) => {
         const info = res?.[0]
         if (!info?.node) return resolve(null)
@@ -296,5 +296,20 @@ async function refresh() {
 }
 </script>
 
+<style lang="scss" scoped>
+.dashboard-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-3) var(--space-4) 0;
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-primary);
+  color: #ffffff;
+}
 
-
+.dashboard-hero__subtitle {
+  font-size: var(--text-sm);
+  color: #ffffff;
+}
+</style>

@@ -68,6 +68,6 @@ function apply() {
 <style lang="scss" scoped>
 .filter-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
 }
 </style>

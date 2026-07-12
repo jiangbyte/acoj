@@ -198,6 +198,6 @@ function chooseImage(field: FieldConfig) {
 .image-field {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 </style>

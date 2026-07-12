@@ -16,10 +16,11 @@ defineProps<{
 .card-head {
   display: flex;
   flex-direction: column;
-  gap: 6rpx;
+  gap: var(--space-1);
 }
 
 .card-head__title {
   font-weight: 600;
+  line-height: 1.25;
 }
 </style>

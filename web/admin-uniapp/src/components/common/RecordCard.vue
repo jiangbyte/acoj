@@ -68,6 +68,6 @@ const visibleActions = computed(() => props.actions.slice(0, 3))
 .record-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-2);
 }
 </style>

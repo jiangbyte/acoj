@@ -54,60 +54,172 @@
       "style": { "navigationBarTitleText": "账号管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
     },
     {
+      "path": "pages/iam/account/form",
+      "style": { "navigationBarTitleText": "账号表单", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/iam/account/detail",
+      "style": { "navigationBarTitleText": "账号详情", "navigationStyle": "custom" }
+    },
+    {
       "path": "pages/iam/role/index",
       "style": { "navigationBarTitleText": "角色管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/iam/role/form",
+      "style": { "navigationBarTitleText": "角色表单", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/iam/role/detail",
+      "style": { "navigationBarTitleText": "角色详情", "navigationStyle": "custom" }
     },
     {
       "path": "pages/iam/dept/index",
       "style": { "navigationBarTitleText": "部门管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
     },
     {
+      "path": "pages/iam/dept/form",
+      "style": { "navigationBarTitleText": "部门表单", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/iam/dept/detail",
+      "style": { "navigationBarTitleText": "部门详情", "navigationStyle": "custom" }
+    },
+    {
       "path": "pages/iam/group/index",
       "style": { "navigationBarTitleText": "用户组管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/iam/group/form",
+      "style": { "navigationBarTitleText": "用户组表单", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/iam/group/detail",
+      "style": { "navigationBarTitleText": "用户组详情", "navigationStyle": "custom" }
     },
     {
       "path": "pages/iam/position/index",
       "style": { "navigationBarTitleText": "岗位管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
     },
     {
+      "path": "pages/iam/position/form",
+      "style": { "navigationBarTitleText": "岗位表单", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/iam/position/detail",
+      "style": { "navigationBarTitleText": "岗位详情", "navigationStyle": "custom" }
+    },
+    {
       "path": "pages/iam/resource/index",
       "style": { "navigationBarTitleText": "资源管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/iam/resource/form",
+      "style": { "navigationBarTitleText": "资源表单", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/iam/resource/detail",
+      "style": { "navigationBarTitleText": "资源详情", "navigationStyle": "custom" }
     },
     {
       "path": "pages/iam/resourceModule/index",
       "style": { "navigationBarTitleText": "资源模块", "navigationStyle": "custom", "enablePullDownRefresh": true }
     },
     {
+      "path": "pages/iam/resourceModule/form",
+      "style": { "navigationBarTitleText": "资源模块表单", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/iam/resourceModule/detail",
+      "style": { "navigationBarTitleText": "资源模块详情", "navigationStyle": "custom" }
+    },
+    {
       "path": "pages/sys/dict/index",
       "style": { "navigationBarTitleText": "字典管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/sys/dict/form",
+      "style": { "navigationBarTitleText": "字典表单", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/sys/dict/detail",
+      "style": { "navigationBarTitleText": "字典详情", "navigationStyle": "custom" }
     },
     {
       "path": "pages/sys/banner/index",
       "style": { "navigationBarTitleText": "Banner管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
     },
     {
+      "path": "pages/sys/banner/form",
+      "style": { "navigationBarTitleText": "Banner表单", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/sys/banner/detail",
+      "style": { "navigationBarTitleText": "Banner详情", "navigationStyle": "custom" }
+    },
+    {
       "path": "pages/sys/file/index",
       "style": { "navigationBarTitleText": "文件管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/sys/file/detail",
+      "style": { "navigationBarTitleText": "文件详情", "navigationStyle": "custom" }
     },
     {
       "path": "pages/security/session/index",
       "style": { "navigationBarTitleText": "会话管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
     },
     {
+      "path": "pages/security/session/detail",
+      "style": { "navigationBarTitleText": "会话详情", "navigationStyle": "custom" }
+    },
+    {
       "path": "pages/message/notification/index",
       "style": { "navigationBarTitleText": "通知管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/message/notification/form",
+      "style": { "navigationBarTitleText": "通知表单", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/message/notification/detail",
+      "style": { "navigationBarTitleText": "通知详情", "navigationStyle": "custom" }
     },
     {
       "path": "pages/message/messageThread/index",
       "style": { "navigationBarTitleText": "站内信", "navigationStyle": "custom", "enablePullDownRefresh": true }
     },
     {
+      "path": "pages/message/messageThread/form",
+      "style": { "navigationBarTitleText": "站内信表单", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/message/messageThread/detail",
+      "style": { "navigationBarTitleText": "站内信详情", "navigationStyle": "custom" }
+    },
+    {
       "path": "pages/message/messageGroup/index",
       "style": { "navigationBarTitleText": "消息组", "navigationStyle": "custom", "enablePullDownRefresh": true }
     },
     {
+      "path": "pages/message/messageGroup/form",
+      "style": { "navigationBarTitleText": "消息组表单", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/message/messageGroup/detail",
+      "style": { "navigationBarTitleText": "消息组详情", "navigationStyle": "custom" }
+    },
+    {
       "path": "pages/message/todo/index",
       "style": { "navigationBarTitleText": "待办管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/message/todo/form",
+      "style": { "navigationBarTitleText": "待办表单", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/message/todo/detail",
+      "style": { "navigationBarTitleText": "待办详情", "navigationStyle": "custom" }
     }
   ],
   "globalStyle": {
@@ -118,7 +230,7 @@
   },
   "tabBar": {
     "color": "#999999",
-    "selectedColor": "#2979ff",
+    "selectedColor": "#2563eb",
     "backgroundColor": "#ffffff",
     "borderStyle": "black",
     "list": [

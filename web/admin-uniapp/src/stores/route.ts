@@ -121,7 +121,11 @@ export const useRouteStore = defineStore('route', () => {
       messageGroup: '/pages/message/messageGroup/index',
       todo: '/pages/message/todo/index',
     }
-    const path = pageMap[key] || `/pages/resource/list/index?resource=${key}`
+    const path = pageMap[key]
+    if (!path) {
+      uni.showToast({ title: '小程序端暂未配置该菜单', icon: 'none' })
+      return
+    }
     uni.navigateTo({ url: path })
   }
 

@@ -33,8 +33,7 @@
 
       <view
         v-if="!catalogCards.length"
-        class="flex justify-center items-center"
-        style="height: calc(100vh - 200px);"
+        class="empty-state"
       >
         <u-empty mode="list" text="暂无可用菜单" />
       </view>
@@ -78,15 +77,18 @@ const catalogCards = computed<CatalogCard[]>(() => {
   const mod = routeStore.activeModule
   if (!mod) return cards
 
-  const visibleResources = (mod.resources ?? [])
-    .filter((item: any) => item.status === 'ENABLED' && item.is_visible !== false)
-    .sort((a: any, b: any) => (a.sort ?? 99) - (b.sort ?? 99))
-  const tree = arrayToTree(visibleResources.map((item: any) => ({ ...item })))
+  const visibleResources: ResourceItem[] = (mod.resources ?? [])
+    .filter((item) => item.status === 'ENABLED' && item.is_visible !== false)
+    .sort((a, b) => (a.sort ?? 99) - (b.sort ?? 99))
+    .map((item) => ({ ...item }))
+  const tree = arrayToTree<ResourceItem>(visibleResources)
   const rootEntries: ResourceItem[] = []
 
   tree.forEach((node: any) => {
     if (node.resource_type === 'CATALOG') {
-      const entries = flattenTree(node.children ?? []).filter(isMenuEntry)
+      const entries = flattenTree<ResourceItem>(
+        (node.children ?? []) as ResourceItem[]
+      ).filter(isMenuEntry)
       if (entries.length) {
         cards.push({ id: node.id, name: node.name, icon: node.icon, entries })
       }
@@ -160,3 +162,12 @@ function handleModuleChange(event: any) {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.empty-state {
+  min-height: calc(100vh - 200px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>

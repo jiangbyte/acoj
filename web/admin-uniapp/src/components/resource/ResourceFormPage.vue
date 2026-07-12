@@ -1,6 +1,6 @@
 <template>
   <Layout :title="pageTitle" back>
-    <view>
+    <view class="resource-form">
       <u-card :show-head="false">
         <template #body>
           <FormFields v-model="form" :fields="config.formFields" :mode="mode" />
@@ -11,7 +11,7 @@
             type="primary"
             :loading="loading"
             @click="submit"
-          ></u-button>
+          />
         </template>
       </u-card>
     </view>
@@ -31,27 +31,47 @@ import {
 } from '@/config/resource'
 import { encryptPasswords } from '@/utils/security'
 
-const resource = ref<ResourceKey>('account')
+const props = defineProps<{
+  resourceKey: ResourceKey
+}>()
+
 const mode = ref<'create' | 'update'>('create')
 const id = ref('')
+const detailParams = ref<Record<string, any>>({})
 const form = ref<Record<string, any>>({})
 const loading = ref(false)
-const config = computed(() => resourceConfigs[resource.value])
-const api = computed<any>(() => adminResourceApis[resource.value])
+const config = computed(() => resourceConfigs[props.resourceKey])
+const api = computed<any>(() => adminResourceApis[props.resourceKey])
 const pageTitle = computed(
   () => `${mode.value === 'create' ? '新增' : '编辑'}${config.value.title}`
 )
 
 onLoad(async (query: any) => {
-  resource.value = query.resource || 'account'
   mode.value = query.mode === 'update' ? 'update' : 'create'
   id.value = query.id || ''
+  detailParams.value = buildDetailParams(query)
   initDefaults()
   if (mode.value === 'update' && id.value) {
-    const detail = await api.value.detail({ id: id.value })
-    form.value = { ...form.value, ...detail }
+    const detail = await api.value.detail(detailParams.value)
+    form.value = { ...form.value, ...normalizeDetail(detail) }
   }
 })
+
+function buildDetailParams(query: Record<string, any>) {
+  const params: Record<string, any> = { id: query.id || id.value }
+  const contextKeys = [
+    'account_type',
+    'account_id',
+    'target_account_type',
+    'target_account_id',
+  ]
+  contextKeys.forEach((key) => {
+    if (query[key] !== undefined && query[key] !== null && query[key] !== '') {
+      params[key] = query[key]
+    }
+  })
+  return params
+}
 
 function initDefaults() {
   const model: Record<string, any> = {}
@@ -64,9 +84,15 @@ function initDefaults() {
 }
 
 async function submit() {
-  const fields = config.value.formFields.filter((field) =>
-    isVisibleField(field)
-  )
+  if (!api.value.create && mode.value === 'create') {
+    uni.showToast({ title: '当前资源不支持新增', icon: 'none' })
+    return
+  }
+  if (!api.value.update && mode.value === 'update') {
+    uni.showToast({ title: '当前资源不支持编辑', icon: 'none' })
+    return
+  }
+  const fields = config.value.formFields.filter(isVisibleField)
   const missing = fields.find(
     (field) => field.required && isEmpty(form.value[field.prop])
   )
@@ -90,6 +116,10 @@ async function submit() {
   }
 }
 
+function normalizeDetail(data: any) {
+  return Array.isArray(data?.records) ? (data.records[0] ?? {}) : data
+}
+
 function isVisibleField(field: FieldConfig) {
   if (mode.value === 'create' && field.updateOnly) {
     return false
@@ -107,7 +137,7 @@ async function buildPayload() {
       payload[key] = null
     }
   })
-  if (resource.value === 'account' && payload.password) {
+  if (props.resourceKey === 'account' && payload.password) {
     const security = await encryptPasswords({ password: payload.password })
     payload.password = security.values.password
     payload.password_key_id = security.password_key_id
@@ -119,3 +149,9 @@ function isEmpty(value: unknown) {
   return value === undefined || value === null || value === ''
 }
 </script>
+
+<style lang="scss" scoped>
+.resource-form {
+  padding-top: var(--space-3);
+}
+</style>

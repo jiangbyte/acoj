@@ -189,64 +189,65 @@ async function submit() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60rpx 40rpx;
-  background-color: #f8f9fa;
+  padding: var(--space-16) var(--space-8);
+  background-color: var(--color-neutral-50);
 }
 
 .login-header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16rpx;
-  margin-bottom: 48rpx;
+  gap: var(--space-4);
+  margin-bottom: var(--space-12);
 }
 
 .login-header__logo {
-  width: 160rpx;
-  height: 160rpx;
+  width: 64px;
+  height: 64px;
 }
 
 .login-header__title {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: #111827;
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-neutral-900);
 }
 
 .login-header__subtitle {
-  font-size: 26rpx;
-  color: #6b7280;
+  font-size: var(--text-sm);
+  color: var(--color-neutral-500);
 }
 
 .login-card {
   width: 100%;
-  max-width: 600rpx;
+  max-width: 320px;
 }
 
 .form-field {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: var(--space-3);
 }
 
 .form-field__label {
-  font-size: 26rpx;
-  color: #6b7280;
+  font-size: var(--text-sm);
+  color: var(--color-neutral-500);
 }
 
 .captcha-row {
   width: 100%;
   display: flex;
-  gap: 12rpx;
+  gap: var(--space-3);
   align-items: center;
 }
 
 .captcha-image {
-  width: 156rpx;
-  height: 70rpx;
+  width: 80px;
+  height: 32px;
 }
 
 .login-submit {
-  margin-top: 32rpx;
+  margin-top: var(--space-8);
 }
 </style>
