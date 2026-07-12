@@ -1,4 +1,4 @@
-# HEI FastAPI
+# ACOJ — 在线判题与竞赛系统
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.116%2B-009688?logo=fastapi&logoColor=white)
@@ -11,17 +11,19 @@
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-HEI FastAPI 是一个面向中后台、门户和通用业务系统的全栈脚手架。仓库包含 FastAPI 后端、管理端 Web
+ACOJ 是一个基于 FastAPI + Vue 3 的全栈在线判题与算法竞赛系统。仓库包含 FastAPI 后端、管理端 Web
 应用 `web/admin`、门户端 Web 应用 `web/portal`，以及对应的 uni-app 多端应用 `web/admin-uniapp`、
-`web/portal-uniapp`。后端内置账号体系、RBAC、资源菜单、文件存储、消息通知、定时任务、数据库迁移和
-基础可观测能力。
+`web/portal-uniapp`。后端内置账号体系、RBAC 权限管理、题库与竞赛管理、在线判题、代码提交与评测、
+文件存储、消息通知、定时任务、数据库迁移和基础可观测能力。
 
-希望以现代 Python / Vue 技术栈，向 RuoYi（若依）开源生态致敬。
+技术底座基于 [hei-fastapi](https://github.com/jiangbyte/hei-fastapi) 全栈脚手架。
 
 > **请注意，本项目目前处于早期原型阶段，核心功能与业务闭环仍在持续构建和完善中。暂不建议用于生产环境，但欢迎用于学习研究、技术验证或参考实现。**
 
 ## 功能概览
 
+- **在线判题**：题目管理、代码提交、在线评测、评测结果反馈。
+- **竞赛系统**：ACM/IOI 赛制支持、实时排名、比赛管理。
 - 后端：FastAPI、SQLAlchemy Async、Alembic、Pydantic v2、Redis、RabbitMQ、Celery。
 - Web 前端：Vue 3、Vite、TypeScript、Pinia、Naive UI / Pro Naive UI、UnoCSS。
 - 多端前端：uni-app、Vue 3、Pinia、UnoCSS，可构建 H5 和常见小程序平台。
@@ -628,7 +630,8 @@ app/modules/example/
 
 ## 参考项目
 
-- [RuoYi](https://gitee.com/y_project/RuoYi) — 经典后台管理系统与开源生态，本项目在产品形态上向其致敬
+- [hei-fastapi](https://github.com/jiangbyte/hei-fastapi) — 本项目的全栈脚手架基础
+- [RuoYi](https://gitee.com/y_project/RuoYi) — 经典后台管理系统与开源生态
 - [snowy](https://gitee.com/xiaonuobase/snowy) — 国内首个国密前后分离快速开发平台
 
 ## 贡献指南
@@ -641,8 +644,8 @@ app/modules/example/
 2. **克隆到本地**
 
 ```bash
-git clone https://github.com/jiangbyte/hei-fastapi.git
-cd hei-fastapi
+git clone https://github.com/jiangbyte/acoj.git
+cd acoj
 ```
 
 3. **创建功能分支**
@@ -674,7 +677,7 @@ git push origin feat/your-feature-name
 
 ### 同步上游
 
-开发过程中上游可能有新提交，建议定期同步：
+本项目基于 [hei-fastapi](https://github.com/jiangbyte/hei-fastapi) 框架，上游可能有新提交，建议定期同步：
 
 ```bash
 git remote add upstream https://github.com/jiangbyte/hei-fastapi.git
