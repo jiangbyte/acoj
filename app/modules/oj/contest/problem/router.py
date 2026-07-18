@@ -24,7 +24,7 @@ router = APIRouter()
     "/oj/contest-problems/create",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:contest-problems:create")),
+        Depends(require_permission("oj:contestproblems:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -40,7 +40,7 @@ async def create(
     "/oj/contest-problems/update",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:contest-problems:update")),
+        Depends(require_permission("oj:contestproblems:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -56,7 +56,7 @@ async def update(
     "/oj/contest-problems/delete",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:contest-problems:delete")),
+        Depends(require_permission("oj:contestproblems:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -72,7 +72,7 @@ async def delete(
     "/oj/contest-problems/detail",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:contest-problems:detail")),
+        Depends(require_permission("oj:contestproblems:detail")),
     ],
     response_model=ApiResponse[OjContestProblemSchema],
 )
@@ -87,7 +87,7 @@ async def detail(
     "/oj/contest-problems/page",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:contest-problems:page")),
+        Depends(require_permission("oj:contestproblems:page")),
     ],
     response_model=ApiResponse[PageData[OjContestProblemSchema]],
 )

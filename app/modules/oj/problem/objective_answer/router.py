@@ -24,7 +24,7 @@ router = APIRouter()
     "/oj/objective-answers/create",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:objective-answers:create")),
+        Depends(require_permission("oj:objectiveanswers:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -40,7 +40,7 @@ async def create(
     "/oj/objective-answers/update",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:objective-answers:update")),
+        Depends(require_permission("oj:objectiveanswers:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -56,7 +56,7 @@ async def update(
     "/oj/objective-answers/delete",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:objective-answers:delete")),
+        Depends(require_permission("oj:objectiveanswers:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -72,7 +72,7 @@ async def delete(
     "/oj/objective-answers/detail",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:objective-answers:detail")),
+        Depends(require_permission("oj:objectiveanswers:detail")),
     ],
     response_model=ApiResponse[OjObjectiveAnswerSchema],
 )
@@ -87,7 +87,7 @@ async def detail(
     "/oj/objective-answers/page",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:objective-answers:page")),
+        Depends(require_permission("oj:objectiveanswers:page")),
     ],
     response_model=ApiResponse[PageData[OjObjectiveAnswerSchema]],
 )

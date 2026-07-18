@@ -24,7 +24,7 @@ router = APIRouter()
     "/oj/problem-samples/create",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:problem-samples:create")),
+        Depends(require_permission("oj:problemsamples:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -40,7 +40,7 @@ async def create(
     "/oj/problem-samples/update",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:problem-samples:update")),
+        Depends(require_permission("oj:problemsamples:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -56,7 +56,7 @@ async def update(
     "/oj/problem-samples/delete",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:problem-samples:delete")),
+        Depends(require_permission("oj:problemsamples:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -72,7 +72,7 @@ async def delete(
     "/oj/problem-samples/detail",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:problem-samples:detail")),
+        Depends(require_permission("oj:problemsamples:detail")),
     ],
     response_model=ApiResponse[OjProblemSampleSchema],
 )
@@ -87,7 +87,7 @@ async def detail(
     "/oj/problem-samples/page",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:problem-samples:page")),
+        Depends(require_permission("oj:problemsamples:page")),
     ],
     response_model=ApiResponse[PageData[OjProblemSampleSchema]],
 )

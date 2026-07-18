@@ -24,7 +24,7 @@ router = APIRouter()
     "/oj/judge-tasks/create",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:judge-tasks:create")),
+        Depends(require_permission("oj:judgetasks:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -40,7 +40,7 @@ async def create(
     "/oj/judge-tasks/update",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:judge-tasks:update")),
+        Depends(require_permission("oj:judgetasks:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -56,7 +56,7 @@ async def update(
     "/oj/judge-tasks/delete",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:judge-tasks:delete")),
+        Depends(require_permission("oj:judgetasks:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -72,7 +72,7 @@ async def delete(
     "/oj/judge-tasks/detail",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:judge-tasks:detail")),
+        Depends(require_permission("oj:judgetasks:detail")),
     ],
     response_model=ApiResponse[OjJudgeTaskSchema],
 )
@@ -87,7 +87,7 @@ async def detail(
     "/oj/judge-tasks/page",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:judge-tasks:page")),
+        Depends(require_permission("oj:judgetasks:page")),
     ],
     response_model=ApiResponse[PageData[OjJudgeTaskSchema]],
 )

@@ -24,7 +24,7 @@ router = APIRouter()
     "/oj/submission-sources/create",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:submission-sources:create")),
+        Depends(require_permission("oj:submissionsources:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -40,7 +40,7 @@ async def create(
     "/oj/submission-sources/update",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:submission-sources:update")),
+        Depends(require_permission("oj:submissionsources:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -56,7 +56,7 @@ async def update(
     "/oj/submission-sources/delete",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:submission-sources:delete")),
+        Depends(require_permission("oj:submissionsources:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -72,7 +72,7 @@ async def delete(
     "/oj/submission-sources/detail",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:submission-sources:detail")),
+        Depends(require_permission("oj:submissionsources:detail")),
     ],
     response_model=ApiResponse[OjSubmissionSourceSchema],
 )
@@ -87,7 +87,7 @@ async def detail(
     "/oj/submission-sources/page",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:submission-sources:page")),
+        Depends(require_permission("oj:submissionsources:page")),
     ],
     response_model=ApiResponse[PageData[OjSubmissionSourceSchema]],
 )

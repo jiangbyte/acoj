@@ -24,7 +24,7 @@ router = APIRouter()
     "/oj/rejudge-records/create",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:rejudge-records:create")),
+        Depends(require_permission("oj:rejudgerecords:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -40,7 +40,7 @@ async def create(
     "/oj/rejudge-records/update",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:rejudge-records:update")),
+        Depends(require_permission("oj:rejudgerecords:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -56,7 +56,7 @@ async def update(
     "/oj/rejudge-records/delete",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:rejudge-records:delete")),
+        Depends(require_permission("oj:rejudgerecords:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -72,7 +72,7 @@ async def delete(
     "/oj/rejudge-records/detail",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:rejudge-records:detail")),
+        Depends(require_permission("oj:rejudgerecords:detail")),
     ],
     response_model=ApiResponse[OjRejudgeRecordSchema],
 )
@@ -87,7 +87,7 @@ async def detail(
     "/oj/rejudge-records/page",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:rejudge-records:page")),
+        Depends(require_permission("oj:rejudgerecords:page")),
     ],
     response_model=ApiResponse[PageData[OjRejudgeRecordSchema]],
 )

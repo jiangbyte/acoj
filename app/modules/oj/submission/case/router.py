@@ -24,7 +24,7 @@ router = APIRouter()
     "/oj/submission-cases/create",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:submission-cases:create")),
+        Depends(require_permission("oj:submissioncases:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -40,7 +40,7 @@ async def create(
     "/oj/submission-cases/update",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:submission-cases:update")),
+        Depends(require_permission("oj:submissioncases:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -56,7 +56,7 @@ async def update(
     "/oj/submission-cases/delete",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:submission-cases:delete")),
+        Depends(require_permission("oj:submissioncases:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -72,7 +72,7 @@ async def delete(
     "/oj/submission-cases/detail",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:submission-cases:detail")),
+        Depends(require_permission("oj:submissioncases:detail")),
     ],
     response_model=ApiResponse[OjSubmissionCaseSchema],
 )
@@ -87,7 +87,7 @@ async def detail(
     "/oj/submission-cases/page",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:submission-cases:page")),
+        Depends(require_permission("oj:submissioncases:page")),
     ],
     response_model=ApiResponse[PageData[OjSubmissionCaseSchema]],
 )

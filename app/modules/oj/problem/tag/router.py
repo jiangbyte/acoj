@@ -24,7 +24,7 @@ router = APIRouter()
     "/oj/problem-tags/create",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:problem-tags:create")),
+        Depends(require_permission("oj:problemtags:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -40,7 +40,7 @@ async def create(
     "/oj/problem-tags/update",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:problem-tags:update")),
+        Depends(require_permission("oj:problemtags:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -56,7 +56,7 @@ async def update(
     "/oj/problem-tags/delete",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:problem-tags:delete")),
+        Depends(require_permission("oj:problemtags:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -72,7 +72,7 @@ async def delete(
     "/oj/problem-tags/detail",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:problem-tags:detail")),
+        Depends(require_permission("oj:problemtags:detail")),
     ],
     response_model=ApiResponse[OjProblemTagSchema],
 )
@@ -87,7 +87,7 @@ async def detail(
     "/oj/problem-tags/page",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:problem-tags:page")),
+        Depends(require_permission("oj:problemtags:page")),
     ],
     response_model=ApiResponse[PageData[OjProblemTagSchema]],
 )

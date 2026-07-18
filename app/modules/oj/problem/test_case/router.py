@@ -24,7 +24,7 @@ router = APIRouter()
     "/oj/test-cases/create",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:test-cases:create")),
+        Depends(require_permission("oj:testcases:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -40,7 +40,7 @@ async def create(
     "/oj/test-cases/update",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:test-cases:update")),
+        Depends(require_permission("oj:testcases:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -56,7 +56,7 @@ async def update(
     "/oj/test-cases/delete",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:test-cases:delete")),
+        Depends(require_permission("oj:testcases:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -72,7 +72,7 @@ async def delete(
     "/oj/test-cases/detail",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:test-cases:detail")),
+        Depends(require_permission("oj:testcases:detail")),
     ],
     response_model=ApiResponse[OjTestCaseSchema],
 )
@@ -87,7 +87,7 @@ async def detail(
     "/oj/test-cases/page",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:test-cases:page")),
+        Depends(require_permission("oj:testcases:page")),
     ],
     response_model=ApiResponse[PageData[OjTestCaseSchema]],
 )

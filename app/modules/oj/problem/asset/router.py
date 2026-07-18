@@ -24,7 +24,7 @@ router = APIRouter()
     "/oj/problem-assets/create",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:problem-assets:create")),
+        Depends(require_permission("oj:problemassets:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -40,7 +40,7 @@ async def create(
     "/oj/problem-assets/update",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:problem-assets:update")),
+        Depends(require_permission("oj:problemassets:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -56,7 +56,7 @@ async def update(
     "/oj/problem-assets/delete",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:problem-assets:delete")),
+        Depends(require_permission("oj:problemassets:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -72,7 +72,7 @@ async def delete(
     "/oj/problem-assets/detail",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:problem-assets:detail")),
+        Depends(require_permission("oj:problemassets:detail")),
     ],
     response_model=ApiResponse[OjProblemAssetSchema],
 )
@@ -87,7 +87,7 @@ async def detail(
     "/oj/problem-assets/page",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:problem-assets:page")),
+        Depends(require_permission("oj:problemassets:page")),
     ],
     response_model=ApiResponse[PageData[OjProblemAssetSchema]],
 )

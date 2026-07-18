@@ -24,7 +24,7 @@ router = APIRouter()
     "/oj/runtime-versions/create",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:runtime-versions:create")),
+        Depends(require_permission("oj:runtimeversions:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -40,7 +40,7 @@ async def create(
     "/oj/runtime-versions/update",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:runtime-versions:update")),
+        Depends(require_permission("oj:runtimeversions:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -56,7 +56,7 @@ async def update(
     "/oj/runtime-versions/delete",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:runtime-versions:delete")),
+        Depends(require_permission("oj:runtimeversions:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -72,7 +72,7 @@ async def delete(
     "/oj/runtime-versions/detail",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:runtime-versions:detail")),
+        Depends(require_permission("oj:runtimeversions:detail")),
     ],
     response_model=ApiResponse[OjRuntimeVersionSchema],
 )
@@ -87,7 +87,7 @@ async def detail(
     "/oj/runtime-versions/page",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
-        Depends(require_permission("oj:runtime-versions:page")),
+        Depends(require_permission("oj:runtimeversions:page")),
     ],
     response_model=ApiResponse[PageData[OjRuntimeVersionSchema]],
 )
