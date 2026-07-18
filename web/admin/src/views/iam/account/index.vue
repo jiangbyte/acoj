@@ -3,8 +3,8 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { accountApi } from '@/api'
-import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
-import { NButton, NDropdown, NFlex, NIcon, NTag } from 'naive-ui'
+import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon, resolveFileUrl } from '@/utils'
+import { NAvatar, NButton, NDropdown, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
@@ -118,6 +118,12 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ellipsis: {
       tooltip: true,
     },
+  },
+  {
+    title: '头像',
+    key: 'avatar',
+    width: 80,
+    render: (row) => renderAvatar(row),
   },
   {
     title: '账号',
@@ -266,6 +272,7 @@ const grantOptions = computed(() =>
   ].filter((item) => hasPermission(item.permission)),
 )
 const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
+const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 
 onMounted(() => {
   fetchPage()
@@ -294,6 +301,21 @@ async function fetchPage() {
 
 function openDetailModal(id: string) {
   detailModalRef.value?.openModal(id)
+}
+
+function renderAvatar(row: any) {
+  const avatar = resolveFileUrl(row.avatar)
+  const name = row.nickname || row.name || row.account || ''
+  return (
+    <NAvatar
+      round
+      size={32}
+      src={avatar}
+      imgProps={avatarImgProps}
+    >
+      {avatar ? undefined : String(name || '-').slice(0, 1).toUpperCase()}
+    </NAvatar>
+  )
 }
 
 function openCreateModal() {
@@ -402,7 +424,7 @@ async function deleteData(ids: string[]) {
       remote
       :title="'账号管理'"
       row-key="id"
-      :scroll-x="1960"
+      :scroll-x="2040"
       :columns="tableColumns"
       :data="state.accounts"
       :loading="state.loading"

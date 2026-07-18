@@ -6,7 +6,7 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = 'c12e5b0797c1'
+revision: str = '5de34ff9c199'
 down_revision: str | Sequence[str] | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -296,6 +296,22 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_banner'))
     )
     op.create_index('ix_sys_banner_scope_position_status_sort', 'sys_banner', ['display_scope', 'position', 'status', 'sort'], unique=False)
+    op.create_table('sys_config',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('config_key', sa.String(length=255), nullable=False, comment='配置键'),
+    sa.Column('config_value', sa.Text(), nullable=True, comment='配置值'),
+    sa.Column('category', sa.String(length=255), nullable=True, comment='分类'),
+    sa.Column('remark', sa.String(length=255), nullable=True, comment='备注'),
+    sa.Column('sort_code', sa.Integer(), nullable=False, comment='排序码'),
+    sa.Column('ext_json', sa.JSON(), nullable=False, comment='扩展信息'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
+    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
+    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_config'))
+    )
+    op.create_index('idx_sys_config_category', 'sys_config', ['category'], unique=False)
+    op.create_index('idx_sys_config_key', 'sys_config', ['config_key'], unique=True)
     op.create_table('sys_dept',
     sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
     sa.Column('parent_id', sa.String(length=64), nullable=True, comment='父部门ID'),
@@ -444,6 +460,7 @@ def upgrade() -> None:
     sa.Column('component', sa.String(length=255), nullable=True, comment='前端组件'),
     sa.Column('redirect', sa.String(length=255), nullable=True, comment='重定向地址'),
     sa.Column('icon', sa.String(length=255), nullable=True, comment='图标'),
+    sa.Column('color', sa.String(length=32), nullable=True, comment='颜色'),
     sa.Column('href', sa.String(length=255), nullable=True, comment='外链地址'),
     sa.Column('sort', sa.Integer(), nullable=False, comment='排序'),
     sa.Column('is_visible', sa.Boolean(), nullable=False, comment='是否可见'),
@@ -520,6 +537,9 @@ def downgrade() -> None:
     op.drop_index('idx_sys_dict_category', table_name='sys_dict')
     op.drop_table('sys_dict')
     op.drop_table('sys_dept')
+    op.drop_index('idx_sys_config_key', table_name='sys_config')
+    op.drop_index('idx_sys_config_category', table_name='sys_config')
+    op.drop_table('sys_config')
     op.drop_index('ix_sys_banner_scope_position_status_sort', table_name='sys_banner')
     op.drop_table('sys_banner')
     op.drop_table('sys_account_identity')

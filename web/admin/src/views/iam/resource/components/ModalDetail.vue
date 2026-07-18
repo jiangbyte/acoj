@@ -74,7 +74,14 @@ defineExpose({
             {{ displayValue(state.resource.redirect) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'图标'">
-            {{ displayValue(state.resource.icon) }}
+            <span
+              v-if="state.resource.icon"
+              class="icon-detail-preview"
+              :title="state.resource.icon"
+            >
+              <NovaIcon :icon="state.resource.icon" :size="22" />
+            </span>
+            <template v-else> - </template>
           </NDescriptionsItem>
           <NDescriptionsItem :label="'颜色'">
             <NTag
@@ -144,3 +151,13 @@ defineExpose({
     </NScrollbar>
   </NModal>
 </template>
+
+<style scoped>
+.icon-detail-preview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+</style>

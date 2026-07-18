@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict o1NO75gebrTy4mUp676q9yZyYP7VI34mqG0BoxafMNHudtOYDGnRSbfzwIE7kBY
+\restrict cnnHCZ6eYcN90fyHoJfKBqw2TN3AU4VvpLuuiRmzVr5bGecOcbyARcH3fsM4MSB
 
 -- Dumped from database version 17.10 (Debian 17.10-1.pgdg12+1)
 -- Dumped by pg_dump version 17.10 (Debian 17.10-1.pgdg12+1)
@@ -1869,6 +1869,27 @@ COMMENT ON COLUMN public.sys_banner.updated_by IS '更新人';
 
 
 --
+-- Name: sys_config; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.sys_config (
+    id character varying(64) NOT NULL,
+    config_key character varying(255) NOT NULL,
+    config_value text,
+    category character varying(255),
+    remark character varying(255),
+    sort_code integer DEFAULT 0 NOT NULL,
+    ext_json json DEFAULT '{}'::json NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_by character varying(64),
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_by character varying(64)
+);
+
+
+ALTER TABLE public.sys_config OWNER TO postgres;
+
+--
 -- Name: sys_dept; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -3355,6 +3376,14 @@ COPY public.sys_banner (id, title, image, url, link_type, summary, description, 
 
 
 --
+-- Data for Name: sys_config; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.sys_config (id, config_key, config_value, category, remark, sort_code, ext_json, created_at, created_by, updated_at, updated_by) FROM stdin;
+\.
+
+
+--
 -- Data for Name: sys_dept; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -3498,6 +3527,10 @@ COPY public.sys_dict (id, code, label, value, color, category, parent_id, status
 COPY public.sys_file (id, object_name, original_name, storage_provider, bucket, content_type, size, url, created_at, created_by, updated_at, updated_by) FROM stdin;
 7481646308676210688	uploads/2026/07/11/nano-ai-1781800719925-54c6c4a4fc7647818ee78eb6c39560b6.png	nano-ai-1781800719925.png	local	\N	image/png	1330442	/api/v1/files/uploads/2026/07/11/nano-ai-1781800719925-54c6c4a4fc7647818ee78eb6c39560b6.png	2026-07-11 09:51:23.624802+00	1	2026-07-11 09:51:23.624802+00	1
 7481670034289463296	avatars/portal/7481668347524943872/avatar-20260711112538-6c2517731f69460c8658773da659382f.png	avatar-20260711112538-6c2517731f69460c8658773da659382f.png	local	\N	image/png	851224	/api/v1/files/avatars/portal/7481668347524943872/avatar-20260711112538-6c2517731f69460c8658773da659382f.png	2026-07-11 11:25:38.673476+00	7481668347524943872	2026-07-11 11:25:38.673476+00	7481668347524943872
+7484225859625291776	uploads/2026/07/18/【哲风壁纸】原神-芙芙-e4c179ebb2154e219b5cfc33c47881d2.png	【哲风壁纸】原神-芙芙.png	local	\N	image/png	8411606	/api/v1/files/uploads/2026/07/18/%E3%80%90%E5%93%B2%E9%A3%8E%E5%A3%81%E7%BA%B8%E3%80%91%E5%8E%9F%E7%A5%9E-%E8%8A%99%E8%8A%99-e4c179ebb2154e219b5cfc33c47881d2.png	2026-07-18 12:41:33.658725+00	1	2026-07-18 12:41:33.658725+00	1
+7484226037195345920	uploads/2026/07/18/【哲风壁纸】原神-芙芙-5610a658d71745468385b538611ae725.png	【哲风壁纸】原神-芙芙.png	local	\N	image/png	8411606	/api/v1/files/uploads/2026/07/18/%E3%80%90%E5%93%B2%E9%A3%8E%E5%A3%81%E7%BA%B8%E3%80%91%E5%8E%9F%E7%A5%9E-%E8%8A%99%E8%8A%99-5610a658d71745468385b538611ae725.png	2026-07-18 12:42:16.003308+00	1	2026-07-18 12:42:16.003308+00	1
+7484236400376811520	uploads/2026/07/18/120153703_touxiang_bobopic-c4bd66eb5bbb416b9b6b893afa954e03.jpg	120153703_touxiang_bobopic.jpg	local	\N	image/jpeg	65451	/api/v1/files/uploads/2026/07/18/120153703_touxiang_bobopic-c4bd66eb5bbb416b9b6b893afa954e03.jpg	2026-07-18 13:23:26.808802+00	1	2026-07-18 13:23:26.808802+00	1
+7484239276931158016	uploads/2026/07/18/120153703_touxiang_bobopic-05cbe4a5ff7544a8a02cf21f05c5e3a5.jpg	120153703_touxiang_bobopic.jpg	local	\N	image/jpeg	65451	/api/v1/files/uploads/2026/07/18/120153703_touxiang_bobopic-05cbe4a5ff7544a8a02cf21f05c5e3a5.jpg	2026-07-18 13:34:52.6381+00	1	2026-07-18 13:34:52.6381+00	1
 \.
 
 
@@ -3815,6 +3848,11 @@ COPY public.sys_iam_relation (id, subject_type, subject_id, relation_type, targe
 7479007787574497371	ACCOUNT	1	SUBJECT_RESOURCE_GRANT	RESOURCE	201041		CASCADE	ALLOW	SELF	[]	f	99	ENABLED	\N	\N	\N	{}	2026-07-04 03:06:49.200257+00	1	2026-07-04 03:06:49.200257+00	1
 7479007787574497372	ACCOUNT	1	SUBJECT_RESOURCE_GRANT	RESOURCE	201042		CASCADE	ALLOW	SELF	[]	f	99	ENABLED	\N	\N	\N	{}	2026-07-04 03:06:49.200257+00	1	2026-07-04 03:06:49.200257+00	1
 7479007787574497373	ACCOUNT	1	SUBJECT_RESOURCE_GRANT	RESOURCE	201043		CASCADE	ALLOW	SELF	[]	f	99	ENABLED	\N	\N	\N	{}	2026-07-04 03:06:49.200257+00	1	2026-07-04 03:06:49.200257+00	1
+402010	RESOURCE	202010	RESOURCE_PERMISSION	PERMISSION		sys:config:page	CASCADE	ALLOW	ALL	[]	f	90	ENABLED	系统配置分页	\N	\N	{}	2026-07-18 14:07:48.98965+00	\N	2026-07-18 14:07:48.98965+00	\N
+402011	RESOURCE	202011	RESOURCE_PERMISSION	PERMISSION		sys:config:create	CASCADE	ALLOW	ALL	[]	f	91	ENABLED	新增系统配置	\N	\N	{}	2026-07-18 14:07:48.98965+00	\N	2026-07-18 14:07:48.98965+00	\N
+402012	RESOURCE	202012	RESOURCE_PERMISSION	PERMISSION		sys:config:detail	CASCADE	ALLOW	ALL	[]	f	92	ENABLED	查看系统配置	\N	\N	{}	2026-07-18 14:07:48.98965+00	\N	2026-07-18 14:07:48.98965+00	\N
+402013	RESOURCE	202013	RESOURCE_PERMISSION	PERMISSION		sys:config:update	CASCADE	ALLOW	ALL	[]	f	93	ENABLED	编辑系统配置	\N	\N	{}	2026-07-18 14:07:48.98965+00	\N	2026-07-18 14:07:48.98965+00	\N
+402014	RESOURCE	202014	RESOURCE_PERMISSION	PERMISSION		sys:config:delete	CASCADE	ALLOW	ALL	[]	f	94	ENABLED	删除系统配置	\N	\N	{}	2026-07-18 14:07:48.98965+00	\N	2026-07-18 14:07:48.98965+00	\N
 \.
 
 
@@ -3861,6 +3899,9 @@ COPY public.sys_operation_audit_log (id, module, resource_type, resource_id, act
 7482043364729294848	auth	account	uE18478S8t-C3az8fUU_hBWmm01RTDBh6-R6q0djOng	logout	Logout	null	null	1	ADMIN	66ede3ecf5a942858d4b044884231598	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36	t	\N	2026-07-12 12:09:07.80373+00
 7482043527124357120	auth	account	1	login	ADMIN login succeeded	null	null	1	ADMIN	e40203439f4249b783ae3f1ad2c4d9c0	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36	t	\N	2026-07-12 12:09:44.203693+00
 7482054030085197824	auth	account	1	login	ADMIN login succeeded	null	null	1	ADMIN	2ca9ec8e6b6a4fbab5341d1e34bb9a3d	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36	t	\N	2026-07-12 12:51:28.5524+00
+7484237926407213056	auth	account	1	login	ADMIN login succeeded	null	null	1	ADMIN	75d02dee689440ec8f5a3dfc06d12f85	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36	t	\N	2026-07-18 13:29:28.437805+00
+7484241057224462336	iam	resource-modules	\N	update	POST /api/v1/admin/sys/resource-modules/update	null	null	\N	\N	\N	\N	\N	t	\N	2026-07-18 13:41:57.26352+00
+7484247805125595136	auth	account	1	login	ADMIN login succeeded	null	null	1	ADMIN	53a70650aaa1493cbe6fa061190365c1	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36	t	\N	2026-07-18 14:08:43.721353+00
 \.
 
 
@@ -3970,6 +4011,14 @@ COPY public.sys_resource (id, parent_id, code, name, resource_type, module_id, p
 201244	200022	message-todo-delete	删除待办	BUTTON	210001	\N	\N	\N	\N	\N	\N	4	t	f	f	ENABLED	\N	{}	2026-07-03 00:00:00+00	\N	2026-07-03 00:00:00+00	\N
 201245	200022	message-todo-cancel	取消待办	BUTTON	210001	\N	\N	\N	\N	\N	\N	5	t	f	f	ENABLED	\N	{}	2026-07-03 00:00:00+00	\N	2026-07-03 00:00:00+00	\N
 7481617843012898816	\N	test	test	MENU	7481609907767218176	test	\N	\N	\N	\N	\N	0	t	f	f	ENABLED	testtest	{}	2026-07-11 07:58:15.841688+00	1	2026-07-11 07:59:08.611726+00	1
+202001	\N	system-test	测试目录	CATALOG	210001	/test	\N	/test/editor	icon-park-outline:experiment-one	\N	\N	30	t	f	f	ENABLED	系统模块测试页面目录	{}	2026-07-18 12:39:16.472705+00	\N	2026-07-18 12:39:16.472705+00	\N
+202002	202001	system-test-editor	编辑器测试	MENU	210001	/test/editor	/test/editor/index.vue	\N	icon-park-outline:edit	\N	\N	1	t	f	f	ENABLED	Markdown、富文本和代码编辑器组件测试页面	{}	2026-07-18 12:39:16.472705+00	\N	2026-07-18 12:39:16.472705+00	\N
+202003	202001	system-test-icon	图标选择器测试	MENU	210001	/test/icon	/test/icon/index.vue	\N	icon-park-outline:all-application	\N	\N	2	t	f	f	ENABLED	Iconify 离线图标选择器测试页面	{}	2026-07-18 12:49:42.562935+00	\N	2026-07-18 12:49:42.562935+00	\N
+202010	200003	system-config	系统配置	MENU	210001	/sys/config	/sys/config/index.vue	\N	icon-park-outline:setting-config	\N	\N	5	t	f	f	ENABLED	系统配置管理页面	{}	2026-07-18 14:07:48.814138+00	\N	2026-07-18 14:07:48.814138+00	\N
+202011	202010	system-config-create	新增系统配置	BUTTON	210001	\N	\N	\N	\N	\N	\N	1	t	f	f	ENABLED	\N	{}	2026-07-18 14:07:48.899867+00	\N	2026-07-18 14:07:48.899867+00	\N
+202012	202010	system-config-detail	查看系统配置	BUTTON	210001	\N	\N	\N	\N	\N	\N	2	t	f	f	ENABLED	\N	{}	2026-07-18 14:07:48.899867+00	\N	2026-07-18 14:07:48.899867+00	\N
+202013	202010	system-config-update	编辑系统配置	BUTTON	210001	\N	\N	\N	\N	\N	\N	3	t	f	f	ENABLED	\N	{}	2026-07-18 14:07:48.899867+00	\N	2026-07-18 14:07:48.899867+00	\N
+202014	202010	system-config-delete	删除系统配置	BUTTON	210001	\N	\N	\N	\N	\N	\N	4	t	f	f	ENABLED	\N	{}	2026-07-18 14:07:48.899867+00	\N	2026-07-18 14:07:48.899867+00	\N
 \.
 
 
@@ -3978,9 +4027,9 @@ COPY public.sys_resource (id, parent_id, code, name, resource_type, module_id, p
 --
 
 COPY public.sys_resource_module (id, name, code, client, icon, color, sort, status, description, extra, created_at, created_by, updated_at, updated_by) FROM stdin;
-210001	系统	system	ADMIN	icon-park-outline:setting-two	#2563eb	1	ENABLED	系统内置资源模块	{}	2026-06-30 00:00:00+00	\N	2026-07-12 11:59:49.803496+00	1
 210002	门户	HEADER	PORTAL	icon-park-outline:browser	#18a058	2	ENABLED	门户端公开资源模块	{}	2026-07-03 00:00:00+00	\N	2026-07-12 12:00:01.484173+00	1
 7481609907767218176	测试	T	ADMIN	icon-park-outline:setting-two	#2080f0	2	ENABLED	ASDASD	{}	2026-07-11 07:26:44.129778+00	1	2026-07-12 12:00:10.673997+00	1
+210001	系统	system	ADMIN	icon-park-outline:adjacent-item	#2563eb	1	ENABLED	系统内置资源模块	{}	2026-06-30 00:00:00+00	\N	2026-07-18 13:41:56.152581+00	1
 \.
 
 
@@ -4135,6 +4184,14 @@ ALTER TABLE ONLY public.sys_account_identity
 
 ALTER TABLE ONLY public.sys_banner
     ADD CONSTRAINT pk_sys_banner PRIMARY KEY (id);
+
+
+--
+-- Name: sys_config pk_sys_config; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sys_config
+    ADD CONSTRAINT pk_sys_config PRIMARY KEY (id);
 
 
 --
@@ -4338,6 +4395,20 @@ ALTER TABLE ONLY public.sys_role
 
 
 --
+-- Name: idx_sys_config_category; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_sys_config_category ON public.sys_config USING btree (category);
+
+
+--
+-- Name: idx_sys_config_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX idx_sys_config_key ON public.sys_config USING btree (config_key);
+
+
+--
 -- Name: idx_sys_dict_category; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4516,5 +4587,5 @@ CREATE INDEX ix_sys_iam_relation_target ON public.sys_iam_relation USING btree (
 -- PostgreSQL database dump complete
 --
 
-\unrestrict o1NO75gebrTy4mUp676q9yZyYP7VI34mqG0BoxafMNHudtOYDGnRSbfzwIE7kBY
+\unrestrict cnnHCZ6eYcN90fyHoJfKBqw2TN3AU4VvpLuuiRmzVr5bGecOcbyARcH3fsM4MSB
 

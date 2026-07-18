@@ -2,6 +2,7 @@
 import type { FormInst, FormRules } from 'naive-ui'
 import { resourceModuleApi } from '@/api'
 import CommonColorPicker from '@/components/common/CommonColorPicker.vue'
+import IconSelect from '@/components/common/IconSelect.vue'
 import { createRequiredRule, isHexColor, toNullableString } from '@/utils'
 import { computed, reactive, ref } from 'vue'
 
@@ -153,7 +154,7 @@ defineExpose({
             />
           </NFormItem>
           <NFormItem :label="'图标'" path="icon">
-            <NInput v-model:value="state.formModel.icon" />
+            <IconSelect v-model:value="state.formModel.icon" />
           </NFormItem>
           <NFormItem :label="'颜色'" path="color">
             <CommonColorPicker v-model="state.formModel.color" />

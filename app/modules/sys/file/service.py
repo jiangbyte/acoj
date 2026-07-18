@@ -27,7 +27,7 @@ from app.platform.db.transaction import transactional
 from app.platform.observability.metrics import record_file_upload_rejected
 from app.platform.storage.local import LocalStorage
 from app.platform.storage.manager import get_storage
-from app.platform.storage.url import is_external_url, normalize_object_name, resolve_file_url
+from app.platform.storage.url import is_external_url, normalize_object_name
 
 
 class FileService:
@@ -37,6 +37,7 @@ class FileService:
         self.db = db
         self.repo = FileRepository(db)
         self.storage = get_storage()
+        self._storage_cache = {StorageProvider(settings.storage.provider): self.storage}
 
     def build_object_name(self, filename: str, category: str = "uploads") -> str:
         """构造对象存储路径，内部保留按日期分片的紧凑命名格式。"""
@@ -53,13 +54,15 @@ class FileService:
     async def upload(self, payload: FileUploadRequest) -> SysFileSchema:
         """上传文件并创建元数据记录，参数通过对象统一承载。"""
         self._validate_upload(payload)
+        storage_provider = StorageProvider(payload.storage_provider or settings.storage.provider)
+        storage = self._get_storage(storage_provider)
         object_name = payload.object_name or self.build_object_name(
             payload.filename,
             payload.category,
         )
         object_name = self._validate_object_name(object_name)
         url = await asyncio.to_thread(
-            self.storage.upload_bytes,
+            storage.upload_bytes,
             object_name,
             payload.content,
             content_type=payload.content_type,
@@ -69,15 +72,15 @@ class FileService:
                 FileRecordCreate(
                     object_name=object_name,
                     original_name=PurePosixPath(payload.filename).name,
-                    storage_provider=settings.storage.provider,
+                    storage_provider=storage_provider,
                     bucket=(
                         settings.storage.bucket
-                        if settings.storage.provider != StorageProvider.LOCAL
+                        if storage_provider != StorageProvider.LOCAL
                         else None
                     ),
                     content_type=payload.content_type,
                     size=len(payload.content),
-                    url=resolve_file_url(object_name) or url,
+                    url=url,
                 )
             )
             return self._with_resolved_url(to_schema(SysFileSchema, entity))
@@ -94,7 +97,8 @@ class FileService:
             raise NotFoundError("File not found")
         async with transactional(self.db):
             for entity in entities:
-                await asyncio.to_thread(self.storage.delete_object, entity.object_name)
+                storage = self._get_storage(entity.storage_provider)
+                await asyncio.to_thread(storage.delete_object, entity.object_name)
             await self.repo.delete_many(unique_ids)
 
     async def delete_by_object_name(self, object_name: str) -> None:
@@ -103,8 +107,9 @@ class FileService:
         if not normalized or is_external_url(normalized):
             raise NotFoundError("File not found")
         entity = await self.repo.get_by_object_name(normalized)
+        storage = self._get_storage(entity.storage_provider if entity else None)
         async with transactional(self.db):
-            await asyncio.to_thread(self.storage.delete_object, normalized)
+            await asyncio.to_thread(storage.delete_object, normalized)
             if entity:
                 await self.repo.delete(entity)
 
@@ -113,15 +118,31 @@ class FileService:
             to_schema(SysFileSchema, await self.repo.get_required(query.id))
         )
 
+    async def list_by_ids(self, payload: IdsRequest) -> list[SysFileSchema]:
+        unique_ids = list(dict.fromkeys(payload.ids))
+        entities = await self.repo.list_by_ids(unique_ids)
+        entity_map = {entity.id: entity for entity in entities}
+        if len(entity_map) != len(unique_ids):
+            raise NotFoundError("File not found")
+        return [
+            self._with_resolved_url(to_schema(SysFileSchema, entity_map[file_id]))
+            for file_id in unique_ids
+        ]
+
+    async def download_by_id(self, query: IdQuery) -> Response:
+        entity = await self.repo.get_required(query.id)
+        return await self.response(entity.object_name)
+
     async def get_url(self, object_name: str) -> str:
         """优先返回已落库的稳定 URL，不存在时退化为存储层实时构造。"""
         normalized = normalize_object_name(object_name)
         if not normalized:
             raise NotFoundError("File not found")
-        url = resolve_file_url(normalized)
-        if url:
-            return url
-        return str(self.storage.get_object_url(normalized))
+        if is_external_url(normalized):
+            return normalized
+        entity = await self.repo.get_by_object_name(normalized)
+        storage = self._get_storage(entity.storage_provider if entity else None)
+        return str(storage.get_object_url(normalized))
 
     async def get_presigned_url(self, object_name: str) -> str:
         """获取对象的签名访问地址。"""
@@ -130,15 +151,17 @@ class FileService:
             raise NotFoundError("File not found")
         if is_external_url(normalized):
             return normalized
-        return str(self.storage.get_presigned_url(normalized))
+        entity = await self.repo.get_by_object_name(normalized)
+        return str(self._get_storage(entity.storage_provider if entity else None).get_presigned_url(normalized))
 
     async def response(self, object_name: str) -> Response:
         normalized = normalize_object_name(object_name)
         if not normalized:
             raise NotFoundError("File not found")
         entity = await self.repo.get_by_object_name(normalized)
-        if isinstance(self.storage, LocalStorage):
-            path = self.storage.get_path(normalized)
+        storage = self._get_storage(entity.storage_provider if entity else None)
+        if isinstance(storage, LocalStorage):
+            path = storage.get_path(normalized)
             if not path.exists() or not path.is_file():
                 raise NotFoundError("File not found")
             return FileResponse(
@@ -148,7 +171,7 @@ class FileService:
                 headers={"X-Content-Type-Options": "nosniff"},
             )
         return RedirectResponse(
-            url=self.storage.get_object_url(normalized),
+            url=storage.get_object_url(normalized),
             headers={"X-Content-Type-Options": "nosniff"},
         )
 
@@ -182,8 +205,14 @@ class FileService:
         return build_page(page_query.pagination, total, schemas)
 
     def _with_resolved_url(self, schema: SysFileSchema) -> SysFileSchema:
-        schema.url = resolve_file_url(schema.object_name) or schema.url
+        schema.url = str(self._get_storage(schema.storage_provider).get_object_url(schema.object_name)) or schema.url
         return schema
+
+    def _get_storage(self, provider: StorageProvider | str | None = None):
+        storage_provider = StorageProvider(provider or settings.storage.provider)
+        if storage_provider not in self._storage_cache:
+            self._storage_cache[storage_provider] = get_storage(storage_provider)
+        return self._storage_cache[storage_provider]
 
     def _validate_upload(self, payload: FileUploadRequest) -> None:
         safe_name = PurePosixPath(payload.filename).name

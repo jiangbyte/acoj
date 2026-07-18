@@ -1,18 +1,25 @@
 <script setup lang="ts">
 import { fileApi } from '@/api'
-import { displayValue, formatDateTime, resolveFileUrl } from '@/utils'
+import {
+  displayValue,
+  formatDateTime,
+  formatFileSize,
+  isImageFile,
+  resolveFileUrl,
+} from '@/utils'
 import { computed, reactive } from 'vue'
 import { dictTypeData } from '@/utils/dict'
 
 const state = reactive({
   showModal: false,
   loading: false,
+  downloading: false,
   file: {} as any,
 })
 
 const fileUrl = computed(() => resolveFileUrl(state.file?.url))
 const imageAlt = computed(() => state.file?.original_name ?? '预览')
-const isImage = computed(() => String(state.file?.content_type || '').startsWith('image/'))
+const isImage = computed(() => isImageFile(state.file))
 
 async function openModal(id: string) {
   state.file = {}
@@ -30,26 +37,27 @@ async function fetchDetail(id: string) {
   }
 }
 
-function formatFileSize(size?: number | string | null) {
-  const value = Number(size ?? 0)
-  if (!Number.isFinite(value) || value <= 0) {
-    return '0 B'
-  }
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let current = value
-  let unitIndex = 0
-  while (current >= 1024 && unitIndex < units.length - 1) {
-    current /= 1024
-    unitIndex += 1
-  }
-  return `${current.toFixed(unitIndex === 0 ? 0 : 2)} ${units[unitIndex]}`
-}
-
 function openFile() {
   if (!fileUrl.value) {
     return
   }
   window.open(fileUrl.value, '_blank', 'noopener,noreferrer')
+}
+
+async function downloadFile() {
+  const id = String(state.file?.id || '')
+  if (!id || state.downloading) {
+    return
+  }
+  state.downloading = true
+  try {
+    await fileApi.downloadFile(
+      state.file,
+      state.file.original_name || state.file.object_name || 'download',
+    )
+  } finally {
+    state.downloading = false
+  }
 }
 
 async function copyText(value?: string | null) {
@@ -99,8 +107,8 @@ defineExpose({
               :height="140"
               object-fit="cover"
             />
-            <NButton v-else-if="fileUrl" type="primary" text @click="openFile">
-              打开
+            <NButton v-else-if="state.file.id" type="primary" text :loading="state.downloading" @click="downloadFile">
+              下载
             </NButton>
             <template v-else> - </template>
           </NDescriptionsItem>
@@ -127,6 +135,9 @@ defineExpose({
               </NEllipsis>
               <NButton v-if="fileUrl" size="small" text type="primary" @click="openFile">
                 打开
+              </NButton>
+              <NButton v-if="state.file.id" size="small" text type="primary" :loading="state.downloading" @click="downloadFile">
+                下载
               </NButton>
               <NButton v-if="fileUrl" size="small" text type="primary" @click="copyText(fileUrl)">
                 复制
