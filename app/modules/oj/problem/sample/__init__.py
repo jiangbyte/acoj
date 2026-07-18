@@ -1,0 +1,1 @@
+"""OJ problem sample module."""

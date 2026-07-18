@@ -1,0 +1,1 @@
+"""OJ judge node module."""

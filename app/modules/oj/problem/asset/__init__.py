@@ -1,0 +1,1 @@
+"""OJ problem asset module."""

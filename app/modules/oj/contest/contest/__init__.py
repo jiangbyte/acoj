@@ -1,0 +1,1 @@
+"""OJ contest contest module."""

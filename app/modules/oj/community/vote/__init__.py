@@ -1,0 +1,1 @@
+"""OJ community vote module."""

@@ -1,0 +1,1 @@
+"""OJ judge task module."""
