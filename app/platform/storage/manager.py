@@ -5,9 +5,9 @@ from app.platform.storage.oss import OSSStorage
 from app.platform.storage.s3 import MinioStorage, S3Storage
 
 
-def get_storage():
-    """按配置返回当前存储实现。"""
-    provider = StorageProvider(settings.storage.provider)
+def get_storage(provider: StorageProvider | str | None = None):
+    """按配置或指定提供商返回存储实现。"""
+    provider = StorageProvider(provider or settings.storage.provider)
     if provider == StorageProvider.LOCAL:
         return LocalStorage(settings.storage.local_root)
     if provider == StorageProvider.MINIO:

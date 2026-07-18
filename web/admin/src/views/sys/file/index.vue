@@ -3,21 +3,32 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { NButton, NFlex, NIcon, NImage, NTag } from 'naive-ui'
-import FileUpload from '@/components/upload/FileUpload.vue'
 import { fileApi } from '@/api'
-import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon, resolveFileUrl } from '@/utils'
+import {
+  createTagColor,
+  formatDateTime,
+  formatFileSize,
+  hasPermission,
+  isImageFile,
+  normalizeSearchValues,
+  renderButtonIcon,
+  resolveFileUrl,
+} from '@/utils'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
+import ModalUpload from './components/ModalUpload.vue'
 
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
+const uploadModalRef = ref<any>(null)
 const state = reactive({
   files: [] as any[],
   total: 0,
   loading: false,
+  downloadingIds: [] as string[],
   searchValues: {} as any,
   checkedRowKeys: [] as string[],
   page: 1,
@@ -179,7 +190,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
           </NButton>
         ) : null}
         {hasPermission('sys:file:url') ? (
-          <NButton type="primary" size="small" text={true} onClick={() => openFile(row)}>
+          <NButton
+            type="primary"
+            size="small"
+            text={true}
+            loading={isDownloading(row.id)}
+            onClick={() => openFile(row)}
+          >
             {renderButtonIcon('icon-park-outline:link')}
           </NButton>
         ) : null}
@@ -219,7 +236,7 @@ async function fetchPage() {
 
 function renderPreview(row: any) {
   const src = resolveFileUrl(row.url)
-  if (!src || !isImage(row)) {
+  if (!src || !isImageFile(row)) {
     return <NTag bordered={false}>{row.content_type || '-'}</NTag>
   }
   return (
@@ -233,25 +250,6 @@ function renderPreview(row: any) {
   )
 }
 
-function isImage(row: any) {
-  return String(row.content_type || '').startsWith('image/')
-}
-
-function formatFileSize(size?: number | string | null) {
-  const value = Number(size ?? 0)
-  if (!Number.isFinite(value) || value <= 0) {
-    return '0 B'
-  }
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let current = value
-  let unitIndex = 0
-  while (current >= 1024 && unitIndex < units.length - 1) {
-    current /= 1024
-    unitIndex += 1
-  }
-  return `${current.toFixed(unitIndex === 0 ? 0 : 2)} ${units[unitIndex]}`
-}
-
 function openDetailModal(id: string) {
   detailModalRef.value?.openModal(id)
 }
@@ -260,16 +258,29 @@ function openEditModal(id: string) {
   formModalRef.value?.openModal(id)
 }
 
+function openUploadModal() {
+  uploadModalRef.value?.openModal()
+}
+
 function handleCheckedRowKeys(keys: Array<string | number>) {
   state.checkedRowKeys = keys.map(String)
 }
 
-function openFile(row: any) {
-  const url = resolveFileUrl(row.url)
-  if (!url) {
+function isDownloading(id?: string | number | null) {
+  return state.downloadingIds.includes(String(id ?? ''))
+}
+
+async function openFile(row: any) {
+  const id = String(row.id || '')
+  if (!id || isDownloading(id)) {
     return
   }
-  window.open(url, '_blank', 'noopener,noreferrer')
+  state.downloadingIds.push(id)
+  try {
+    await fileApi.downloadFile(row, row.original_name || row.object_name || 'download')
+  } finally {
+    state.downloadingIds = state.downloadingIds.filter((item) => item !== id)
+  }
 }
 
 function confirmDelete(value: string | string[]) {
@@ -336,14 +347,19 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex align="center">
-          <FileUpload
+          <NButton
             v-if="hasPermission('sys:file:upload')"
-            compact
-            mode="icon"
-            icon="icon-park-outline:upload"
-            :button-text="'上传文件'"
-            @uploaded="fetchPage"
-          />
+            text
+            :title="'上传文件'"
+            :aria-label="'上传文件'"
+            @click="openUploadModal"
+          >
+            <template #icon>
+              <NIcon>
+                <Icon icon="icon-park-outline:upload" />
+              </NIcon>
+            </template>
+          </NButton>
           <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
@@ -372,5 +388,6 @@ async function deleteData(ids: string[]) {
 
     <ModalForm ref="formModalRef" @saved="fetchPage" />
     <ModalDetail ref="detailModalRef" />
+    <ModalUpload ref="uploadModalRef" @saved="fetchPage" />
   </NFlex>
 </template>

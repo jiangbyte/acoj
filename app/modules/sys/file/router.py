@@ -1,6 +1,7 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType, StorageProvider
@@ -35,6 +36,7 @@ router = APIRouter()
 async def upload(
     file: Annotated[UploadFile, File(...)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    storage_provider: Annotated[StorageProvider | None, Form()] = None,
 ) -> ApiResponse[SysFileSchema]:
     content = await file.read(settings.storage.upload_max_bytes + 1)
     return success(
@@ -43,6 +45,7 @@ async def upload(
                 filename=file.filename or "file.bin",
                 content=content,
                 content_type=file.content_type or "application/octet-stream",
+                storage_provider=storage_provider,
             )
         )
     )
@@ -93,6 +96,36 @@ async def detail(
     id: Annotated[Id, Query()],
 ) -> ApiResponse[SysFileSchema]:
     return success(await FileService(db).detail(IdQuery(id=id)))
+
+
+@router.post(
+    "/sys/file/list_by_ids",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("sys:file:detail")),
+    ],
+    response_model=ApiResponse[list[SysFileSchema]],
+)
+async def list_by_ids(
+    payload: IdsRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[list[SysFileSchema]]:
+    return success(await FileService(db).list_by_ids(payload))
+
+
+@router.get(
+    "/sys/file/download",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("sys:file:url")),
+    ],
+    response_class=Response,
+)
+async def download(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    id: Annotated[Id, Query()],
+) -> Response:
+    return await FileService(db).download_by_id(IdQuery(id=id))
 
 
 @router.post(

@@ -2,6 +2,7 @@
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { resourceApi, resourceModuleApi } from '@/api'
+import NovaIcon from '@/components/common/NovaIcon.vue'
 import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { NButton, NDropdown, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
@@ -93,7 +94,46 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     title: '资源名称',
     path: 'name',
     width: 220,
-    render: (row) => row.name,
+    render: (row) => (
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          maxWidth: '100%',
+          minWidth: 0,
+          verticalAlign: 'middle',
+        }}
+      >
+        {row.icon ? (
+          <span
+            title={row.icon}
+            style={{
+              display: 'inline-flex',
+              flex: '0 0 auto',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '20px',
+              height: '20px',
+              lineHeight: 1,
+            }}
+          >
+            <NovaIcon icon={row.icon} size={18} />
+          </span>
+        ) : null}
+        <span
+          style={{
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            lineHeight: '20px',
+          }}
+        >
+          {row.name}
+        </span>
+      </span>
+    ),
     ellipsis: {
       tooltip: true,
     },

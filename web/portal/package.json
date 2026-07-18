@@ -13,10 +13,14 @@
     "format:check": "prettier . --check"
   },
   "dependencies": {
+    "@wangeditor/editor": "^5.1.23",
+    "@wangeditor/editor-for-vue": "5.1.12",
     "@iconify/vue": "^5.0.1",
     "@vueuse/core": "^14.3.0",
     "axios": "^1.18.1",
     "colord": "^2.9.3",
+    "md-editor-v3": "^6.5.4",
+    "monaco-editor": "^0.55.1",
     "naive-ui": "^2.44.1",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",

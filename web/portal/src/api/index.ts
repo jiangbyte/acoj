@@ -1,6 +1,7 @@
 export * as authApi from './auth'
 export * as bannerApi from './sys/banner.ts'
 export * as dictApi from './sys/dict.ts'
+export * as fileApi from './sys/file.ts'
 export * as resourceApi from './iam/resource'
 export * as messageApi from './message'
 export * as spaceApi from './space'

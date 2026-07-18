@@ -28,6 +28,7 @@ class FileUploadRequest(ApiSchema):
     filename: str
     content: bytes
     content_type: str
+    storage_provider: StorageProvider | None = None
     category: str = "uploads"
     object_name: str | None = None
 
