@@ -170,6 +170,58 @@ export function cancelTodo(data: any) {
   return http.post<any>(`${prefix}/todos/cancel`, data)
 }
 
+export function myFriends() {
+  return http.get<any[]>(`${prefix}/friends/my-list`)
+}
+
+export function friendSearch(keyword: string) {
+  return http.get<any[]>(`${prefix}/friends/search`, { params: { keyword } })
+}
+
+export function applyFriend(data: any) {
+  return http.post<any>(`${prefix}/friends/apply`, data)
+}
+
+export function handleFriendRequest(data: any) {
+  return http.post<any>(`${prefix}/friends/handle-request`, data)
+}
+
+export function removeFriend(data: any) {
+  return http.post<any>(`${prefix}/friends/remove`, data)
+}
+
+export function setFriendRemark(data: any) {
+  return http.post<any>(`${prefix}/friends/set-remark`, data)
+}
+
+export function myFriendRequests() {
+  return http.get<any[]>(`${prefix}/friends/my-requests`)
+}
+
+export function myFriendRequestCount() {
+  return http.get<any>(`${prefix}/friends/my-request-count`)
+}
+
+export function applyJoinGroup(data: any) {
+  return http.post<any>(`${prefix}/messages/groups/join-request`, data)
+}
+
+export function handleJoinGroupRequest(data: any) {
+  return http.post<any>(`${prefix}/messages/groups/handle-join-request`, data)
+}
+
+export function myJoinRequests() {
+  return http.get<any[]>(`${prefix}/messages/groups/my-join-requests`)
+}
+
+export function groupJoinRequests(groupId: string) {
+  return http.get<any[]>(`${prefix}/messages/groups/join-requests`, { params: { group_id: groupId } })
+}
+
+export function pendingJoinRequestCount() {
+  return http.get<any>(`${prefix}/messages/groups/pending-join-request-count`)
+}
+
 export function createEventSource() {
   const token = localStorage.getItem('token')
   if (!token) {

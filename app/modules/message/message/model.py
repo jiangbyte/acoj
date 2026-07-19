@@ -4,6 +4,7 @@ from sqlalchemy import BigInteger, Boolean, DateTime, Index, Integer, JSON, Stri
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.modules.message.enums import (
+    GroupJoinRequestStatus,
     MessageContentType,
     MessageGroupStatus,
     MessageSenderType,
@@ -193,3 +194,26 @@ class MsgMessageReaction(Base):
     account_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="账户ID")
     reaction: Mapped[str] = mapped_column(String(64), nullable=False, comment="反应")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, comment="创建时间")
+
+
+class MsgGroupJoinRequest(Base, TimestampMixin):
+    """入群申请表。"""
+
+    __tablename__ = "msg_group_join_request"
+    __table_args__ = (
+        UniqueConstraint("group_id", "applicant_type", "applicant_id", name="uq_msg_group_join_request"),
+        Index("ix_msg_group_join_request_group", "group_id", "status"),
+        Index("ix_msg_group_join_request_applicant", "applicant_type", "applicant_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
+    group_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="群组ID")
+    applicant_type: Mapped[str] = mapped_column(String(32), nullable=False, comment="申请人账户类型")
+    applicant_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="申请人账户ID")
+    message: Mapped[str | None] = mapped_column(Text, comment="申请附言")
+    status: Mapped[str] = mapped_column(
+        String(32), default=GroupJoinRequestStatus.PENDING.value, nullable=False, comment="状态",
+    )
+    handled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="处理时间")
+    handled_by_type: Mapped[str | None] = mapped_column(String(32), comment="处理人账户类型")
+    handled_by_id: Mapped[str | None] = mapped_column(String(64), comment="处理人账户ID")

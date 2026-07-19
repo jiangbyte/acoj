@@ -6,7 +6,7 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = '5de34ff9c199'
+revision: str = '20e3c1a790ce'
 down_revision: str | Sequence[str] | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -30,6 +30,127 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
     sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
     sa.PrimaryKeyConstraint('account_id', name=op.f('pk_admin_user_profile'))
+    )
+    op.create_table('cg_test_activity',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('code', sa.String(length=64), nullable=False, comment='活动编码'),
+    sa.Column('name', sa.String(length=120), nullable=False, comment='活动名称'),
+    sa.Column('category', sa.String(length=32), nullable=True, comment='活动分类'),
+    sa.Column('type', sa.String(length=32), nullable=False, comment='活动类型'),
+    sa.Column('status', sa.String(length=32), nullable=False, comment='状态'),
+    sa.Column('cover_url', sa.String(length=512), nullable=True, comment='封面地址'),
+    sa.Column('description', sa.Text(), nullable=True, comment='活动描述'),
+    sa.Column('start_at', sa.DateTime(timezone=True), nullable=False, comment='开始时间'),
+    sa.Column('end_at', sa.DateTime(timezone=True), nullable=True, comment='结束时间'),
+    sa.Column('max_participants', sa.Integer(), nullable=False, comment='最大参与人数'),
+    sa.Column('price', sa.Numeric(), nullable=False, comment='报名费用'),
+    sa.Column('is_public', sa.Boolean(), nullable=False, comment='是否公开'),
+    sa.Column('need_approval', sa.Boolean(), nullable=False, comment='是否需要审批'),
+    sa.Column('rule_config', sa.JSON(), nullable=False, comment='规则配置'),
+    sa.Column('extra', sa.JSON(), nullable=True, comment='扩展信息'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
+    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
+    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_cg_test_activity'))
+    )
+    op.create_table('cg_test_catalog',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('parent_id', sa.String(length=64), nullable=True, comment='父级ID'),
+    sa.Column('code', sa.String(length=64), nullable=False, comment='目录编码'),
+    sa.Column('name', sa.String(length=120), nullable=False, comment='目录名称'),
+    sa.Column('category', sa.String(length=32), nullable=True, comment='目录分类'),
+    sa.Column('status', sa.String(length=32), nullable=False, comment='状态'),
+    sa.Column('sort', sa.Integer(), nullable=False, comment='排序'),
+    sa.Column('is_visible', sa.Boolean(), nullable=False, comment='是否显示'),
+    sa.Column('icon', sa.String(length=128), nullable=True, comment='图标'),
+    sa.Column('description', sa.Text(), nullable=True, comment='描述'),
+    sa.Column('extra', sa.JSON(), nullable=False, comment='扩展信息'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
+    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
+    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_cg_test_catalog'))
+    )
+    op.create_table('cg_test_knowledge_category',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('parent_id', sa.String(length=64), nullable=True, comment='父级ID'),
+    sa.Column('code', sa.String(length=64), nullable=False, comment='分类编码'),
+    sa.Column('name', sa.String(length=120), nullable=False, comment='分类名称'),
+    sa.Column('status', sa.String(length=32), nullable=False, comment='状态'),
+    sa.Column('sort', sa.Integer(), nullable=False, comment='排序'),
+    sa.Column('is_visible', sa.Boolean(), nullable=False, comment='是否显示'),
+    sa.Column('description', sa.Text(), nullable=True, comment='描述'),
+    sa.Column('extra', sa.JSON(), nullable=False, comment='扩展信息'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
+    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
+    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_cg_test_knowledge_category'))
+    )
+    op.create_table('cg_test_knowledge_doc',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('category_id', sa.String(length=64), nullable=False, comment='分类ID'),
+    sa.Column('code', sa.String(length=64), nullable=False, comment='文档编码'),
+    sa.Column('title', sa.String(length=160), nullable=False, comment='文档标题'),
+    sa.Column('type', sa.String(length=32), nullable=False, comment='文档类型'),
+    sa.Column('status', sa.String(length=32), nullable=False, comment='状态'),
+    sa.Column('summary', sa.String(length=512), nullable=True, comment='摘要'),
+    sa.Column('content', sa.Text(), nullable=True, comment='正文内容'),
+    sa.Column('author', sa.String(length=64), nullable=True, comment='作者'),
+    sa.Column('published_at', sa.DateTime(timezone=True), nullable=True, comment='发布时间'),
+    sa.Column('view_count', sa.Integer(), nullable=False, comment='浏览次数'),
+    sa.Column('sort', sa.Integer(), nullable=False, comment='排序'),
+    sa.Column('is_top', sa.Boolean(), nullable=False, comment='是否置顶'),
+    sa.Column('settings', sa.JSON(), nullable=False, comment='展示设置'),
+    sa.Column('extra', sa.JSON(), nullable=True, comment='扩展信息'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
+    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
+    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_cg_test_knowledge_doc'))
+    )
+    op.create_table('cg_test_order',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('order_no', sa.String(length=64), nullable=False, comment='订单号'),
+    sa.Column('name', sa.String(length=120), nullable=False, comment='订单名称'),
+    sa.Column('customer_name', sa.String(length=120), nullable=False, comment='客户名称'),
+    sa.Column('customer_phone', sa.String(length=32), nullable=True, comment='客户手机号'),
+    sa.Column('status', sa.String(length=32), nullable=False, comment='状态'),
+    sa.Column('type', sa.String(length=32), nullable=False, comment='订单类型'),
+    sa.Column('ordered_at', sa.DateTime(timezone=True), nullable=False, comment='下单时间'),
+    sa.Column('paid_at', sa.DateTime(timezone=True), nullable=True, comment='支付时间'),
+    sa.Column('total_amount', sa.Numeric(), nullable=False, comment='订单金额'),
+    sa.Column('item_count', sa.Integer(), nullable=False, comment='商品数量'),
+    sa.Column('need_invoice', sa.Boolean(), nullable=False, comment='是否开票'),
+    sa.Column('invoice_config', sa.JSON(), nullable=False, comment='发票配置'),
+    sa.Column('remark', sa.Text(), nullable=True, comment='备注'),
+    sa.Column('extra', sa.JSON(), nullable=True, comment='扩展信息'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
+    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
+    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_cg_test_order'))
+    )
+    op.create_table('cg_test_order_item',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('order_id', sa.String(length=64), nullable=False, comment='订单ID'),
+    sa.Column('sku_code', sa.String(length=64), nullable=False, comment='SKU编码'),
+    sa.Column('name', sa.String(length=120), nullable=False, comment='商品名称'),
+    sa.Column('category', sa.String(length=32), nullable=True, comment='商品分类'),
+    sa.Column('status', sa.String(length=32), nullable=False, comment='状态'),
+    sa.Column('quantity', sa.Integer(), nullable=False, comment='数量'),
+    sa.Column('unit_price', sa.Numeric(), nullable=False, comment='单价'),
+    sa.Column('shipped_at', sa.DateTime(timezone=True), nullable=True, comment='发货时间'),
+    sa.Column('is_gift', sa.Boolean(), nullable=False, comment='是否赠品'),
+    sa.Column('item_config', sa.JSON(), nullable=False, comment='明细配置'),
+    sa.Column('remark', sa.Text(), nullable=True, comment='备注'),
+    sa.Column('extra', sa.JSON(), nullable=True, comment='扩展信息'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
+    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
+    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_cg_test_order_item'))
     )
     op.create_table('msg_group',
     sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
@@ -296,6 +417,73 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_banner'))
     )
     op.create_index('ix_sys_banner_scope_position_status_sort', 'sys_banner', ['display_scope', 'position', 'status', 'sort'], unique=False)
+    op.create_table('sys_codegen_field',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('plan_id', sa.String(length=64), nullable=False, comment='方案ID'),
+    sa.Column('table_role', sa.String(length=16), nullable=False, comment='表角色'),
+    sa.Column('column_name', sa.String(length=128), nullable=False, comment='字段名'),
+    sa.Column('column_comment', sa.String(length=255), nullable=True, comment='字段注释'),
+    sa.Column('db_type', sa.String(length=128), nullable=False, comment='数据库类型'),
+    sa.Column('python_type', sa.String(length=64), nullable=False, comment='Python类型'),
+    sa.Column('typescript_type', sa.String(length=64), nullable=False, comment='TypeScript类型'),
+    sa.Column('form_widget', sa.String(length=32), nullable=False, comment='表单控件'),
+    sa.Column('dict_code', sa.String(length=128), nullable=True, comment='字典编码'),
+    sa.Column('query_operator', sa.String(length=32), nullable=True, comment='查询方式'),
+    sa.Column('show_in_table', sa.Boolean(), nullable=False, comment='表格显示'),
+    sa.Column('show_in_form', sa.Boolean(), nullable=False, comment='表单显示'),
+    sa.Column('show_in_detail', sa.Boolean(), nullable=False, comment='详情显示'),
+    sa.Column('show_in_query', sa.Boolean(), nullable=False, comment='查询显示'),
+    sa.Column('is_primary_key', sa.Boolean(), nullable=False, comment='是否主键'),
+    sa.Column('is_required', sa.Boolean(), nullable=False, comment='是否必填'),
+    sa.Column('is_unique', sa.Boolean(), nullable=False, comment='是否唯一'),
+    sa.Column('is_nullable', sa.Boolean(), nullable=False, comment='是否可空'),
+    sa.Column('max_length', sa.Integer(), nullable=True, comment='最大长度'),
+    sa.Column('sort', sa.Integer(), nullable=False, comment='排序'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
+    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
+    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_codegen_field')),
+    sa.UniqueConstraint('plan_id', 'table_role', 'column_name', name='uq_sys_codegen_field_plan_role_column')
+    )
+    op.create_index('ix_sys_codegen_field_plan_role_sort', 'sys_codegen_field', ['plan_id', 'table_role', 'sort'], unique=False)
+    op.create_table('sys_codegen_plan',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('name', sa.String(length=128), nullable=False, comment='方案名称'),
+    sa.Column('gen_type', sa.String(length=32), nullable=False, comment='生成类型'),
+    sa.Column('status', sa.String(length=32), nullable=False, comment='状态'),
+    sa.Column('author', sa.String(length=64), nullable=False, comment='作者'),
+    sa.Column('description', sa.Text(), nullable=True, comment='描述'),
+    sa.Column('main_table', sa.String(length=128), nullable=False, comment='主表名'),
+    sa.Column('main_pk', sa.String(length=128), nullable=False, comment='主表主键'),
+    sa.Column('main_entity_name', sa.String(length=128), nullable=False, comment='主实体类名'),
+    sa.Column('main_module_path', sa.String(length=255), nullable=False, comment='后端模块路径'),
+    sa.Column('main_business_name', sa.String(length=128), nullable=False, comment='主业务名称'),
+    sa.Column('api_prefix', sa.String(length=255), nullable=False, comment='接口前缀'),
+    sa.Column('permission_prefix', sa.String(length=128), nullable=False, comment='权限前缀'),
+    sa.Column('resource_module_id', sa.String(length=64), nullable=True, comment='资源模块ID'),
+    sa.Column('parent_resource_id', sa.String(length=64), nullable=True, comment='父资源ID'),
+    sa.Column('menu_name', sa.String(length=64), nullable=False, comment='菜单名称'),
+    sa.Column('menu_path', sa.String(length=255), nullable=False, comment='菜单路径'),
+    sa.Column('component_path', sa.String(length=255), nullable=False, comment='组件路径'),
+    sa.Column('icon', sa.String(length=255), nullable=True, comment='菜单图标'),
+    sa.Column('sort', sa.Integer(), nullable=False, comment='排序'),
+    sa.Column('tree_parent_field', sa.String(length=128), nullable=True, comment='树父级字段'),
+    sa.Column('tree_label_field', sa.String(length=128), nullable=True, comment='树展示字段'),
+    sa.Column('sub_table', sa.String(length=128), nullable=True, comment='子表名'),
+    sa.Column('sub_pk', sa.String(length=128), nullable=True, comment='子表主键'),
+    sa.Column('sub_foreign_key', sa.String(length=128), nullable=True, comment='子表外键'),
+    sa.Column('sub_entity_name', sa.String(length=128), nullable=True, comment='子实体类名'),
+    sa.Column('sub_business_name', sa.String(length=128), nullable=True, comment='子业务名称'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
+    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
+    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_codegen_plan')),
+    sa.UniqueConstraint('name', name='uq_sys_codegen_plan_name')
+    )
+    op.create_index('ix_sys_codegen_plan_gen_type', 'sys_codegen_plan', ['gen_type'], unique=False)
+    op.create_index('ix_sys_codegen_plan_main_table', 'sys_codegen_plan', ['main_table'], unique=False)
     op.create_table('sys_config',
     sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
     sa.Column('config_key', sa.String(length=255), nullable=False, comment='配置键'),
@@ -540,6 +728,11 @@ def downgrade() -> None:
     op.drop_index('idx_sys_config_key', table_name='sys_config')
     op.drop_index('idx_sys_config_category', table_name='sys_config')
     op.drop_table('sys_config')
+    op.drop_index('ix_sys_codegen_plan_main_table', table_name='sys_codegen_plan')
+    op.drop_index('ix_sys_codegen_plan_gen_type', table_name='sys_codegen_plan')
+    op.drop_table('sys_codegen_plan')
+    op.drop_index('ix_sys_codegen_field_plan_role_sort', table_name='sys_codegen_field')
+    op.drop_table('sys_codegen_field')
     op.drop_index('ix_sys_banner_scope_position_status_sort', table_name='sys_banner')
     op.drop_table('sys_banner')
     op.drop_table('sys_account_identity')
@@ -572,5 +765,11 @@ def downgrade() -> None:
     op.drop_index('ix_msg_group_member_account', table_name='msg_group_member')
     op.drop_table('msg_group_member')
     op.drop_table('msg_group')
+    op.drop_table('cg_test_order_item')
+    op.drop_table('cg_test_order')
+    op.drop_table('cg_test_knowledge_doc')
+    op.drop_table('cg_test_knowledge_category')
+    op.drop_table('cg_test_catalog')
+    op.drop_table('cg_test_activity')
     op.drop_table('admin_user_profile')
     # ### end Alembic commands ###

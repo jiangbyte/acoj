@@ -96,7 +96,11 @@ export const useTabStore = defineStore('tab-store', {
      * 以及 404 等内部路由都不会生成标签页。
      */
     addTab(route: RouteLocationNormalizedLoaded) {
-      if (!isTabResource(route.meta.resource_type) || this.hasExistTab(route.fullPath)) {
+      if (
+        route.meta.is_fullscreen ||
+        !isTabResource(route.meta.resource_type) ||
+        this.hasExistTab(route.fullPath)
+      ) {
         return
       }
 

@@ -86,3 +86,25 @@ class TodoAssigneeStatus(StrEnum):
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
+
+class FriendStatus(StrEnum):
+    """好友关系状态。"""
+
+    ACTIVE = "ACTIVE"
+    DELETED = "DELETED"
+
+
+class FriendRequestStatus(StrEnum):
+    """好友申请状态。"""
+
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+
+
+class GroupJoinRequestStatus(StrEnum):
+    """入群申请状态。"""
+
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"

@@ -58,14 +58,14 @@ defineExpose({
               displayValue(state.dept.category)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'父级部门ID'">
-            {{ displayValue(state.dept.parent_id) }}
+          <NDescriptionsItem :label="'父级部门'">
+            {{ displayValue(state.dept.parent_name) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'负责人ID'">
-            {{ displayValue(state.dept.master_id) }}
+          <NDescriptionsItem :label="'负责人'">
+            {{ displayValue(state.dept.master_name) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'副负责人ID'">
-            {{ displayValue(state.dept.deputy_master_id) }}
+          <NDescriptionsItem :label="'副负责人'">
+            {{ displayValue(state.dept.deputy_master_name) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'排序'">
             {{ displayValue(state.dept.sort) }}

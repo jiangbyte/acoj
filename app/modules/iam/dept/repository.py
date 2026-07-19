@@ -20,6 +20,12 @@ class DeptTreeRecord(TypedDict):
     name: str
     code: str
     category: str
+    parent_id: str | None
+    status: str
+    sort: int
+    is_virtual: bool
+    master_id: str | None
+    deputy_master_id: str | None
     children: list["DeptTreeRecord"]
 
 
@@ -132,6 +138,12 @@ class DeptRepository:
                 "name": dept.name,
                 "code": dept.code,
                 "category": dept.category,
+                "parent_id": dept.parent_id,
+                "status": dept.status,
+                "sort": dept.sort,
+                "is_virtual": dept.is_virtual,
+                "master_id": dept.master_id,
+                "deputy_master_id": dept.deputy_master_id,
                 "children": [],
             }
             for dept in depts
@@ -143,3 +155,27 @@ class DeptRepository:
             else:
                 roots.append(node_map[dept.id])
         return roots
+
+    async def resolve_account_names(self, account_ids: list[str]) -> dict[str, str]:
+        """批量查询账户名称，返回 {account_id: name} 映射。"""
+        unique_ids = list(dict.fromkeys(account_ids))
+        if not unique_ids:
+            return {}
+        from app.modules.iam.account.model import SysAccount
+        from app.modules.user.admin.model import AdminUserProfile
+        stmt = (
+            select(SysAccount.id, AdminUserProfile.name)
+            .outerjoin(AdminUserProfile, AdminUserProfile.account_id == SysAccount.id)
+            .where(SysAccount.id.in_(unique_ids))
+        )
+        rows = (await self.db.execute(stmt)).all()
+        return {row[0]: (row[1] or row[0]) for row in rows}
+
+    async def resolve_dept_names(self, dept_ids: list[str]) -> dict[str, str]:
+        """批量查询部门名称，返回 {dept_id: name} 映射。"""
+        unique_ids = list(dict.fromkeys(dept_ids))
+        if not unique_ids:
+            return {}
+        stmt = select(SysDept.id, SysDept.name).where(SysDept.id.in_(unique_ids))
+        rows = (await self.db.execute(stmt)).all()
+        return {row[0]: row[1] for row in rows}

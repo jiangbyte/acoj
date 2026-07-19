@@ -2,7 +2,13 @@ import { defineStore } from 'pinia'
 import { router } from '@/router'
 import { resourceApi } from '@/api'
 import { staticRoutes } from '@/router/routes.static'
-import { createMenus, createRoutes, generateCacheRoutes, getActiveMenuPath } from './route/helper'
+import {
+  createFullscreenRoutes,
+  createMenus,
+  createRoutes,
+  generateCacheRoutes,
+  getActiveMenuPath,
+} from './route/helper'
 
 /**
  * 路由 store 状态。
@@ -31,6 +37,9 @@ interface RouteState {
 
   // keep-alive include 列表，值为 route.name；当前使用 module_id + code 作为 route.name。
   cacheRoutes: string[]
+
+  // 独立全屏路由名，用于退出登录时一并移除。
+  fullscreenRouteNames: string[]
 }
 
 // 当前 store 没有 getters；显式给空类型可以降低 Pinia 的复杂类型推断。
@@ -76,6 +85,7 @@ export const useRouteStore = defineStore<'route-store', RouteState, RouteGetters
       activeModuleId: null,
       currentMenuPath: null,
       cacheRoutes: [],
+      fullscreenRouteNames: [],
     }),
     actions: {
       /**
@@ -97,6 +107,12 @@ export const useRouteStore = defineStore<'route-store', RouteState, RouteGetters
         if (router.hasRoute('appRoot')) {
           router.removeRoute('appRoot')
         }
+        this.fullscreenRouteNames.forEach((routeName) => {
+          if (router.hasRoute(routeName)) {
+            router.removeRoute(routeName)
+          }
+        })
+        this.fullscreenRouteNames = []
       },
 
       /**
@@ -159,6 +175,13 @@ export const useRouteStore = defineStore<'route-store', RouteState, RouteGetters
         }
 
         router.addRoute(createRoutes(rowRoutes))
+        const fullscreenRoutes = createFullscreenRoutes(rowRoutes)
+        fullscreenRoutes.forEach((route) => {
+          router.addRoute(route)
+        })
+        this.fullscreenRouteNames = fullscreenRoutes
+          .map((route) => route.name)
+          .filter((name): name is string => typeof name === 'string')
         this.setActiveModule(resourceModules[0]?.id ?? null)
         this.cacheRoutes = generateCacheRoutes(rowRoutes)
         this.isInitAuthRoute = true

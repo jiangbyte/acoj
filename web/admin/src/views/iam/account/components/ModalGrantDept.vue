@@ -115,7 +115,6 @@ defineExpose({
             <NTreeSelect
               v-model:value="state.deptIds"
               multiple
-              cascade
               checkable
               clearable
               filterable

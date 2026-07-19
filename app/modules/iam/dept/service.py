@@ -47,7 +47,9 @@ class DeptService:
     async def detail(self, query: IdQuery, session: SessionPayload | None = None) -> SysDeptSchema:
         if session is not None:
             await self._ensure_dept_records_visible(session, "iam:dept:detail", [query.id])
-        return to_schema(SysDeptSchema, await self.repo.get_required(query.id))
+        result = to_schema(SysDeptSchema, await self.repo.get_required(query.id))
+        await self._resolve_names([result])
+        return result
 
     async def page_admin(
         self,
@@ -60,7 +62,9 @@ class DeptService:
             else None
         )
         items, total = await self.repo.page_admin(query, data_scope_filter)
-        return build_page(query.pagination, total, to_schema_list(SysDeptSchema, items))
+        dtos = to_schema_list(SysDeptSchema, items)
+        await self._resolve_names(dtos)
+        return build_page(query.pagination, total, dtos)
 
     async def list_dept_tree(self, session: SessionPayload | None = None) -> list[DeptTreeNode]:
         data_scope_filter = (
@@ -68,7 +72,56 @@ class DeptService:
             if session is not None
             else None
         )
-        return _build_dept_tree_nodes(await self.repo.get_dept_tree(data_scope_filter))
+        raw_records = await self.repo.get_dept_tree(data_scope_filter)
+
+        # 批量回显负责人名称
+        all_ids: set[str] = set()
+        def collect_ids(nodes: list[DeptTreeRecord]) -> None:
+            for n in nodes:
+                if n.get("master_id"): all_ids.add(str(n["master_id"]))
+                if n.get("deputy_master_id"): all_ids.add(str(n["deputy_master_id"]))
+                if n.get("children"): collect_ids(n["children"])
+        collect_ids(raw_records)
+
+        if all_ids:
+            name_map = await self.repo.resolve_account_names(list(all_ids))
+            def apply_names(nodes: list[DeptTreeRecord]) -> None:
+                for n in nodes:
+                    mid = n.get("master_id")
+                    if mid and str(mid) in name_map:
+                        n["master_name"] = name_map[str(mid)]
+                    did = n.get("deputy_master_id")
+                    if did and str(did) in name_map:
+                        n["deputy_master_name"] = name_map[str(did)]
+                    if n.get("children"):
+                        apply_names(n["children"])
+            apply_names(raw_records)
+
+        return _build_dept_tree_nodes(raw_records)
+
+    async def _resolve_names(self, dtos: list[SysDeptSchema]) -> None:
+        """批量回显负责人/副负责人名称和父级部门名称，避免 N+1 查询。"""
+        account_ids = set()
+        parent_ids = set()
+        for dto in dtos:
+            if dto.master_id:
+                account_ids.add(dto.master_id)
+            if dto.deputy_master_id:
+                account_ids.add(dto.deputy_master_id)
+            if dto.parent_id:
+                parent_ids.add(dto.parent_id)
+        if account_ids:
+            name_map = await self.repo.resolve_account_names(list(account_ids))
+            for dto in dtos:
+                if dto.master_id and dto.master_id in name_map:
+                    dto.master_name = name_map[dto.master_id]
+                if dto.deputy_master_id and dto.deputy_master_id in name_map:
+                    dto.deputy_master_name = name_map[dto.deputy_master_id]
+        if parent_ids:
+            dept_map = await self.repo.resolve_dept_names(list(parent_ids))
+            for dto in dtos:
+                if dto.parent_id and dto.parent_id in dept_map:
+                    dto.parent_name = dept_map[dto.parent_id]
 
     async def _dept_scope_filter(self, session: SessionPayload, permission_key: str):
         return await build_data_scope_filter(
@@ -123,6 +176,12 @@ def _build_dept_tree_nodes(
                 name=str(raw_item["name"]),
                 code=str(raw_item["code"]),
                 category=str(raw_item["category"]),
+                parent_id=str(raw_item["parent_id"]) if raw_item.get("parent_id") else None,
+                status=str(raw_item.get("status", "ENABLED")),
+                sort=int(raw_item.get("sort", 99)),
+                is_virtual=bool(raw_item.get("is_virtual", False)),
+                master_name=str(raw_item["master_name"]) if raw_item.get("master_name") else None,
+                deputy_master_name=str(raw_item["deputy_master_name"]) if raw_item.get("deputy_master_name") else None,
                 children=_build_dept_tree_nodes(raw_item.get("children", [])),  # type: ignore[arg-type]
             )
         )

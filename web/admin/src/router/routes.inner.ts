@@ -26,6 +26,11 @@ export const routes: RouteRecordRaw[] = [
     redirect: '/auth/login',
   },
   {
+    path: '/message/message',
+    name: 'message-message-redirect',
+    redirect: '/message/im',
+  },
+  {
     path: '/auth/login',
     name: 'auth-login',
     component: () => import('@/views/auth/Login.vue'),

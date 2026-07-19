@@ -10,6 +10,10 @@ const routeResourceTypes: AppRoute.ResourceType[] = ['CATALOG', 'MENU', 'PAGE']
 // 能点击跳转的资源类型。目录只承担分组作用，不直接渲染 RouterLink。
 const clickableResourceTypes: AppRoute.ResourceType[] = ['MENU', 'PAGE']
 
+// 当前先用前端白名单兜底独立全屏页，后端补字段后仍可继续兼容。
+const fullscreenRoutePaths = new Set(['/message/im'])
+const fullscreenRouteCodes = new Set(['message-im'])
+
 const innerAppRoutes: RouteRecordRaw[] = [
   {
     path: '/usercenter',
@@ -34,19 +38,7 @@ const innerAppRoutes: RouteRecordRaw[] = [
  * 这里通过 import.meta.glob 建立组件映射，再把 MENU/PAGE 资源转换成真实组件路由。
  */
 export function createRoutes(resources: AppRoute.RowRoute[]): RouteRecordRaw {
-  let resultRoutes = standardizeRoutes(resources)
-
-  // Vite 会在构建时静态分析 glob，只有存在于 src/views 下的页面组件能被加载。
-  const modules = import.meta.glob('@/views/**/*.vue')
-  resultRoutes = resultRoutes.map((item) => {
-    const resourceComponent = item.meta.component
-    if (isClickableResource(item.meta.resource_type) && resourceComponent && !item.redirect) {
-      item.component = modules[`/src/views${resourceComponent}`] as RouteRecordRaw['component']
-    }
-    return item
-  })
-
-  resultRoutes = arrayToTree(resultRoutes)
+  const resultRoutes = buildRoutes(resources.filter((resource) => !isFullscreenResource(resource)))
 
   // 所有授权页面都挂在 appRoot 下，统一使用后台 Layout。
   const appRootRoute: RouteRecordRaw = {
@@ -62,6 +54,20 @@ export function createRoutes(resources: AppRoute.RowRoute[]): RouteRecordRaw {
   appRootRoute.children = [...innerAppRoutes, ...(resultRoutes as unknown as RouteRecordRaw[])]
 
   return appRootRoute
+}
+
+/**
+ * 提取独立全屏路由。
+ *
+ * 这些路由不挂载到后台 Layout 下，适合 IM、登录页之外的独立工作区页面。
+ */
+export function createFullscreenRoutes(resources: AppRoute.RowRoute[]): RouteRecordRaw[] {
+  return buildRoutes(resources.filter((resource) => isFullscreenResource(resource))).map((item) => ({
+    path: item.path,
+    name: item.name,
+    component: item.component,
+    meta: item.meta,
+  }))
 }
 
 /**
@@ -81,7 +87,7 @@ export function createMenus(resources: AppRoute.RowRoute[]): AppRoute.MenuOption
  */
 export function generateCacheRoutes(resources: AppRoute.RowRoute[]) {
   return resources
-    .filter((resource) => isRouteResource(resource) && resource.is_cache)
+    .filter((resource) => isRouteResource(resource) && resource.is_cache && !isFullscreenResource(resource))
     .map(createRouteName)
 }
 
@@ -167,6 +173,7 @@ function standardizeRoutes(resources: AppRoute.RowRoute[]) {
       is_affix: resource.is_affix,
       status: resource.status,
       description: resource.description,
+      is_fullscreen: isFullscreenResource(resource),
       meta: { ...resource },
     }
 
@@ -174,8 +181,31 @@ function standardizeRoutes(resources: AppRoute.RowRoute[]) {
   })
 }
 
+function buildRoutes(resources: AppRoute.RowRoute[]) {
+  const routes = standardizeRoutes(resources)
+
+  // Vite 会在构建时静态分析 glob，只有存在于 src/views 下的页面组件能被加载。
+  const modules = import.meta.glob('@/views/**/*.vue')
+  routes.forEach((item) => {
+    const resourceComponent = item.meta.component
+    if (isClickableResource(item.meta.resource_type) && resourceComponent && !item.redirect) {
+      item.component = modules[`/src/views${resourceComponent}`] as RouteRecordRaw['component']
+    }
+  })
+
+  return arrayToTree(routes)
+}
+
 function createRouteName(resource: AppRoute.RowRoute) {
   return resource.module_id ? `${resource.module_id}:${resource.code}` : resource.code
+}
+
+function isFullscreenResource(resource: AppRoute.RowRoute) {
+  return Boolean(
+    resource.is_fullscreen ||
+      fullscreenRoutePaths.has(resource.path ?? '') ||
+      fullscreenRouteCodes.has(resource.code),
+  )
 }
 
 /**

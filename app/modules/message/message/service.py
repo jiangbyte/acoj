@@ -1,11 +1,14 @@
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import BusinessError
+from app.core.config.enums import AccountType
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema
 from app.core.security.session import SessionPayload
-from app.modules.message.enums import MessageSenderType
-from app.modules.message.message.model import MsgMessage, MsgThread
+from app.modules.message.message.schema import GroupJoinRequestCreate, GroupJoinRequestHandle, GroupJoinRequestSchema
+from app.modules.message.enums import GroupJoinRequestStatus, MessageGroupStatus, MessageSenderType
+from app.modules.message.message.model import MsgGroupJoinRequest, MsgMessage, MsgThread
 from app.modules.message.message.repository import MessageRepository
 from app.modules.message.message.schema import (
     GroupCreateRequest,
@@ -25,6 +28,7 @@ from app.modules.message.message.schema import (
     ThreadSchema,
 )
 from app.platform.db.transaction import transactional
+from app.platform.id_generator.snowflake import generate_snowflake_id
 
 
 class MessageService:
@@ -181,6 +185,172 @@ class MessageService:
                 reaction=payload.reaction,
             )
 
+
+    async def apply_join_group(
+        self, payload: GroupJoinRequestCreate, session: SessionPayload,
+    ) -> None:
+        group = await self.repo.get_group_required(payload.group_id)
+        if group.status != MessageGroupStatus.ENABLED.value:
+            raise BusinessError("Group is not open for joining")
+
+        members = await self.repo.list_group_members(payload.group_id)
+        for member in members:
+            if member.account_type == session.account_type.value and member.account_id == session.account_id:
+                raise BusinessError("Already a group member")
+
+        stmt = select(MsgGroupJoinRequest).where(
+            MsgGroupJoinRequest.group_id == payload.group_id,
+            MsgGroupJoinRequest.applicant_type == session.account_type.value,
+            MsgGroupJoinRequest.applicant_id == session.account_id,
+            MsgGroupJoinRequest.status == GroupJoinRequestStatus.PENDING.value,
+        )
+        result = await self.db.execute(stmt)
+        if result.scalar_one_or_none():
+            raise BusinessError("Join request already sent")
+
+        request = MsgGroupJoinRequest(
+            id=generate_snowflake_id(),
+            group_id=payload.group_id,
+            applicant_type=session.account_type.value,
+            applicant_id=session.account_id,
+            message=payload.message,
+            status=GroupJoinRequestStatus.PENDING.value,
+        )
+        self.db.add(request)
+        await self.db.flush()
+
+    async def handle_join_request(
+        self, payload: GroupJoinRequestHandle, session: SessionPayload,
+    ) -> None:
+        stmt = select(MsgGroupJoinRequest).where(
+            MsgGroupJoinRequest.id == payload.request_id,
+            MsgGroupJoinRequest.status == GroupJoinRequestStatus.PENDING.value,
+        )
+        result = await self.db.execute(stmt)
+        request = result.scalar_one_or_none()
+        if not request:
+            raise BusinessError("Request not found or already handled")
+
+        group = await self.repo.get_group_required(request.group_id)
+        is_owner = (
+            group.owner_account_type == session.account_type.value
+            and group.owner_account_id == session.account_id
+        )
+        if not is_owner:
+            raise BusinessError("Only group owner can handle join requests")
+
+        now = datetime.now(timezone.utc)
+        request.status = GroupJoinRequestStatus.ACCEPTED.value if payload.accept else GroupJoinRequestStatus.REJECTED.value
+        request.handled_at = now
+        request.handled_by_type = session.account_type.value
+        request.handled_by_id = session.account_id
+
+        if payload.accept:
+            ref = AccountRef(
+                account_type=AccountType(request.applicant_type),
+                account_id=request.applicant_id,
+            )
+            await self.repo.add_group_members(request.group_id, [ref])
+
+        await self.db.flush()
+
+    async def list_my_join_requests(
+        self, session: SessionPayload,
+    ) -> list[GroupJoinRequestSchema]:
+        stmt = select(MsgGroupJoinRequest).where(
+            or_(
+                MsgGroupJoinRequest.applicant_type == session.account_type.value,
+                MsgGroupJoinRequest.applicant_id == session.account_id,
+            ),
+        ).order_by(MsgGroupJoinRequest.created_at.desc())
+        result = await self.db.execute(stmt)
+        rows = result.scalars().all()
+
+        items: list[GroupJoinRequestSchema] = []
+        for row in rows:
+            profile = await self._get_profile(row.applicant_type, row.applicant_id)
+            group = await self.repo.get_group(row.group_id)
+            items.append(GroupJoinRequestSchema(
+                id=row.id,
+                group_id=row.group_id,
+                applicant_type=row.applicant_type,
+                applicant_id=row.applicant_id,
+                applicant_name=profile.get("name") if profile else None,
+                applicant_avatar=profile.get("avatar") if profile else None,
+                message=row.message,
+                status=row.status,
+                group_name=group.name if group else None,
+                created_at=row.created_at,
+                handled_at=row.handled_at,
+            ))
+        return items
+
+    async def list_group_join_requests(
+        self, group_id: str, session: SessionPayload,
+    ) -> list[GroupJoinRequestSchema]:
+        group = await self.repo.get_group_required(group_id)
+        is_owner = (
+            group.owner_account_type == session.account_type.value
+            and group.owner_account_id == session.account_id
+        )
+        if not is_owner:
+            raise BusinessError("Only group owner can view join requests")
+
+        stmt = select(MsgGroupJoinRequest).where(
+            MsgGroupJoinRequest.group_id == group_id,
+        ).order_by(MsgGroupJoinRequest.created_at.desc())
+        result = await self.db.execute(stmt)
+        rows = result.scalars().all()
+
+        items: list[GroupJoinRequestSchema] = []
+        for row in rows:
+            profile = await self._get_profile(row.applicant_type, row.applicant_id)
+            items.append(GroupJoinRequestSchema(
+                id=row.id,
+                group_id=row.group_id,
+                applicant_type=row.applicant_type,
+                applicant_id=row.applicant_id,
+                applicant_name=profile.get("name") if profile else None,
+                applicant_avatar=profile.get("avatar") if profile else None,
+                message=row.message,
+                status=row.status,
+                group_name=group.name,
+                created_at=row.created_at,
+                handled_at=row.handled_at,
+            ))
+        return items
+
+    async def pending_join_request_count(
+        self, session: SessionPayload,
+    ) -> int:
+        groups = await self.repo.list_my_groups(
+            account_type=str(session.account_type), account_id=session.account_id,
+        )
+        group_ids = [
+            g.id for g in groups
+            if g.owner_account_type == str(session.account_type) and g.owner_account_id == session.account_id
+        ]
+        if not group_ids:
+            return 0
+
+        stmt = select(MsgGroupJoinRequest).where(
+            MsgGroupJoinRequest.group_id.in_(group_ids),
+            MsgGroupJoinRequest.status == GroupJoinRequestStatus.PENDING.value,
+        )
+        result = await self.db.execute(stmt)
+        return len(result.scalars().all())
+
+    async def _get_profile(self, account_type: str, account_id: str) -> dict | None:
+        model = AdminUserProfile if account_type == AccountType.ADMIN.value else PortalUserProfile
+        stmt = select(model).where(model.account_id == account_id)
+        result = await self.db.execute(stmt)
+        row = result.scalar_one_or_none()
+        if row is None:
+            return None
+        return {
+            "name": getattr(row, "name", None) or getattr(row, "nickname", None),
+            "avatar": getattr(row, "avatar", None),
+        }
 
 def _group_schema(item, member_count: int) -> GroupSchema:
     schema = to_schema(GroupSchema, item)
