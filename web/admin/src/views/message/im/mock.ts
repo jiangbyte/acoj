@@ -1,20 +1,6 @@
 type MessageSide = 'me' | 'other'
 type ThreadKind = 'direct' | 'group'
 
-export interface MockProfile {
-  name: string
-  account: string
-  nickname: string
-  title: string
-  department: string
-  role: string
-  signature: string
-  phone: string
-  email: string
-  avatarText: string
-  statusText: string
-}
-
 export interface MockThread {
   id: string
   kind: ThreadKind
@@ -104,9 +90,23 @@ export interface MockMessage {
   createdAt: string
   attachments?: MockAttachment[]
 }
+export type RequestStatus = "pending" | "approved" | "rejected"
+
+export interface MockApplicationRequest {
+  id: string
+  mode: 'friend' | 'group'
+  name: string
+  avatarText: string
+  subtitle: string
+  detail: string
+  status: RequestStatus
+  createdAt: string
+}
+
+
 
 export interface MockImData {
-  profile: MockProfile
+  profile: any
   threads: MockThread[]
   friends: MockFriend[]
   groups: MockGroup[]
@@ -114,6 +114,7 @@ export interface MockImData {
   directoryGroups: MockDirectoryGroup[]
   messagesByThread: Record<string, MockMessage[]>
   notices: MockSystemNotice[]
+  requests: MockApplicationRequest[]
   todos: MockTodoItem[]
 }
 
@@ -140,19 +141,7 @@ function buildMessages(
 }
 
 export function createMockImData(): MockImData {
-  const profile: MockProfile = {
-    name: '周岚',
-    account: 'zhoulan',
-    nickname: '周岚',
-    title: '运营负责人',
-    department: '运营中心',
-    role: '管理员',
-    signature: '把信息收敛到一个界面里，减少来回切换。',
-    phone: '138 0000 0000',
-    email: 'zhoulan@example.com',
-    avatarText: '周',
-    statusText: '在线',
-  }
+  const profile = {}
 
   const friends: MockFriend[] = [
     {
@@ -495,10 +484,34 @@ export function createMockImData(): MockImData {
       createdAt: minutesAgo(2880),
     },
   ]
+  const requests: MockApplicationRequest[] = [
+    {
+      id: 'req-1',
+      mode: 'friend',
+      name: '周杰伦',
+      avatarText: '周',
+      subtitle: '市场部 · 渠道经理',
+      detail: '你好，我是市场部的周杰伦，想加你为好友方便沟通。',
+      status: 'pending',
+      createdAt: minutesAgo(60),
+    },
+    {
+      id: 'req-2',
+      mode: 'friend',
+      name: '林志玲',
+      avatarText: '林',
+      subtitle: '运营部 · 活动策划',
+      detail: '你好，我是运营部的林志玲，想和你学习一下产品设计。',
+      status: 'pending',
+      createdAt: minutesAgo(120),
+    },
+  ]
+
 
   const todos: MockTodoItem[] = [
     {
       id: 'todo-1',
+
       title: '审核内容发布申请',
       content: '市场部提交了新品发布文案，需在 48 小时内完成审核。',
       priority: 'high',
@@ -554,5 +567,6 @@ export function createMockImData(): MockImData {
     messagesByThread,
     notices,
     todos,
+    requests,
   }
 }

@@ -1,34 +1,79 @@
 import * as messageApi from '@/api/message'
-import { createMockImData, type MockFriend, type MockGroup, type MockImData, type MockThread } from './mock'
+import type { MockFriend, MockGroup, MockImData, MockSystemNotice, MockThread } from './mock'
 
 /**
  * Load IM data from API with mock fallback.
  * Returns the same MockImData structure that the IM page expects.
  */
-export async function loadImData(): Promise<MockImData> {
-  const mock = createMockImData()
-
+export async function loadImData(): Promise<Partial<MockImData>> {
   try {
-    const [threadsRes, friendsRes, groupsRes] = await Promise.all([
+    const [meRes, threadsRes, friendsRes, groupsRes] = await Promise.all([
+      import('@/api/auth').then(m => m.me()).catch(() => null),
       messageApi.myThreads({ current: 1, size: 50 }).catch(() => null),
       messageApi.myFriends().catch(() => null),
       messageApi.myGroups().catch(() => null),
     ])
 
-    const threads = mapThreads(threadsRes?.data?.records ?? threadsRes?.data)
-    const friends = mapFriends(friendsRes?.data)
-    const groups = mapGroups(groupsRes?.data)
-
+    const profile = meRes?.data
     return {
-      ...mock,
-      threads: threads.length ? threads : mock.threads,
-      friends: friends.length ? friends : mock.friends,
-      groups: groups.length ? groups : mock.groups,
+      profile: profile ? {
+        name: profile.name ?? '',
+        account: profile.account ?? '',
+        nickname: profile.nickname ?? profile.name ?? '',
+        title: profile.profile?.title ?? '',
+        department: profile.dept_id_names?.map((d: any) => d.name).join('、') ?? '',
+        role: profile.role_id_names?.map((r: any) => r.name).join('、') ?? '',
+        signature: profile.profile?.signature ?? '',
+        phone: profile.profile?.phone ?? '',
+        email: profile.profile?.email ?? '',
+        avatar: profile.profile?.avatar ?? profile.avatar ?? '',
+        avatarText: (profile.nickname ?? profile.name ?? '?').charAt(0),
+        statusText: '在线',
+      } : undefined,
+      threads: mapThreads(threadsRes?.data?.records ?? threadsRes?.data),
+      friends: mapFriends(friendsRes?.data),
+      groups: mapGroups(groupsRes?.data),
     }
   } catch {
-    return mock
+    return {}
   }
 }
+
+export async function loadNotifications(page = 1, size = 20): Promise<MockSystemNotice[] | null> {
+  try {
+    const res = await messageApi.myNotification({ current: page, size })
+    const records = res?.data?.records ?? []
+    return records.map((n: any) => ({
+      id: n.id ?? '',
+      title: n.title ?? '',
+      content: n.content ?? '',
+      severity: (n.severity ?? 'INFO').toLowerCase() as 'info' | 'warning' | 'error',
+      read: n.is_read ?? false,
+      createdAt: n.created_at ?? new Date().toISOString(),
+    }))
+  } catch {
+    return null
+  }
+}
+
+export async function readNotificationApi(ids: string[]) {
+  try {
+    await messageApi.readNotification({ ids })
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function readAllNotificationApi() {
+  try {
+    await messageApi.readAllNotification()
+    return true
+  } catch {
+    return false
+  }
+}
+
 
 export async function loadThreadMessages(threadId: string, page = 1, size = 20) {
   try {

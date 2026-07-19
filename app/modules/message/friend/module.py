@@ -5,7 +5,7 @@ module = ModuleSpec(
     routes=(
         RouteSpec(
             version="v1",
-            prefix="/admin",
+            prefix="/admin/message",
             tags=("admin",),
             router="app.modules.message.friend.router:admin_router",
         ),

@@ -7,9 +7,10 @@ from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema
 from app.core.security.session import SessionPayload
 from app.modules.message.message.schema import GroupJoinRequestCreate, GroupJoinRequestHandle, GroupJoinRequestSchema
-from app.modules.message.enums import GroupJoinRequestStatus, MessageGroupStatus, MessageSenderType
+from app.modules.message.enums import GroupJoinRequestStatus, MessageGroupStatus, MessageSenderType, MessageThreadType
 from app.modules.message.message.model import MsgGroupJoinRequest, MsgMessage, MsgThread
 from app.modules.message.message.repository import MessageRepository
+from app.modules.message.schema import AccountRef
 from app.modules.message.message.schema import (
     GroupCreateRequest,
     GroupMemberRequest,
@@ -24,6 +25,7 @@ from app.modules.message.message.schema import (
     ReadThreadRequest,
     SendMessageRequest,
     ThreadMessagePageQuery,
+    ThreadCreateRequest,
     ThreadPageQuery,
     ThreadSchema,
 )
@@ -38,10 +40,28 @@ class MessageService:
 
     async def create_group(self, payload: GroupCreateRequest, session: SessionPayload) -> None:
         async with transactional(self.db):
-            await self.repo.create_group(
+            group = await self.repo.create_group(
                 payload,
                 owner_account_type=str(session.account_type),
                 owner_account_id=session.account_id,
+            )
+            # Auto-create a group thread for messaging
+            members = await self.repo.list_group_members(group.id)
+            await self.repo.create_thread(
+                ThreadCreateRequest(
+                    thread_type=MessageThreadType.GROUP,
+                    title=group.name,
+                    group_id=group.id,
+                    participant_refs=[
+                        AccountRef(
+                            account_type=AccountType(m.account_type),
+                            account_id=m.account_id,
+                        )
+                        for m in members
+                    ],
+                ),
+                created_account_type=str(session.account_type),
+                created_account_id=session.account_id,
             )
 
     async def update_group(self, payload: GroupUpdateRequest) -> None:
@@ -195,12 +215,12 @@ class MessageService:
 
         members = await self.repo.list_group_members(payload.group_id)
         for member in members:
-            if member.account_type == session.account_type.value and member.account_id == session.account_id:
+            if member.account_type == session.account_type and member.account_id == session.account_id:
                 raise BusinessError("Already a group member")
 
         stmt = select(MsgGroupJoinRequest).where(
             MsgGroupJoinRequest.group_id == payload.group_id,
-            MsgGroupJoinRequest.applicant_type == session.account_type.value,
+            MsgGroupJoinRequest.applicant_type == session.account_type,
             MsgGroupJoinRequest.applicant_id == session.account_id,
             MsgGroupJoinRequest.status == GroupJoinRequestStatus.PENDING.value,
         )
@@ -211,7 +231,7 @@ class MessageService:
         request = MsgGroupJoinRequest(
             id=generate_snowflake_id(),
             group_id=payload.group_id,
-            applicant_type=session.account_type.value,
+            applicant_type=session.account_type,
             applicant_id=session.account_id,
             message=payload.message,
             status=GroupJoinRequestStatus.PENDING.value,
@@ -233,7 +253,7 @@ class MessageService:
 
         group = await self.repo.get_group_required(request.group_id)
         is_owner = (
-            group.owner_account_type == session.account_type.value
+            group.owner_account_type == session.account_type
             and group.owner_account_id == session.account_id
         )
         if not is_owner:
@@ -242,7 +262,7 @@ class MessageService:
         now = datetime.now(timezone.utc)
         request.status = GroupJoinRequestStatus.ACCEPTED.value if payload.accept else GroupJoinRequestStatus.REJECTED.value
         request.handled_at = now
-        request.handled_by_type = session.account_type.value
+        request.handled_by_type = session.account_type
         request.handled_by_id = session.account_id
 
         if payload.accept:
@@ -259,7 +279,7 @@ class MessageService:
     ) -> list[GroupJoinRequestSchema]:
         stmt = select(MsgGroupJoinRequest).where(
             or_(
-                MsgGroupJoinRequest.applicant_type == session.account_type.value,
+                MsgGroupJoinRequest.applicant_type == session.account_type,
                 MsgGroupJoinRequest.applicant_id == session.account_id,
             ),
         ).order_by(MsgGroupJoinRequest.created_at.desc())
@@ -290,7 +310,7 @@ class MessageService:
     ) -> list[GroupJoinRequestSchema]:
         group = await self.repo.get_group_required(group_id)
         is_owner = (
-            group.owner_account_type == session.account_type.value
+            group.owner_account_type == session.account_type
             and group.owner_account_id == session.account_id
         )
         if not is_owner:

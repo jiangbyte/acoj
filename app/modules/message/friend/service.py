@@ -53,7 +53,7 @@ class FriendService:
 
     async def list_my_friends(self, session: SessionPayload) -> list[FriendSchema]:
         stmt = select(MsgFriend).where(
-            MsgFriend.account_type == session.account_type.value,
+            MsgFriend.account_type == session.account_type,
             MsgFriend.account_id == session.account_id,
             MsgFriend.status == FriendStatus.ACTIVE.value,
         ).order_by(MsgFriend.friend_at.desc())
@@ -82,7 +82,7 @@ class FriendService:
     async def search_users(
         self, keyword: str, session: SessionPayload, max_results: int = 20,
     ) -> list[FriendSearchSchema]:
-        account_type = session.account_type.value
+        account_type = session.account_type
         account_id = session.account_id
 
         results: list[FriendSearchSchema] = []
@@ -111,7 +111,7 @@ class FriendService:
     async def apply_friend(
         self, payload: FriendApplyRequest, session: SessionPayload,
     ) -> None:
-        applicant_type = session.account_type.value
+        applicant_type = session.account_type
         applicant_id = session.account_id
         recipient_type = payload.friend_account_type.value
         recipient_id = payload.friend_account_id
@@ -155,7 +155,7 @@ class FriendService:
     ) -> None:
         stmt = select(MsgFriendRequest).where(
             MsgFriendRequest.id == payload.request_id,
-            MsgFriendRequest.recipient_type == session.account_type.value,
+            MsgFriendRequest.recipient_type == session.account_type,
             MsgFriendRequest.recipient_id == session.account_id,
             MsgFriendRequest.status == FriendRequestStatus.PENDING.value,
         )
@@ -194,7 +194,7 @@ class FriendService:
         self, payload: FriendRemoveRequest, session: SessionPayload,
     ) -> None:
         """双向删除好友关系（软删除）。"""
-        account_type = session.account_type.value
+        account_type = session.account_type
         account_id = session.account_id
         friend_type = payload.friend_account_type.value
         friend_id = payload.friend_account_id
@@ -213,7 +213,7 @@ class FriendService:
         self, payload: FriendSetRemarkRequest, session: SessionPayload,
     ) -> None:
         record = await self._get_friend_record(
-            session.account_type.value, session.account_id,
+            session.account_type, session.account_id,
             payload.friend_account_type.value, payload.friend_account_id,
         )
         if not record or record.status != FriendStatus.ACTIVE.value:
@@ -228,11 +228,11 @@ class FriendService:
         stmt = select(MsgFriendRequest).where(
             or_(
                 and_(
-                    MsgFriendRequest.recipient_type == session.account_type.value,
+                    MsgFriendRequest.recipient_type == session.account_type,
                     MsgFriendRequest.recipient_id == session.account_id,
                 ),
                 and_(
-                    MsgFriendRequest.applicant_type == session.account_type.value,
+                    MsgFriendRequest.applicant_type == session.account_type,
                     MsgFriendRequest.applicant_id == session.account_id,
                 ),
             ),
@@ -262,7 +262,7 @@ class FriendService:
         self, session: SessionPayload,
     ) -> FriendRequestCountResponse:
         stmt = select(MsgFriendRequest).where(
-            MsgFriendRequest.recipient_type == session.account_type.value,
+            MsgFriendRequest.recipient_type == session.account_type,
             MsgFriendRequest.recipient_id == session.account_id,
             MsgFriendRequest.status == FriendRequestStatus.PENDING.value,
         )
