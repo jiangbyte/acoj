@@ -4,6 +4,7 @@ import type { ProConfigProviderProps } from 'pro-naive-ui'
 import { darkTheme, dateZhCN, zhCN } from 'naive-ui'
 import { ProConfigProvider, zhCN as proZhCN } from 'pro-naive-ui'
 import { computed } from 'vue'
+import { hljs } from './plugins/hljs'
 import { useAppStore } from './stores'
 import themeConfig from './stores/app/theme.json'
 
@@ -47,6 +48,7 @@ const proConfigProviderProps = computed<ProConfigProviderProps>(() => ({
     :theme-overrides="theme"
     :locale="zhCN"
     :date-locale="dateZhCN"
+    :hljs="hljs"
   >
     <naive-provider>
       <ProConfigProvider v-bind="proConfigProviderProps">

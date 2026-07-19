@@ -5,6 +5,7 @@ import inspect
 import logging
 import pkgutil
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
 from fastapi import APIRouter
@@ -92,6 +93,11 @@ def _iter_module_manifest_names(package_name: str) -> list[str]:
 
 
 def load_module_specs(package_name: str = "app.modules") -> list[ModuleSpec]:
+    return list(_load_module_specs_cached(package_name))
+
+
+@lru_cache(maxsize=None)
+def _load_module_specs_cached(package_name: str) -> tuple[ModuleSpec, ...]:
     specs: list[ModuleSpec] = []
     seen: set[str] = set()
     manifest_names = _iter_module_manifest_names(package_name)
@@ -111,7 +117,12 @@ def load_module_specs(package_name: str = "app.modules") -> list[ModuleSpec]:
         len(specs),
         route_count,
     )
-    return sorted(specs, key=lambda item: (item.order, item.name))
+    return tuple(sorted(specs, key=lambda item: (item.order, item.name)))
+
+
+@lru_cache(maxsize=None)
+def get_api_router(package_name: str = "app.modules") -> APIRouter:
+    return build_api_router(load_module_specs(package_name))
 
 
 def build_api_router(module_specs: list[ModuleSpec]) -> APIRouter:

@@ -3,6 +3,7 @@ import type { GlobalThemeOverrides } from 'naive-ui'
 import { usePreferredDark } from '@vueuse/core'
 import { darkTheme, dateZhCN, zhCN } from 'naive-ui'
 import { computed } from 'vue'
+import { hljs } from './plugins/hljs'
 import { useAppStore } from './stores'
 import themeConfig from './stores/app/theme.json'
 
@@ -24,6 +25,7 @@ const naiveTheme = computed(() =>
     :theme-overrides="theme"
     :locale="zhCN"
     :date-locale="dateZhCN"
+    :hljs="hljs"
   >
     <naive-provider>
       <router-view />

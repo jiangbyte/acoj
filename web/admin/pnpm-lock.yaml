@@ -29,6 +29,9 @@ importers:
       colord:
         specifier: ^2.9.3
         version: 2.9.3
+      highlight.js:
+        specifier: 11.11.1
+        version: 11.11.1
       md-editor-v3:
         specifier: ^6.5.4
         version: 6.5.4(vue@3.5.38(typescript@6.0.3))

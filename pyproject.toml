@@ -16,6 +16,7 @@ dependencies = [
   "fastapi>=0.116.0",
   "greenlet>=3.2.0",
   "httpx>=0.28.0",
+  "jinja2>=3.1.0",
   "opentelemetry-api>=1.36.0",
   "opentelemetry-exporter-otlp>=1.36.0",
   "opentelemetry-instrumentation-fastapi>=0.57b0",
@@ -68,6 +69,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["app*"]
+
+[tool.setuptools.package-data]
+"app.modules.sys.codegen" = ["template_files/*.j2"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
