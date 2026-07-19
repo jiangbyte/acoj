@@ -192,5 +192,4 @@ declare global {
   const RouterView: typeof import('vue-router')['RouterView']
   const VideoUpload: typeof import('./../components/upload/VideoUpload.vue')['default']
   const Watermark: typeof import('./../components/common/Watermark.vue')['default']
-  const '水印': typeof import('./../components/common/Watermark.vue')['default']
 }
