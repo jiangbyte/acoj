@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict cnnHCZ6eYcN90fyHoJfKBqw2TN3AU4VvpLuuiRmzVr5bGecOcbyARcH3fsM4MSB
+\restrict b4JTAlNEfwB0VIc6Y9xHAB2g3GBv5IvQji7ixZE1IF8fa0ZjcCN4X2F9shnKdch
 
 -- Dumped from database version 17.10 (Debian 17.10-1.pgdg12+1)
 -- Dumped by pg_dump version 17.10 (Debian 17.10-1.pgdg12+1)
@@ -155,6 +155,932 @@ CREATE TABLE public.alembic_version (
 
 
 ALTER TABLE public.alembic_version OWNER TO postgres;
+
+--
+-- Name: cg_test_activity; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.cg_test_activity (
+    id character varying(64) NOT NULL,
+    code character varying(64) NOT NULL,
+    name character varying(120) NOT NULL,
+    category character varying(32),
+    type character varying(32) NOT NULL,
+    status character varying(32) DEFAULT 'ENABLED'::character varying NOT NULL,
+    cover_url character varying(512),
+    description text,
+    start_at timestamp with time zone NOT NULL,
+    end_at timestamp with time zone,
+    max_participants integer DEFAULT 0 NOT NULL,
+    price numeric(12,2) DEFAULT 0 NOT NULL,
+    is_public boolean DEFAULT true NOT NULL,
+    need_approval boolean DEFAULT false NOT NULL,
+    rule_config jsonb DEFAULT '{}'::jsonb NOT NULL,
+    extra jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_by character varying(64),
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_by character varying(64)
+);
+
+
+ALTER TABLE public.cg_test_activity OWNER TO postgres;
+
+--
+-- Name: TABLE cg_test_activity; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON TABLE public.cg_test_activity IS '代码生成测试-活动';
+
+
+--
+-- Name: COLUMN cg_test_activity.id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.id IS '主键';
+
+
+--
+-- Name: COLUMN cg_test_activity.code; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.code IS '活动编码';
+
+
+--
+-- Name: COLUMN cg_test_activity.name; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.name IS '活动名称';
+
+
+--
+-- Name: COLUMN cg_test_activity.category; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.category IS '活动分类';
+
+
+--
+-- Name: COLUMN cg_test_activity.type; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.type IS '活动类型';
+
+
+--
+-- Name: COLUMN cg_test_activity.status; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.status IS '状态';
+
+
+--
+-- Name: COLUMN cg_test_activity.cover_url; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.cover_url IS '封面地址';
+
+
+--
+-- Name: COLUMN cg_test_activity.description; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.description IS '活动描述';
+
+
+--
+-- Name: COLUMN cg_test_activity.start_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.start_at IS '开始时间';
+
+
+--
+-- Name: COLUMN cg_test_activity.end_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.end_at IS '结束时间';
+
+
+--
+-- Name: COLUMN cg_test_activity.max_participants; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.max_participants IS '最大参与人数';
+
+
+--
+-- Name: COLUMN cg_test_activity.price; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.price IS '报名费用';
+
+
+--
+-- Name: COLUMN cg_test_activity.is_public; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.is_public IS '是否公开';
+
+
+--
+-- Name: COLUMN cg_test_activity.need_approval; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.need_approval IS '是否需要审批';
+
+
+--
+-- Name: COLUMN cg_test_activity.rule_config; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.rule_config IS '规则配置';
+
+
+--
+-- Name: COLUMN cg_test_activity.extra; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.extra IS '扩展信息';
+
+
+--
+-- Name: COLUMN cg_test_activity.created_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.created_at IS '创建时间';
+
+
+--
+-- Name: COLUMN cg_test_activity.created_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.created_by IS '创建人';
+
+
+--
+-- Name: COLUMN cg_test_activity.updated_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.updated_at IS '更新时间';
+
+
+--
+-- Name: COLUMN cg_test_activity.updated_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_activity.updated_by IS '更新人';
+
+
+--
+-- Name: cg_test_catalog; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.cg_test_catalog (
+    id character varying(64) NOT NULL,
+    parent_id character varying(64),
+    code character varying(64) NOT NULL,
+    name character varying(120) NOT NULL,
+    category character varying(32),
+    status character varying(32) DEFAULT 'ENABLED'::character varying NOT NULL,
+    sort integer DEFAULT 0 NOT NULL,
+    is_visible boolean DEFAULT true NOT NULL,
+    icon character varying(128),
+    description text,
+    extra jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_by character varying(64),
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_by character varying(64)
+);
+
+
+ALTER TABLE public.cg_test_catalog OWNER TO postgres;
+
+--
+-- Name: TABLE cg_test_catalog; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON TABLE public.cg_test_catalog IS '代码生成测试-树目录';
+
+
+--
+-- Name: COLUMN cg_test_catalog.id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_catalog.id IS '主键';
+
+
+--
+-- Name: COLUMN cg_test_catalog.parent_id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_catalog.parent_id IS '父级ID';
+
+
+--
+-- Name: COLUMN cg_test_catalog.code; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_catalog.code IS '目录编码';
+
+
+--
+-- Name: COLUMN cg_test_catalog.name; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_catalog.name IS '目录名称';
+
+
+--
+-- Name: COLUMN cg_test_catalog.category; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_catalog.category IS '目录分类';
+
+
+--
+-- Name: COLUMN cg_test_catalog.status; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_catalog.status IS '状态';
+
+
+--
+-- Name: COLUMN cg_test_catalog.sort; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_catalog.sort IS '排序';
+
+
+--
+-- Name: COLUMN cg_test_catalog.is_visible; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_catalog.is_visible IS '是否显示';
+
+
+--
+-- Name: COLUMN cg_test_catalog.icon; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_catalog.icon IS '图标';
+
+
+--
+-- Name: COLUMN cg_test_catalog.description; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_catalog.description IS '描述';
+
+
+--
+-- Name: COLUMN cg_test_catalog.extra; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_catalog.extra IS '扩展信息';
+
+
+--
+-- Name: COLUMN cg_test_catalog.created_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_catalog.created_at IS '创建时间';
+
+
+--
+-- Name: COLUMN cg_test_catalog.created_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_catalog.created_by IS '创建人';
+
+
+--
+-- Name: COLUMN cg_test_catalog.updated_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_catalog.updated_at IS '更新时间';
+
+
+--
+-- Name: COLUMN cg_test_catalog.updated_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_catalog.updated_by IS '更新人';
+
+
+--
+-- Name: cg_test_knowledge_category; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.cg_test_knowledge_category (
+    id character varying(64) NOT NULL,
+    parent_id character varying(64),
+    code character varying(64) NOT NULL,
+    name character varying(120) NOT NULL,
+    status character varying(32) DEFAULT 'ENABLED'::character varying NOT NULL,
+    sort integer DEFAULT 0 NOT NULL,
+    is_visible boolean DEFAULT true NOT NULL,
+    description text,
+    extra jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_by character varying(64),
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_by character varying(64)
+);
+
+
+ALTER TABLE public.cg_test_knowledge_category OWNER TO postgres;
+
+--
+-- Name: TABLE cg_test_knowledge_category; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON TABLE public.cg_test_knowledge_category IS '代码生成测试-知识分类';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_category.id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_category.id IS '主键';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_category.parent_id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_category.parent_id IS '父级ID';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_category.code; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_category.code IS '分类编码';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_category.name; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_category.name IS '分类名称';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_category.status; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_category.status IS '状态';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_category.sort; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_category.sort IS '排序';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_category.is_visible; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_category.is_visible IS '是否显示';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_category.description; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_category.description IS '描述';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_category.extra; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_category.extra IS '扩展信息';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_category.created_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_category.created_at IS '创建时间';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_category.created_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_category.created_by IS '创建人';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_category.updated_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_category.updated_at IS '更新时间';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_category.updated_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_category.updated_by IS '更新人';
+
+
+--
+-- Name: cg_test_knowledge_doc; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.cg_test_knowledge_doc (
+    id character varying(64) NOT NULL,
+    category_id character varying(64) NOT NULL,
+    code character varying(64) NOT NULL,
+    title character varying(160) NOT NULL,
+    type character varying(32) DEFAULT 'ARTICLE'::character varying NOT NULL,
+    status character varying(32) DEFAULT 'DRAFT'::character varying NOT NULL,
+    summary character varying(512),
+    content text,
+    author character varying(64),
+    published_at timestamp with time zone,
+    view_count integer DEFAULT 0 NOT NULL,
+    sort integer DEFAULT 0 NOT NULL,
+    is_top boolean DEFAULT false NOT NULL,
+    settings jsonb DEFAULT '{}'::jsonb NOT NULL,
+    extra jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_by character varying(64),
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_by character varying(64)
+);
+
+
+ALTER TABLE public.cg_test_knowledge_doc OWNER TO postgres;
+
+--
+-- Name: TABLE cg_test_knowledge_doc; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON TABLE public.cg_test_knowledge_doc IS '代码生成测试-知识文档';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.id IS '主键';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.category_id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.category_id IS '分类ID';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.code; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.code IS '文档编码';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.title; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.title IS '文档标题';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.type; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.type IS '文档类型';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.status; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.status IS '状态';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.summary; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.summary IS '摘要';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.content; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.content IS '正文内容';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.author; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.author IS '作者';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.published_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.published_at IS '发布时间';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.view_count; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.view_count IS '浏览次数';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.sort; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.sort IS '排序';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.is_top; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.is_top IS '是否置顶';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.settings; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.settings IS '展示设置';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.extra; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.extra IS '扩展信息';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.created_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.created_at IS '创建时间';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.created_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.created_by IS '创建人';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.updated_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.updated_at IS '更新时间';
+
+
+--
+-- Name: COLUMN cg_test_knowledge_doc.updated_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_knowledge_doc.updated_by IS '更新人';
+
+
+--
+-- Name: cg_test_order; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.cg_test_order (
+    id character varying(64) NOT NULL,
+    order_no character varying(64) NOT NULL,
+    name character varying(120) NOT NULL,
+    customer_name character varying(120) NOT NULL,
+    customer_phone character varying(32),
+    status character varying(32) DEFAULT 'PENDING'::character varying NOT NULL,
+    type character varying(32) DEFAULT 'NORMAL'::character varying NOT NULL,
+    ordered_at timestamp with time zone NOT NULL,
+    paid_at timestamp with time zone,
+    total_amount numeric(12,2) DEFAULT 0 NOT NULL,
+    item_count integer DEFAULT 0 NOT NULL,
+    need_invoice boolean DEFAULT false NOT NULL,
+    invoice_config jsonb DEFAULT '{}'::jsonb NOT NULL,
+    remark text,
+    extra jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_by character varying(64),
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_by character varying(64)
+);
+
+
+ALTER TABLE public.cg_test_order OWNER TO postgres;
+
+--
+-- Name: TABLE cg_test_order; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON TABLE public.cg_test_order IS '代码生成测试-订单';
+
+
+--
+-- Name: COLUMN cg_test_order.id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.id IS '主键';
+
+
+--
+-- Name: COLUMN cg_test_order.order_no; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.order_no IS '订单号';
+
+
+--
+-- Name: COLUMN cg_test_order.name; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.name IS '订单名称';
+
+
+--
+-- Name: COLUMN cg_test_order.customer_name; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.customer_name IS '客户名称';
+
+
+--
+-- Name: COLUMN cg_test_order.customer_phone; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.customer_phone IS '客户手机号';
+
+
+--
+-- Name: COLUMN cg_test_order.status; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.status IS '状态';
+
+
+--
+-- Name: COLUMN cg_test_order.type; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.type IS '订单类型';
+
+
+--
+-- Name: COLUMN cg_test_order.ordered_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.ordered_at IS '下单时间';
+
+
+--
+-- Name: COLUMN cg_test_order.paid_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.paid_at IS '支付时间';
+
+
+--
+-- Name: COLUMN cg_test_order.total_amount; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.total_amount IS '订单金额';
+
+
+--
+-- Name: COLUMN cg_test_order.item_count; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.item_count IS '商品数量';
+
+
+--
+-- Name: COLUMN cg_test_order.need_invoice; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.need_invoice IS '是否开票';
+
+
+--
+-- Name: COLUMN cg_test_order.invoice_config; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.invoice_config IS '发票配置';
+
+
+--
+-- Name: COLUMN cg_test_order.remark; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.remark IS '备注';
+
+
+--
+-- Name: COLUMN cg_test_order.extra; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.extra IS '扩展信息';
+
+
+--
+-- Name: COLUMN cg_test_order.created_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.created_at IS '创建时间';
+
+
+--
+-- Name: COLUMN cg_test_order.created_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.created_by IS '创建人';
+
+
+--
+-- Name: COLUMN cg_test_order.updated_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.updated_at IS '更新时间';
+
+
+--
+-- Name: COLUMN cg_test_order.updated_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order.updated_by IS '更新人';
+
+
+--
+-- Name: cg_test_order_item; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.cg_test_order_item (
+    id character varying(64) NOT NULL,
+    order_id character varying(64) NOT NULL,
+    sku_code character varying(64) NOT NULL,
+    name character varying(120) NOT NULL,
+    category character varying(32),
+    status character varying(32) DEFAULT 'ENABLED'::character varying NOT NULL,
+    quantity integer DEFAULT 1 NOT NULL,
+    unit_price numeric(12,2) DEFAULT 0 NOT NULL,
+    shipped_at timestamp with time zone,
+    is_gift boolean DEFAULT false NOT NULL,
+    item_config jsonb DEFAULT '{}'::jsonb NOT NULL,
+    remark text,
+    extra jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_by character varying(64),
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_by character varying(64)
+);
+
+
+ALTER TABLE public.cg_test_order_item OWNER TO postgres;
+
+--
+-- Name: TABLE cg_test_order_item; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON TABLE public.cg_test_order_item IS '代码生成测试-订单明细';
+
+
+--
+-- Name: COLUMN cg_test_order_item.id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.id IS '主键';
+
+
+--
+-- Name: COLUMN cg_test_order_item.order_id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.order_id IS '订单ID';
+
+
+--
+-- Name: COLUMN cg_test_order_item.sku_code; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.sku_code IS 'SKU编码';
+
+
+--
+-- Name: COLUMN cg_test_order_item.name; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.name IS '商品名称';
+
+
+--
+-- Name: COLUMN cg_test_order_item.category; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.category IS '商品分类';
+
+
+--
+-- Name: COLUMN cg_test_order_item.status; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.status IS '状态';
+
+
+--
+-- Name: COLUMN cg_test_order_item.quantity; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.quantity IS '数量';
+
+
+--
+-- Name: COLUMN cg_test_order_item.unit_price; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.unit_price IS '单价';
+
+
+--
+-- Name: COLUMN cg_test_order_item.shipped_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.shipped_at IS '发货时间';
+
+
+--
+-- Name: COLUMN cg_test_order_item.is_gift; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.is_gift IS '是否赠品';
+
+
+--
+-- Name: COLUMN cg_test_order_item.item_config; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.item_config IS '明细配置';
+
+
+--
+-- Name: COLUMN cg_test_order_item.remark; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.remark IS '备注';
+
+
+--
+-- Name: COLUMN cg_test_order_item.extra; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.extra IS '扩展信息';
+
+
+--
+-- Name: COLUMN cg_test_order_item.created_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.created_at IS '创建时间';
+
+
+--
+-- Name: COLUMN cg_test_order_item.created_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.created_by IS '创建人';
+
+
+--
+-- Name: COLUMN cg_test_order_item.updated_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.updated_at IS '更新时间';
+
+
+--
+-- Name: COLUMN cg_test_order_item.updated_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.cg_test_order_item.updated_by IS '更新人';
+
 
 --
 -- Name: msg_group; Type: TABLE; Schema: public; Owner: postgres
@@ -1325,6 +2251,216 @@ COMMENT ON COLUMN public.msg_todo_assignee.cancelled_at IS '取消时间';
 
 
 --
+-- Name: oj_contest; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.oj_contest (
+    id character varying(64) NOT NULL,
+    key character varying(64) NOT NULL,
+    name character varying(255) NOT NULL,
+    description text,
+    summary character varying(500),
+    start_at timestamp(6) with time zone NOT NULL,
+    end_at timestamp(6) with time zone NOT NULL,
+    duration_seconds integer,
+    visibility character varying(32) NOT NULL,
+    contest_format character varying(32) NOT NULL,
+    format_config json NOT NULL,
+    scoreboard_visibility character varying(32) NOT NULL,
+    is_rated boolean NOT NULL,
+    rating_floor integer,
+    rating_ceiling integer,
+    access_code_hash character varying(255),
+    allow_virtual boolean NOT NULL,
+    freeze_at timestamp(6) with time zone,
+    unfreeze_at timestamp(6) with time zone,
+    status character varying(32) NOT NULL,
+    extra json NOT NULL,
+    created_at timestamp(6) with time zone DEFAULT now() NOT NULL,
+    created_by character varying(64),
+    updated_at timestamp(6) with time zone DEFAULT now() NOT NULL,
+    updated_by character varying(64)
+);
+
+
+ALTER TABLE public.oj_contest OWNER TO postgres;
+
+--
+-- Name: COLUMN oj_contest.id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.id IS '主键';
+
+
+--
+-- Name: COLUMN oj_contest.key; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.key IS '比赛编码';
+
+
+--
+-- Name: COLUMN oj_contest.name; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.name IS '比赛名称';
+
+
+--
+-- Name: COLUMN oj_contest.description; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.description IS '描述';
+
+
+--
+-- Name: COLUMN oj_contest.summary; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.summary IS '摘要';
+
+
+--
+-- Name: COLUMN oj_contest.start_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.start_at IS '开始时间';
+
+
+--
+-- Name: COLUMN oj_contest.end_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.end_at IS '结束时间';
+
+
+--
+-- Name: COLUMN oj_contest.duration_seconds; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.duration_seconds IS '参赛时长秒';
+
+
+--
+-- Name: COLUMN oj_contest.visibility; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.visibility IS '可见性：比赛可见性。';
+
+
+--
+-- Name: COLUMN oj_contest.contest_format; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.contest_format IS '赛制：比赛赛制。';
+
+
+--
+-- Name: COLUMN oj_contest.format_config; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.format_config IS '赛制配置';
+
+
+--
+-- Name: COLUMN oj_contest.scoreboard_visibility; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.scoreboard_visibility IS '榜单可见性：榜单可见性。';
+
+
+--
+-- Name: COLUMN oj_contest.is_rated; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.is_rated IS '是否计分评级';
+
+
+--
+-- Name: COLUMN oj_contest.rating_floor; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.rating_floor IS '评级下限';
+
+
+--
+-- Name: COLUMN oj_contest.rating_ceiling; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.rating_ceiling IS '评级上限';
+
+
+--
+-- Name: COLUMN oj_contest.access_code_hash; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.access_code_hash IS '访问码哈希';
+
+
+--
+-- Name: COLUMN oj_contest.allow_virtual; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.allow_virtual IS '允许虚拟参赛';
+
+
+--
+-- Name: COLUMN oj_contest.freeze_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.freeze_at IS '封榜时间';
+
+
+--
+-- Name: COLUMN oj_contest.unfreeze_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.unfreeze_at IS '解封时间';
+
+
+--
+-- Name: COLUMN oj_contest.status; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.status IS '状态';
+
+
+--
+-- Name: COLUMN oj_contest.extra; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.extra IS '扩展信息';
+
+
+--
+-- Name: COLUMN oj_contest.created_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.created_at IS '创建时间';
+
+
+--
+-- Name: COLUMN oj_contest.created_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.created_by IS '创建人';
+
+
+--
+-- Name: COLUMN oj_contest.updated_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.updated_at IS '更新时间';
+
+
+--
+-- Name: COLUMN oj_contest.updated_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.oj_contest.updated_by IS '更新人';
+
+
+--
 -- Name: portal_user_profile; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1867,6 +3003,82 @@ COMMENT ON COLUMN public.sys_banner.updated_at IS '更新时间';
 
 COMMENT ON COLUMN public.sys_banner.updated_by IS '更新人';
 
+
+--
+-- Name: sys_codegen_field; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.sys_codegen_field (
+    id character varying(64) NOT NULL,
+    plan_id character varying(64) NOT NULL,
+    table_role character varying(16) NOT NULL,
+    column_name character varying(128) NOT NULL,
+    column_comment character varying(255),
+    db_type character varying(128) NOT NULL,
+    python_type character varying(64) NOT NULL,
+    typescript_type character varying(64) NOT NULL,
+    form_widget character varying(32) NOT NULL,
+    dict_code character varying(128),
+    query_operator character varying(32),
+    show_in_table boolean DEFAULT true NOT NULL,
+    show_in_form boolean DEFAULT true NOT NULL,
+    show_in_detail boolean DEFAULT true NOT NULL,
+    show_in_query boolean DEFAULT false NOT NULL,
+    is_primary_key boolean DEFAULT false NOT NULL,
+    is_required boolean DEFAULT false NOT NULL,
+    is_unique boolean DEFAULT false NOT NULL,
+    is_nullable boolean DEFAULT true NOT NULL,
+    max_length integer,
+    sort integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_by character varying(64),
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_by character varying(64)
+);
+
+
+ALTER TABLE public.sys_codegen_field OWNER TO postgres;
+
+--
+-- Name: sys_codegen_plan; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.sys_codegen_plan (
+    id character varying(64) NOT NULL,
+    name character varying(128) NOT NULL,
+    gen_type character varying(32) NOT NULL,
+    status character varying(32) DEFAULT 'ENABLED'::character varying NOT NULL,
+    description text,
+    main_table character varying(128) NOT NULL,
+    main_pk character varying(128) DEFAULT 'id'::character varying NOT NULL,
+    main_entity_name character varying(128) NOT NULL,
+    main_module_path character varying(255) NOT NULL,
+    main_business_name character varying(128) NOT NULL,
+    api_prefix character varying(255) NOT NULL,
+    permission_prefix character varying(128) NOT NULL,
+    resource_module_id character varying(64),
+    parent_resource_id character varying(64),
+    menu_name character varying(64) NOT NULL,
+    menu_path character varying(255) NOT NULL,
+    component_path character varying(255) NOT NULL,
+    icon character varying(255),
+    sort integer DEFAULT 99 NOT NULL,
+    tree_parent_field character varying(128),
+    tree_label_field character varying(128),
+    sub_table character varying(128),
+    sub_pk character varying(128),
+    sub_foreign_key character varying(128),
+    sub_entity_name character varying(128),
+    sub_business_name character varying(128),
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_by character varying(64),
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_by character varying(64),
+    author character varying(64) DEFAULT NULL::character varying
+);
+
+
+ALTER TABLE public.sys_codegen_plan OWNER TO postgres;
 
 --
 -- Name: sys_config; Type: TABLE; Schema: public; Owner: postgres
@@ -3226,7 +4438,7 @@ COMMENT ON COLUMN public.sys_role.updated_by IS '更新人';
 --
 
 COPY public.admin_user_profile (account_id, name, nickname, avatar, signature, phone, email, title, employee_no, remark, created_at, created_by, updated_at, updated_by) FROM stdin;
-1	超级管理员	超管	\N	\N	\N	\N	Super Admin	SA-0001	系统内置超管账户	2026-07-04 03:00:01.332229+00	\N	2026-07-04 03:00:01.332229+00	\N
+1	超级管理员	超管	avatars/admin/1/avatar-20260719025633-1f3b15f8a2904e9cbad621bf01df5546.png	\N	\N	\N	Super Admin	SA-0001	系统内置超管账户	2026-07-04 03:00:01.332229+00	\N	2026-07-19 02:56:33.013054+00	1
 \.
 
 
@@ -3236,6 +4448,65 @@ COPY public.admin_user_profile (account_id, name, nickname, avatar, signature, p
 
 COPY public.alembic_version (version_num) FROM stdin;
 c12e5b0797c1
+\.
+
+
+--
+-- Data for Name: cg_test_activity; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.cg_test_activity (id, code, name, category, type, status, cover_url, description, start_at, end_at, max_participants, price, is_public, need_approval, rule_config, extra, created_at, created_by, updated_at, updated_by) FROM stdin;
+900000000000000001	ACT-BOOTCAMP	暑期训练营	TRAINING	OFFLINE	ENABLED	https://example.com/activity/bootcamp.png	覆盖文本域、时间、金额、开关、JSON 的 CRUD 测试数据。	2026-07-19 01:00:00+00	2026-07-19 09:00:00+00	120	199.00	t	f	{"limit": {"daily": 3}, "checkin": true}	{"tags": ["codegen", "crud"]}	2026-07-19 01:30:39.252937+00	1	2026-07-19 01:30:39.252937+00	1
+\.
+
+
+--
+-- Data for Name: cg_test_catalog; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.cg_test_catalog (id, parent_id, code, name, category, status, sort, is_visible, icon, description, extra, created_at, created_by, updated_at, updated_by) FROM stdin;
+900000000000000101	\N	ROOT	根目录	SYSTEM	ENABLED	1	t	folder	一级节点	{"level": 1}	2026-07-19 01:30:50.76297+00	1	2026-07-19 01:30:50.76297+00	1
+900000000000000102	900000000000000101	CHILD-A	子目录A	SYSTEM	ENABLED	10	t	folder-open	二级节点	{"level": 2}	2026-07-19 01:30:50.76297+00	1	2026-07-19 01:30:50.76297+00	1
+900000000000000103	900000000000000101	CHILD-B	子目录B	BUSINESS	DISABLED	20	f	folder-open	二级节点	{"level": 2}	2026-07-19 01:30:50.76297+00	1	2026-07-19 01:30:50.76297+00	1
+7484435980494180352	900000000000000101	cs	cs		ENABLED	0	t	cs		{}	2026-07-19 02:36:31.066686+00	1	2026-07-19 02:36:31.066686+00	1
+\.
+
+
+--
+-- Data for Name: cg_test_knowledge_category; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.cg_test_knowledge_category (id, parent_id, code, name, status, sort, is_visible, description, extra, created_at, created_by, updated_at, updated_by) FROM stdin;
+900000000000000301	\N	KB	知识库	ENABLED	1	t	根分类	{"level": 1}	2026-07-19 01:31:14.167859+00	1	2026-07-19 01:31:14.167859+00	1
+900000000000000302	900000000000000301	KB-DEV	研发文档	ENABLED	10	t	研发相关文档	{"level": 2}	2026-07-19 01:31:14.167859+00	1	2026-07-19 01:31:14.167859+00	1
+\.
+
+
+--
+-- Data for Name: cg_test_knowledge_doc; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.cg_test_knowledge_doc (id, category_id, code, title, type, status, summary, content, author, published_at, view_count, sort, is_top, settings, extra, created_at, created_by, updated_at, updated_by) FROM stdin;
+900000000000000311	900000000000000302	DOC-CODEGEN-001	代码生成测试文档	ARTICLE	PUBLISHED	用于测试左树右表生成。	正文内容用于触发 textarea。	tester	2026-07-19 01:19:18+00	88	1	t	{"theme": "default", "showToc": true}	{"tags": ["tree", "table"]}	2026-07-19 01:31:14.237827+00	1	2026-07-19 01:31:14.237827+00	1
+\.
+
+
+--
+-- Data for Name: cg_test_order; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.cg_test_order (id, order_no, name, customer_name, customer_phone, status, type, ordered_at, paid_at, total_amount, item_count, need_invoice, invoice_config, remark, extra, created_at, created_by, updated_at, updated_by) FROM stdin;
+900000000000000201	CG-ORDER-001	测试订单001	张三	13800000000	ENABLED	NORMAL	2026-07-19 01:10:00+00	2026-07-19 01:20:00+00	399.00	2	t	{"taxNo": "91300000000000000X", "title": "张三"}	主子表生成测试订单	{"source": "codegen"}	2026-07-19 01:31:02.802756+00	1	2026-07-19 02:44:34.494997+00	1
+\.
+
+
+--
+-- Data for Name: cg_test_order_item; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.cg_test_order_item (id, order_id, sku_code, name, category, status, quantity, unit_price, shipped_at, is_gift, item_config, remark, extra, created_at, created_by, updated_at, updated_by) FROM stdin;
+900000000000000211	900000000000000201	SKU-001	测试商品A	BOOK	ENABLED	1	199.00	\N	f	{"color": "red"}	普通明细	{"line": 1}	2026-07-19 01:31:02.882261+00	1	2026-07-19 01:31:02.882261+00	1
+900000000000000212	900000000000000201	SKU-002	测试商品B	COURSE	ENABLED	1	200.00	2026-07-19 02:30:00+00	t	{"duration": 30}	赠品明细	{"line": 2}	2026-07-19 01:31:02.882261+00	1	2026-07-19 01:31:02.882261+00	1
 \.
 
 
@@ -3338,6 +4609,15 @@ COPY public.msg_todo_assignee (id, todo_id, account_type, account_id, status, re
 
 
 --
+-- Data for Name: oj_contest; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.oj_contest (id, key, name, description, summary, start_at, end_at, duration_seconds, visibility, contest_format, format_config, scoreboard_visibility, is_rated, rating_floor, rating_ceiling, access_code_hash, allow_virtual, freeze_at, unfreeze_at, status, extra, created_at, created_by, updated_at, updated_by) FROM stdin;
+7484416624401977344	qweqwe	qweqwe			2026-07-19 01:19:18+00	2026-07-19 01:19:20+00	0	t	t	{}	t	t	0	0		t	\N	\N	ENABLED	{}	2026-07-19 01:19:36.187764+00	1	2026-07-19 01:19:36.187764+00	1
+\.
+
+
+--
 -- Data for Name: portal_user_profile; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -3372,6 +4652,129 @@ COPY public.sys_account_identity (id, account_id, identity_type, identifier, ver
 --
 
 COPY public.sys_banner (id, title, image, url, link_type, summary, description, category, type, "position", display_scope, sort, interaction_count, status, start_at, end_at, created_at, created_by, updated_at, updated_by) FROM stdin;
+\.
+
+
+--
+-- Data for Name: sys_codegen_field; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.sys_codegen_field (id, plan_id, table_role, column_name, column_comment, db_type, python_type, typescript_type, form_widget, dict_code, query_operator, show_in_table, show_in_form, show_in_detail, show_in_query, is_primary_key, is_required, is_unique, is_nullable, max_length, sort, created_at, created_by, updated_at, updated_by) FROM stdin;
+7484419920785182720	7484419913432567808	MAIN	id	主键	VARCHAR(64)	str	string	input	\N	\N	t	f	t	f	t	f	f	f	64	1	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182721	7484419913432567808	MAIN	code	活动编码	VARCHAR(64)	str	string	input	\N	LIKE	t	t	t	t	f	t	f	f	64	2	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182722	7484419913432567808	MAIN	name	活动名称	VARCHAR(120)	str	string	input	\N	LIKE	t	t	t	t	f	t	f	f	120	3	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182723	7484419913432567808	MAIN	category	活动分类	VARCHAR(32)	str	string	input	\N	LIKE	t	t	t	t	f	f	f	t	32	4	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182724	7484419913432567808	MAIN	type	活动类型	VARCHAR(32)	str	string	input	\N	LIKE	t	t	t	t	f	t	f	f	32	5	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182725	7484419913432567808	MAIN	status	状态	VARCHAR(32)	str	string	dict	COMMON_STATUS	EQ	t	t	t	t	f	t	f	f	32	6	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182726	7484419913432567808	MAIN	cover_url	封面地址	VARCHAR(512)	str	string	input	\N	\N	t	t	t	f	f	f	f	t	512	7	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182727	7484419913432567808	MAIN	description	活动描述	TEXT	str	string	textarea	\N	\N	t	t	t	f	f	f	f	t	\N	8	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182728	7484419913432567808	MAIN	start_at	开始时间	TIMESTAMP	datetime	string	input	\N	\N	t	t	t	f	f	t	f	f	\N	9	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182729	7484419913432567808	MAIN	end_at	结束时间	TIMESTAMP	datetime	string	input	\N	\N	t	t	t	f	f	f	f	t	\N	10	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182730	7484419913432567808	MAIN	max_participants	最大参与人数	INTEGER	int	number	number	\N	EQ	t	t	t	f	f	t	f	f	\N	11	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182731	7484419913432567808	MAIN	price	报名费用	NUMERIC(12, 2)	float	number	number	\N	\N	t	t	t	f	f	t	f	f	\N	12	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182732	7484419913432567808	MAIN	is_public	是否公开	BOOLEAN	bool	boolean	switch	\N	EQ	t	t	t	f	f	t	f	f	\N	13	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182733	7484419913432567808	MAIN	need_approval	是否需要审批	BOOLEAN	bool	boolean	switch	\N	EQ	t	t	t	f	f	t	f	f	\N	14	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182734	7484419913432567808	MAIN	rule_config	规则配置	JSONB	dict[str, Any]	Record<string, any>	input	\N	\N	t	t	t	f	f	t	f	f	\N	15	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182735	7484419913432567808	MAIN	extra	扩展信息	JSONB	dict[str, Any]	Record<string, any>	input	\N	\N	t	t	t	f	f	f	f	t	\N	16	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182736	7484419913432567808	MAIN	created_at	创建时间	TIMESTAMP	datetime	string	input	\N	\N	f	f	t	f	f	f	f	f	\N	17	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182737	7484419913432567808	MAIN	created_by	创建人	VARCHAR(64)	str	string	input	\N	\N	f	f	t	f	f	f	f	t	64	18	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182738	7484419913432567808	MAIN	updated_at	更新时间	TIMESTAMP	datetime	string	input	\N	\N	f	f	t	f	f	f	f	f	\N	19	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484419920785182739	7484419913432567808	MAIN	updated_by	更新人	VARCHAR(64)	str	string	input	\N	\N	f	f	t	f	f	f	f	t	64	20	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1
+7484420138964488192	7484420134812127232	MAIN	id	主键	VARCHAR(64)	str	string	input	\N	\N	t	f	t	f	t	f	f	f	64	1	2026-07-19 01:33:31.814757+00	1	2026-07-19 01:33:31.814757+00	1
+7484420138964488193	7484420134812127232	MAIN	parent_id	父级ID	VARCHAR(64)	str	string	input	\N	\N	t	t	t	f	f	f	f	t	64	2	2026-07-19 01:33:31.814757+00	1	2026-07-19 01:33:31.814757+00	1
+7484420138964488194	7484420134812127232	MAIN	code	目录编码	VARCHAR(64)	str	string	input	\N	LIKE	t	t	t	t	f	t	f	f	64	3	2026-07-19 01:33:31.814757+00	1	2026-07-19 01:33:31.814757+00	1
+7484420138964488195	7484420134812127232	MAIN	name	目录名称	VARCHAR(120)	str	string	input	\N	LIKE	t	t	t	t	f	t	f	f	120	4	2026-07-19 01:33:31.814757+00	1	2026-07-19 01:33:31.814757+00	1
+7484420138964488196	7484420134812127232	MAIN	category	目录分类	VARCHAR(32)	str	string	input	\N	LIKE	t	t	t	t	f	f	f	t	32	5	2026-07-19 01:33:31.814757+00	1	2026-07-19 01:33:31.814757+00	1
+7484420138964488197	7484420134812127232	MAIN	status	状态	VARCHAR(32)	str	string	dict	COMMON_STATUS	EQ	t	t	t	t	f	t	f	f	32	6	2026-07-19 01:33:31.814757+00	1	2026-07-19 01:33:31.814757+00	1
+7484420138964488198	7484420134812127232	MAIN	sort	排序	INTEGER	int	number	number	\N	EQ	t	t	t	f	f	t	f	f	\N	7	2026-07-19 01:33:31.814757+00	1	2026-07-19 01:33:31.814757+00	1
+7484420138964488199	7484420134812127232	MAIN	is_visible	是否显示	BOOLEAN	bool	boolean	switch	\N	EQ	t	t	t	f	f	t	f	f	\N	8	2026-07-19 01:33:31.814757+00	1	2026-07-19 01:33:31.814757+00	1
+7484420138964488200	7484420134812127232	MAIN	icon	图标	VARCHAR(128)	str	string	input	\N	\N	t	t	t	f	f	f	f	t	128	9	2026-07-19 01:33:31.814757+00	1	2026-07-19 01:33:31.814757+00	1
+7484420138964488201	7484420134812127232	MAIN	description	描述	TEXT	str	string	textarea	\N	\N	t	t	t	f	f	f	f	t	\N	10	2026-07-19 01:33:31.814757+00	1	2026-07-19 01:33:31.814757+00	1
+7484420138964488202	7484420134812127232	MAIN	extra	扩展信息	JSONB	dict[str, Any]	Record<string, any>	input	\N	\N	t	t	t	f	f	t	f	f	\N	11	2026-07-19 01:33:31.814757+00	1	2026-07-19 01:33:31.814757+00	1
+7484420138964488203	7484420134812127232	MAIN	created_at	创建时间	TIMESTAMP	datetime	string	input	\N	\N	f	f	t	f	f	f	f	f	\N	12	2026-07-19 01:33:31.814757+00	1	2026-07-19 01:33:31.814757+00	1
+7484420138964488204	7484420134812127232	MAIN	created_by	创建人	VARCHAR(64)	str	string	input	\N	\N	f	f	t	f	f	f	f	t	64	13	2026-07-19 01:33:31.814757+00	1	2026-07-19 01:33:31.814757+00	1
+7484420138964488205	7484420134812127232	MAIN	updated_at	更新时间	TIMESTAMP	datetime	string	input	\N	\N	f	f	t	f	f	f	f	f	\N	14	2026-07-19 01:33:31.814757+00	1	2026-07-19 01:33:31.814757+00	1
+7484420138964488206	7484420134812127232	MAIN	updated_by	更新人	VARCHAR(64)	str	string	input	\N	\N	f	f	t	f	f	f	f	t	64	15	2026-07-19 01:33:31.814757+00	1	2026-07-19 01:33:31.814757+00	1
+7484420439436038144	7484420434620977152	MAIN	id	主键	VARCHAR(64)	str	string	input	\N	\N	t	f	t	f	t	f	f	f	64	1	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038145	7484420434620977152	MAIN	order_no	订单号	VARCHAR(64)	str	string	input	\N	\N	t	t	t	f	f	t	f	f	64	2	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038146	7484420434620977152	MAIN	name	订单名称	VARCHAR(120)	str	string	input	\N	LIKE	t	t	t	t	f	t	f	f	120	3	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038147	7484420434620977152	MAIN	customer_name	客户名称	VARCHAR(120)	str	string	input	\N	\N	t	t	t	f	f	t	f	f	120	4	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038148	7484420434620977152	MAIN	customer_phone	客户手机号	VARCHAR(32)	str	string	input	\N	\N	t	t	t	f	f	f	f	t	32	5	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038149	7484420434620977152	MAIN	status	状态	VARCHAR(32)	str	string	dict	COMMON_STATUS	EQ	t	t	t	t	f	t	f	f	32	6	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038150	7484420434620977152	MAIN	type	订单类型	VARCHAR(32)	str	string	input	\N	LIKE	t	t	t	t	f	t	f	f	32	7	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038151	7484420434620977152	MAIN	ordered_at	下单时间	TIMESTAMP	datetime	string	input	\N	\N	t	t	t	f	f	t	f	f	\N	8	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038152	7484420434620977152	MAIN	paid_at	支付时间	TIMESTAMP	datetime	string	input	\N	\N	t	t	t	f	f	f	f	t	\N	9	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038153	7484420434620977152	MAIN	total_amount	订单金额	NUMERIC(12, 2)	float	number	number	\N	\N	t	t	t	f	f	t	f	f	\N	10	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038154	7484420434620977152	MAIN	item_count	商品数量	INTEGER	int	number	number	\N	EQ	t	t	t	f	f	t	f	f	\N	11	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038155	7484420434620977152	MAIN	need_invoice	是否开票	BOOLEAN	bool	boolean	switch	\N	EQ	t	t	t	f	f	t	f	f	\N	12	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038156	7484420434620977152	MAIN	invoice_config	发票配置	JSONB	dict[str, Any]	Record<string, any>	input	\N	\N	t	t	t	f	f	t	f	f	\N	13	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038157	7484420434620977152	MAIN	remark	备注	TEXT	str	string	textarea	\N	\N	t	t	t	f	f	f	f	t	\N	14	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038158	7484420434620977152	MAIN	extra	扩展信息	JSONB	dict[str, Any]	Record<string, any>	input	\N	\N	t	t	t	f	f	f	f	t	\N	15	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038159	7484420434620977152	MAIN	created_at	创建时间	TIMESTAMP	datetime	string	input	\N	\N	f	f	t	f	f	f	f	f	\N	16	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038160	7484420434620977152	MAIN	created_by	创建人	VARCHAR(64)	str	string	input	\N	\N	f	f	t	f	f	f	f	t	64	17	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038161	7484420434620977152	MAIN	updated_at	更新时间	TIMESTAMP	datetime	string	input	\N	\N	f	f	t	f	f	f	f	f	\N	18	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420439436038162	7484420434620977152	MAIN	updated_by	更新人	VARCHAR(64)	str	string	input	\N	\N	f	f	t	f	f	f	f	t	64	19	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904832	7484420434620977152	SUB	id	主键	VARCHAR(64)	str	string	input	\N	\N	t	f	t	f	t	f	f	f	64	1	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904833	7484420434620977152	SUB	order_id	订单ID	VARCHAR(64)	str	string	input	\N	\N	t	t	t	f	f	t	f	f	64	2	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904834	7484420434620977152	SUB	sku_code	SKU编码	VARCHAR(64)	str	string	input	\N	\N	t	t	t	f	f	t	f	f	64	3	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904835	7484420434620977152	SUB	name	商品名称	VARCHAR(120)	str	string	input	\N	LIKE	t	t	t	t	f	t	f	f	120	4	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904836	7484420434620977152	SUB	category	商品分类	VARCHAR(32)	str	string	input	\N	LIKE	t	t	t	t	f	f	f	t	32	5	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904837	7484420434620977152	SUB	status	状态	VARCHAR(32)	str	string	dict	COMMON_STATUS	EQ	t	t	t	t	f	t	f	f	32	6	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904838	7484420434620977152	SUB	quantity	数量	INTEGER	int	number	number	\N	EQ	t	t	t	f	f	t	f	f	\N	7	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904839	7484420434620977152	SUB	unit_price	单价	NUMERIC(12, 2)	float	number	number	\N	\N	t	t	t	f	f	t	f	f	\N	8	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904840	7484420434620977152	SUB	shipped_at	发货时间	TIMESTAMP	datetime	string	input	\N	\N	t	t	t	f	f	f	f	t	\N	9	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904841	7484420434620977152	SUB	is_gift	是否赠品	BOOLEAN	bool	boolean	switch	\N	EQ	t	t	t	f	f	t	f	f	\N	10	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904842	7484420434620977152	SUB	item_config	明细配置	JSONB	dict[str, Any]	Record<string, any>	input	\N	\N	t	t	t	f	f	t	f	f	\N	11	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904843	7484420434620977152	SUB	remark	备注	TEXT	str	string	textarea	\N	\N	t	t	t	f	f	f	f	t	\N	12	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904844	7484420434620977152	SUB	extra	扩展信息	JSONB	dict[str, Any]	Record<string, any>	input	\N	\N	t	t	t	f	f	f	f	t	\N	13	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904845	7484420434620977152	SUB	created_at	创建时间	TIMESTAMP	datetime	string	input	\N	\N	f	f	t	f	f	f	f	f	\N	14	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904846	7484420434620977152	SUB	created_by	创建人	VARCHAR(64)	str	string	input	\N	\N	f	f	t	f	f	f	f	t	64	15	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904847	7484420434620977152	SUB	updated_at	更新时间	TIMESTAMP	datetime	string	input	\N	\N	f	f	t	f	f	f	f	f	\N	16	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420444246904848	7484420434620977152	SUB	updated_by	更新人	VARCHAR(64)	str	string	input	\N	\N	f	f	t	f	f	f	f	t	64	17	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1
+7484420645149872128	7484420640733270016	MAIN	id	主键	VARCHAR(64)	str	string	input	\N	\N	t	f	t	f	t	f	f	f	64	1	2026-07-19 01:35:32.840371+00	1	2026-07-19 01:35:32.840371+00	1
+7484420645149872129	7484420640733270016	MAIN	parent_id	父级ID	VARCHAR(64)	str	string	input	\N	\N	t	t	t	f	f	f	f	t	64	2	2026-07-19 01:35:32.840371+00	1	2026-07-19 01:35:32.840371+00	1
+7484420645149872130	7484420640733270016	MAIN	code	分类编码	VARCHAR(64)	str	string	input	\N	LIKE	t	t	t	t	f	t	f	f	64	3	2026-07-19 01:35:32.840371+00	1	2026-07-19 01:35:32.840371+00	1
+7484420645149872131	7484420640733270016	MAIN	name	分类名称	VARCHAR(120)	str	string	input	\N	LIKE	t	t	t	t	f	t	f	f	120	4	2026-07-19 01:35:32.840371+00	1	2026-07-19 01:35:32.840371+00	1
+7484420645149872132	7484420640733270016	MAIN	status	状态	VARCHAR(32)	str	string	dict	COMMON_STATUS	EQ	t	t	t	t	f	t	f	f	32	5	2026-07-19 01:35:32.840371+00	1	2026-07-19 01:35:32.840371+00	1
+7484420645149872133	7484420640733270016	MAIN	sort	排序	INTEGER	int	number	number	\N	EQ	t	t	t	f	f	t	f	f	\N	6	2026-07-19 01:35:32.840371+00	1	2026-07-19 01:35:32.840371+00	1
+7484420645149872134	7484420640733270016	MAIN	is_visible	是否显示	BOOLEAN	bool	boolean	switch	\N	EQ	t	t	t	f	f	t	f	f	\N	7	2026-07-19 01:35:32.840371+00	1	2026-07-19 01:35:32.840371+00	1
+7484420645149872135	7484420640733270016	MAIN	description	描述	TEXT	str	string	textarea	\N	\N	t	t	t	f	f	f	f	t	\N	8	2026-07-19 01:35:32.840371+00	1	2026-07-19 01:35:32.840371+00	1
+7484420645149872136	7484420640733270016	MAIN	extra	扩展信息	JSONB	dict[str, Any]	Record<string, any>	input	\N	\N	t	t	t	f	f	t	f	f	\N	9	2026-07-19 01:35:32.840371+00	1	2026-07-19 01:35:32.840371+00	1
+7484420645149872137	7484420640733270016	MAIN	created_at	创建时间	TIMESTAMP	datetime	string	input	\N	\N	f	f	t	f	f	f	f	f	\N	10	2026-07-19 01:35:32.840371+00	1	2026-07-19 01:35:32.840371+00	1
+7484420645149872138	7484420640733270016	MAIN	created_by	创建人	VARCHAR(64)	str	string	input	\N	\N	f	f	t	f	f	f	f	t	64	11	2026-07-19 01:35:32.840371+00	1	2026-07-19 01:35:32.840371+00	1
+7484420645149872139	7484420640733270016	MAIN	updated_at	更新时间	TIMESTAMP	datetime	string	input	\N	\N	f	f	t	f	f	f	f	f	\N	12	2026-07-19 01:35:32.840371+00	1	2026-07-19 01:35:32.840371+00	1
+7484420645149872140	7484420640733270016	MAIN	updated_by	更新人	VARCHAR(64)	str	string	input	\N	\N	f	f	t	f	f	f	f	t	64	13	2026-07-19 01:35:32.840371+00	1	2026-07-19 01:35:32.840371+00	1
+7484424013553471488	7484420640733270016	SUB	id	主键	VARCHAR(64)	str	string	input	\N	\N	t	f	t	f	t	f	f	f	64	1	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471489	7484420640733270016	SUB	category_id	分类ID	VARCHAR(64)	str	string	input	\N	\N	t	t	t	f	f	t	f	f	64	2	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471490	7484420640733270016	SUB	code	文档编码	VARCHAR(64)	str	string	input	\N	LIKE	t	t	t	t	f	t	f	f	64	3	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471491	7484420640733270016	SUB	title	文档标题	VARCHAR(160)	str	string	input	\N	LIKE	t	t	t	t	f	t	f	f	160	4	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471492	7484420640733270016	SUB	type	文档类型	VARCHAR(32)	str	string	input	\N	LIKE	t	t	t	t	f	t	f	f	32	5	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471493	7484420640733270016	SUB	status	状态	VARCHAR(32)	str	string	dict	COMMON_STATUS	EQ	t	t	t	t	f	t	f	f	32	6	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471494	7484420640733270016	SUB	summary	摘要	VARCHAR(512)	str	string	input	\N	\N	t	t	t	f	f	f	f	t	512	7	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471495	7484420640733270016	SUB	content	正文内容	TEXT	str	string	textarea	\N	\N	t	t	t	f	f	f	f	t	\N	8	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471496	7484420640733270016	SUB	author	作者	VARCHAR(64)	str	string	input	\N	\N	t	t	t	f	f	f	f	t	64	9	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471497	7484420640733270016	SUB	published_at	发布时间	TIMESTAMP	datetime	string	input	\N	\N	t	t	t	f	f	f	f	t	\N	10	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471498	7484420640733270016	SUB	view_count	浏览次数	INTEGER	int	number	number	\N	EQ	t	t	t	f	f	t	f	f	\N	11	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471499	7484420640733270016	SUB	sort	排序	INTEGER	int	number	number	\N	EQ	t	t	t	f	f	t	f	f	\N	12	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471500	7484420640733270016	SUB	is_top	是否置顶	BOOLEAN	bool	boolean	switch	\N	EQ	t	t	t	f	f	t	f	f	\N	13	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471501	7484420640733270016	SUB	settings	展示设置	JSONB	dict[str, Any]	Record<string, any>	input	\N	\N	t	t	t	f	f	t	f	f	\N	14	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471502	7484420640733270016	SUB	extra	扩展信息	JSONB	dict[str, Any]	Record<string, any>	input	\N	\N	t	t	t	f	f	f	f	t	\N	15	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471503	7484420640733270016	SUB	created_at	创建时间	TIMESTAMP	datetime	string	input	\N	\N	f	f	t	f	f	f	f	f	\N	16	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471504	7484420640733270016	SUB	created_by	创建人	VARCHAR(64)	str	string	input	\N	\N	f	f	t	f	f	f	f	t	64	17	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471505	7484420640733270016	SUB	updated_at	更新时间	TIMESTAMP	datetime	string	input	\N	\N	f	f	t	f	f	f	f	f	\N	18	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+7484424013553471506	7484420640733270016	SUB	updated_by	更新人	VARCHAR(64)	str	string	input	\N	\N	f	f	t	f	f	f	f	t	64	19	2026-07-19 01:48:53.227532+00	1	2026-07-19 01:48:53.227532+00	1
+\.
+
+
+--
+-- Data for Name: sys_codegen_plan; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.sys_codegen_plan (id, name, gen_type, status, description, main_table, main_pk, main_entity_name, main_module_path, main_business_name, api_prefix, permission_prefix, resource_module_id, parent_resource_id, menu_name, menu_path, component_path, icon, sort, tree_parent_field, tree_label_field, sub_table, sub_pk, sub_foreign_key, sub_entity_name, sub_business_name, created_at, created_by, updated_at, updated_by, author) FROM stdin;
+7484419913432567808	CRUD	TABLE	ENABLED		cg_test_activity	id	CgTestActivity	biz/cg_test_activity	CgTestActivity	/biz/cg-test-activity	biz:cgtestactivity	210001	202001	CgTestActivity	/biz/cg-test-activity	/biz/cg-test-activity/index.vue	icon-park-outline:code	99	\N	\N	\N	\N	\N	\N	\N	2026-07-19 01:32:39.275206+00	1	2026-07-19 01:32:39.275206+00	1	Charlie
+7484420134812127232	TREE	TREE	ENABLED		cg_test_catalog	id	CgTestCatalog	biz/cg_test_catalog	CgTestCatalog	/biz/cg-test-catalog	biz:cgtestcatalog	210001	202001	CgTestCatalog	/biz/cg-test-catalog	/biz/cg-test-catalog/index.vue	icon-park-outline:code	99	parent_id	name	\N	\N	\N	\N	\N	2026-07-19 01:33:31.814757+00	1	2026-07-19 01:33:31.814757+00	1	Charlie
+7484420434620977152	MASTER_DETAIL	MASTER_DETAIL	ENABLED		cg_test_order	id	CgTestOrder	biz/cg_test_order	CgTestOrder	/biz/cg-test-order	biz:cgtestorder	210001	202001	CgTestOrder	/biz/cg-test-order	/biz/cg-test-order/index.vue	icon-park-outline:code	99	\N	\N	cg_test_order_item	id	order_id	CgTestOrderItem	CgTestOrderItem	2026-07-19 01:34:42.234915+00	1	2026-07-19 01:34:42.234915+00	1	Charlie
+7484420640733270016	LEFT_TREE_TABLE	LEFT_TREE_TABLE	ENABLED		cg_test_knowledge_category	id	CgTestKnowledgeCategory	biz/cg_test_knowledge_category	CgTestKnowledgeCategory	/biz/cg-test-knowledge-category	biz:cgtestknowledgecategory	210001	202001	CgTestKnowledgeCategory	/biz/cg-test-knowledge-category	/biz/cg-test-knowledge-category/index.vue	icon-park-outline:code	99	parent_id	name	cg_test_knowledge_doc	id	category_id	CgTestKnowledgeDoc	CgTestKnowledgeDoc	2026-07-19 01:35:32.840371+00	1	2026-07-19 01:48:53.227532+00	1	Charlie
 \.
 
 
@@ -3531,6 +4934,7 @@ COPY public.sys_file (id, object_name, original_name, storage_provider, bucket, 
 7484226037195345920	uploads/2026/07/18/【哲风壁纸】原神-芙芙-5610a658d71745468385b538611ae725.png	【哲风壁纸】原神-芙芙.png	local	\N	image/png	8411606	/api/v1/files/uploads/2026/07/18/%E3%80%90%E5%93%B2%E9%A3%8E%E5%A3%81%E7%BA%B8%E3%80%91%E5%8E%9F%E7%A5%9E-%E8%8A%99%E8%8A%99-5610a658d71745468385b538611ae725.png	2026-07-18 12:42:16.003308+00	1	2026-07-18 12:42:16.003308+00	1
 7484236400376811520	uploads/2026/07/18/120153703_touxiang_bobopic-c4bd66eb5bbb416b9b6b893afa954e03.jpg	120153703_touxiang_bobopic.jpg	local	\N	image/jpeg	65451	/api/v1/files/uploads/2026/07/18/120153703_touxiang_bobopic-c4bd66eb5bbb416b9b6b893afa954e03.jpg	2026-07-18 13:23:26.808802+00	1	2026-07-18 13:23:26.808802+00	1
 7484239276931158016	uploads/2026/07/18/120153703_touxiang_bobopic-05cbe4a5ff7544a8a02cf21f05c5e3a5.jpg	120153703_touxiang_bobopic.jpg	local	\N	image/jpeg	65451	/api/v1/files/uploads/2026/07/18/120153703_touxiang_bobopic-05cbe4a5ff7544a8a02cf21f05c5e3a5.jpg	2026-07-18 13:34:52.6381+00	1	2026-07-18 13:34:52.6381+00	1
+7484441018859917312	avatars/admin/1/avatar-20260719025633-1f3b15f8a2904e9cbad621bf01df5546.png	avatar-20260719025633-1f3b15f8a2904e9cbad621bf01df5546.png	local	\N	image/png	220018	/api/v1/files/avatars/admin/1/avatar-20260719025633-1f3b15f8a2904e9cbad621bf01df5546.png	2026-07-19 02:56:32.146687+00	1	2026-07-19 02:56:32.146687+00	1
 \.
 
 
@@ -3853,6 +5257,48 @@ COPY public.sys_iam_relation (id, subject_type, subject_id, relation_type, targe
 402012	RESOURCE	202012	RESOURCE_PERMISSION	PERMISSION		sys:config:detail	CASCADE	ALLOW	ALL	[]	f	92	ENABLED	查看系统配置	\N	\N	{}	2026-07-18 14:07:48.98965+00	\N	2026-07-18 14:07:48.98965+00	\N
 402013	RESOURCE	202013	RESOURCE_PERMISSION	PERMISSION		sys:config:update	CASCADE	ALLOW	ALL	[]	f	93	ENABLED	编辑系统配置	\N	\N	{}	2026-07-18 14:07:48.98965+00	\N	2026-07-18 14:07:48.98965+00	\N
 402014	RESOURCE	202014	RESOURCE_PERMISSION	PERMISSION		sys:config:delete	CASCADE	ALLOW	ALL	[]	f	94	ENABLED	删除系统配置	\N	\N	{}	2026-07-18 14:07:48.98965+00	\N	2026-07-18 14:07:48.98965+00	\N
+400201	RESOURCE	305	RESOURCE_PERMISSION	PERMISSION		sys:codegen:page	CASCADE	ALLOW	ALL	[]	f	1	ENABLED	代码生成分页	\N	\N	{}	2026-07-18 16:10:45.206881+00	\N	2026-07-18 16:10:45.206881+00	\N
+400202	RESOURCE	201051	RESOURCE_PERMISSION	PERMISSION		sys:codegen:create	CASCADE	ALLOW	ALL	[]	f	10	ENABLED	新增生成方案	\N	\N	{}	2026-07-18 16:10:45.206881+00	\N	2026-07-18 16:10:45.206881+00	\N
+400203	RESOURCE	201052	RESOURCE_PERMISSION	PERMISSION		sys:codegen:detail	CASCADE	ALLOW	ALL	[]	f	20	ENABLED	查看生成方案	\N	\N	{}	2026-07-18 16:10:45.206881+00	\N	2026-07-18 16:10:45.206881+00	\N
+400204	RESOURCE	201053	RESOURCE_PERMISSION	PERMISSION		sys:codegen:update	CASCADE	ALLOW	ALL	[]	f	30	ENABLED	编辑生成方案	\N	\N	{}	2026-07-18 16:10:45.206881+00	\N	2026-07-18 16:10:45.206881+00	\N
+400205	RESOURCE	201054	RESOURCE_PERMISSION	PERMISSION		sys:codegen:delete	CASCADE	ALLOW	ALL	[]	f	40	ENABLED	删除生成方案	\N	\N	{}	2026-07-18 16:10:45.206881+00	\N	2026-07-18 16:10:45.206881+00	\N
+400206	RESOURCE	201055	RESOURCE_PERMISSION	PERMISSION		sys:codegen:tables	CASCADE	ALLOW	ALL	[]	f	50	ENABLED	读取数据库表	\N	\N	{}	2026-07-18 16:10:45.206881+00	\N	2026-07-18 16:10:45.206881+00	\N
+400207	RESOURCE	201056	RESOURCE_PERMISSION	PERMISSION		sys:codegen:preview	CASCADE	ALLOW	ALL	[]	f	60	ENABLED	预览代码	\N	\N	{}	2026-07-18 16:10:45.206881+00	\N	2026-07-18 16:10:45.206881+00	\N
+400208	RESOURCE	201057	RESOURCE_PERMISSION	PERMISSION		sys:codegen:download	CASCADE	ALLOW	ALL	[]	f	70	ENABLED	下载代码	\N	\N	{}	2026-07-18 16:10:45.206881+00	\N	2026-07-18 16:10:45.206881+00	\N
+7484420970250375170	RESOURCE	7484420970250375169	RESOURCE_PERMISSION	PERMISSION		biz:cgtestactivity:page	CASCADE	ALLOW	ALL	[]	f	10	ENABLED	分页CgTestActivity	\N	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484420970250375172	RESOURCE	7484420970250375171	RESOURCE_PERMISSION	PERMISSION		biz:cgtestactivity:create	CASCADE	ALLOW	ALL	[]	f	20	ENABLED	新增CgTestActivity	\N	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484420970250375174	RESOURCE	7484420970250375173	RESOURCE_PERMISSION	PERMISSION		biz:cgtestactivity:detail	CASCADE	ALLOW	ALL	[]	f	30	ENABLED	详情CgTestActivity	\N	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484420970250375176	RESOURCE	7484420970250375175	RESOURCE_PERMISSION	PERMISSION		biz:cgtestactivity:update	CASCADE	ALLOW	ALL	[]	f	40	ENABLED	编辑CgTestActivity	\N	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484420970250375178	RESOURCE	7484420970250375177	RESOURCE_PERMISSION	PERMISSION		biz:cgtestactivity:delete	CASCADE	ALLOW	ALL	[]	f	50	ENABLED	删除CgTestActivity	\N	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484420970250375180	RESOURCE	7484420970250375179	RESOURCE_PERMISSION	PERMISSION		biz:cgtestactivity:tables	CASCADE	ALLOW	ALL	[]	f	60	ENABLED	读取数据表CgTestActivity	\N	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484420970250375182	RESOURCE	7484420970250375181	RESOURCE_PERMISSION	PERMISSION		biz:cgtestactivity:preview	CASCADE	ALLOW	ALL	[]	f	70	ENABLED	预览CgTestActivity	\N	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484420970250375184	RESOURCE	7484420970250375183	RESOURCE_PERMISSION	PERMISSION		biz:cgtestactivity:download	CASCADE	ALLOW	ALL	[]	f	80	ENABLED	下载CgTestActivity	\N	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484421838320308226	RESOURCE	7484421838320308225	RESOURCE_PERMISSION	PERMISSION		biz:cgtestcatalog:page	CASCADE	ALLOW	ALL	[]	f	10	ENABLED	分页CgTestCatalog	\N	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484421838320308228	RESOURCE	7484421838320308227	RESOURCE_PERMISSION	PERMISSION		biz:cgtestcatalog:create	CASCADE	ALLOW	ALL	[]	f	20	ENABLED	新增CgTestCatalog	\N	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484421838320308230	RESOURCE	7484421838320308229	RESOURCE_PERMISSION	PERMISSION		biz:cgtestcatalog:detail	CASCADE	ALLOW	ALL	[]	f	30	ENABLED	详情CgTestCatalog	\N	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484421838320308232	RESOURCE	7484421838320308231	RESOURCE_PERMISSION	PERMISSION		biz:cgtestcatalog:update	CASCADE	ALLOW	ALL	[]	f	40	ENABLED	编辑CgTestCatalog	\N	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484421838320308234	RESOURCE	7484421838320308233	RESOURCE_PERMISSION	PERMISSION		biz:cgtestcatalog:delete	CASCADE	ALLOW	ALL	[]	f	50	ENABLED	删除CgTestCatalog	\N	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484421838320308236	RESOURCE	7484421838320308235	RESOURCE_PERMISSION	PERMISSION		biz:cgtestcatalog:tables	CASCADE	ALLOW	ALL	[]	f	60	ENABLED	读取数据表CgTestCatalog	\N	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484421838320308238	RESOURCE	7484421838320308237	RESOURCE_PERMISSION	PERMISSION		biz:cgtestcatalog:preview	CASCADE	ALLOW	ALL	[]	f	70	ENABLED	预览CgTestCatalog	\N	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484421838320308240	RESOURCE	7484421838320308239	RESOURCE_PERMISSION	PERMISSION		biz:cgtestcatalog:download	CASCADE	ALLOW	ALL	[]	f	80	ENABLED	下载CgTestCatalog	\N	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484421838320308242	RESOURCE	7484421838320308241	RESOURCE_PERMISSION	PERMISSION		biz:cgtestcatalog:list	CASCADE	ALLOW	ALL	[]	f	90	ENABLED	树列表CgTestCatalog	\N	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484422652539572226	RESOURCE	7484422652539572225	RESOURCE_PERMISSION	PERMISSION		biz:cgtestorder:page	CASCADE	ALLOW	ALL	[]	f	10	ENABLED	分页CgTestOrder	\N	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484422652539572228	RESOURCE	7484422652539572227	RESOURCE_PERMISSION	PERMISSION		biz:cgtestorder:create	CASCADE	ALLOW	ALL	[]	f	20	ENABLED	新增CgTestOrder	\N	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484422652539572230	RESOURCE	7484422652539572229	RESOURCE_PERMISSION	PERMISSION		biz:cgtestorder:detail	CASCADE	ALLOW	ALL	[]	f	30	ENABLED	详情CgTestOrder	\N	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484422652539572232	RESOURCE	7484422652539572231	RESOURCE_PERMISSION	PERMISSION		biz:cgtestorder:update	CASCADE	ALLOW	ALL	[]	f	40	ENABLED	编辑CgTestOrder	\N	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484422652539572234	RESOURCE	7484422652539572233	RESOURCE_PERMISSION	PERMISSION		biz:cgtestorder:delete	CASCADE	ALLOW	ALL	[]	f	50	ENABLED	删除CgTestOrder	\N	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484422652539572236	RESOURCE	7484422652539572235	RESOURCE_PERMISSION	PERMISSION		biz:cgtestorder:tables	CASCADE	ALLOW	ALL	[]	f	60	ENABLED	读取数据表CgTestOrder	\N	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484422652539572238	RESOURCE	7484422652539572237	RESOURCE_PERMISSION	PERMISSION		biz:cgtestorder:preview	CASCADE	ALLOW	ALL	[]	f	70	ENABLED	预览CgTestOrder	\N	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484422652539572240	RESOURCE	7484422652539572239	RESOURCE_PERMISSION	PERMISSION		biz:cgtestorder:download	CASCADE	ALLOW	ALL	[]	f	80	ENABLED	下载CgTestOrder	\N	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484424062010265602	RESOURCE	7484424062010265601	RESOURCE_PERMISSION	PERMISSION		biz:cgtestknowledgecategory:page	CASCADE	ALLOW	ALL	[]	f	10	ENABLED	分页CgTestKnowledgeCategory	\N	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
+7484424062010265604	RESOURCE	7484424062010265603	RESOURCE_PERMISSION	PERMISSION		biz:cgtestknowledgecategory:create	CASCADE	ALLOW	ALL	[]	f	20	ENABLED	新增CgTestKnowledgeCategory	\N	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
+7484424062010265606	RESOURCE	7484424062010265605	RESOURCE_PERMISSION	PERMISSION		biz:cgtestknowledgecategory:detail	CASCADE	ALLOW	ALL	[]	f	30	ENABLED	详情CgTestKnowledgeCategory	\N	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
+7484424062010265608	RESOURCE	7484424062010265607	RESOURCE_PERMISSION	PERMISSION		biz:cgtestknowledgecategory:update	CASCADE	ALLOW	ALL	[]	f	40	ENABLED	编辑CgTestKnowledgeCategory	\N	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
+7484424062010265610	RESOURCE	7484424062010265609	RESOURCE_PERMISSION	PERMISSION		biz:cgtestknowledgecategory:delete	CASCADE	ALLOW	ALL	[]	f	50	ENABLED	删除CgTestKnowledgeCategory	\N	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
+7484424062010265612	RESOURCE	7484424062010265611	RESOURCE_PERMISSION	PERMISSION		biz:cgtestknowledgecategory:tables	CASCADE	ALLOW	ALL	[]	f	60	ENABLED	读取数据表CgTestKnowledgeCategory	\N	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
+7484424062010265614	RESOURCE	7484424062010265613	RESOURCE_PERMISSION	PERMISSION		biz:cgtestknowledgecategory:preview	CASCADE	ALLOW	ALL	[]	f	70	ENABLED	预览CgTestKnowledgeCategory	\N	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
+7484424062010265616	RESOURCE	7484424062010265615	RESOURCE_PERMISSION	PERMISSION		biz:cgtestknowledgecategory:download	CASCADE	ALLOW	ALL	[]	f	80	ENABLED	下载CgTestKnowledgeCategory	\N	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
+7484424062010265618	RESOURCE	7484424062010265617	RESOURCE_PERMISSION	PERMISSION		biz:cgtestknowledgecategory:list	CASCADE	ALLOW	ALL	[]	f	90	ENABLED	树列表CgTestKnowledgeCategory	\N	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
 \.
 
 
@@ -3902,6 +5348,10 @@ COPY public.sys_operation_audit_log (id, module, resource_type, resource_id, act
 7484237926407213056	auth	account	1	login	ADMIN login succeeded	null	null	1	ADMIN	75d02dee689440ec8f5a3dfc06d12f85	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36	t	\N	2026-07-18 13:29:28.437805+00
 7484241057224462336	iam	resource-modules	\N	update	POST /api/v1/admin/sys/resource-modules/update	null	null	\N	\N	\N	\N	\N	t	\N	2026-07-18 13:41:57.26352+00
 7484247805125595136	auth	account	1	login	ADMIN login succeeded	null	null	1	ADMIN	53a70650aaa1493cbe6fa061190365c1	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36	t	\N	2026-07-18 14:08:43.721353+00
+7484390182171578368	auth	account	1	login	ADMIN login succeeded	null	null	1	ADMIN	13b2a9bf5782440786768107280ad664	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36	t	\N	2026-07-18 23:34:29.550977+00
+7484396224209096704	auth	account	1	login	ADMIN login succeeded	null	null	1	ADMIN	233718a0de01405ea66ed43f97b069e6	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36	t	\N	2026-07-18 23:58:30.133062+00
+7484403280236384256	auth	account	1	login	ADMIN login succeeded	null	null	1	ADMIN	c58a33aedfb54596a12f957b4479d3e9	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36	t	\N	2026-07-19 00:26:32.453274+00
+7484441721984651264	auth	account	toJbLh9_-Bfaeba0VYPdey58ZRN_k0k5KDkwpTBnLoc	logout	Logout	null	null	1	ADMIN	44d77e9bd554439e8ddfd7f80b7481f8	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36	t	\N	2026-07-19 02:59:19.377605+00
 \.
 
 
@@ -3918,6 +5368,23 @@ COPY public.sys_position (id, name, code, category, owner_dept_id, sort, is_virt
 --
 
 COPY public.sys_resource (id, parent_id, code, name, resource_type, module_id, path, component, redirect, icon, color, href, sort, is_visible, is_cache, is_affix, status, description, extra, created_at, created_by, updated_at, updated_by) FROM stdin;
+7484420970250375168	202001	biz_cgtestactivity	CgTestActivity	MENU	210001	/biz/cg-test-activity	/biz/cg-test-activity/index.vue	\N	icon-park-outline:code	\N	\N	99	t	f	f	ENABLED	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484420970250375169	7484420970250375168	biz_cgtestactivity_page	分页CgTestActivity	BUTTON	210001	\N	\N	\N	\N	\N	\N	10	f	f	f	ENABLED	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484420970250375171	7484420970250375168	biz_cgtestactivity_create	新增CgTestActivity	BUTTON	210001	\N	\N	\N	\N	\N	\N	20	f	f	f	ENABLED	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484420970250375173	7484420970250375168	biz_cgtestactivity_detail	详情CgTestActivity	BUTTON	210001	\N	\N	\N	\N	\N	\N	30	f	f	f	ENABLED	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484420970250375175	7484420970250375168	biz_cgtestactivity_update	编辑CgTestActivity	BUTTON	210001	\N	\N	\N	\N	\N	\N	40	f	f	f	ENABLED	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484420970250375177	7484420970250375168	biz_cgtestactivity_delete	删除CgTestActivity	BUTTON	210001	\N	\N	\N	\N	\N	\N	50	f	f	f	ENABLED	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484420970250375179	7484420970250375168	biz_cgtestactivity_tables	读取数据表CgTestActivity	BUTTON	210001	\N	\N	\N	\N	\N	\N	60	f	f	f	ENABLED	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484420970250375181	7484420970250375168	biz_cgtestactivity_preview	预览CgTestActivity	BUTTON	210001	\N	\N	\N	\N	\N	\N	70	f	f	f	ENABLED	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484420970250375183	7484420970250375168	biz_cgtestactivity_download	下载CgTestActivity	BUTTON	210001	\N	\N	\N	\N	\N	\N	80	f	f	f	ENABLED	\N	{}	2026-07-19 01:38:31.17267+00	\N	2026-07-19 01:38:31.17267+00	\N
+7484421838320308224	202001	biz_cgtestcatalog	CgTestCatalog	MENU	210001	/biz/cg-test-catalog	/biz/cg-test-catalog/index.vue	\N	icon-park-outline:code	\N	\N	99	t	f	f	ENABLED	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484421838320308225	7484421838320308224	biz_cgtestcatalog_page	分页CgTestCatalog	BUTTON	210001	\N	\N	\N	\N	\N	\N	10	f	f	f	ENABLED	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484421838320308227	7484421838320308224	biz_cgtestcatalog_create	新增CgTestCatalog	BUTTON	210001	\N	\N	\N	\N	\N	\N	20	f	f	f	ENABLED	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484421838320308229	7484421838320308224	biz_cgtestcatalog_detail	详情CgTestCatalog	BUTTON	210001	\N	\N	\N	\N	\N	\N	30	f	f	f	ENABLED	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484421838320308231	7484421838320308224	biz_cgtestcatalog_update	编辑CgTestCatalog	BUTTON	210001	\N	\N	\N	\N	\N	\N	40	f	f	f	ENABLED	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484421838320308233	7484421838320308224	biz_cgtestcatalog_delete	删除CgTestCatalog	BUTTON	210001	\N	\N	\N	\N	\N	\N	50	f	f	f	ENABLED	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484421838320308235	7484421838320308224	biz_cgtestcatalog_tables	读取数据表CgTestCatalog	BUTTON	210001	\N	\N	\N	\N	\N	\N	60	f	f	f	ENABLED	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484421838320308237	7484421838320308224	biz_cgtestcatalog_preview	预览CgTestCatalog	BUTTON	210001	\N	\N	\N	\N	\N	\N	70	f	f	f	ENABLED	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
 200004	200003	sys-dict	字典管理	MENU	210001	/sys/dict	/sys/dict/index.vue	\N	icon-park-outline:file-search	\N	\N	2	t	f	f	ENABLED	\N	{}	2026-06-30 00:00:00+00	\N	2026-06-30 00:00:00+00	\N
 200005	200003	sys-banner	展示图管理	MENU	210001	/sys/banner	/sys/banner/index.vue	\N	icon-park-outline:ad-product	\N	\N	3	t	f	f	ENABLED	\N	{}	2026-06-30 00:00:00+00	\N	2026-06-30 00:00:00+00	\N
 200012	200006	iam-resource	资源管理	MENU	210001	/iam/resource	/iam/resource/index.vue	\N	icon-park-outline:all-application	\N	\N	6	t	f	f	ENABLED	\N	{}	2026-06-30 00:00:00+00	\N	2026-06-30 00:00:00+00	\N
@@ -3950,6 +5417,26 @@ COPY public.sys_resource (id, parent_id, code, name, resource_type, module_id, p
 201131	200009	iam-group-create	新增用户组	BUTTON	210001	\N	\N	\N	\N	\N	\N	1	t	f	f	ENABLED	\N	{}	2026-07-03 00:00:00+00	\N	2026-07-03 00:00:00+00	\N
 201132	200009	iam-group-detail	查看用户组	BUTTON	210001	\N	\N	\N	\N	\N	\N	2	t	f	f	ENABLED	\N	{}	2026-07-03 00:00:00+00	\N	2026-07-03 00:00:00+00	\N
 201133	200009	iam-group-update	编辑用户组	BUTTON	210001	\N	\N	\N	\N	\N	\N	3	t	f	f	ENABLED	\N	{}	2026-07-03 00:00:00+00	\N	2026-07-03 00:00:00+00	\N
+7484421838320308239	7484421838320308224	biz_cgtestcatalog_download	下载CgTestCatalog	BUTTON	210001	\N	\N	\N	\N	\N	\N	80	f	f	f	ENABLED	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484421838320308241	7484421838320308224	biz_cgtestcatalog_list	树列表CgTestCatalog	BUTTON	210001	\N	\N	\N	\N	\N	\N	90	f	f	f	ENABLED	\N	{}	2026-07-19 01:42:18.517662+00	\N	2026-07-19 01:42:18.517662+00	\N
+7484422652539572224	202001	biz_cgtestorder	CgTestOrder	MENU	210001	/biz/cg-test-order	/biz/cg-test-order/index.vue	\N	icon-park-outline:code	\N	\N	99	t	f	f	ENABLED	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484422652539572225	7484422652539572224	biz_cgtestorder_page	分页CgTestOrder	BUTTON	210001	\N	\N	\N	\N	\N	\N	10	f	f	f	ENABLED	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484422652539572227	7484422652539572224	biz_cgtestorder_create	新增CgTestOrder	BUTTON	210001	\N	\N	\N	\N	\N	\N	20	f	f	f	ENABLED	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484422652539572229	7484422652539572224	biz_cgtestorder_detail	详情CgTestOrder	BUTTON	210001	\N	\N	\N	\N	\N	\N	30	f	f	f	ENABLED	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484422652539572231	7484422652539572224	biz_cgtestorder_update	编辑CgTestOrder	BUTTON	210001	\N	\N	\N	\N	\N	\N	40	f	f	f	ENABLED	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484422652539572233	7484422652539572224	biz_cgtestorder_delete	删除CgTestOrder	BUTTON	210001	\N	\N	\N	\N	\N	\N	50	f	f	f	ENABLED	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484422652539572235	7484422652539572224	biz_cgtestorder_tables	读取数据表CgTestOrder	BUTTON	210001	\N	\N	\N	\N	\N	\N	60	f	f	f	ENABLED	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484422652539572237	7484422652539572224	biz_cgtestorder_preview	预览CgTestOrder	BUTTON	210001	\N	\N	\N	\N	\N	\N	70	f	f	f	ENABLED	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484422652539572239	7484422652539572224	biz_cgtestorder_download	下载CgTestOrder	BUTTON	210001	\N	\N	\N	\N	\N	\N	80	f	f	f	ENABLED	\N	{}	2026-07-19 01:45:18.378155+00	\N	2026-07-19 01:45:18.378155+00	\N
+7484424062010265600	202001	biz_cgtestknowledgecategory	CgTestKnowledgeCategory	MENU	210001	/biz/cg-test-knowledge-category	/biz/cg-test-knowledge-category/index.vue	\N	icon-park-outline:code	\N	\N	99	t	f	f	ENABLED	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
+7484424062010265601	7484424062010265600	biz_cgtestknowledgecategory_page	分页CgTestKnowledgeCategory	BUTTON	210001	\N	\N	\N	\N	\N	\N	10	f	f	f	ENABLED	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
+7484424062010265603	7484424062010265600	biz_cgtestknowledgecategory_create	新增CgTestKnowledgeCategory	BUTTON	210001	\N	\N	\N	\N	\N	\N	20	f	f	f	ENABLED	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
+7484424062010265605	7484424062010265600	biz_cgtestknowledgecategory_detail	详情CgTestKnowledgeCategory	BUTTON	210001	\N	\N	\N	\N	\N	\N	30	f	f	f	ENABLED	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
+7484424062010265607	7484424062010265600	biz_cgtestknowledgecategory_update	编辑CgTestKnowledgeCategory	BUTTON	210001	\N	\N	\N	\N	\N	\N	40	f	f	f	ENABLED	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
+7484424062010265609	7484424062010265600	biz_cgtestknowledgecategory_delete	删除CgTestKnowledgeCategory	BUTTON	210001	\N	\N	\N	\N	\N	\N	50	f	f	f	ENABLED	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
+7484424062010265611	7484424062010265600	biz_cgtestknowledgecategory_tables	读取数据表CgTestKnowledgeCategory	BUTTON	210001	\N	\N	\N	\N	\N	\N	60	f	f	f	ENABLED	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
+7484424062010265613	7484424062010265600	biz_cgtestknowledgecategory_preview	预览CgTestKnowledgeCategory	BUTTON	210001	\N	\N	\N	\N	\N	\N	70	f	f	f	ENABLED	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
+7484424062010265615	7484424062010265600	biz_cgtestknowledgecategory_download	下载CgTestKnowledgeCategory	BUTTON	210001	\N	\N	\N	\N	\N	\N	80	f	f	f	ENABLED	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
 200001	\N	dashboard	运营工作台	MENU	210001	/dashboard	/dashboard/index.vue	\N	icon-park-outline:analysis	\N	\N	1	t	f	f	ENABLED	\N	{}	2026-06-30 00:00:00+00	\N	2026-06-30 00:00:00+00	\N
 200003	\N	sys	系统	CATALOG	210001	/sys	\N	\N	icon-park-outline:setting-two	\N	\N	10	t	f	f	ENABLED	\N	{}	2026-06-30 00:00:00+00	\N	2026-06-30 00:00:00+00	\N
 200023	200003	sys-file	文件管理	MENU	210001	/sys/file	/sys/file/index.vue	\N	icon-park-outline:file-code	\N	\N	4	t	f	f	ENABLED	\N	{}	2026-06-30 00:00:00+00	\N	2026-06-30 00:00:00+00	\N
@@ -4019,6 +5506,15 @@ COPY public.sys_resource (id, parent_id, code, name, resource_type, module_id, p
 202012	202010	system-config-detail	查看系统配置	BUTTON	210001	\N	\N	\N	\N	\N	\N	2	t	f	f	ENABLED	\N	{}	2026-07-18 14:07:48.899867+00	\N	2026-07-18 14:07:48.899867+00	\N
 202013	202010	system-config-update	编辑系统配置	BUTTON	210001	\N	\N	\N	\N	\N	\N	3	t	f	f	ENABLED	\N	{}	2026-07-18 14:07:48.899867+00	\N	2026-07-18 14:07:48.899867+00	\N
 202014	202010	system-config-delete	删除系统配置	BUTTON	210001	\N	\N	\N	\N	\N	\N	4	t	f	f	ENABLED	\N	{}	2026-07-18 14:07:48.899867+00	\N	2026-07-18 14:07:48.899867+00	\N
+305	3	sys-codegen	代码生成	MENU	210001	/sys/codegen	/sys/codegen/index.vue	\N	icon-park-outline:code	\N	\N	5	t	f	f	ENABLED	代码生成管理	{}	2026-07-18 16:10:45.206881+00	\N	2026-07-18 16:10:45.206881+00	\N
+201051	305	sys-codegen-create	新增生成方案	BUTTON	210001	\N	\N	\N	\N	\N	\N	10	f	f	f	ENABLED	\N	{}	2026-07-18 16:10:45.206881+00	\N	2026-07-18 16:10:45.206881+00	\N
+201052	305	sys-codegen-detail	查看生成方案	BUTTON	210001	\N	\N	\N	\N	\N	\N	20	f	f	f	ENABLED	\N	{}	2026-07-18 16:10:45.206881+00	\N	2026-07-18 16:10:45.206881+00	\N
+201053	305	sys-codegen-update	编辑生成方案	BUTTON	210001	\N	\N	\N	\N	\N	\N	30	f	f	f	ENABLED	\N	{}	2026-07-18 16:10:45.206881+00	\N	2026-07-18 16:10:45.206881+00	\N
+201054	305	sys-codegen-delete	删除生成方案	BUTTON	210001	\N	\N	\N	\N	\N	\N	40	f	f	f	ENABLED	\N	{}	2026-07-18 16:10:45.206881+00	\N	2026-07-18 16:10:45.206881+00	\N
+201055	305	sys-codegen-tables	读取数据库表	BUTTON	210001	\N	\N	\N	\N	\N	\N	50	f	f	f	ENABLED	\N	{}	2026-07-18 16:10:45.206881+00	\N	2026-07-18 16:10:45.206881+00	\N
+201056	305	sys-codegen-preview	预览代码	BUTTON	210001	\N	\N	\N	\N	\N	\N	60	f	f	f	ENABLED	\N	{}	2026-07-18 16:10:45.206881+00	\N	2026-07-18 16:10:45.206881+00	\N
+201057	305	sys-codegen-download	下载代码	BUTTON	210001	\N	\N	\N	\N	\N	\N	70	f	f	f	ENABLED	\N	{}	2026-07-18 16:10:45.206881+00	\N	2026-07-18 16:10:45.206881+00	\N
+7484424062010265617	7484424062010265600	biz_cgtestknowledgecategory_list	树列表CgTestKnowledgeCategory	BUTTON	210001	\N	\N	\N	\N	\N	\N	90	f	f	f	ENABLED	\N	{}	2026-07-19 01:50:52.447895+00	\N	2026-07-19 01:50:52.447895+00	\N
 \.
 
 
@@ -4048,6 +5544,94 @@ COPY public.sys_role (id, code, name, category, scope_type, owner_dept_id, sort,
 
 ALTER TABLE ONLY public.alembic_version
     ADD CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num);
+
+
+--
+-- Name: cg_test_activity cg_test_activity_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cg_test_activity
+    ADD CONSTRAINT cg_test_activity_code_key UNIQUE (code);
+
+
+--
+-- Name: cg_test_activity cg_test_activity_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cg_test_activity
+    ADD CONSTRAINT cg_test_activity_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: cg_test_catalog cg_test_catalog_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cg_test_catalog
+    ADD CONSTRAINT cg_test_catalog_code_key UNIQUE (code);
+
+
+--
+-- Name: cg_test_catalog cg_test_catalog_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cg_test_catalog
+    ADD CONSTRAINT cg_test_catalog_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: cg_test_knowledge_category cg_test_knowledge_category_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cg_test_knowledge_category
+    ADD CONSTRAINT cg_test_knowledge_category_code_key UNIQUE (code);
+
+
+--
+-- Name: cg_test_knowledge_category cg_test_knowledge_category_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cg_test_knowledge_category
+    ADD CONSTRAINT cg_test_knowledge_category_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: cg_test_knowledge_doc cg_test_knowledge_doc_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cg_test_knowledge_doc
+    ADD CONSTRAINT cg_test_knowledge_doc_code_key UNIQUE (code);
+
+
+--
+-- Name: cg_test_knowledge_doc cg_test_knowledge_doc_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cg_test_knowledge_doc
+    ADD CONSTRAINT cg_test_knowledge_doc_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: cg_test_order_item cg_test_order_item_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cg_test_order_item
+    ADD CONSTRAINT cg_test_order_item_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: cg_test_order cg_test_order_order_no_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cg_test_order
+    ADD CONSTRAINT cg_test_order_order_no_key UNIQUE (order_no);
+
+
+--
+-- Name: cg_test_order cg_test_order_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cg_test_order
+    ADD CONSTRAINT cg_test_order_pkey PRIMARY KEY (id);
 
 
 --
@@ -4152,6 +5736,14 @@ ALTER TABLE ONLY public.msg_todo
 
 ALTER TABLE ONLY public.msg_todo_assignee
     ADD CONSTRAINT pk_msg_todo_assignee PRIMARY KEY (id);
+
+
+--
+-- Name: oj_contest pk_oj_contest; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oj_contest
+    ADD CONSTRAINT pk_oj_contest PRIMARY KEY (id);
 
 
 --
@@ -4275,6 +5867,22 @@ ALTER TABLE ONLY public.sys_role
 
 
 --
+-- Name: sys_codegen_field sys_codegen_field_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sys_codegen_field
+    ADD CONSTRAINT sys_codegen_field_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sys_codegen_plan sys_codegen_plan_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sys_codegen_plan
+    ADD CONSTRAINT sys_codegen_plan_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: msg_group_member uq_msg_group_member_account; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4392,6 +6000,76 @@ ALTER TABLE ONLY public.sys_resource_module
 
 ALTER TABLE ONLY public.sys_role
     ADD CONSTRAINT uq_sys_role_code UNIQUE (code);
+
+
+--
+-- Name: idx_cg_test_activity_start_at; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_cg_test_activity_start_at ON public.cg_test_activity USING btree (start_at);
+
+
+--
+-- Name: idx_cg_test_activity_status; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_cg_test_activity_status ON public.cg_test_activity USING btree (status);
+
+
+--
+-- Name: idx_cg_test_catalog_parent; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_cg_test_catalog_parent ON public.cg_test_catalog USING btree (parent_id);
+
+
+--
+-- Name: idx_cg_test_catalog_sort; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_cg_test_catalog_sort ON public.cg_test_catalog USING btree (sort);
+
+
+--
+-- Name: idx_cg_test_knowledge_category_parent; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_cg_test_knowledge_category_parent ON public.cg_test_knowledge_category USING btree (parent_id);
+
+
+--
+-- Name: idx_cg_test_knowledge_doc_category; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_cg_test_knowledge_doc_category ON public.cg_test_knowledge_doc USING btree (category_id);
+
+
+--
+-- Name: idx_cg_test_knowledge_doc_status; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_cg_test_knowledge_doc_status ON public.cg_test_knowledge_doc USING btree (status);
+
+
+--
+-- Name: idx_cg_test_order_item_order; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_cg_test_order_item_order ON public.cg_test_order_item USING btree (order_id);
+
+
+--
+-- Name: idx_cg_test_order_ordered_at; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_cg_test_order_ordered_at ON public.cg_test_order USING btree (ordered_at);
+
+
+--
+-- Name: idx_cg_test_order_status; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_cg_test_order_status ON public.cg_test_order USING btree (status);
 
 
 --
@@ -4563,10 +6241,45 @@ CREATE INDEX ix_msg_todo_target_account ON public.msg_todo USING btree (target_a
 
 
 --
+-- Name: ix_oj_contest_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX ix_oj_contest_key ON public.oj_contest USING btree (key);
+
+
+--
+-- Name: ix_oj_contest_status_time; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX ix_oj_contest_status_time ON public.oj_contest USING btree (status, start_at, end_at);
+
+
+--
 -- Name: ix_sys_banner_scope_position_status_sort; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX ix_sys_banner_scope_position_status_sort ON public.sys_banner USING btree (display_scope, "position", status, sort);
+
+
+--
+-- Name: ix_sys_codegen_field_plan_role_sort; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX ix_sys_codegen_field_plan_role_sort ON public.sys_codegen_field USING btree (plan_id, table_role, sort);
+
+
+--
+-- Name: ix_sys_codegen_plan_gen_type; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX ix_sys_codegen_plan_gen_type ON public.sys_codegen_plan USING btree (gen_type);
+
+
+--
+-- Name: ix_sys_codegen_plan_main_table; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX ix_sys_codegen_plan_main_table ON public.sys_codegen_plan USING btree (main_table);
 
 
 --
@@ -4584,8 +6297,54 @@ CREATE INDEX ix_sys_iam_relation_target ON public.sys_iam_relation USING btree (
 
 
 --
+-- Name: uq_sys_codegen_field_plan_role_column; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX uq_sys_codegen_field_plan_role_column ON public.sys_codegen_field USING btree (plan_id, table_role, column_name);
+
+
+--
+-- Name: uq_sys_codegen_plan_name; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX uq_sys_codegen_plan_name ON public.sys_codegen_plan USING btree (name);
+
+
+--
+-- Name: cg_test_catalog fk_cg_test_catalog_parent; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cg_test_catalog
+    ADD CONSTRAINT fk_cg_test_catalog_parent FOREIGN KEY (parent_id) REFERENCES public.cg_test_catalog(id);
+
+
+--
+-- Name: cg_test_knowledge_category fk_cg_test_knowledge_category_parent; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cg_test_knowledge_category
+    ADD CONSTRAINT fk_cg_test_knowledge_category_parent FOREIGN KEY (parent_id) REFERENCES public.cg_test_knowledge_category(id);
+
+
+--
+-- Name: cg_test_knowledge_doc fk_cg_test_knowledge_doc_category; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cg_test_knowledge_doc
+    ADD CONSTRAINT fk_cg_test_knowledge_doc_category FOREIGN KEY (category_id) REFERENCES public.cg_test_knowledge_category(id);
+
+
+--
+-- Name: cg_test_order_item fk_cg_test_order_item_order; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.cg_test_order_item
+    ADD CONSTRAINT fk_cg_test_order_item_order FOREIGN KEY (order_id) REFERENCES public.cg_test_order(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-\unrestrict cnnHCZ6eYcN90fyHoJfKBqw2TN3AU4VvpLuuiRmzVr5bGecOcbyARcH3fsM4MSB
+\unrestrict b4JTAlNEfwB0VIc6Y9xHAB2g3GBv5IvQji7ixZE1IF8fa0ZjcCN4X2F9shnKdch
 

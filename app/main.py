@@ -13,20 +13,16 @@ import uvicorn
 from app.core.config.settings import settings
 from app.factory import create_app
 
-app = create_app()
-
-# 修复 python -m app.main 导致的 __main__/app.main 双重导入问题：
-# 当通过 "python -m app.main" 启动时，模块先以 __main__ 执行，
-# 然后 uvicorn 又 import "app.main" 导致 create_app() 被执行两次。
-# 将当前模块注册为 app.main，让 uvicorn 复用同一个 app 实例。
-if __name__ == "__main__":
-    sys.modules["app.main"] = sys.modules["__main__"]
+# Keep app.main:app compatible for external ASGI servers, but avoid creating an
+# application in the script/reloader bootstrap process.
+app = None if __name__ == "__main__" else create_app()
 
 
 def main() -> None:
     workers = _resolve_workers()
     uvicorn.run(
-        "app.main:app",
+        "app.factory:create_app",
+        factory=True,
         host=settings.app.host,
         port=settings.app.port,
         reload=settings.app.debug,
