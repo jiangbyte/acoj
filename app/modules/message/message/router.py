@@ -13,6 +13,10 @@ from app.deps.db import get_db_session
 from app.modules.message.enums import MessageGroupStatus, MessageThreadStatus, MessageThreadType
 from app.modules.message.message.schema import (
     GroupCreateRequest,
+    GroupJoinRequestCreate,
+    GroupJoinRequestHandle,
+    GroupJoinRequestCountResponse,
+    GroupJoinRequestSchema,
     GroupMemberRequest,
     GroupPageQuery,
     GroupSchema,
@@ -170,6 +174,67 @@ def register_current_user_routes(router: APIRouter, account_type: AccountType) -
     ) -> ApiResponse[None]:
         await MessageService(db).react_message(payload, session)
         return success()
+
+    @router.post(
+        "/message/groups/join-request",
+        dependencies=dependencies,
+        response_model=ApiResponse[None],
+    )
+    async def apply_join_group(
+        payload: GroupJoinRequestCreate,
+        db: Annotated[AsyncSession, Depends(get_db_session)],
+        session: Annotated[SessionPayload, Depends(get_current_session)],
+    ) -> ApiResponse[None]:
+        await MessageService(db).apply_join_group(payload, session)
+        return success()
+
+    @router.post(
+        "/message/groups/handle-join-request",
+        dependencies=dependencies,
+        response_model=ApiResponse[None],
+    )
+    async def handle_join_request(
+        payload: GroupJoinRequestHandle,
+        db: Annotated[AsyncSession, Depends(get_db_session)],
+        session: Annotated[SessionPayload, Depends(get_current_session)],
+    ) -> ApiResponse[None]:
+        await MessageService(db).handle_join_request(payload, session)
+        return success()
+
+    @router.get(
+        "/message/groups/my-join-requests",
+        dependencies=dependencies,
+        response_model=ApiResponse[list[GroupJoinRequestSchema]],
+    )
+    async def my_join_requests(
+        db: Annotated[AsyncSession, Depends(get_db_session)],
+        session: Annotated[SessionPayload, Depends(get_current_session)],
+    ) -> ApiResponse[list[GroupJoinRequestSchema]]:
+        return success(await MessageService(db).list_my_join_requests(session))
+
+    @router.get(
+        "/message/groups/join-requests",
+        dependencies=dependencies,
+        response_model=ApiResponse[list[GroupJoinRequestSchema]],
+    )
+    async def group_join_requests(
+        db: Annotated[AsyncSession, Depends(get_db_session)],
+        session: Annotated[SessionPayload, Depends(get_current_session)],
+        group_id: str = Query(min_length=1, max_length=64),
+    ) -> ApiResponse[list[GroupJoinRequestSchema]]:
+        return success(await MessageService(db).list_group_join_requests(group_id, session))
+
+    @router.get(
+        "/message/groups/pending-join-request-count",
+        dependencies=dependencies,
+        response_model=ApiResponse[GroupJoinRequestCountResponse],
+    )
+    async def pending_join_request_count(
+        db: Annotated[AsyncSession, Depends(get_db_session)],
+        session: Annotated[SessionPayload, Depends(get_current_session)],
+    ) -> ApiResponse[GroupJoinRequestCountResponse]:
+        count = await MessageService(db).pending_join_request_count(session)
+        return success(GroupJoinRequestCountResponse(count=count))
 
 
 register_current_user_routes(admin_router, AccountType.ADMIN)

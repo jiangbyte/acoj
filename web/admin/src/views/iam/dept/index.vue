@@ -1,13 +1,18 @@
 <script setup lang="tsx">
-import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { deptApi } from '@/api'
-import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import {
+  createTagColor,
+  formatDateTime,
+  hasPermission,
+  normalizeSearchValues,
+  renderButtonIcon,
+} from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
+import { dictList, dictTypeData, dictTypeColor, isDictLoaded, refreshDict } from '@/utils/dict'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 
@@ -15,13 +20,13 @@ const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
 const state = reactive({
   depts: [] as any[],
-  total: 0,
   loading: false,
   searchValues: {} as any,
   checkedRowKeys: [] as string[],
-  page: 1,
-  pageSize: 20,
 })
+
+const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
+const filteredDepts = computed(() => filterDeptTree(state.depts, state.searchValues))
 
 const searchForm = createProSearchForm<any>({
   defaultCollapsed: true,
@@ -29,15 +34,12 @@ const searchForm = createProSearchForm<any>({
     state.searchValues = normalizeSearchValues(values, {
       name: (value) => String(value).trim(),
       code: (value) => String(value).trim(),
-      parent_id: (value) => String(value).trim(),
+      category: (value) => String(value).trim(),
+      status: (value) => String(value).trim(),
     })
-    state.page = 1
-    fetchPage()
   },
   onReset() {
     state.searchValues = {}
-    state.page = 1
-    fetchPage()
   },
 })
 
@@ -61,11 +63,6 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: '父级部门ID',
-    path: 'parent_id',
-    field: 'input',
-  },
-  {
     title: '状态',
     path: 'status',
     field: 'select',
@@ -75,41 +72,15 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   },
 ])
 
-const pagination = computed<PaginationProps>(() => ({
-  page: state.page,
-  pageSize: state.pageSize,
-  itemCount: state.total,
-  showSizePicker: true,
-  pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => `${itemCount} 条`,
-  onUpdatePage: (value) => {
-    state.page = value
-    fetchPage()
-  },
-  onUpdatePageSize: (value) => {
-    state.pageSize = value
-    state.page = 1
-    fetchPage()
-  },
-}))
-
 const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     type: 'selection',
     fixed: 'left',
   },
   {
-    title: 'ID',
-    width: 80,
-    path: 'id',
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
     title: '部门名称',
     path: 'name',
-    width: 160,
+    width: 220,
     ellipsis: {
       tooltip: true,
     },
@@ -117,7 +88,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: '部门编码',
     path: 'code',
-    width: 150,
+    width: 160,
     ellipsis: {
       tooltip: true,
     },
@@ -129,9 +100,17 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     render: (row) => dictTypeData('DEPT_CATEGORY', row.category) || row.category,
   },
   {
-    title: '父级部门ID',
-    path: 'parent_id',
-    width: 160,
+    title: '负责人',
+    width: 120,
+    render: (row) => row.master_name || row.master_id || '-',
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: '副负责人',
+    width: 120,
+    render: (row) => row.deputy_master_name || row.deputy_master_id || '-',
     ellipsis: {
       tooltip: true,
     },
@@ -139,12 +118,12 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: '排序',
     path: 'sort',
-    width: 90,
+    width: 80,
   },
   {
     title: '虚拟部门',
     path: 'is_virtual',
-    width: 110,
+    width: 100,
     render: (row) => (row.is_virtual ? '是' : '否'),
   },
   {
@@ -160,11 +139,11 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: '更新时间',
     path: 'updated_at',
-    width: 190,
+    width: 180,
+    render: (row) => formatDateTime(row.updated_at),
     ellipsis: {
       tooltip: true,
     },
-    render: (row) => formatDateTime(row.updated_at),
   },
   {
     title: '操作',
@@ -193,28 +172,18 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   },
 ])
 
-const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
-
-onMounted(() => {
-  fetchPage()
+onMounted(async () => {
+  if (!isDictLoaded()) {
+    await refreshDict()
+  }
+  fetchTree()
 })
 
-async function fetchPage() {
+async function fetchTree() {
   state.loading = true
   try {
-    const response = await deptApi.page({
-      current: state.page,
-      size: state.pageSize,
-      ...state.searchValues,
-    })
-    const data = response.data ?? {}
-    state.depts = data.records ?? []
-    state.total = data.total ?? 0
-    state.page = data.current ?? state.page
-    state.pageSize = data.size ?? state.pageSize
-    state.checkedRowKeys = state.checkedRowKeys.filter((key) =>
-      state.depts.some((item) => item.id === key),
-    )
+    const response = await deptApi.tree()
+    state.depts = response.data ?? []
   } finally {
     state.loading = false
   }
@@ -238,18 +207,12 @@ function handleCheckedRowKeys(keys: Array<string | number>) {
 
 function confirmDelete(value: string | string[]) {
   const ids = Array.isArray(value) ? value : [value]
-  if (!ids.length) {
-    return
-  }
-  const isBatch = ids.length > 1
-
+  if (!ids.length) return
   window.$dialog.warning({
-    title: isBatch ? '批量删除' : '删除',
+    title: ids.length > 1 ? '批量删除' : '删除',
     draggable: true,
     maskClosable: false,
-    content: isBatch
-      ? `删除 ${ids.length} 个部门?`
-      : '删除该部门?',
+    content: ids.length > 1 ? `删除 ${ids.length} 个部门?` : '删除该部门?',
     positiveText: '确认',
     negativeText: '取消',
     onPositiveClick: () => deleteData(ids),
@@ -259,13 +222,32 @@ function confirmDelete(value: string | string[]) {
 async function deleteData(ids: string[]) {
   await deptApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
-
   window.$message.success('删除成功')
-  await fetchPage()
-  if (!state.depts.length && state.total > 0 && state.page > 1) {
-    state.page -= 1
-    await fetchPage()
-  }
+  await fetchTree()
+}
+
+function filterDeptTree(items: any[], searchValues: any): any[] {
+  const keyword = (searchValues.name || '').toLowerCase().trim()
+  const codeKeyword = (searchValues.code || '').toLowerCase().trim()
+  const categoryVal = searchValues.category || ''
+  const statusVal = searchValues.status || ''
+  if (!keyword && !codeKeyword && !categoryVal && !statusVal) return items
+  return items
+    .map((item) => {
+      const match =
+        (!keyword || (item.name || '').toLowerCase().includes(keyword)) &&
+        (!codeKeyword || (item.code || '').toLowerCase().includes(codeKeyword)) &&
+        (!categoryVal || item.category === categoryVal) &&
+        (!statusVal || item.status === statusVal)
+      const matchedChildren = item.children?.length
+        ? filterDeptTree(item.children, searchValues)
+        : []
+      if (match || matchedChildren.length) {
+        return { ...item, children: matchedChildren }
+      }
+      return null
+    })
+    .filter(Boolean)
 }
 </script>
 
@@ -278,36 +260,47 @@ async function deleteData(ids: string[]) {
         :reset-button-props="{ content: '重置' }"
         :search-button-props="{ content: '搜索' }"
         :collapse-button-props="{
-          content: searchForm.collapsed.value
-            ? '展开'
-            : '收起',
+          content: searchForm.collapsed.value ? '展开' : '收起',
         }"
       />
     </ProCard>
 
     <ProDataTable
       class="min-h-0 flex-1"
-      remote
       :title="'部门管理'"
       row-key="id"
       :scroll-x="1440"
       :columns="tableColumns"
-      :data="state.depts"
+      :data="filteredDepts"
       :loading="state.loading"
-      :pagination="pagination"
+      :pagination="false"
       :checked-row-keys="state.checkedRowKeys"
       :on-update-checked-row-keys="handleCheckedRowKeys"
+      default-expand-all
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('iam:dept:create')" type="primary" text :title="'新增'" :aria-label="'新增'" @click="openCreateModal">
+          <NButton
+            v-if="hasPermission('iam:dept:create')"
+            type="primary"
+            text
+            :title="'新增'"
+            :aria-label="'新增'"
+            @click="openCreateModal"
+          >
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchPage">
+          <NButton
+            text
+            :title="'刷新'"
+            :aria-label="'刷新'"
+            :loading="state.loading"
+            @click="fetchTree"
+          >
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -333,7 +326,7 @@ async function deleteData(ids: string[]) {
       </template>
     </ProDataTable>
 
-    <ModalForm ref="formModalRef" @saved="fetchPage" />
+    <ModalForm ref="formModalRef" @saved="fetchTree" />
     <ModalDetail ref="detailModalRef" />
   </NFlex>
 </template>

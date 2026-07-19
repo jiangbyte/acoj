@@ -36,8 +36,11 @@ class DeptAdminPageQuery(ApiSchema):
 class SysDeptSchema(ApiSchema):
     id: str
     parent_id: str | None = None
+    parent_name: str | None = None
     master_id: str | None = None
+    master_name: str | None = None
     deputy_master_id: str | None = None
+    deputy_master_name: str | None = None
     name: str
     code: str
     category: str
@@ -56,4 +59,10 @@ class DeptTreeNode(ApiSchema):
     name: str
     code: str
     category: str
+    parent_id: str | None = None
+    status: str
+    sort: int = 99
+    is_virtual: bool = False
+    master_name: str | None = None
+    deputy_master_name: str | None = None
     children: list["DeptTreeNode"] = Field(default_factory=list)

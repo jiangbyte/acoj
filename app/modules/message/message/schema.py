@@ -174,3 +174,31 @@ class ReadThreadRequest(ApiSchema):
 class ReactMessageRequest(ApiSchema):
     message_id: str = Field(min_length=1, max_length=64)
     reaction: str = Field(min_length=1, max_length=64)
+
+
+class GroupJoinRequestCreate(ApiSchema):
+    group_id: str = Field(min_length=1, max_length=64, description="群组ID")
+    message: str | None = Field(default=None, max_length=500, description="申请附言")
+
+
+class GroupJoinRequestHandle(ApiSchema):
+    request_id: str = Field(min_length=1, max_length=64, description="申请ID")
+    accept: bool = Field(description="是否同意")
+
+
+class GroupJoinRequestSchema(ApiSchema):
+    id: str
+    group_id: str
+    applicant_type: AccountType | str
+    applicant_id: str
+    applicant_name: str | None = None
+    applicant_avatar: str | None = None
+    message: str | None = None
+    status: str
+    group_name: str | None = None
+    created_at: datetime
+    handled_at: datetime | None = None
+
+
+class GroupJoinRequestCountResponse(ApiSchema):
+    count: int = 0
