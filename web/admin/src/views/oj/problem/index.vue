@@ -3,19 +3,17 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { ojProblemApi } from '@/api'
-import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { createTagColor, dictList, dictTypeColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { NButton, NFlex, NIcon, NProgress, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
-import FormPanel from './components/FormPanel.vue'
 import ModalDetail from './components/ModalDetail.vue'
+import ModalForm from './components/ModalForm.vue'
+import ModalDataManager from './components/ModalDataManager.vue'
 
 const detailModalRef = ref<any>(null)
-
-const problemTypeOptions = ['PROGRAM', 'OUTPUT_ONLY', 'FUNCTION', 'INTERACTIVE', 'OBJECTIVE'].map(labelValue)
-const judgeModeOptions = ['STANDARD', 'SPECIAL_JUDGE', 'INTERACTIVE', 'OUTPUT_ONLY', 'FUNCTION', 'OBJECTIVE', 'REMOTE'].map(labelValue)
-const visibilityOptions = ['PUBLIC', 'PRIVATE', 'CONTEST_ONLY', 'ORG_ONLY'].map(labelValue)
-const statusOptions = ['ENABLED', 'DISABLED'].map(labelValue)
+const formModalRef = ref<any>(null)
+const dataManagerRef = ref<any>(null)
 
 const state = reactive({
   rows: [] as any[],
@@ -25,8 +23,6 @@ const state = reactive({
   checkedRowKeys: [] as string[],
   page: 1,
   pageSize: 20,
-  formVisible: false,
-  formId: null as string | null,
 })
 
 const searchForm = createProSearchForm<any>({
@@ -46,10 +42,10 @@ const searchForm = createProSearchForm<any>({
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   { title: '题号', path: 'code', field: 'input' },
   { title: '标题', path: 'title', field: 'input' },
-  { title: '题目类型', path: 'problem_type', field: 'select', fieldProps: { options: problemTypeOptions } },
-  { title: '判题方式', path: 'judge_mode', field: 'select', fieldProps: { options: judgeModeOptions } },
-  { title: '可见性', path: 'visibility', field: 'select', fieldProps: { options: visibilityOptions } },
-  { title: '状态', path: 'status', field: 'select', fieldProps: { options: statusOptions } },
+  { title: '题目类型', path: 'problem_type', field: 'select', fieldProps: { options: dictList('OJ_PROBLEM_TYPE') } },
+  { title: '判题方式', path: 'judge_mode', field: 'select', fieldProps: { options: dictList('OJ_JUDGE_MODE') } },
+  { title: '可见性', path: 'visibility', field: 'select', fieldProps: { options: dictList('OJ_PROBLEM_VISIBILITY') } },
+  { title: '状态', path: 'status', field: 'select', fieldProps: { options: dictList('COMMON_STATUS') } },
 ])
 
 const pagination = computed<PaginationProps>(() => ({
@@ -75,39 +71,40 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   { title: 'id', path: 'id', width: 130, fixed: 'left', ellipsis: { tooltip: true } },
   { title: 'code', path: 'code', width: 110, fixed: 'left', ellipsis: { tooltip: true } },
   { title: 'title', path: 'title', width: 240, ellipsis: { tooltip: true } },
-  { title: 'problem_type', path: 'problem_type', width: 140, render: (row) => renderTag(row.problem_type, '#2080f0') },
-  { title: 'judge_mode', path: 'judge_mode', width: 150, render: (row) => renderTag(row.judge_mode, row.judge_mode === 'STANDARD' ? '#18a058' : '#722ed1') },
-  { title: 'visibility', path: 'visibility', width: 140, render: (row) => renderTag(row.visibility, row.visibility === 'PUBLIC' ? '#18a058' : '#f0a020') },
+  { title: 'problem_type', path: 'problem_type', width: 140, render: (row) => <NTag color={createTagColor(dictTypeColor('OJ_PROBLEM_TYPE', row.problem_type))} bordered={false}>{row.problem_type}</NTag> },
+  { title: 'judge_mode', path: 'judge_mode', width: 150, render: (row) => <NTag color={createTagColor(dictTypeColor('OJ_JUDGE_MODE', row.judge_mode))} bordered={false}>{row.judge_mode}</NTag> },
+  { title: 'visibility', path: 'visibility', width: 140, render: (row) => <NTag color={createTagColor(dictTypeColor('OJ_PROBLEM_VISIBILITY', row.visibility))} bordered={false}>{row.visibility}</NTag> },
   { title: 'difficulty', path: 'difficulty', width: 110 },
   { title: 'time_limit_ms', path: 'time_limit_ms', width: 130 },
   { title: 'memory_limit_kb', path: 'memory_limit_kb', width: 150 },
   { title: 'points', path: 'points', width: 100 },
   { title: 'partial', path: 'partial', width: 100 },
-  { title: 'accepted_count', path: 'accepted_count', width: 140 },
-  { title: 'submit_count', path: 'submit_count', width: 130 },
   { title: 'ac_rate', path: 'ac_rate', width: 150, render: (row) => <NProgress type="line" percentage={Number(row.ac_rate ?? 0)} indicator-placement="inside" /> },
   { title: 'sort', path: 'sort', width: 90 },
-  { title: 'status', path: 'status', width: 110, render: (row) => renderTag(row.status, row.status === 'ENABLED' ? '#18a058' : '#909399') },
+  { title: 'status', path: 'status', width: 110, render: (row) => <NTag color={createTagColor(dictTypeColor('COMMON_STATUS', row.status))} bordered={false}>{row.status}</NTag> },
   { title: 'updated_at', path: 'updated_at', width: 180, render: (row) => formatDateTime(row.updated_at), ellipsis: { tooltip: true } },
   {
     title: '操作',
     key: 'actions',
-    width: 130,
+    width: 180,
     fixed: 'right',
     render: (row) => (
       <NFlex size={12}>
         {hasPermission('oj:problems:detail') ? (
-          <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
+          <NButton type="info" size="small" text onClick={() => openDetailModal(row.id)}>
             {renderButtonIcon('icon-park-outline:preview-open')}
           </NButton>
         ) : null}
         {hasPermission('oj:problems:update') ? (
-          <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
+          <NButton type="primary" size="small" text onClick={() => openEditModal(row.id)}>
             {renderButtonIcon('icon-park-outline:edit')}
           </NButton>
         ) : null}
+        <NButton type="warning" size="small" text title="数据管理" onClick={() => openDataManager(row.id)}>
+          {renderButtonIcon('icon-park-outline:data')}
+        </NButton>
         {hasPermission('oj:problems:delete') ? (
-          <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
+          <NButton type="error" size="small" text onClick={() => confirmDelete(row.id)}>
             {renderButtonIcon('icon-park-outline:delete')}
           </NButton>
         ) : null}
@@ -139,17 +136,19 @@ async function fetchPage() {
 }
 
 function openCreateModal() {
-  state.formId = null
-  state.formVisible = true
+  formModalRef.value?.openDrawer(null)
 }
 
 function openEditModal(id: string) {
-  state.formId = id
-  state.formVisible = true
+  formModalRef.value?.openDrawer(id)
 }
 
 function openDetailModal(id: string) {
   detailModalRef.value?.openModal(id)
+}
+
+function openDataManager(id: string) {
+  dataManagerRef.value?.openDrawer(id)
 }
 
 function handleCheckedRowKeys(keys: Array<string | number>) {
@@ -158,9 +157,7 @@ function handleCheckedRowKeys(keys: Array<string | number>) {
 
 function confirmDelete(value: string | string[]) {
   const ids = Array.isArray(value) ? value : [value]
-  if (!ids.length) {
-    return
-  }
+  if (!ids.length) return
   window.$dialog.warning({
     title: ids.length > 1 ? '批量删除' : '删除',
     draggable: true,
@@ -177,84 +174,61 @@ function confirmDelete(value: string | string[]) {
   })
 }
 
-function renderTag(text: string, color: string) {
-  return <NTag color={createTagColor(color)} bordered={false}>{text}</NTag>
-}
-
-function labelValue(value: string) {
-  return { label: value, value }
-}
-
 async function handleFormSaved() {
-  state.formVisible = false
-  state.formId = null
   await fetchPage()
-}
-
-function closeForm() {
-  state.formVisible = false
-  state.formId = null
 }
 </script>
 
 <template>
   <NFlex class="h-full min-h-0" vertical>
-    <FormPanel
-      v-if="state.formVisible"
-      :key="state.formId || 'create'"
-      :id="state.formId"
-      @saved="handleFormSaved"
-      @cancel="closeForm"
-    />
+    <ProCard content-class="pb-0!">
+      <ProSearchForm
+        :form="searchForm"
+        :columns="searchColumns"
+        :reset-button-props="{ content: '重置' }"
+        :search-button-props="{ content: '搜索' }"
+        :collapse-button-props="{ content: searchForm.collapsed.value ? '展开' : '收起' }"
+      />
+    </ProCard>
 
-    <template v-else>
-      <ProCard content-class="pb-0!">
-        <ProSearchForm
-          :form="searchForm"
-          :columns="searchColumns"
-          :reset-button-props="{ content: '重置' }"
-          :search-button-props="{ content: '搜索' }"
-          :collapse-button-props="{ content: searchForm.collapsed.value ? '展开' : '收起' }"
-        />
-      </ProCard>
-
-      <ProDataTable
-        class="min-h-0 flex-1"
-        remote
-        title="题目管理"
-        row-key="id"
-        :scroll-x="2450"
-        :columns="tableColumns"
-        :data="state.rows"
-        :loading="state.loading"
-        :pagination="pagination"
-        :checked-row-keys="state.checkedRowKeys"
-        :on-update-checked-row-keys="handleCheckedRowKeys"
-      >
-        <template #toolbar>
-          <NFlex>
-            <NButton v-if="hasPermission('oj:problems:create')" type="primary" text title="新增" aria-label="新增" @click="openCreateModal">
-              <template #icon><NIcon><Icon icon="icon-park-outline:plus" /></NIcon></template>
-            </NButton>
-            <NButton text title="刷新" aria-label="刷新" :loading="state.loading" @click="fetchPage">
-              <template #icon><NIcon><Icon icon="icon-park-outline:reload" /></NIcon></template>
-            </NButton>
-            <NButton
-              v-if="hasPermission('oj:problems:delete')"
-              type="error"
-              text
-              title="批量删除"
-              aria-label="批量删除"
-              :disabled="!hasCheckedRows"
-              @click="confirmDelete(state.checkedRowKeys)"
-            >
-              <template #icon><NIcon><Icon icon="icon-park-outline:delete" /></NIcon></template>
-            </NButton>
-          </NFlex>
-        </template>
-      </ProDataTable>
-    </template>
+    <ProDataTable
+      class="min-h-0 flex-1"
+      remote
+      title="题目管理"
+      row-key="id"
+      :scroll-x="2450"
+      :columns="tableColumns"
+      :data="state.rows"
+      :loading="state.loading"
+      :pagination="pagination"
+      :checked-row-keys="state.checkedRowKeys"
+      :on-update-checked-row-keys="handleCheckedRowKeys"
+    >
+      <template #toolbar>
+        <NFlex>
+          <NButton v-if="hasPermission('oj:problems:create')" type="primary" text title="新增" aria-label="新增" @click="openCreateModal">
+            <template #icon><NIcon><Icon icon="icon-park-outline:plus" /></NIcon></template>
+          </NButton>
+          <NButton text title="刷新" aria-label="刷新" :loading="state.loading" @click="fetchPage">
+            <template #icon><NIcon><Icon icon="icon-park-outline:reload" /></NIcon></template>
+          </NButton>
+          <NButton
+            v-if="hasPermission('oj:problems:delete')"
+            type="error"
+            text
+            title="批量删除"
+            aria-label="批量删除"
+            :disabled="!hasCheckedRows"
+            @click="confirmDelete(state.checkedRowKeys)"
+          >
+            <template #icon><NIcon><Icon icon="icon-park-outline:delete" /></NIcon></template>
+          </NButton>
+        </NFlex>
+      </template>
+    </ProDataTable>
 
     <ModalDetail ref="detailModalRef" />
+    <ModalForm ref="formModalRef" @saved="handleFormSaved" @open-data-manager="(id: string) => dataManagerRef.value?.openDrawer(id)" />
+    <ModalDataManager ref="dataManagerRef" />
   </NFlex>
 </template>

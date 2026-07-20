@@ -45,6 +45,10 @@ class OjDatasetRepository:
             raise NotFoundError("OJ dataset not found")
         await self.db.execute(delete(OjDataset).where(OjDataset.id.in_(unique_ids)))
 
+    async def list_by_problem(self, problem_id: str) -> list[OjDataset]:
+        stmt = select(OjDataset).where(OjDataset.problem_id == problem_id)
+        return list((await self.db.execute(stmt)).scalars().all())
+
     async def page(self, query: OjDatasetAdminPageQuery) -> tuple[list[OjDataset], int]:
         stmt: Select[tuple[OjDataset]] = select(OjDataset)
         count_stmt = select(func.count(OjDataset.id))

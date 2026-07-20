@@ -11,6 +11,14 @@ from app.modules.oj.enums import (
     OjProblemType,
     OjProblemVisibility,
 )
+from app.modules.oj.problem.asset.schema import OjProblemAssetSchema
+from app.modules.oj.problem.dataset.schema import OjDatasetSchema
+from app.modules.oj.problem.member.schema import OjProblemMemberSchema
+from app.modules.oj.problem.objective_answer.schema import OjObjectiveAnswerSchema
+from app.modules.oj.problem.sample.schema import OjProblemSampleSchema
+from app.modules.oj.problem.tag.schema import OjProblemTagSchema
+from app.modules.oj.problem.tag_relation.schema import OjProblemTagRelationSchema
+from app.modules.oj.problem.test_case.schema import OjTestCaseSchema
 
 
 class OjProblemAdminPageQuery(ApiSchema):
@@ -76,3 +84,16 @@ class OjProblemUpdateRequest(OjProblemCreateRequest):
 
 class OjProblemSchema(OjProblemCreateRequest, OjProblemTimestampSchema):
     id: str
+
+
+class OjProblemWorkspaceResult(ApiSchema):
+    """Problem aggregate workspace response."""
+    problem: OjProblemSchema | None = None
+    samples: list[OjProblemSampleSchema] = []
+    datasets: list[OjDatasetSchema] = []
+    test_cases: list[OjTestCaseSchema] = []
+    tags: list[OjProblemTagSchema] = []
+    tag_relations: list[OjProblemTagRelationSchema] = []
+    assets: list[OjProblemAssetSchema] = []
+    members: list[OjProblemMemberSchema] = []
+    objective_answers: list[OjObjectiveAnswerSchema] = []

@@ -36,7 +36,7 @@ import app.modules.oj.submission.submission.model  # noqa: F401
 from app.platform.db.base import Base
 
 revision: str = "9b2f4c6d8e10"
-down_revision: str | Sequence[str] | None = "1d4e8f2a9b70"
+down_revision: str | Sequence[str] | None = "80bbc87821be"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

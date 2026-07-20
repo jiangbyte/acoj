@@ -16,9 +16,11 @@ class OjProblemRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create(self, payload: OjProblemCreateRequest) -> None:
+    async def create(self, payload: OjProblemCreateRequest) -> OjProblem:
         entity = OjProblem(**payload.model_dump())
         self.db.add(entity)
+        await self.db.flush()
+        return entity
         await self.db.flush()
 
     async def get_by_id(self, entity_id: str) -> OjProblem | None:

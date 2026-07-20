@@ -45,6 +45,10 @@ class OjTestCaseRepository:
             raise NotFoundError("OJ test case not found")
         await self.db.execute(delete(OjTestCase).where(OjTestCase.id.in_(unique_ids)))
 
+    async def list_by_datasets(self, dataset_ids: list[str]) -> list[OjTestCase]:
+        stmt = select(OjTestCase).where(OjTestCase.dataset_id.in_(dataset_ids))
+        return list((await self.db.execute(stmt)).scalars().all())
+
     async def page(self, query: OjTestCaseAdminPageQuery) -> tuple[list[OjTestCase], int]:
         stmt: Select[tuple[OjTestCase]] = select(OjTestCase)
         count_stmt = select(func.count(OjTestCase.id))

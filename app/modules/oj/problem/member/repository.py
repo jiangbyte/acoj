@@ -45,6 +45,10 @@ class OjProblemMemberRepository:
             raise NotFoundError("OJ problem member not found")
         await self.db.execute(delete(OjProblemMember).where(OjProblemMember.id.in_(unique_ids)))
 
+    async def list_by_problem(self, problem_id: str) -> list[OjProblemMember]:
+        stmt = select(OjProblemMember).where(OjProblemMember.problem_id == problem_id)
+        return list((await self.db.execute(stmt)).scalars().all())
+
     async def page(self, query: OjProblemMemberAdminPageQuery) -> tuple[list[OjProblemMember], int]:
         stmt: Select[tuple[OjProblemMember]] = select(OjProblemMember)
         count_stmt = select(func.count(OjProblemMember.id))

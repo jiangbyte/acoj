@@ -45,6 +45,10 @@ class OjProblemAssetRepository:
             raise NotFoundError("OJ problem asset not found")
         await self.db.execute(delete(OjProblemAsset).where(OjProblemAsset.id.in_(unique_ids)))
 
+    async def list_by_problem(self, problem_id: str) -> list[OjProblemAsset]:
+        stmt = select(OjProblemAsset).where(OjProblemAsset.problem_id == problem_id)
+        return list((await self.db.execute(stmt)).scalars().all())
+
     async def page(self, query: OjProblemAssetAdminPageQuery) -> tuple[list[OjProblemAsset], int]:
         stmt: Select[tuple[OjProblemAsset]] = select(OjProblemAsset)
         count_stmt = select(func.count(OjProblemAsset.id))

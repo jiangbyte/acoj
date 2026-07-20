@@ -48,6 +48,7 @@ declare module 'vue' {
     NDrawer: typeof import('naive-ui')['NDrawer']
     NDrawerContent: typeof import('naive-ui')['NDrawerContent']
     NDropdown: typeof import('naive-ui')['NDropdown']
+    NDynamicTags: typeof import('naive-ui')['NDynamicTags']
     NEl: typeof import('naive-ui')['NEl']
     NEllipsis: typeof import('naive-ui')['NEllipsis']
     NEmpty: typeof import('naive-ui')['NEmpty']
@@ -143,6 +144,7 @@ declare global {
   const NDrawer: typeof import('naive-ui')['NDrawer']
   const NDrawerContent: typeof import('naive-ui')['NDrawerContent']
   const NDropdown: typeof import('naive-ui')['NDropdown']
+  const NDynamicTags: typeof import('naive-ui')['NDynamicTags']
   const NEl: typeof import('naive-ui')['NEl']
   const NEllipsis: typeof import('naive-ui')['NEllipsis']
   const NEmpty: typeof import('naive-ui')['NEmpty']
@@ -196,4 +198,5 @@ declare global {
   const UserSelector: typeof import('./../components/selector/UserSelector.vue')['default']
   const VideoUpload: typeof import('./../components/upload/VideoUpload.vue')['default']
   const Watermark: typeof import('./../components/common/Watermark.vue')['default']
+  const '水印': typeof import('./../components/common/Watermark.vue')['default']
 }

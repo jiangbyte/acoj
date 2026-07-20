@@ -14,6 +14,7 @@ from app.modules.oj.problem.problem.schema import (
     OjProblemCreateRequest,
     OjProblemSchema,
     OjProblemUpdateRequest,
+    OjProblemWorkspaceResult,
 )
 from app.modules.oj.problem.problem.service import OjProblemService
 
@@ -26,14 +27,14 @@ router = APIRouter()
         Depends(require_account_type(AccountType.ADMIN)),
         Depends(require_permission("oj:problems:create")),
     ],
-    response_model=ApiResponse[None],
+    response_model=ApiResponse[str],
 )
 async def create(
     payload: OjProblemCreateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-) -> ApiResponse[None]:
-    await OjProblemService(db).create(payload)
-    return success()
+) -> ApiResponse[str]:
+    new_id = await OjProblemService(db).create(payload)
+    return success(new_id)
 
 
 @router.post(
@@ -126,3 +127,18 @@ async def page(
         status=status,
     )
     return success(await OjProblemService(db).page_admin(query))
+
+
+@router.get(
+    "/oj/problems/workspace",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("oj:problems:detail")),
+    ],
+    response_model=ApiResponse[OjProblemWorkspaceResult],
+)
+async def workspace(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    id: Annotated[Id, Query()],
+) -> ApiResponse[OjProblemWorkspaceResult]:
+    return success(await OjProblemService(db).workspace(IdQuery(id=id)))

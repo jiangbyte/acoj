@@ -1,6 +1,6 @@
 import { http } from '@/utils'
 
-const prefix = '/api/v1/admin/oj/problems'
+const prefix = '/api/v1/admin/oj/test-cases'
 
 export function page(params: any) {
   return http.get<any>(`${prefix}/page`, { params })
@@ -20,8 +20,4 @@ export function update(data: any) {
 
 export function remove(data: any) {
   return http.post<any>(`${prefix}/delete`, data)
-}
-
-export function workspace(params: { id: string }) {
-  return http.get<any>(`${prefix}/workspace`, { params })
 }

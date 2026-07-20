@@ -47,6 +47,10 @@ class OjProblemTagRelationRepository:
             delete(OjProblemTagRelation).where(OjProblemTagRelation.id.in_(unique_ids))
         )
 
+    async def list_by_problem(self, problem_id: str) -> list[OjProblemTagRelation]:
+        stmt = select(OjProblemTagRelation).where(OjProblemTagRelation.problem_id == problem_id)
+        return list((await self.db.execute(stmt)).scalars().all())
+
     async def page(
         self, query: OjProblemTagRelationAdminPageQuery
     ) -> tuple[list[OjProblemTagRelation], int]:

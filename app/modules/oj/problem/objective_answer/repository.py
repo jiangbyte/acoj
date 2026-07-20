@@ -45,6 +45,10 @@ class OjObjectiveAnswerRepository:
             raise NotFoundError("OJ objective answer not found")
         await self.db.execute(delete(OjObjectiveAnswer).where(OjObjectiveAnswer.id.in_(unique_ids)))
 
+    async def list_by_problem(self, problem_id: str) -> list[OjObjectiveAnswer]:
+        stmt = select(OjObjectiveAnswer).where(OjObjectiveAnswer.problem_id == problem_id)
+        return list((await self.db.execute(stmt)).scalars().all())
+
     async def page(
         self, query: OjObjectiveAnswerAdminPageQuery
     ) -> tuple[list[OjObjectiveAnswer], int]:

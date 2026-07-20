@@ -45,6 +45,10 @@ class OjProblemTagRepository:
             raise NotFoundError("OJ problem tag not found")
         await self.db.execute(delete(OjProblemTag).where(OjProblemTag.id.in_(unique_ids)))
 
+    async def list_by_ids(self, tag_ids: list[str]) -> list[OjProblemTag]:
+        stmt = select(OjProblemTag).where(OjProblemTag.id.in_(tag_ids))
+        return list((await self.db.execute(stmt)).scalars().all())
+
     async def page(self, query: OjProblemTagAdminPageQuery) -> tuple[list[OjProblemTag], int]:
         stmt: Select[tuple[OjProblemTag]] = select(OjProblemTag)
         count_stmt = select(func.count(OjProblemTag.id))

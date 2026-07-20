@@ -45,6 +45,10 @@ class OjProblemSampleRepository:
             raise NotFoundError("OJ problem sample not found")
         await self.db.execute(delete(OjProblemSample).where(OjProblemSample.id.in_(unique_ids)))
 
+    async def list_by_problem(self, problem_id: str) -> list[OjProblemSample]:
+        stmt = select(OjProblemSample).where(OjProblemSample.problem_id == problem_id)
+        return list((await self.db.execute(stmt)).scalars().all())
+
     async def page(self, query: OjProblemSampleAdminPageQuery) -> tuple[list[OjProblemSample], int]:
         stmt: Select[tuple[OjProblemSample]] = select(OjProblemSample)
         count_stmt = select(func.count(OjProblemSample.id))
