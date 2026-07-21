@@ -141,16 +141,7 @@ export const useRouteStore = defineStore<'route-store', RouteState, RouteGetters
           return fetchUserRoutes()
         }
 
-        return [
-          {
-            id: 'static',
-            name: 'Static',
-            code: 'STATIC',
-            client: 'ADMIN',
-            sort: 0,
-            resources: staticRoutes,
-          },
-        ]
+        return staticRoutes
       },
 
       /**
