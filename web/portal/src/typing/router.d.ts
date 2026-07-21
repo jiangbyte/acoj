@@ -65,6 +65,9 @@ declare module 'vue-router' {
     // 资源描述，前端暂不展示，保留给后续扩展。
     description?: string | null
 
+    // 布局类型，null/"default" 使用 Layout，"fullscreen" 为独立全屏页面。
+    layout?: string | null
+
     // 是否允许匿名访问；未显式声明且未命中公开路径配置时默认要求登录。
     public?: boolean
   }
@@ -109,6 +112,7 @@ declare global {
       is_affix: boolean
       status: ResourceStatus
       description?: string | null
+      layout?: string | null
     }
 
     interface ResourceModule {

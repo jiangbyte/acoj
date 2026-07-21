@@ -134,6 +134,9 @@ defineExpose({
           <NDescriptionsItem :label="'描述'">
             {{ displayValue(state.resource.description) }}
           </NDescriptionsItem>
+          <NDescriptionsItem :label="'布局'">
+            {{ displayValue(state.resource.layout) }}
+          </NDescriptionsItem>
           <NDescriptionsItem :label="'创建时间'">
             {{ formatDateTime(state.resource.created_at) }}
           </NDescriptionsItem>

@@ -26,6 +26,7 @@ class ResourceCreateRequest(ApiSchema):
     is_affix: bool = False
     status: StatusEnum = StatusEnum.ENABLED
     description: str | None = None
+    layout: str | None = Field(default=None, max_length=255)
     extra: dict = Field(default_factory=dict)
 
 
@@ -73,6 +74,7 @@ class SysResourceSchema(ApiSchema):
     is_affix: bool
     status: str
     description: str | None = None
+    layout: str | None = None
     extra: dict
     created_at: datetime
     created_by: str | None = None
