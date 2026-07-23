@@ -1,110 +1,133 @@
 from enum import StrEnum
 
 
-class MessageTargetScope(StrEnum):
-    """消息目标范围。"""
+class ConversationType(StrEnum):
+    DIRECT = "DIRECT"
+    GROUP = "GROUP"
 
-    ALL = "ALL"
-    SPECIFIC = "SPECIFIC"
+
+class ConversationStatus(StrEnum):
+    ACTIVE = "ACTIVE"
+    DISABLED = "DISABLED"
+
+
+class ConversationMemberRole(StrEnum):
+    OWNER = "OWNER"
+    ADMIN = "ADMIN"
+    MEMBER = "MEMBER"
+
+
+class MessageType(StrEnum):
+    TEXT = "TEXT"
+    IMAGE = "IMAGE"
+    FILE = "FILE"
+    SYSTEM = "SYSTEM"
 
 
 class MessageContentType(StrEnum):
-    """内容格式。"""
-
     TEXT = "TEXT"
     RICH = "RICH"
+    MARKDOWN = "MARKDOWN"
+
+
+class MessageSenderType(StrEnum):
+    USER = "USER"
+    SYSTEM = "SYSTEM"
+
+
+class GroupStatus(StrEnum):
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
+    DISSOLVED = "DISSOLVED"
+
+
+class GroupJoinMode(StrEnum):
+    FREE = "FREE"
+    APPROVAL = "APPROVAL"
+    INVITE_ONLY = "INVITE_ONLY"
+
+
+class GroupJoinRequestStatus(StrEnum):
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+
+
+class FriendStatus(StrEnum):
+    ACTIVE = "ACTIVE"
+    DELETED = "DELETED"
+
+
+class FriendRequestStatus(StrEnum):
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+
+
+class NotificationCategory(StrEnum):
+    ORDER = "ORDER"
+    APPROVAL = "APPROVAL"
+    SYSTEM = "SYSTEM"
+    SECURITY = "SECURITY"
+    BIZ = "BIZ"
 
 
 class NotificationStatus(StrEnum):
-    """通知状态。"""
-
     DRAFT = "DRAFT"
     PUBLISHED = "PUBLISHED"
     REVOKED = "REVOKED"
 
 
 class NotificationSeverity(StrEnum):
-    """通知等级。"""
-
     INFO = "INFO"
     SUCCESS = "SUCCESS"
     WARNING = "WARNING"
     ERROR = "ERROR"
-
-
-class MessageGroupStatus(StrEnum):
-    """消息群组状态。"""
-
-    ENABLED = "ENABLED"
-    DISABLED = "DISABLED"
-
-
-class MessageThreadType(StrEnum):
-    """会话类型。"""
-
-    DIRECT = "DIRECT"
-    GROUP = "GROUP"
-    SYSTEM = "SYSTEM"
-
-
-class MessageThreadStatus(StrEnum):
-    """会话状态。"""
-
-    ACTIVE = "ACTIVE"
-    CLOSED = "CLOSED"
-
-
-class MessageSenderType(StrEnum):
-    """消息发送方类型。"""
-
-    USER = "USER"
-    SYSTEM = "SYSTEM"
-
-
-class TodoPriority(StrEnum):
-    """待办优先级。"""
-
-    LOW = "LOW"
-    NORMAL = "NORMAL"
-    HIGH = "HIGH"
     URGENT = "URGENT"
 
 
-class TodoStatus(StrEnum):
-    """待办状态。"""
+class TargetScope(StrEnum):
+    ALL = "ALL"
+    ACCOUNT_TYPE = "ACCOUNT_TYPE"
+    SPECIFIC = "SPECIFIC"
 
+
+class AnnouncementStatus(StrEnum):
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
+    REVOKED = "REVOKED"
+
+
+class DeviceType(StrEnum):
+    WEB = "WEB"
+    IOS = "IOS"
+    ANDROID = "ANDROID"
+    MINIPROGRAM = "MINIPROGRAM"
+    DESKTOP = "DESKTOP"
+
+
+class PushProvider(StrEnum):
+    APNS = "APNS"
+    FCM = "FCM"
+    HUAWEI = "HUAWEI"
+    XIAOMI = "XIAOMI"
+
+
+class OfflineEventType(StrEnum):
+    NEW_MESSAGE = "NEW_MESSAGE"
+    NEW_NOTIFICATION = "NEW_NOTIFICATION"
+    NEW_ANNOUNCEMENT = "NEW_ANNOUNCEMENT"
+    FRIEND_REQUEST = "FRIEND_REQUEST"
+    GROUP_JOIN_REQUEST = "GROUP_JOIN_REQUEST"
+
+
+class OfflineMessageStatus(StrEnum):
     PENDING = "PENDING"
-    IN_PROGRESS = "IN_PROGRESS"
-    COMPLETED = "COMPLETED"
-    CANCELLED = "CANCELLED"
+    DELIVERED = "DELIVERED"
 
 
-class TodoAssigneeStatus(StrEnum):
-    """待办处理状态。"""
-
-    PENDING = "PENDING"
-    IN_PROGRESS = "IN_PROGRESS"
-    COMPLETED = "COMPLETED"
-    CANCELLED = "CANCELLED"
-
-class FriendStatus(StrEnum):
-    """好友关系状态。"""
-
-    ACTIVE = "ACTIVE"
-    DELETED = "DELETED"
-
-
-class FriendRequestStatus(StrEnum):
-    """好友申请状态。"""
-
-    PENDING = "PENDING"
-    ACCEPTED = "ACCEPTED"
-    REJECTED = "REJECTED"
-
-
-class GroupJoinRequestStatus(StrEnum):
-    """入群申请状态。"""
-
-    PENDING = "PENDING"
-    ACCEPTED = "ACCEPTED"
-    REJECTED = "REJECTED"
+class AttachmentType(StrEnum):
+    FILE = "FILE"
+    IMAGE = "IMAGE"
+    VIDEO = "VIDEO"
+    AUDIO = "AUDIO"

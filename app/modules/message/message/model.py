@@ -1,219 +1,77 @@
+"""MsgMessage - chat message, immutable (only revocable)."""
+
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, DateTime, Index, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Index, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.modules.message.enums import (
-    GroupJoinRequestStatus,
-    MessageContentType,
-    MessageGroupStatus,
-    MessageSenderType,
-    MessageTargetScope,
-    MessageThreadStatus,
-    MessageThreadType,
-    NotificationSeverity,
-    NotificationStatus,
-    TodoAssigneeStatus,
-    TodoPriority,
-    TodoStatus,
-)
 from app.platform.db.base import Base
-from app.platform.db.mixins import TimestampMixin
 from app.platform.id_generator.snowflake import generate_snowflake_id
 
 
-class MsgGroup(Base, TimestampMixin):
-    """消息群组，与 IAM 用户组无关。"""
-
-    __tablename__ = "msg_group"
-
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
-    name: Mapped[str] = mapped_column(String(128), nullable=False, comment="群组名称")
-    owner_account_type: Mapped[str | None] = mapped_column(String(32), comment="群主账户类型")
-    owner_account_id: Mapped[str | None] = mapped_column(String(64), comment="群主账户ID")
-    avatar: Mapped[str | None] = mapped_column(String(500), comment="群头像")
-    status: Mapped[str] = mapped_column(
-        String(32),
-        default=MessageGroupStatus.ENABLED.value,
-        nullable=False,
-        comment="状态",
-    )
-    description: Mapped[str | None] = mapped_column(Text, comment="描述")
-    extra: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False, comment="扩展信息")
-
-
-class MsgGroupMember(Base):
-    """消息群组成员。"""
-
-    __tablename__ = "msg_group_member"
-    __table_args__ = (
-        UniqueConstraint("group_id", "account_type", "account_id", name="uq_msg_group_member_account"),
-        Index("ix_msg_group_member_account", "account_type", "account_id"),
-    )
-
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
-    group_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="群组ID")
-    account_type: Mapped[str] = mapped_column(String(32), nullable=False, comment="账户类型")
-    account_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="账户ID")
-    nickname: Mapped[str | None] = mapped_column(String(64), comment="群昵称")
-    is_muted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="是否免打扰")
-    joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, comment="加入时间")
-    left_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="退出时间")
-
-
-class MsgThread(Base, TimestampMixin):
-    """消息会话。"""
-
-    __tablename__ = "msg_thread"
-    __table_args__ = (
-        Index("ix_msg_thread_type_status_last", "thread_type", "status", "last_message_at"),
-        Index("ix_msg_thread_group", "group_id"),
-    )
-
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
-    thread_type: Mapped[str] = mapped_column(
-        String(32),
-        default=MessageThreadType.DIRECT.value,
-        nullable=False,
-        comment="会话类型",
-    )
-    title: Mapped[str | None] = mapped_column(String(255), comment="会话标题")
-    group_id: Mapped[str | None] = mapped_column(String(64), comment="消息群组ID")
-    created_account_type: Mapped[str | None] = mapped_column(String(32), comment="创建账户类型")
-    created_account_id: Mapped[str | None] = mapped_column(String(64), comment="创建账户ID")
-    status: Mapped[str] = mapped_column(
-        String(32),
-        default=MessageThreadStatus.ACTIVE.value,
-        nullable=False,
-        comment="状态",
-    )
-    last_message_id: Mapped[str | None] = mapped_column(String(64), comment="最后消息ID")
-    last_message_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="最后消息时间")
-    extra: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False, comment="扩展信息")
-
-
-class MsgThreadParticipant(Base):
-    """会话参与者，聚合未读数量，列表查询不需要逐消息扫描。"""
-
-    __tablename__ = "msg_thread_participant"
-    __table_args__ = (
-        UniqueConstraint("thread_id", "account_type", "account_id", name="uq_msg_thread_participant_account"),
-        Index("ix_msg_thread_participant_account", "account_type", "account_id"),
-    )
-
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
-    thread_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="会话ID")
-    account_type: Mapped[str] = mapped_column(String(32), nullable=False, comment="账户类型")
-    account_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="账户ID")
-    unread_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False, comment="未读数")
-    last_read_message_id: Mapped[str | None] = mapped_column(String(64), comment="最后已读消息ID")
-    last_read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="最后阅读时间")
-    is_muted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="是否免打扰")
-    joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, comment="加入时间")
-    left_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="退出时间")
-
-
-class MsgMessage(Base, TimestampMixin):
-    """会话消息，parent_id 用于回复。"""
+class MsgMessage(Base):
+    """Chat message. Not editable, only revocable (is_revoked).
+    Does NOT extend TimestampMixin — only created_at is needed (updated doesn't apply)."""
 
     __tablename__ = "msg_message"
     __table_args__ = (
-        Index("ix_msg_message_thread_created", "thread_id", "created_at"),
-        Index("ix_msg_message_parent", "parent_id"),
+        Index("ix_msg_msg_conv_created", "conversation_id", "created_at"),
+        Index("ix_msg_msg_parent", "parent_id"),
+        Index("ix_msg_msg_sender", "sender_account_type", "sender_account_id"),
     )
 
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
-    thread_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="会话ID")
-    parent_id: Mapped[str | None] = mapped_column(String(64), comment="回复消息ID")
-    sender_type: Mapped[str] = mapped_column(
-        String(32),
-        default=MessageSenderType.USER.value,
-        nullable=False,
-        comment="发送方类型",
-    )
-    sender_account_type: Mapped[str | None] = mapped_column(String(32), comment="发送账户类型")
-    sender_account_id: Mapped[str | None] = mapped_column(String(64), comment="发送账户ID")
-    sender_name: Mapped[str | None] = mapped_column(String(128), comment="发送方快照名称")
-    content: Mapped[str] = mapped_column(Text, nullable=False, comment="内容")
-    content_type: Mapped[str] = mapped_column(
-        String(32),
-        default=MessageContentType.TEXT.value,
-        nullable=False,
-        comment="内容格式",
-    )
-    reply_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False, comment="回复数")
-    is_revoked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="是否撤回")
-    extra: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False, comment="扩展信息")
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id)
+    conversation_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    msg_type: Mapped[str] = mapped_column(String(32), default="TEXT", nullable=False)
+    parent_id: Mapped[str | None] = mapped_column(String(64))
+    sender_type: Mapped[str] = mapped_column(String(32), default="USER", nullable=False)
+    sender_account_type: Mapped[str | None] = mapped_column(String(32))
+    sender_account_id: Mapped[str | None] = mapped_column(String(64))
+    sender_name: Mapped[str | None] = mapped_column(String(128))
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    content_type: Mapped[str] = mapped_column(String(32), default="TEXT", nullable=False)
+    reply_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_revoked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    extra: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
-class MsgMessageReceipt(Base):
-    """消息已读回执，保留精确已读扩展空间。"""
+class MsgMessageRead(Base):
+    """Cursor-based read tracking per account per conversation per terminal."""
 
-    __tablename__ = "msg_message_receipt"
+    __tablename__ = "msg_message_read"
     __table_args__ = (
-        UniqueConstraint("message_id", "account_type", "account_id", name="uq_msg_message_receipt_account"),
-        Index("ix_msg_message_receipt_account", "account_type", "account_id"),
+        Index("ix_msg_mread_account", "account_type", "account_id"),
+        # UniqueConstraint for cursor: one per conversation+account+terminal
     )
 
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
-    message_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="消息ID")
-    thread_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="会话ID")
-    account_type: Mapped[str] = mapped_column(String(32), nullable=False, comment="账户类型")
-    account_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="账户ID")
-    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="阅读时间")
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id)
+    conversation_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    account_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    account_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    last_read_message_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    last_read_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    terminal_id: Mapped[str | None] = mapped_column(String(64))
 
 
 class MsgMessageAttachment(Base):
-    """消息附件预留表。"""
+    """Message attachment, linked to sys_file for raw file storage."""
 
     __tablename__ = "msg_message_attachment"
-    __table_args__ = (Index("ix_msg_message_attachment_message", "message_id", "sort"),)
+    __table_args__ = (Index("ix_msg_mattach_message", "message_id", "sort"),)
 
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
-    message_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="消息ID")
-    name: Mapped[str] = mapped_column(String(255), nullable=False, comment="文件名")
-    url: Mapped[str] = mapped_column(String(1024), nullable=False, comment="文件地址")
-    content_type: Mapped[str | None] = mapped_column(String(128), comment="文件类型")
-    size: Mapped[int | None] = mapped_column(BigInteger, comment="文件大小")
-    sort: Mapped[int] = mapped_column(Integer, default=0, nullable=False, comment="排序")
-    extra: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False, comment="扩展信息")
-
-
-class MsgMessageReaction(Base):
-    """消息表情反应预留表。"""
-
-    __tablename__ = "msg_message_reaction"
-    __table_args__ = (
-        UniqueConstraint("message_id", "account_type", "account_id", "reaction", name="uq_msg_message_reaction_account"),
-        Index("ix_msg_message_reaction_message", "message_id"),
-    )
-
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
-    message_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="消息ID")
-    account_type: Mapped[str] = mapped_column(String(32), nullable=False, comment="账户类型")
-    account_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="账户ID")
-    reaction: Mapped[str] = mapped_column(String(64), nullable=False, comment="反应")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, comment="创建时间")
-
-
-class MsgGroupJoinRequest(Base, TimestampMixin):
-    """入群申请表。"""
-
-    __tablename__ = "msg_group_join_request"
-    __table_args__ = (
-        UniqueConstraint("group_id", "applicant_type", "applicant_id", name="uq_msg_group_join_request"),
-        Index("ix_msg_group_join_request_group", "group_id", "status"),
-        Index("ix_msg_group_join_request_applicant", "applicant_type", "applicant_id"),
-    )
-
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
-    group_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="群组ID")
-    applicant_type: Mapped[str] = mapped_column(String(32), nullable=False, comment="申请人账户类型")
-    applicant_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="申请人账户ID")
-    message: Mapped[str | None] = mapped_column(Text, comment="申请附言")
-    status: Mapped[str] = mapped_column(
-        String(32), default=GroupJoinRequestStatus.PENDING.value, nullable=False, comment="状态",
-    )
-    handled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="处理时间")
-    handled_by_type: Mapped[str | None] = mapped_column(String(32), comment="处理人账户类型")
-    handled_by_id: Mapped[str | None] = mapped_column(String(64), comment="处理人账户ID")
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id)
+    message_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    file_id: Mapped[str | None] = mapped_column(String(64))
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    url: Mapped[str] = mapped_column(String(1024), nullable=False)
+    content_type: Mapped[str | None] = mapped_column(String(128))
+    size: Mapped[int | None] = mapped_column(Integer)
+    attachment_type: Mapped[str] = mapped_column(String(32), default="FILE", nullable=False)
+    thumbnail_url: Mapped[str | None] = mapped_column(String(1024))
+    duration: Mapped[int | None] = mapped_column(Integer)
+    width: Mapped[int | None] = mapped_column(Integer)
+    height: Mapped[int | None] = mapped_column(Integer)
+    sort: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    extra: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
