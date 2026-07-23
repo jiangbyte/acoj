@@ -81,7 +81,6 @@ class CorsSettings(BaseSettings):
 
 
 class CelerySettings(BaseSettings):
-    model_config = SettingsConfigDict(extra="ignore")
     broker_url: str = "amqp://guest:guest@127.0.0.1:5672//"
     worker_log_level: str = "INFO"
     beat_log_level: str = "INFO"
