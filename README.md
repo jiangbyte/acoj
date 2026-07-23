@@ -98,21 +98,24 @@ cp .env.example .env
 vim .env
 python scripts/migrate.py
 python scripts/seed_super_admin.py
-python scripts/dev.py
+./entrypoint.sh
 ```
 
 `.env.example` 是带注释的配置模板，复制后需要按本机环境取消注释并填写 `DB__URL`、`REDIS__URL`、
 `CELERY__BROKER_URL` 和 `STORAGE__PROVIDER` 等关键项。轻量本地开发可以把存储切到 `local`。
 
-默认后端地址为 `http://127.0.0.1:8000`，接口文档为 `/docs`。安装后也可以使用命令入口：
+`entrypoint.sh` 同时启动 Gunicorn (API)、Celery Worker 和 Celery Beat。开发和生产的启动方式完全一致，
+避免两套行为差异。默认后端地址为 `http://127.0.0.1:8000`，接口文档为 `/docs`。
+
+如果需要单独启停某部分：
 
 ```bash
-hei-fastapi
+gunicorn app.main:app -c gunicorn.conf.py          # 仅 API
+celery -A app.worker.main:celery_app worker ...     # 仅 worker
+celery -A app.worker.main:celery_app beat --scheduler redbeat.RedBeatScheduler ...  # 仅 beat
 ```
 
-代码默认配置偏向本地开发：`APP__DEBUG=true`、`APP__WORKERS=1`、`CELERY__AUTO_START_ENABLED=true`。
-FastAPI 启动时会在应用生命周期内拉起 Celery worker 和 beat。生产和 Docker 镜像默认关闭内嵌
-Celery，建议拆分 API、worker、beat 容器运行。
+代码默认配置偏向本地开发：`APP__DEBUG=true`、`APP__WORKERS=1`。
 
 ### Web 管理端开发
 
@@ -183,7 +186,7 @@ VITE_API_URL="http://127.0.0.1:8000"
 后端：
 
 ```bash
-python scripts/dev.py
+./entrypoint.sh
 python scripts/test.py
 python scripts/lint.py
 python scripts/migrate.py
@@ -224,18 +227,17 @@ pnpm build:h5
 常用配置项：
 
 - `APP__HOST` / `APP__PORT`：监听地址和端口。
-- `APP__DEBUG`：开发模式。开启时 Uvicorn reload 生效，并固定单 worker。
-- `APP__WORKERS`：API worker 数，`0` 表示按 CPU 自动计算，受 `APP__WORKER_MAX` 限制。
+- `APP__DEBUG`：开发模式。开启时 Gunicorn sentry/reload 生效（取决具体配置），并固定单 worker。
+- `APP__WORKERS`：API worker 数，`0` 表示按 CPU 自动计算，受 `APP__WORKER_MAX` 限制（由 Gunicorn 控制）。
 - `DB__URL`：数据库连接地址，默认 PostgreSQL asyncpg。
 - `DB__POOL_SIZE` / `DB__MAX_OVERFLOW`：单个进程的数据库连接池容量。
 - `DB__POOL_TIMEOUT_SECONDS`：连接池获取连接超时时间。
 - `DB__POOL_PRE_PING` / `DB__POOL_RECYCLE_SECONDS`：连接健康检查和回收，降低空闲断连影响。
 - `AUDIT__OPERATION_QUEUE_SIZE`：操作审计异步写库队列容量，队列满会丢弃审计日志但不阻塞主请求。
-- `REDIS__URL`：Redis 地址，用于会话、权限注册表、授权缓存、密码重置 token 和 beat lock。
+- `REDIS__URL`：Redis 地址，用于会话、权限注册表、授权缓存、密码重置 token 和 redbeat 调度器存储。
 - `MAIL__HOST` / `MAIL__PORT` / `MAIL__FROM_EMAIL`：SMTP 配置，用于忘记密码重置链接邮件。
 - `MAIL__ADMIN_PASSWORD_RESET_URL` / `MAIL__PORTAL_PASSWORD_RESET_URL`：邮件中的重置密码前端链接地址。
 - `CELERY__BROKER_URL`：RabbitMQ broker 地址。
-- `CELERY__AUTO_START_ENABLED`：是否由 API 进程内嵌自启动 Celery worker/beat。
 - `CELERY__WORKER_WITHOUT_MINGLE` / `CELERY__WORKER_WITHOUT_GOSSIP`：兼容新版 RabbitMQ 的 worker 启动选项。
 - `STORAGE__PROVIDER`：文件存储方式，可选 `local`、`minio`、`s3`、`oss`。
 - `STORAGE__PUBLIC_PATH`：本地文件公开访问前缀，默认 `/api/v1/files`。
@@ -259,7 +261,7 @@ pnpm build:h5
 APP__DEBUG=true
 APP__WORKERS=1
 REDIS__URL=redis://127.0.0.1:6379/0
-CELERY__AUTO_START_ENABLED=true
+CELERY__BROKER_URL=amqp://admin:123456@127.0.0.1:5672//
 STORAGE__PROVIDER=local
 STORAGE__PUBLIC_PATH=/api/v1/files
 STORAGE__LOCAL_ROOT=storage
@@ -271,6 +273,8 @@ OBSERVABILITY__ENABLED=false
 
 ## Docker 部署
 
+后端镜像入口使用 tini 作为 PID 1，Gunicorn (UvicornWorker) 处理 API 请求，同时后台运行 Celery Worker 和 Celery Beat (redbeat 调度器)。
+
 ### 后端镜像
 
 ```bash
@@ -279,15 +283,26 @@ docker build -t hei-fastapi-backend .
 
 后端镜像特点：
 
-- 入口为 `CMD ["python", "-m", "app.main"]`。
-- 入口不是固定单 worker；`app.main` 会读取 `APP__WORKERS` 并传给 Uvicorn。
+- 入口为 `ENTRYPOINT ["tini", "--"]` + `CMD ["/app/entrypoint.sh"]`。
+- 启动后一个容器同时运行 **API (Gunicorn + UvicornWorker)**、**Celery Worker**、**Celery Beat**。
+- tini 是 Docker 官方推荐的 init 进程，负责 SIGTERM 转发和僵尸进程回收。
+- Celery Beat 使用 **celery-redbeat** 调度器，内置 Redis `SET NX` 锁，多副本部署时只有第一个容器实际运行 beat，节点死亡锁 TTL 到期后自动转移。
 - 镜像默认 `APP__DEBUG=false`、`APP__WORKERS=0`、`APP__WORKER_MAX=4`。
-- `APP__WORKERS=0` 时按 CPU 自动计算 worker 数，并受 `APP__WORKER_MAX` 限制。
-- 镜像默认 `CELERY__AUTO_START_ENABLED=false`，API 容器不会内嵌启动 Celery。
+- `APP__WORKERS=0` 时按 CPU 自动计算 worker 数，并受 `APP__WORKER_MAX` 限制（由 Gunicorn 控制）。
 - 镜像默认本地存储 `/app/storage`，需要挂载 volume。
 - 当前 Dockerfile 会复制构建上下文中的 `.env` 到镜像内；不要把生产密钥写进参与构建的 `.env`。
 - 镜像只复制 `app/`，不复制 `scripts/`、`migrations/` 和 `alembic.ini`。
 - 镜像不自动执行 Alembic 迁移，也不内置初始化超管脚本。
+
+```bash
+docker run -d \
+  --name hei-fastapi-server \
+  --env-file .env \
+  -e APP__DEBUG=false \
+  -v hei-fastapi-storage:/app/storage \
+  -p 8000:8000 \
+  hei-fastapi-backend
+```
 
 迁移和初始化建议在源码环境执行：
 
@@ -298,123 +313,32 @@ python scripts/seed_super_admin.py
 
 如需在容器内执行迁移或 seed，需要自行扩展镜像，额外复制 `alembic.ini`、`migrations/` 和 `scripts/`。
 
-### 单容器轻量部署
+### 多副本部署
 
-只适合本地、演示或非常小的单机部署。API 会在进程内自启动 Celery worker/beat。此模式下 beat
-会走项目内置 Redis lock，多个 API 实例同时启动时只有抢到锁的实例会启动 beat。
-
-此模式必须固定 `APP__WORKERS=1`，否则一个容器内多个 API worker 都会进入应用生命周期，容易拉起多组
-内嵌 Celery 进程。
+多副本直接同镜像扩容。所有容器共享 Redis 锁，redbeat 确保仅一个 beat 实例调度定时任务。
 
 ```bash
-docker run -d \
-  --name hei-fastapi-server \
-  --env-file .env \
-  -e APP__DEBUG=false \
-  -e APP__WORKERS=1 \
-  -e CELERY__AUTO_START_ENABLED=true \
-  -v hei-fastapi-storage:/app/storage \
-  -p 8000:8000 \
-  hei-fastapi-backend
+docker run -d --name hei-fastapi-1 --env-file .env -v hei-fastapi-storage:/app/storage -p 8001:8000 hei-fastapi-backend
+docker run -d --name hei-fastapi-2 --env-file .env -v hei-fastapi-storage:/app/storage -p 8002:8000 hei-fastapi-backend
 ```
 
-### 单机单副本分离部署
+redbeat 锁行为：
 
-用于验证角色拆分的最小形态：1 个 API 容器、1 个 worker 容器、1 个 beat 容器。API 不再内嵌 Celery；
-worker 消费任务，beat 定时投递任务。
-
-```bash
-docker run -d \
-  --name hei-fastapi-api \
-  --env-file .env \
-  -e APP__DEBUG=false \
-  -e APP__WORKERS=1 \
-  -e CELERY__AUTO_START_ENABLED=false \
-  -v hei-fastapi-storage:/app/storage \
-  -p 8000:8000 \
-  hei-fastapi-backend
-
-docker run -d \
-  --name hei-fastapi-worker \
-  --env-file .env \
-  -e CELERY__AUTO_START_ENABLED=false \
-  -v hei-fastapi-storage:/app/storage \
-  hei-fastapi-backend \
-  python -m celery -A app.worker.main:celery_app worker --without-mingle --without-gossip --loglevel INFO --pool solo --concurrency 1
-
-docker run -d \
-  --name hei-fastapi-beat \
-  --env-file .env \
-  -e CELERY__AUTO_START_ENABLED=false \
-  -v hei-fastapi-storage:/app/storage \
-  hei-fastapi-backend \
-  python -m celery -A app.worker.main:celery_app beat --loglevel INFO --schedule /app/.runtime/celerybeat-schedule
-```
-
-### 多副本分离部署
-
-多副本按角色扩容：
-
-- API：可多副本，前面放 nginx / SLB。每个 API 容器内部也可通过 `APP__WORKERS` 启动多个 Uvicorn worker。
-- Worker：可多副本，多个 worker 共同消费同一个 RabbitMQ 队列。
-- Beat：必须单副本。直接运行 `celery beat` 不会经过项目内置 `CELERY__BEAT_LOCK_KEY`，多副本会重复投递定时任务。
-
-示例：2 个 API、2 个 worker、1 个 beat。
-
-```bash
-docker run -d \
-  --name hei-fastapi-api-1 \
-  --env-file .env \
-  -e APP__DEBUG=false \
-  -e APP__WORKERS=0 \
-  -e CELERY__AUTO_START_ENABLED=false \
-  -v hei-fastapi-storage:/app/storage \
-  -p 8001:8000 \
-  hei-fastapi-backend
-
-docker run -d \
-  --name hei-fastapi-api-2 \
-  --env-file .env \
-  -e APP__DEBUG=false \
-  -e APP__WORKERS=0 \
-  -e CELERY__AUTO_START_ENABLED=false \
-  -v hei-fastapi-storage:/app/storage \
-  -p 8002:8000 \
-  hei-fastapi-backend
-
-docker run -d \
-  --name hei-fastapi-worker-1 \
-  --env-file .env \
-  -e CELERY__AUTO_START_ENABLED=false \
-  -v hei-fastapi-storage:/app/storage \
-  hei-fastapi-backend \
-  python -m celery -A app.worker.main:celery_app worker --without-mingle --without-gossip --loglevel INFO --pool solo --concurrency 1
-
-docker run -d \
-  --name hei-fastapi-worker-2 \
-  --env-file .env \
-  -e CELERY__AUTO_START_ENABLED=false \
-  -v hei-fastapi-storage:/app/storage \
-  hei-fastapi-backend \
-  python -m celery -A app.worker.main:celery_app worker --without-mingle --without-gossip --loglevel INFO --pool solo --concurrency 1
-
-docker run -d \
-  --name hei-fastapi-beat \
-  --env-file .env \
-  -e CELERY__AUTO_START_ENABLED=false \
-  -v hei-fastapi-storage:/app/storage \
-  hei-fastapi-backend \
-  python -m celery -A app.worker.main:celery_app beat --loglevel INFO --schedule /app/.runtime/celerybeat-schedule
-```
+| 场景 | 行为 |
+|---|---|
+| 首节点启动 | SET NX → 获锁 → 运行 beat |
+| 后续节点启动 | SET NX → 锁已存在 → 静默等待 |
+| 持有锁节点宕机 | TTL 到期 → 自动释放 → 其他节点接管 |
+| 正常扩缩容/重启 | beat 退出 → 释放锁 → 重新竞争 |
 
 多副本注意事项：
 
-- 所有 API / worker / beat 必须使用同一组 `DB__URL`、`REDIS__URL`、`CELERY__BROKER_URL`。
-- API 侧连接上限约为 `API 容器数 * 实际 APP worker 数 * (DB__POOL_SIZE + DB__MAX_OVERFLOW)`。
+- 所有副本必须使用同一组 `DB__URL`、`REDIS__URL`、`CELERY__BROKER_URL`。
+- API 连接上限约为 `副本数 * 实际 APP worker 数 * (DB__POOL_SIZE + DB__MAX_OVERFLOW)`。
 - worker / beat 也会创建数据库连接池，需要计入数据库最大连接数。
 - 单机多容器可以共用 `-v hei-fastapi-storage:/app/storage`。
-- 多机部署时 Docker 本地 volume 不共享，应改用 S3 / MinIO / OSS，或使用 NFS 等共享存储挂载到所有 API 和 worker。
-- `CELERY__BEAT_LOCK_KEY` 只保护 API 内嵌自启动 beat 模式，不保护独立 `celery beat` 容器。
+- 多机部署时 Docker 本地 volume 不共享，应改用 S3 / MinIO / OSS，或使用 NFS 等共享存储。
+- 多副本部署时 `ID_GENERATOR__WORKER_ID` / `ID_GENERATOR__DATACENTER_ID` 应按实例规划，避免雪花 ID 节点重复。
 - 多实例部署时 `ID_GENERATOR__WORKER_ID` / `ID_GENERATOR__DATACENTER_ID` 应按实例规划，避免雪花 ID 节点重复。
 
 ## 前端 Docker
@@ -563,6 +487,8 @@ Celery app 入口：
 ```bash
 app.worker.main:celery_app
 ```
+
+使用 **celery-redbeat** 作为调度器，从 Redis 读取定时任务，内置分布式锁保证多副本只有一个 beat 运行。
 
 当前内置定时任务：
 
