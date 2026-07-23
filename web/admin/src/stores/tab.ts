@@ -97,7 +97,7 @@ export const useTabStore = defineStore('tab-store', {
      */
     addTab(route: RouteLocationNormalizedLoaded) {
       if (
-        route.meta.is_fullscreen ||
+        route.meta.layout === 'fullscreen' ||
         !isTabResource(route.meta.resource_type) ||
         this.hasExistTab(route.fullPath)
       ) {

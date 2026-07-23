@@ -64,12 +64,8 @@ class OjProblemCreateRequest(ApiSchema):
     points: float = 100.0
     partial: bool = False
     allow_languages: list[str] = Field(default_factory=list)
-    spj_language_id: str | None = Field(default=None, max_length=64)
-    spj_source: str | None = None
-    interactor_language_id: str | None = Field(default=None, max_length=64)
-    interactor_source: str | None = None
-    remote_provider: str | None = Field(default=None, max_length=64)
-    remote_problem_id: str | None = Field(default=None, max_length=128)
+    group_id: str | None = Field(default=None, max_length=64)
+    license_id: str | None = Field(default=None, max_length=64)
     accepted_count: int = 0
     submit_count: int = 0
     ac_rate: float = 0.0

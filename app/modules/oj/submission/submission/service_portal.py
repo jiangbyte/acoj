@@ -10,6 +10,7 @@ from app.core.exceptions.business import BusinessError, NotFoundError
 from app.modules.oj.enums import OjJudgeMode, OjSubmitStatus
 from app.modules.oj.judge.language.model import OjLanguage
 from app.modules.oj.problem.dataset.model import OjDataset
+from app.modules.oj.problem.judge_config.model import OjProblemJudgeConfig
 from app.modules.oj.problem.problem.model import OjProblem
 from app.modules.oj.problem.test_case.model import OjTestCase
 from app.modules.oj.submission.source.model import OjSubmissionSource
@@ -22,6 +23,12 @@ from app.platform.mq.producer import event_producer
 class OjPortalSubmitService:
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def _load_judge_config(self, problem_id: str) -> OjProblemJudgeConfig | None:
+        result = await self.db.execute(
+            select(OjProblemJudgeConfig).where(OjProblemJudgeConfig.problem_id == problem_id)
+        )
+        return result.scalar_one_or_none()
 
     async def submit(
         self,
@@ -40,11 +47,11 @@ class OjPortalSubmitService:
         if judge_mode not in (OjJudgeMode.STANDARD.value, OjJudgeMode.SPECIAL_JUDGE.value, OjJudgeMode.INTERACTIVE.value):
             raise BusinessError(f"不支持的判题模式: {judge_mode}")
 
-        # SPJ 模式必须提供 spj_source
-        if judge_mode == OjJudgeMode.SPECIAL_JUDGE.value and not problem.spj_source:
+        # 加载判题配置（SPJ / interactor / remote）
+        judge_config = await self._load_judge_config(problem_id)
+        if judge_mode == OjJudgeMode.SPECIAL_JUDGE.value and (not judge_config or not judge_config.spj_source):
             raise BusinessError("SPJ 题目必须提供 spj_source")
-        # 交互模式必须提供 interactor_source
-        if judge_mode == OjJudgeMode.INTERACTIVE.value and not problem.interactor_source:
+        if judge_mode == OjJudgeMode.INTERACTIVE.value and (not judge_config or not judge_config.interactor_source):
             raise BusinessError("交互式题目必须提供 interactor_source")
 
         # 2. 校验语言
@@ -86,7 +93,7 @@ class OjPortalSubmitService:
 
         # 5. 打包 JudgeRequest 发送 MQ
         judge_request = await self._build_judge_request(
-            submission_id, problem, language, source, test_cases
+            submission_id, problem, judge_config, language, source, test_cases
         )
 
         await event_producer.publish(
@@ -102,6 +109,7 @@ class OjPortalSubmitService:
         self,
         submission_id: str,
         problem: OjProblem,
+        judge_config: OjProblemJudgeConfig | None,
         language: OjLanguage | None,
         source: str,
         test_cases: list[OjTestCase],
@@ -147,12 +155,12 @@ class OjPortalSubmitService:
             }
 
         # SPJ 模式：加载 SPJ checker
-        if problem.judge_mode == OjJudgeMode.SPECIAL_JUDGE.value:
-            if not problem.spj_language_id:
+        if problem.judge_mode == OjJudgeMode.SPECIAL_JUDGE.value and judge_config:
+            if not judge_config.spj_language_id:
                 raise BusinessError("SPJ 题目必须设置 spj_language_id")
-            spj_lang = await self.db.get(OjLanguage, problem.spj_language_id)
+            spj_lang = await self.db.get(OjLanguage, judge_config.spj_language_id)
             if not spj_lang:
-                raise BusinessError(f"SPJ checker 语言未找到: {problem.spj_language_id}")
+                raise BusinessError(f"SPJ checker 语言未找到: {judge_config.spj_language_id}")
             request["spj"] = {
                 "language": {
                     "key": spj_lang.key,
@@ -161,16 +169,16 @@ class OjPortalSubmitService:
                     "compile_command": spj_lang.compile_command,
                     "run_command": spj_lang.run_command,
                 },
-                "source": problem.spj_source,
+                "source": judge_config.spj_source,
             }
 
         # 交互模式：加载交互器
-        if problem.judge_mode == OjJudgeMode.INTERACTIVE.value:
-            if not problem.interactor_language_id:
+        if problem.judge_mode == OjJudgeMode.INTERACTIVE.value and judge_config:
+            if not judge_config.interactor_language_id:
                 raise BusinessError("交互式题目必须设置 interactor_language_id")
-            interactor_lang = await self.db.get(OjLanguage, problem.interactor_language_id)
+            interactor_lang = await self.db.get(OjLanguage, judge_config.interactor_language_id)
             if not interactor_lang:
-                raise BusinessError(f"交互器语言未找到: {problem.interactor_language_id}")
+                raise BusinessError(f"交互器语言未找到: {judge_config.interactor_language_id}")
             request["interactor"] = {
                 "language": {
                     "key": interactor_lang.key,
@@ -179,7 +187,7 @@ class OjPortalSubmitService:
                     "compile_command": interactor_lang.compile_command,
                     "run_command": interactor_lang.run_command,
                 },
-                "source": problem.interactor_source,
+                "source": judge_config.interactor_source,
                 "time_limit_ms": problem.time_limit_ms * 2,
                 "memory_limit_kb": problem.memory_limit_kb,
             }

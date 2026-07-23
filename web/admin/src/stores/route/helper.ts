@@ -10,9 +10,6 @@ const routeResourceTypes: AppRoute.ResourceType[] = ['CATALOG', 'MENU', 'PAGE']
 // 能点击跳转的资源类型。目录只承担分组作用，不直接渲染 RouterLink。
 const clickableResourceTypes: AppRoute.ResourceType[] = ['MENU', 'PAGE']
 
-// 当前先用前端白名单兜底独立全屏页，后端补字段后仍可继续兼容。
-const fullscreenRoutePaths = new Set(['/message/im'])
-const fullscreenRouteCodes = new Set(['message-im'])
 
 const innerAppRoutes: RouteRecordRaw[] = [
   {
@@ -173,7 +170,7 @@ function standardizeRoutes(resources: AppRoute.RowRoute[]) {
       is_affix: resource.is_affix,
       status: resource.status,
       description: resource.description,
-      is_fullscreen: isFullscreenResource(resource),
+      layout: resource.layout ?? null,
       meta: { ...resource },
     }
 
@@ -201,11 +198,7 @@ function createRouteName(resource: AppRoute.RowRoute) {
 }
 
 function isFullscreenResource(resource: AppRoute.RowRoute) {
-  return Boolean(
-    resource.is_fullscreen ||
-      fullscreenRoutePaths.has(resource.path ?? '') ||
-      fullscreenRouteCodes.has(resource.code),
-  )
+  return resource.layout === 'fullscreen'
 }
 
 /**

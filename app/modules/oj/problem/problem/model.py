@@ -15,7 +15,7 @@ from app.platform.id_generator.snowflake import generate_snowflake_id
 
 
 class OjProblem(Base, TimestampMixin):
-    """题目主表，承载题面、限制、统计和判题模式入口。"""
+    """题目主表，承载题面、限制和统计信息。判题配置（SPJ / interactor / remote）已拆分至 OjProblemJudgeConfig。"""
 
     __tablename__ = "oj_problem"
     __table_args__ = (
@@ -71,12 +71,8 @@ class OjProblem(Base, TimestampMixin):
         nullable=False,
         comment="允许语言ID列表",
     )
-    spj_language_id: Mapped[str | None] = mapped_column(String(64), comment="Special Judge 语言ID")
-    spj_source: Mapped[str | None] = mapped_column(Text, comment="Special Judge 源码")
-    interactor_language_id: Mapped[str | None] = mapped_column(String(64), comment="交互器语言ID")
-    interactor_source: Mapped[str | None] = mapped_column(Text, comment="交互器源码")
-    remote_provider: Mapped[str | None] = mapped_column(String(64), comment="远程判题提供方")
-    remote_problem_id: Mapped[str | None] = mapped_column(String(128), comment="远程题目ID")
+    group_id: Mapped[str | None] = mapped_column(String(64), comment="分组ID")
+    license_id: Mapped[str | None] = mapped_column(String(64), comment="授权协议ID")
     accepted_count: Mapped[int] = mapped_column(
         BigInteger, default=0, nullable=False, comment="通过次数"
     )

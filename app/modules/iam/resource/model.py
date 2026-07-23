@@ -59,6 +59,7 @@ class SysResource(Base, TimestampMixin):
         comment="状态",
     )
     description: Mapped[str | None] = mapped_column(Text, comment="描述")
+    layout: Mapped[str | None] = mapped_column(String(255), comment="布局类型")
     extra: Mapped[dict] = mapped_column(JSON, default=dict, comment="扩展信息")
 
 

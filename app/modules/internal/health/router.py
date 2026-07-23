@@ -11,7 +11,6 @@ from app.core.schema.health import (
 from app.platform.cache.redis import get_redis
 from app.platform.db.session import get_session_factory
 from app.platform.storage.manager import get_storage
-from app.platform.tasks.autostart import celery_process_manager
 from app.platform.tasks.celery_app import celery_app
 
 router = APIRouter()
@@ -32,11 +31,6 @@ async def ready() -> ReadyHealthResponse:
         celery_broker=HealthCheckItem(
             enabled=bool(settings.celery.broker_url),
             ok=False,
-            detail=None,
-        ),
-        celery_autostart=HealthCheckItem(
-            enabled=settings.celery.auto_start_enabled,
-            ok=True,
             detail=None,
         ),
         storage=HealthCheckItem(enabled=True, ok=False, detail=None),
@@ -69,11 +63,6 @@ async def ready() -> ReadyHealthResponse:
             checks.celery_broker.detail = "connection ok"
         except Exception as exc:
             checks.celery_broker.detail = _safe_detail(exc)
-    if checks.celery_autostart.enabled:
-        status = celery_process_manager.status()
-        checks.celery_autostart.detail = (
-            f"processes={status['processes']}, beat_lock_held={status['beat_lock_held']}"
-        )
     try:
         storage = get_storage()
         checks.storage.ok = True
@@ -86,7 +75,6 @@ async def ready() -> ReadyHealthResponse:
             checks.database,
             checks.redis,
             checks.celery_broker,
-            checks.celery_autostart,
             checks.storage,
         ]
         if component.enabled

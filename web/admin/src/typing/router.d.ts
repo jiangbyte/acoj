@@ -65,6 +65,9 @@ declare module 'vue-router' {
     // 资源描述，前端暂不展示，保留给后续扩展。
     description?: string | null
 
+    // 布局类型，null/"default" 使用后台 Layout，"fullscreen" 为独立全屏页面。
+    layout?: string | null
+
     // 是否作为独立全屏页面渲染，不挂载到后台 Layout 下。
     is_fullscreen?: boolean
   }
@@ -97,6 +100,7 @@ declare global {
       resource_type: ResourceType
       module_id?: string | null
       module_id_name?: string | null
+      module_client?: 'ADMIN' | 'PORTAL' | null
       path?: string | null
       component?: string | null
       redirect?: string | null
@@ -109,6 +113,12 @@ declare global {
       is_affix: boolean
       status: ResourceStatus
       description?: string | null
+      extra?: Record<string, any>
+      layout?: string | null
+      created_at?: string | null
+      created_by?: string | null
+      updated_at?: string | null
+      updated_by?: string | null
       is_fullscreen?: boolean
     }
 

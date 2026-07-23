@@ -29,6 +29,7 @@ const defaultFormData = {
   is_affix: false,
   status: 'ENABLED',
   description: '',
+  layout: '' as string | null,
   extra: {},
 }
 const state = reactive({
@@ -120,6 +121,7 @@ async function fetchDetail(id: string) {
       color: response.data?.color ?? '',
       href: response.data?.href ?? '',
       description: response.data?.description ?? '',
+      layout: response.data?.layout ?? null,
       extra: response.data?.extra ?? {},
     })
   } finally {
@@ -153,6 +155,7 @@ async function submitForm() {
       is_cache: Boolean(state.formModel.is_cache),
       is_affix: Boolean(state.formModel.is_affix),
       description: toNullableString(state.formModel.description),
+      layout: toNullableString(state.formModel.layout),
       extra: state.formModel.extra ?? {},
     }
 
@@ -305,6 +308,9 @@ function findResourceNode(items: any[], id: string): any | null {
               type="textarea"
               :autosize="{ minRows: 3, maxRows: 5 }"
             />
+          </NFormItem>
+          <NFormItem :label="'布局'" path="layout">
+            <NInput v-model:value="state.formModel.layout" placeholder="default / fullscreen" />
           </NFormItem>
         </NForm>
       </NScrollbar>

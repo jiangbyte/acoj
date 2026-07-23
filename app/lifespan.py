@@ -15,7 +15,6 @@ from app.platform.module import (
     run_startup_hooks,
 )
 from app.platform.observability.tracing import shutdown_tracing
-from app.platform.tasks.autostart import celery_process_manager
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +29,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await sync_permission_registry(app)
     await init_http_client()
     await run_startup_hooks(module_specs)
-    celery_process_manager.start()
     try:
         yield
     finally:
-        await celery_process_manager.stop()
         await run_shutdown_hooks(module_specs)
         await stop_operation_audit_queue()
         await close_http_client()

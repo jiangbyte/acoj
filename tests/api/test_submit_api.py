@@ -36,6 +36,7 @@ def _print_separator(title: str):
 
 async def seed_data(db_session) -> dict[str, Any]:
     from app.modules.oj.judge.language.model import OjLanguage
+    from app.modules.oj.problem.judge_config.model import OjProblemJudgeConfig
     from app.modules.oj.problem.problem.model import OjProblem
     from app.modules.oj.problem.dataset.model import OjDataset
     from app.modules.oj.problem.test_case.model import OjTestCase
@@ -86,16 +87,28 @@ async def seed_data(db_session) -> dict[str, Any]:
         id=PROBLEM_SPJ_ID, code="v-test-spj", title="SPJ判题测试",
         judge_mode=OjJudgeMode.SPECIAL_JUDGE.value,
         time_limit_ms=2000, memory_limit_kb=262144, points=100.0,
-        spj_language_id=LANG_CPP17_ID,
-        spj_source='#include <iostream>\n#include <fstream>\n#include <string>\nint main(int argc, char* argv[]) {\n  if (argc < 3) return 3;\n  std::ifstream u(argv[2]);\n  if (!u) return 3;\n  std::string t;\n  while (u >> t) { if (t == "ACCEPT") { return 0; } }\n  return 1;\n}\n',
         allow_languages=[LANG_CPP17_ID],
         status="ENABLED", visibility="PUBLIC",
     )
     db_session.add(problem_spj)
+    db_session.add(OjProblemJudgeConfig(
+        problem_id=PROBLEM_SPJ_ID,
+        spj_language_id=LANG_CPP17_ID,
+        spj_source=(
+            '#include <iostream>\n#include <fstream>\n#include <string>\n'
+            'int main(int argc, char* argv[]) {\n'
+            '  if (argc < 3) return 3;\n'
+            '  std::ifstream u(argv[2]);\n'
+            '  if (!u) return 3;\n'
+            '  std::string t;\n'
+            '  while (u >> t) { if (t == "ACCEPT") { return 0; } }\n'
+            '  return 1;\n'
+            '}\n'
+        ),
+    ))
     ds_spj = OjDataset(id="ds-spj-test-001", problem_id=PROBLEM_SPJ_ID,
                        is_active=True, name="SPJ测试集", version="v1")
     db_session.add(ds_spj)
-    ds_std_id_after_flush = ds_spj.id  # 先 flush 确保有 id
     db_session.add(OjTestCase(
         id="tc-spj-001", dataset_id=ds_spj.id, case_no=1,
         case_type=OjTestCaseType.NORMAL.value,
@@ -107,12 +120,24 @@ async def seed_data(db_session) -> dict[str, Any]:
         id=PROBLEM_INTERACTIVE_ID, code="v-test-int", title="交互判题测试",
         judge_mode=OjJudgeMode.INTERACTIVE.value,
         time_limit_ms=2000, memory_limit_kb=262144, points=100.0,
-        interactor_language_id=LANG_CPP17_ID,
-        interactor_source='#include <iostream>\n#include <string>\nint main() {\n  std::cout << "Alice" << std::endl;\n  std::string r;\n  if (!std::getline(std::cin, r)) return 1;\n  if (r != "Hello, Alice!") return 1;\n  return 0;\n}\n',
         allow_languages=[LANG_CPP17_ID],
         status="ENABLED", visibility="PUBLIC",
     )
     db_session.add(problem_int)
+    db_session.add(OjProblemJudgeConfig(
+        problem_id=PROBLEM_INTERACTIVE_ID,
+        interactor_language_id=LANG_CPP17_ID,
+        interactor_source=(
+            '#include <iostream>\n#include <string>\n'
+            'int main() {\n'
+            '  std::cout << "Alice" << std::endl;\n'
+            '  std::string r;\n'
+            '  if (!std::getline(std::cin, r)) return 1;\n'
+            '  if (r != "Hello, Alice!") return 1;\n'
+            '  return 0;\n'
+            '}\n'
+        ),
+    ))
     ds_int = OjDataset(id="ds-int-test-001", problem_id=PROBLEM_INTERACTIVE_ID,
                        is_active=True, name="交互测试集", version="v1")
     db_session.add(ds_int)

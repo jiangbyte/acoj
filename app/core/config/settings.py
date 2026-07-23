@@ -81,6 +81,7 @@ class CorsSettings(BaseSettings):
 
 
 class CelerySettings(BaseSettings):
+    model_config = SettingsConfigDict(extra="ignore")
     broker_url: str = "amqp://guest:guest@127.0.0.1:5672//"
     worker_log_level: str = "INFO"
     beat_log_level: str = "INFO"
@@ -90,13 +91,6 @@ class CelerySettings(BaseSettings):
     worker_without_gossip: bool = True
     worker_remote_control_enabled: bool = False
     worker_cancel_long_running_tasks_on_connection_loss: bool = True
-    shutdown_timeout_seconds: float = 10.0
-    auto_start_enabled: bool = True
-    auto_start_worker_enabled: bool = True
-    auto_start_beat_enabled: bool = True
-    beat_lock_key: str = "process:celery:beat:lock"
-    beat_lock_ttl_seconds: int = 60
-    beat_lock_renew_seconds: int = 20
 
 
 class MQSettings(BaseSettings):
