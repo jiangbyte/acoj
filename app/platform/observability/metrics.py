@@ -92,19 +92,6 @@ file_upload_rejected_total = Counter(
     ["reason"],
     registry=registry,
 )
-celery_autostart_process_state = Gauge(
-    "celery_autostart_process_state",
-    "Celery auto-start managed process state",
-    ["process"],
-    registry=registry,
-)
-celery_beat_lock_state = Gauge(
-    "celery_beat_lock_state",
-    "Celery beat lock held by this process",
-    registry=registry,
-)
-
-
 def metrics_enabled() -> bool:
     return settings.observability.enabled and settings.observability.metrics_enabled
 
@@ -167,16 +154,6 @@ def record_operation_audit(module: str, action: str, success: bool) -> None:
 def record_file_upload_rejected(reason: str) -> None:
     if metrics_enabled():
         file_upload_rejected_total.labels(reason=reason).inc()
-
-
-def set_celery_process_state(process: str, running: bool) -> None:
-    if metrics_enabled():
-        celery_autostart_process_state.labels(process=process).set(1 if running else 0)
-
-
-def set_celery_beat_lock_state(held: bool) -> None:
-    if metrics_enabled():
-        celery_beat_lock_state.set(1 if held else 0)
 
 
 @contextmanager

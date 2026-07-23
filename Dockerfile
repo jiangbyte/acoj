@@ -4,6 +4,11 @@ FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/python:3.11-slim
 
 ARG PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 
+# tini — Docker 标准的 init 进程，处理信号转发和僵尸回收
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tini \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     APP__HOST=0.0.0.0 \
@@ -11,7 +16,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     APP__DEBUG=false \
     APP__WORKERS=0 \
     APP__WORKER_MAX=4 \
-    CELERY__AUTO_START_ENABLED=false \
     DB__POOL_SIZE=5 \
     DB__MAX_OVERFLOW=5 \
     DB__POOL_PRE_PING=true \
@@ -35,11 +39,13 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     python -c 'import os, subprocess, sys, tomllib; data = tomllib.load(open("pyproject.toml", "rb")); deps = data["project"]["dependencies"] + data["project"]["optional-dependencies"]["postgres"]; subprocess.check_call([sys.executable, "-m", "pip", "install", "--index-url", os.environ["PIP_INDEX_URL"], "--prefer-binary", *deps])'
 
 COPY app ./app
+COPY gunicorn.conf.py ./
+COPY entrypoint.sh ./
 
-RUN mkdir -p /app/storage /app/.runtime
+RUN chmod +x entrypoint.sh && mkdir -p /app/storage /app/.runtime
 
 VOLUME ["/app/storage"]
-
 EXPOSE 8000
 
-CMD ["python", "-m", "app.main"]
+ENTRYPOINT ["tini", "--"]
+CMD ["/app/entrypoint.sh"]
