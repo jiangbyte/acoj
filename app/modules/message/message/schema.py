@@ -51,6 +51,8 @@ class MessageSchema(ApiSchema):
     sender_account_type: str | None = None
     sender_account_id: str | None = None
     sender_name: str | None = None
+    sender_avatar: str | None = None
+    sender_nickname: str | None = None
     content: str
     content_type: str
     reply_count: int = 0

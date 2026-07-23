@@ -6,10 +6,13 @@ Generated at: 2026-07-23 16:28:54
 
 from datetime import datetime, timezone
 
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config.enums import AccountType
+from app.platform.storage.url import resolve_file_url
 from app.core.exceptions.business import BusinessError, NotFoundError
-from app.core.response.pagination import PageData, build_page
+from app.core.response.pagination import PageData, PageQuery, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.core.security.session import SessionPayload
 from app.platform.db.transaction import transactional
@@ -26,12 +29,33 @@ from app.modules.message.conversation.schema import (
     MuteConversationRequest,
     PinConversationRequest,
 )
+from app.modules.user.admin.repository import AdminUserProfileRepository
+from app.modules.user.portal.repository import PortalUserProfileRepository
 
 
 class MsgConversationService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.repo = MsgConversationRepository(db)
+
+    def _pick_profile_repo(self, account_type: str):
+        """根据账户类型返回对应的 profile 仓库"""
+        if account_type == AccountType.ADMIN.value:
+            return AdminUserProfileRepository(self.db)
+        if account_type == AccountType.PORTAL.value:
+            return PortalUserProfileRepository(self.db)
+        raise BusinessError(f"Unsupported account type: {account_type}")
+
+    async def _get_profile(self, account_type: str, account_id: str):
+        repo = self._pick_profile_repo(account_type)
+        return await repo.get_by_account_id(account_id)
+
+    async def _get_profiles_batch(self, account_type: str, account_ids: list[str]) -> dict[str, object]:
+        if not account_ids:
+            return {}
+        repo = self._pick_profile_repo(account_type)
+        profiles = await repo.list_by_account_ids(list(dict.fromkeys(account_ids)))
+        return {p.account_id: p for p in profiles}
 
     # ── Generated CRUD ─────────────────────────────────────────────────────────
 
@@ -47,11 +71,13 @@ class MsgConversationService:
         async with transactional(self.db):
             await self.repo.delete_many(payload.ids)
 
-    async def detail(self, query: IdQuery) -> MsgConversationSchema:
+    async def detail(self, query: IdQuery, session: SessionPayload | None = None) -> MsgConversationSchema:
         conversation = await self.repo.get_required(query.id)
         schema = to_schema(MsgConversationSchema, conversation)
         members = await self.repo.list_members(query.id)
         schema.members = to_schema_list(ConversationMemberSchema, members)
+        if session and schema.conversation_type == "DIRECT":
+            await self._enrich_conversation_list([schema], session)
         return schema
 
     async def page_admin(self, query: MsgConversationAdminPageQuery) -> PageData[MsgConversationSchema]:
@@ -67,17 +93,31 @@ class MsgConversationService:
         my_account_type = str(session.account_type)
         my_account_id = session.account_id
 
-        existing = await self.repo.find_direct_conversation(
-            my_account_type, my_account_id,
-            payload.account_type, payload.account_id,
+        # Generate a deterministic lock key from sorted user pair to serialize
+        # concurrent creates for the same pair (prevents duplicate conversations).
+        pair = sorted(
+            [(my_account_type, my_account_id), (payload.account_type, payload.account_id)],
+            key=lambda x: (x[0], x[1]),
         )
-        if existing:
-            schema = to_schema(MsgConversationSchema, existing)
-            members = await self.repo.list_members(existing.id)
-            schema.members = to_schema_list(ConversationMemberSchema, members)
-            return schema
+        lock_key_str = f"{pair[0][0]}:{pair[0][1]}:{pair[1][0]}:{pair[1][1]}"
 
         async with transactional(self.db):
+            # Acquire advisory lock to serialize creates for this user pair
+            await self.db.execute(
+                text("SELECT pg_advisory_xact_lock(hashtext('direct'), hashtext(:key))"),
+                {"key": lock_key_str},
+            )
+
+            existing = await self.repo.find_direct_conversation(
+                my_account_type, my_account_id,
+                payload.account_type, payload.account_id,
+            )
+            if existing:
+                schema = to_schema(MsgConversationSchema, existing)
+                members = await self.repo.list_members(existing.id)
+                schema.members = to_schema_list(ConversationMemberSchema, members)
+                return schema
+
             conv_request = MsgConversationCreateRequest(
                 conversation_type="DIRECT",
                 status="ACTIVE",
@@ -90,13 +130,17 @@ class MsgConversationService:
         schema = to_schema(MsgConversationSchema, conversation)
         members = await self.repo.list_members(conversation.id)
         schema.members = to_schema_list(ConversationMemberSchema, members)
+        # Dynamically set title/avatar based on current user's perspective
+        await self._enrich_conversation_list([schema], session)
         return schema
 
     # ── My conversations ────────────────────────────────────────────────────────
 
-    async def my_list(self, session: SessionPayload) -> list[MsgConversationSchema]:
-        conversations = await self.repo.list_my_conversations(
-            str(session.account_type), session.account_id
+    async def my_list(
+        self, session: SessionPayload, page: PageQuery | None = None
+    ) -> PageData[MsgConversationSchema]:
+        conversations, total = await self.repo.list_my_conversations(
+            str(session.account_type), session.account_id, page
         )
         schemas: list[MsgConversationSchema] = []
         for conv in conversations:
@@ -106,7 +150,26 @@ class MsgConversationService:
             )
             if member:
                 schema.unread_count = member.unread_count
+
+            # Populate members list
+            members = await self.repo.list_members(conv.id)
+            schema.members = to_schema_list(ConversationMemberSchema, members)
+
             schemas.append(schema)
+
+        # Enrich DIRECT conversations with other party's name/avatar
+        await self._enrich_conversation_list(schemas, session)
+
+        # Batch load last message text
+        msg_ids = [s.last_message_id for s in schemas if s.last_message_id]
+        if msg_ids:
+            from app.modules.message.message.model import MsgMessage
+            stmt = select(MsgMessage.id, MsgMessage.content).where(MsgMessage.id.in_(list(dict.fromkeys(msg_ids))))
+            rows = list((await self.db.execute(stmt)).all())
+            msg_map = {row[0]: row[1] for row in rows}
+            for s in schemas:
+                if s.last_message_id and s.last_message_id in msg_map:
+                    s.last_message = msg_map[s.last_message_id]
 
         # Sort: pinned conversations first
         pinned_ids = set()
@@ -118,7 +181,30 @@ class MsgConversationService:
                 pinned_ids.add(s.id)
 
         schemas.sort(key=lambda s: (0 if s.id in pinned_ids else 1, 0))
-        return schemas
+
+        if page:
+            return build_page(page, total, schemas)
+        return build_page(PageQuery(size=total), total, schemas)
+
+    async def _enrich_conversation_list(
+        self, schemas: list[MsgConversationSchema], session: SessionPayload
+    ) -> None:
+        """为 DIRECT 会话填充对方的名称和头像"""
+        for schema in schemas:
+            if schema.conversation_type != "DIRECT" or not schema.members:
+                continue
+            other = next(
+                (m for m in schema.members
+                 if not (m.account_type == str(session.account_type) and m.account_id == session.account_id)),
+                None
+            )
+            if other:
+                profile = await self._get_profile(other.account_type, other.account_id)
+                if profile:
+                    if not schema.title:
+                        schema.title = getattr(profile, "nickname", None) or getattr(profile, "name", None)
+                    if not schema.avatar:
+                        schema.avatar = resolve_file_url(getattr(profile, "avatar", None))
 
     # ── Preferences ─────────────────────────────────────────────────────────────
 
@@ -153,3 +239,4 @@ class MsgConversationService:
         await self.repo.reset_unread(
             conversation_id, str(session.account_type), session.account_id
         )
+        await self.db.commit()

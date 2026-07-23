@@ -1,21 +1,26 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { messageApi } from '@/api'
 import MessageDetailModal from '@/components/message/MessageDetailModal.vue'
-import { formatDateTime } from '@/utils'
+import ChatModalPane from '@/components/message/ChatModalPane.vue'
+import { formatDateTime, resolveFileUrl } from '@/utils'
+import { NAvatar } from 'naive-ui'
+const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 import NoticeList, { type NoticeItem } from '../common/NoticeList.vue'
+import { useWebSocket } from '../../../views/message/use-websocket'
 
-const noticeTypes = [0, 1, 2] as const
 const pageSize = 8
 
-type NoticeType = (typeof noticeTypes)[number]
+type NoticeTab = 0 | 1
 type LoadMode = 'replace' | 'merge' | 'append'
 
 interface NoticeSource {
   id: string
-  type: NoticeType
+  type: NoticeTab
   title: string
   icon: string
+  avatar?: string
+  unreadCount?: number
   tagTitle?: string
   tagType?: NoticeItem['tagType']
   description?: string
@@ -23,6 +28,7 @@ interface NoticeSource {
   sourceType: string
   sourceId: string
   isRead: boolean
+  conversationType?: string
 }
 
 interface NoticeTabState {
@@ -35,102 +41,78 @@ interface NoticeTabState {
 }
 
 function createTabState(): NoticeTabState {
-  return {
-    records: [],
-    current: 0,
-    size: pageSize,
-    total: 0,
-    loading: false,
-    loaded: false,
-  }
+  return { records: [], current: 0, size: pageSize, total: 0, loading: false, loaded: false }
 }
 
-const tabStates = reactive<Record<NoticeType, NoticeTabState>>({
-  0: createTabState(),
-  1: createTabState(),
-  2: createTabState(),
-})
-const summary = ref({
-  notification_unread: 0,
-  message_unread: 0,
-  todo_pending: 0,
-  total: 0,
-})
-const currentTab = ref<NoticeType>(0)
+const tabStates = reactive<Record<NoticeTab, NoticeTabState>>({ 0: createTabState(), 1: createTabState() })
+const unreadCounts = reactive({ notification: 0, message: 0 })
+const currentTab = ref<NoticeTab>(0)
+const router = useRouter()
 const detailModalRef = ref<InstanceType<typeof MessageDetailModal> | null>(null)
-let eventSource: EventSource | null = null
-let pollTimer: number | null = null
+const chatModalRef = ref<InstanceType<typeof ChatModalPane> | null>(null)
 
 const groups = computed(() => ({
   0: tabStates[0].records.map(toNoticeItem),
   1: tabStates[1].records.map(toNoticeItem),
-  2: tabStates[2].records.map(toNoticeItem),
 }))
 
 const hasMore = computed(() => ({
   0: tabStates[0].records.length < tabStates[0].total,
   1: tabStates[1].records.length < tabStates[1].total,
-  2: tabStates[2].records.length < tabStates[2].total,
 }))
 
-const unreadCount = computed(() => summary.value.total)
+const unreadTotal = computed(() => unreadCounts.notification + unreadCounts.message)
 
-onMounted(() => {
-  refresh()
-  setupRealtime()
-  pollTimer = window.setInterval(refreshSummary, 60000)
-})
+onMounted(() => { refresh(); ws.connect() })
 
-onBeforeUnmount(() => {
-  eventSource?.close()
-  if (pollTimer) {
-    window.clearInterval(pollTimer)
-  }
-})
+/* ---- WebSocket 实时更新 ---- */
 
-watch(currentTab, (type) => {
-  if (!tabStates[type].loaded) {
-    void loadTab(type)
-  }
-})
-
-async function refresh() {
-  await Promise.all([refreshSummary(), loadInitialHistories()])
+let wsRefreshTimer: ReturnType<typeof setTimeout> | null = null
+function scheduleWsRefresh() {
+  if (wsRefreshTimer) return
+  wsRefreshTimer = setTimeout(() => {
+    wsRefreshTimer = null
+    refresh()
+  }, 2000)
 }
 
-async function refreshSummary() {
-  const response = await messageApi.summary()
-  summary.value = {
-    notification_unread: response.data?.notification_unread ?? 0,
-    message_unread: response.data?.message_unread ?? 0,
-    todo_pending: response.data?.todo_pending ?? 0,
-    total: response.data?.total ?? 0,
-  }
+const ws = useWebSocket({
+  onNewMessage() { scheduleWsRefresh() },
+  onNewNotification() { scheduleWsRefresh() },
+})
+
+watch(currentTab, (type) => { if (!tabStates[type].loaded) loadTab(type) })
+
+async function refresh() {
+  await Promise.all([refreshUnreadCounts(), loadInitialHistories()])
+}
+
+async function refreshUnreadCounts() {
+  try {
+    const nRes = await messageApi.notificationUnreadCount()
+    unreadCounts.notification = nRes.data ?? 0
+  } catch { /* ignore */ }
+  try {
+    const convList = await messageApi.conversationList()
+    unreadCounts.message = (convList.data?.records ?? []).reduce((s: number, c: any) => s + (c.unread_count ?? 0), 0)
+  } catch { /* ignore */ }
 }
 
 async function loadInitialHistories() {
   await Promise.all(
-    noticeTypes.map((type) => loadTab(type, 1, tabStates[type].loaded ? 'merge' : 'replace')),
+    ([0, 1] as NoticeTab[]).map((type) => loadTab(type, 1, tabStates[type].loaded ? 'merge' : 'replace')),
   )
 }
 
-async function refreshFirstPages() {
-  await Promise.all(noticeTypes.map((type) => loadTab(type, 1, 'merge')))
-}
-
-async function loadMore(type: NoticeType) {
+async function loadMore(type: NoticeTab) {
   const state = tabStates[type]
-  if (state.loading || state.records.length >= state.total) {
-    return
-  }
+  if (state.loading || state.records.length >= state.total) return
   await loadTab(type, state.current + 1, 'append')
 }
 
-async function loadTab(type: NoticeType, page = 1, mode: LoadMode = 'replace') {
+async function loadTab(type: NoticeTab, page = 1, mode: LoadMode = 'replace') {
   const state = tabStates[type]
-  if (state.loading) {
-    return
-  }
+  if (state.loading) return
   state.loading = true
   try {
     const response = await fetchHistoryPage(type, page, state.size)
@@ -138,226 +120,87 @@ async function loadTab(type: NoticeType, page = 1, mode: LoadMode = 'replace') {
     const incoming = (data.records ?? []).map((item: any) => mapHistoryItem(type, item))
     state.records = mergeNoticeRecords(state.records, incoming, mode)
     state.total = data.total ?? state.records.length
-    const responseCurrent = data.current ?? page
-    state.current =
-      mode === 'merge' && state.loaded ? Math.max(state.current, responseCurrent) : responseCurrent
+    state.current = data.current ?? page
     state.size = data.size ?? state.size
     state.loaded = true
-  } finally {
-    state.loading = false
-  }
+  } finally { state.loading = false }
 }
 
-function fetchHistoryPage(type: NoticeType, current: number, size: number) {
-  if (type === 0) {
-    return messageApi.myNotification({ current, size })
-  }
-  if (type === 1) {
-    return messageApi.myThreads({ current, size })
-  }
-  return messageApi.myTodos({ current, size, include_done: true })
-}
-
-function setupRealtime() {
-  eventSource = messageApi.createEventSource()
-  if (!eventSource) {
-    return
-  }
-  eventSource.addEventListener('summary', (event) => {
-    try {
-      const data = JSON.parse((event as MessageEvent).data)
-      summary.value = {
-        notification_unread: data.notification_unread ?? 0,
-        message_unread: data.message_unread ?? 0,
-        todo_pending: data.todo_pending ?? 0,
-        total: data.total ?? 0,
-      }
-      void refreshFirstPages()
-    } catch {
-      refresh()
-    }
-  })
+function fetchHistoryPage(type: NoticeTab, current: number, size: number) {
+  if (type === 0) return messageApi.notificationMyPage({ current, size })
+  return messageApi.conversationList({ current, size })
 }
 
 async function handleOpen(id: string) {
   const item = findNotice(id)
-  if (!item) {
+  if (!item) return
+  if (item.sourceType === 'message') {
+    await chatModalRef.value?.open(item.sourceId, {
+      title: item.title,
+      avatar: item.avatar,
+      conversationType: item.conversationType,
+    })
     return
   }
-  await detailModalRef.value?.open(item.sourceType as any, {
-    ...item,
-    id: item.sourceId,
-    is_read: item.isRead,
-    assignee_status: item.isRead ? 'IN_PROGRESS' : null,
-    unread_count: item.isRead ? 0 : 1,
-  })
+  await detailModalRef.value?.open({ ...item, id: item.sourceId, is_read: item.isRead })
 }
 
 function findNotice(id: string) {
-  for (const type of noticeTypes) {
+  for (const type of [0, 1] as NoticeTab[]) {
     const item = tabStates[type].records.find((notice) => notice.id === id)
-    if (item) {
-      return item
-    }
+    if (item) return item
   }
   return null
-}
-
-function applyLocalReadCount(item: NoticeSource) {
-  if (item.type === 0 && summary.value.notification_unread > 0) {
-    summary.value.notification_unread -= 1
-  } else if (item.type === 1 && summary.value.message_unread > 0) {
-    summary.value.message_unread -= 1
-  } else if (item.type === 2 && summary.value.todo_pending > 0) {
-    summary.value.todo_pending -= 1
-  }
-  summary.value.total = Math.max(0, summary.value.total - 1)
 }
 
 async function handleDetailChanged(payload: { type: string; id: string }) {
   const item = findNotice(`${payload.type}:${payload.id}`)
   if (item && !item.isRead) {
     item.isRead = true
-    applyLocalReadCount(item)
+    item.unreadCount = 0
+    if (payload.type === 'notification') unreadCounts.notification = Math.max(0, unreadCounts.notification - 1)
+    else unreadCounts.message = Math.max(0, unreadCounts.message - 1)
   }
-  await refreshSummary()
+  await refreshUnreadCounts()
 }
 
-function mergeNoticeRecords(
-  current: NoticeSource[],
-  incoming: NoticeSource[],
-  mode: LoadMode,
-): NoticeSource[] {
-  if (mode === 'replace') {
-    return incoming
-  }
-
+function mergeNoticeRecords(current: NoticeSource[], incoming: NoticeSource[], mode: LoadMode): NoticeSource[] {
+  if (mode === 'replace') return incoming
   const currentMap = new Map(current.map((item) => [item.id, item]))
-  const incomingMap = new Map(incoming.map((item) => [item.id, item]))
-  if (mode === 'append') {
-    const result = current.map((item) => mergeNoticeItem(item, incomingMap.get(item.id)))
-    incoming.forEach((item) => {
-      if (!currentMap.has(item.id)) {
-        result.push(item)
-      }
-    })
-    return result
-  }
-
-  const used = new Set<string>()
-  const result = incoming.map((item) => {
-    used.add(item.id)
-    return mergeNoticeItem(currentMap.get(item.id), item)
-  })
-  current.forEach((item) => {
-    if (!used.has(item.id)) {
-      result.push(item)
-    }
-  })
+  const result = current.map((item) => ({ ...item, ...incoming.find((i) => i.id === item.id) ?? {} }))
+  incoming.forEach((item) => { if (!currentMap.has(item.id)) result.push(item) })
   return result
 }
 
-function mergeNoticeItem(current?: NoticeSource, incoming?: NoticeSource): NoticeSource {
-  if (!incoming) {
-    return current!
-  }
-  if (!current) {
-    return incoming
-  }
-  return {
-    ...current,
-    ...incoming,
-    isRead: current.isRead || incoming.isRead,
-  }
-}
-
-function mapHistoryItem(type: NoticeType, item: any): NoticeSource {
+function mapHistoryItem(type: NoticeTab, item: any): NoticeSource {
   if (type === 0) {
-    const severity = normalizeEnum(item.severity)
     return {
-      id: `notification:${item.id}`,
-      type,
-      title: item.title,
-      icon: 'icon-park-outline:tips-one',
-      tagTitle: translateTag(severity, item.severity),
-      tagType: notificationTagType(severity),
+      id: `notification:${item.id}`, type,
+      title: item.title, icon: 'icon-park-outline:tips-one',
+      tagTitle: item.severity,
+      tagType: (['success','warning','error'] as any[]).includes((item.severity || '').toLowerCase()) ? (item.severity || '').toLowerCase() as any : 'info',
       description: item.content,
       date: formatDateTime(item.publish_at || item.created_at),
-      sourceType: 'notification',
-      sourceId: item.id,
+      sourceType: 'notification', sourceId: item.id,
       isRead: Boolean(item.is_read),
     }
   }
-  if (type === 1) {
-    const threadType = normalizeEnum(item.thread_type)
-    return {
-      id: `message:${item.id}`,
-      type,
-      title: item.title || '会话标题',
-      icon: 'icon-park-outline:message',
-      tagTitle: translateTag(threadType, item.thread_type),
-      tagType: 'info',
-      description: item.last_message?.content,
-      date: formatDateTime(item.last_message_at || item.updated_at || item.created_at),
-      sourceType: 'message',
-      sourceId: item.id,
-      isRead: (item.unread_count ?? 0) <= 0,
-    }
-  }
-
-  const priority = normalizeEnum(item.priority)
   return {
-    id: `todo:${item.id}`,
-    type,
-    title: item.title,
-    icon: 'icon-park-outline:checklist',
-    tagTitle: translateTag(priority, item.priority),
-    tagType: priorityTagType(priority),
-    description: item.content,
-    date: formatDateTime(item.due_at || item.updated_at || item.created_at),
-    sourceType: 'todo',
-    sourceId: item.id,
-    isRead: Boolean(item.assignee_status),
+    id: `message:${item.id}`, type,
+    title: item.title || '会话',
+    avatar: item.avatar,
+    conversationType: item.conversation_type,
+    description: item.last_message || '',
+    date: formatDateTime(item.last_message_at || item.created_at),
+    sourceType: 'message', sourceId: item.id,
+    unreadCount: item.unread_count ?? 0,
+    isRead: (item.unread_count ?? 0) <= 0,
   }
 }
 
 function toNoticeItem(item: NoticeSource): NoticeItem {
-  return {
-    ...item,
-    isRead: item.isRead,
-  }
+  return { ...item, isRead: item.isRead }
 }
-
-function translateTag(normalized: string, fallback: unknown) {
-  if (!normalized) {
-    return undefined
-  }
-  return String(fallback ?? normalized)
-}
-
-function normalizeEnum(value: unknown) {
-  return String(value ?? '').toLowerCase()
-}
-
-function notificationTagType(severity: string): NoticeItem['tagType'] {
-  const typeMap: Record<string, NoticeItem['tagType']> = {
-    success: 'success',
-    warning: 'warning',
-    error: 'error',
-  }
-  return typeMap[severity] || 'info'
-}
-
-function priorityTagType(priority: string): NoticeItem['tagType'] {
-  const typeMap: Record<string, NoticeItem['tagType']> = {
-    low: 'default',
-    normal: 'info',
-    high: 'warning',
-    urgent: 'error',
-  }
-  return typeMap[priority] || 'info'
-}
-
 </script>
 
 <template>
@@ -366,7 +209,7 @@ function priorityTagType(priority: string): NoticeItem['tagType'] {
       <n-tooltip placement="bottom" trigger="hover">
         <template #trigger>
           <CommonWrapper>
-            <n-badge :value="unreadCount" :max="99" style="color: unset">
+            <n-badge :value="unreadTotal" :max="99" style="color: unset">
               <NovaIcon icon="icon-park-outline:remind" />
             </n-badge>
           </CommonWrapper>
@@ -374,60 +217,49 @@ function priorityTagType(priority: string): NoticeItem['tagType'] {
         通知
       </n-tooltip>
     </template>
-    <n-tabs
-      v-model:value="currentTab"
-      type="line"
-      animated
-      justify-content="space-evenly"
-      class="w-390px"
-    >
+    <n-tabs v-model:value="currentTab" type="line" animated justify-content="space-evenly" class="w-390px">
       <n-tab-pane :name="0">
         <template #tab>
-          <n-space class="w-130px" justify="center">
-            通知
-            <n-badge type="info" :value="summary.notification_unread" :max="99" />
+          <n-space class="w-195px" justify="center">
+            通知<n-badge type="info" :value="unreadCounts.notification" :max="99" :show-zero="false" />
           </n-space>
         </template>
-        <NoticeList
-          :list="groups[0]"
-          :loading="tabStates[0].loading"
-          :has-more="hasMore[0]"
-          @open="handleOpen"
-          @load-more="loadMore(0)"
-        />
+        <NoticeList :list="groups[0]" :loading="tabStates[0].loading" :has-more="hasMore[0]" @open="handleOpen" @load-more="loadMore(0)" />
       </n-tab-pane>
       <n-tab-pane :name="1">
         <template #tab>
-          <n-space class="w-130px" justify="center">
-            消息
-            <n-badge type="warning" :value="summary.message_unread" :max="99" />
+          <n-space class="w-195px" justify="center">
+            消息<n-badge type="warning" :value="unreadCounts.message" :max="99" :show-zero="false" />
           </n-space>
         </template>
-        <NoticeList
-          :list="groups[1]"
-          :loading="tabStates[1].loading"
-          :has-more="hasMore[1]"
-          @open="handleOpen"
-          @load-more="loadMore(1)"
-        />
-      </n-tab-pane>
-      <n-tab-pane :name="2">
-        <template #tab>
-          <n-space class="w-130px" justify="center">
-            待办
-            <n-badge type="error" :value="summary.todo_pending" :max="99" />
-          </n-space>
-        </template>
-        <NoticeList
-          :list="groups[2]"
-          :loading="tabStates[2].loading"
-          :has-more="hasMore[2]"
-          @open="handleOpen"
-          @load-more="loadMore(2)"
-        />
+        <n-scrollbar style="height: 400px">
+          <div class="divide-y divide-gray-100/60">
+            <div v-for="conv in tabStates[1].records" :key="conv.id"
+              class="flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-gray-50/50 select-none"
+              @click="handleOpen(conv.id)">
+              <NAvatar v-if="conv.avatar" round :size="40" class="shrink-0" :src="resolveFileUrl(conv.avatar)" :img-props="avatarImgProps" />
+              <NAvatar v-else round :size="40" class="shrink-0">{{ conv.title?.charAt(0) || '?' }}</NAvatar>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                      <span class="message-ellipsis text-sm font-600">{{ conv.title }}</span>
+                      <n-badge v-if="conv.unreadCount" type="error" :value="conv.unreadCount" :max="99" />
+                    </div>
+                  </div>
+                  <span class="shrink-0 text-xs" style="color:var(--text-color-3)">{{ conv.date }}</span>
+                </div>
+                <div v-if="conv.description" class="message-ellipsis mt-0.5 text-xs" style="color:var(--text-color-3)">{{ conv.description }}</div>
+              </div>
+            </div>
+            <div v-if="hasMore[1]" class="py-3 text-center">
+              <n-button text size="small" :loading="tabStates[1].loading" @click.stop="loadMore(1)">加载更多</n-button>
+            </div>
+          </div>
+        </n-scrollbar>
       </n-tab-pane>
     </n-tabs>
   </n-popover>
-
   <MessageDetailModal ref="detailModalRef" @changed="handleDetailChanged" />
+  <ChatModalPane ref="chatModalRef" @changed="handleDetailChanged" />
 </template>

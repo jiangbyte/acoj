@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import AuthenticationError
 from app.core.security.session import session_store as redis_session_store
+from app.platform.cache.redis import get_redis
 from app.platform.db.session import get_session_factory
 from app.modules.message.terminal.repository import MsgTerminalRepository
 from app.modules.message.websocket.manager import ConnectionManager
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Singleton manager instance per process
-manager = ConnectionManager()
+manager = ConnectionManager(redis_client=get_redis())
 
 HEARTBEAT_INTERVAL = 30  # server sends pong every 30s
 HEARTBEAT_TIMEOUT = 90   # disconnect if no message for 90s
@@ -110,6 +111,9 @@ async def _process_message(msg: dict, account_type: str, account_id: str, termin
                 from app.modules.message.message.repository import MessageRepository
                 repo = MessageRepository(db)
                 await repo.mark_read(conversation_id, account_type, account_id, last_read_message_id, terminal_id)
+                # 同时重置会话成员的未读计数
+                from app.modules.message.conversation.repository import MsgConversationRepository
+                await MsgConversationRepository(db).reset_unread(conversation_id, account_type, account_id)
                 await db.commit()
 
     elif msg_type == "typing_start":
@@ -128,7 +132,7 @@ async def _process_message(msg: dict, account_type: str, account_id: str, termin
 
 async def _broadcast_typing(conversation_id: str, account_type: str, account_id: str,
                             terminal_id: str, is_typing: bool) -> None:
-    """Broadcast typing status to all members of the conversation on this instance."""
+    """Broadcast typing status to all members of the conversation (local + cross-worker via Redis)."""
     from app.platform.db.session import get_session_factory
     async with get_session_factory()() as db:
         from app.modules.message.conversation.repository import MsgConversationRepository
@@ -136,7 +140,7 @@ async def _broadcast_typing(conversation_id: str, account_type: str, account_id:
         for member in members:
             if member.account_type == account_type and member.account_id == account_id:
                 continue
-            await manager.send_to_user(member.account_type, member.account_id, {
+            await manager.route_to_user(member.account_type, member.account_id, {
                 "type": "typing",
                 "data": {
                     "conversation_id": conversation_id,
@@ -170,12 +174,11 @@ async def _send_offline_messages(account_type: str, account_id: str) -> None:
             if item.event_type == "NEW_MESSAGE":
                 msg = await db.get(MsgMessage, item.message_id)
                 if msg and not msg.is_revoked:
-                    messages.append({
-                        "event_type": item.event_type,
-                        "conversation_id": item.conversation_id,
-                        "message_id": item.message_id,
-                        "event_payload": item.event_payload,
-                    })
+                    # event_payload 格式: {"type": "new_message", "data": {完整消息schema}}
+                    # 提取 data 作为消息体直接返回给前端
+                    event_data = (item.event_payload or {}).get("data") or {}
+                    event_data["__offline_message_id"] = item.id
+                    messages.append(event_data)
 
         if messages:
             await manager.send_to_user(account_type, account_id, {
@@ -203,5 +206,5 @@ async def _set_offline(account_type: str, account_id: str, terminal_id: str) -> 
 
 
 async def on_new_message(account_type: str, account_id: str, message: dict) -> None:
-    """Called by message service to notify a user's WS connections on this instance."""
-    await manager.send_to_user(account_type, account_id, message)
+    """Called by message service to notify a user's WS connections across all workers."""
+    await manager.route_to_user(account_type, account_id, message)

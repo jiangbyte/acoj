@@ -100,7 +100,6 @@ declare global {
       resource_type: ResourceType
       module_id?: string | null
       module_id_name?: string | null
-      module_client?: 'ADMIN' | 'PORTAL' | null
       path?: string | null
       component?: string | null
       redirect?: string | null
@@ -113,7 +112,6 @@ declare global {
       is_affix: boolean
       status: ResourceStatus
       description?: string | null
-      extra?: Record<string, any>
       layout?: string | null
       created_at?: string | null
       created_by?: string | null
@@ -122,6 +120,12 @@ declare global {
       is_fullscreen?: boolean
     }
 
+    /**
+     * 前端按 module_id 分组后的资源模块结构。
+     *
+     * 后端已不再按模块聚合返回资源，改为返回扁平 RowRoute[]，
+     * 前端在 route store 中通过 groupResourcesByModule 自行分组。
+     */
     interface ResourceModule {
       id: string
       name: string

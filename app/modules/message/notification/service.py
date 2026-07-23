@@ -53,6 +53,7 @@ class MsgNotificationService:
 
     async def publish(self, payload: IdsRequest) -> None:
         """Set status=PUBLISHED and publish_at=now (only from DRAFT)."""
+        published = []
         async with transactional(self.db):
             for nid in payload.ids:
                 notification = await self.repo.get_required(nid)
@@ -61,7 +62,24 @@ class MsgNotificationService:
                 notification.status = NotificationStatus.PUBLISHED
                 notification.publish_at = datetime.utcnow()
                 self.db.add(notification)
+                published.append(notification)
             await self.db.flush()
+
+        # Push via WebSocket to target users
+        try:
+            from app.modules.message.websocket.handler import manager as ws_manager
+            for notification in published:
+                target_type = notification.target_account_type
+                target_id = notification.target_account_id
+                if notification.target_scope == "SPECIFIC" and target_type and target_id:
+                    schema = to_schema(MsgNotificationSchema, notification)
+                    ws_payload = {
+                        "type": "new_notification",
+                        "data": schema.model_dump(mode="json"),
+                    }
+                    await ws_manager.route_to_user(target_type, target_id, ws_payload)
+        except Exception:
+            pass
 
     async def revoke(self, payload: IdsRequest) -> None:
         """Set status=REVOKED and revoked_at=now (only from PUBLISHED)."""

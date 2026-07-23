@@ -24,7 +24,6 @@ const state = reactive({
   me: null as any,
   notifications: [] as any[],
   threads: [] as any[],
-  todos: [] as any[],
   profileForm: {
     name: '',
     nickname: '',
@@ -100,14 +99,12 @@ async function loadMe() {
 }
 
 async function loadMessage() {
-  const [notificationsResponse, threadsResponse, todosResponse] = await Promise.all([
-    messageApi.myNotification({ current: 1, size: 5 }),
-    messageApi.myThreads({ current: 1, size: 5 }),
-    messageApi.myTodos({ current: 1, size: 5, include_done: true }),
+  const [notificationsResponse, conversationsResponse] = await Promise.all([
+    messageApi.notificationMyPage({ current: 1, size: 5 }),
+    messageApi.conversationList(),
   ])
   state.notifications = notificationsResponse.data?.records ?? []
-  state.threads = threadsResponse.data?.records ?? []
-  state.todos = todosResponse.data?.records ?? []
+  state.threads = conversationsResponse.data?.records ?? []
 }
 
 function syncForms(data: any) {
@@ -243,7 +240,7 @@ async function refreshMe() {
   syncForms(data)
 }
 
-async function openDetail(type: 'notification' | 'message' | 'todo', item: any) {
+async function openDetail(type: 'notification' | 'message', item: any) {
   await detailModalRef.value?.open(type, item)
 }
 
@@ -476,27 +473,9 @@ function displayValue(value: unknown) {
                     class="cursor-pointer"
                     @click="openDetail('message', item)"
                   >
-                    <NThing :title="item.title || item.name || item.last_message_content">
+                    <NThing :title="item.title || item.name || '会话'">
                       <template #description>
                         {{ formatDateTime(item.updated_at || item.created_at) }}
-                      </template>
-                    </NThing>
-                  </NListItem>
-                </NList>
-                <NEmpty v-else class="py-12" :description="'暂无数据'" />
-              </NTabPane>
-
-              <NTabPane name="todos" :tab="'待办'">
-                <NList v-if="state.todos.length" bordered clickable hoverable>
-                  <NListItem
-                    v-for="item in state.todos"
-                    :key="item.id"
-                    class="cursor-pointer"
-                    @click="openDetail('todo', item)"
-                  >
-                    <NThing :title="item.title">
-                      <template #description>
-                        {{ formatDateTime(item.due_at || item.updated_at) }}
                       </template>
                     </NThing>
                   </NListItem>

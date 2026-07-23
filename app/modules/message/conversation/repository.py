@@ -10,6 +10,7 @@ from sqlalchemy import Select, and_, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import NotFoundError
+from app.core.response.pagination import PageQuery
 from app.modules.message.conversation.model import (
     MsgConversation,
     MsgConversationMember,
@@ -108,6 +109,7 @@ class MsgConversationRepository:
             .where(
                 and_(
                     MsgConversation.conversation_type == "DIRECT",
+                    MsgConversation.status == "ACTIVE",
                     MsgConversation.id.in_(member1),
                     MsgConversation.id.in_(member2),
                 )
@@ -117,8 +119,8 @@ class MsgConversationRepository:
         return (await self.db.execute(stmt)).scalars().first()
 
     async def list_my_conversations(
-        self, account_type: str, account_id: str
-    ) -> list[MsgConversation]:
+        self, account_type: str, account_id: str, page: PageQuery | None = None
+    ) -> tuple[list[MsgConversation], int]:
         """List conversations for a user, ordered by last_message_at DESC, pinned first."""
         member_subq = (
             select(MsgConversationMember.conversation_id)
@@ -130,12 +132,19 @@ class MsgConversationRepository:
                 )
             )
         )
+        # Count total
+        count_stmt = select(func.count()).select_from(MsgConversation).where(MsgConversation.id.in_(member_subq))
+        total = (await self.db.execute(count_stmt)).scalar() or 0
+
         stmt = (
             select(MsgConversation)
             .where(MsgConversation.id.in_(member_subq))
             .order_by(MsgConversation.last_message_at.desc().nullslast())
         )
-        return list((await self.db.execute(stmt)).scalars().all())
+        if page:
+            stmt = stmt.offset(page.offset).limit(page.size)
+        rows = list((await self.db.execute(stmt)).scalars().all())
+        return rows, total
 
     # ── Member management ───────────────────────────────────────────────────────
 
@@ -156,6 +165,21 @@ class MsgConversationRepository:
         self.db.add(member)
         await self.db.flush()
         return member
+
+    async def remove_member(
+        self, conversation_id: str, account_type: str, account_id: str
+    ) -> None:
+        """Soft-delete a conversation member by setting left_at."""
+        await self.db.execute(
+            update(MsgConversationMember)
+            .where(
+                MsgConversationMember.conversation_id == conversation_id,
+                MsgConversationMember.account_type == account_type,
+                MsgConversationMember.account_id == account_id,
+                MsgConversationMember.left_at.is_(None),
+            )
+            .values(left_at=datetime.now(timezone.utc))
+        )
 
     async def get_member(
         self, conversation_id: str, account_type: str, account_id: str

@@ -15,7 +15,6 @@ celery_app.conf.worker_cancel_long_running_tasks_on_connection_loss = (
 )
 celery_app.conf.redbeat_redis_url = settings.redis.url
 celery_app.conf.redbeat_lock_key = "redbeat:lock"
-celery_app.conf.redbeat_lock_timeout = 30
 
 from app.platform.tasks.redbeat_scheduler import sync_to_redbeat  # noqa: E402
 sync_to_redbeat(celery_app)

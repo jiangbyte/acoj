@@ -224,3 +224,4 @@ def register_current_user_routes(router: APIRouter) -> None:
 
 
 register_current_user_routes(portal_router)
+register_current_user_routes(admin_router)

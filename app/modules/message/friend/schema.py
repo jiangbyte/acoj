@@ -101,6 +101,7 @@ class SearchUserSchema(ApiSchema):
     """用户搜索结果"""
     account_type: str
     account_id: str
+    account: str | None = None
     name: str | None = None
     nickname: str | None = None
     avatar: str | None = None

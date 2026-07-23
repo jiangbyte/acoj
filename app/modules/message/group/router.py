@@ -134,6 +134,11 @@ async def admin_page(
 def register_current_user_routes():
     """Register group routes for the current authenticated user."""
 
+    @admin_router.post(
+        "/message/groups/create",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[MsgGroupSchema],
+    )
     @portal_router.post(
         "/message/groups/create",
         dependencies=[Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL))],
@@ -146,6 +151,11 @@ def register_current_user_routes():
     ) -> ApiResponse[MsgGroupSchema]:
         return success(await MsgGroupService(db).create_group(payload, session))
 
+    @admin_router.post(
+        "/message/groups/update",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[MsgGroupSchema],
+    )
     @portal_router.post(
         "/message/groups/update",
         dependencies=[Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL))],
@@ -158,6 +168,11 @@ def register_current_user_routes():
     ) -> ApiResponse[MsgGroupSchema]:
         return success(await MsgGroupService(db).update_group(payload, session))
 
+    @admin_router.post(
+        "/message/groups/dissolve",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[None],
+    )
     @portal_router.post(
         "/message/groups/dissolve",
         dependencies=[Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL))],
@@ -171,6 +186,11 @@ def register_current_user_routes():
         await MsgGroupService(db).dissolve(payload.id, session)
         return success()
 
+    @admin_router.post(
+        "/message/groups/leave",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[None],
+    )
     @portal_router.post(
         "/message/groups/leave",
         dependencies=[Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL))],
@@ -184,6 +204,11 @@ def register_current_user_routes():
         await MsgGroupService(db).leave(payload.id, session)
         return success()
 
+    @admin_router.get(
+        "/message/groups/my-list",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[list[MsgGroupSchema]],
+    )
     @portal_router.get(
         "/message/groups/my-list",
         dependencies=[Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL))],
@@ -195,6 +220,28 @@ def register_current_user_routes():
     ) -> ApiResponse[list[MsgGroupSchema]]:
         return success(await MsgGroupService(db).my_list(session))
 
+    @admin_router.get(
+        "/message/groups/search",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[list[MsgGroupSchema]],
+    )
+    @portal_router.get(
+        "/message/groups/search",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL))],
+        response_model=ApiResponse[list[MsgGroupSchema]],
+    )
+    async def search_groups(
+        db: Annotated[AsyncSession, Depends(get_db_session)],
+        session: Annotated[SessionPayload, Depends(get_current_session)],
+        keyword: str = Query(min_length=1),
+    ) -> ApiResponse[list[MsgGroupSchema]]:
+        return success(await MsgGroupService(db).search_groups(keyword, session))
+
+    @admin_router.get(
+        "/message/groups/detail",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[MsgGroupSchema],
+    )
     @portal_router.get(
         "/message/groups/detail",
         dependencies=[Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL))],
@@ -209,6 +256,11 @@ def register_current_user_routes():
 
     # ==================== Members ====================
 
+    @admin_router.post(
+        "/message/groups/members/add",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[None],
+    )
     @portal_router.post(
         "/message/groups/members/add",
         dependencies=[Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL))],
@@ -222,6 +274,11 @@ def register_current_user_routes():
         await MsgGroupService(db).add_members(payload, session)
         return success()
 
+    @admin_router.post(
+        "/message/groups/members/remove",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[None],
+    )
     @portal_router.post(
         "/message/groups/members/remove",
         dependencies=[Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL))],
@@ -235,6 +292,11 @@ def register_current_user_routes():
         await MsgGroupService(db).remove_members(payload, session)
         return success()
 
+    @admin_router.post(
+        "/message/groups/members/set-role",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[None],
+    )
     @portal_router.post(
         "/message/groups/members/set-role",
         dependencies=[Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL))],
@@ -248,6 +310,11 @@ def register_current_user_routes():
         await MsgGroupService(db).set_member_role(payload, session)
         return success()
 
+    @admin_router.get(
+        "/message/groups/members/list",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[list[GroupMemberSchema]],
+    )
     @portal_router.get(
         "/message/groups/members/list",
         dependencies=[Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL))],
@@ -262,6 +329,11 @@ def register_current_user_routes():
 
     # ==================== Join Requests ====================
 
+    @admin_router.post(
+        "/message/groups/join-requests/apply",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[None],
+    )
     @portal_router.post(
         "/message/groups/join-requests/apply",
         dependencies=[Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL))],
@@ -275,6 +347,11 @@ def register_current_user_routes():
         await MsgGroupService(db).apply_join(payload, session)
         return success()
 
+    @admin_router.post(
+        "/message/groups/join-requests/handle",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[None],
+    )
     @portal_router.post(
         "/message/groups/join-requests/handle",
         dependencies=[Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL))],
@@ -288,6 +365,11 @@ def register_current_user_routes():
         await MsgGroupService(db).handle_join_request(payload, session)
         return success()
 
+    @admin_router.get(
+        "/message/groups/join-requests/my",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[list[GroupJoinRequestSchema]],
+    )
     @portal_router.get(
         "/message/groups/join-requests/my",
         dependencies=[Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL))],
@@ -299,6 +381,11 @@ def register_current_user_routes():
     ) -> ApiResponse[list[GroupJoinRequestSchema]]:
         return success(await MsgGroupService(db).my_join_requests(session))
 
+    @admin_router.get(
+        "/message/groups/join-requests/pending",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[list[GroupJoinRequestSchema]],
+    )
     @portal_router.get(
         "/message/groups/join-requests/pending",
         dependencies=[Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL))],
@@ -310,6 +397,11 @@ def register_current_user_routes():
     ) -> ApiResponse[list[GroupJoinRequestSchema]]:
         return success(await MsgGroupService(db).pending_requests(session))
 
+    @admin_router.get(
+        "/message/groups/join-requests/pending-count",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[int],
+    )
     @portal_router.get(
         "/message/groups/join-requests/pending-count",
         dependencies=[Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL))],

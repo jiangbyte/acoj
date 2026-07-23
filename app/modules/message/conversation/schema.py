@@ -23,6 +23,7 @@ class MsgConversationCreateRequest(ApiSchema):
     status: str
     last_message_id: str | None = None
     last_message_at: datetime | None = None
+    last_message: str | None = None
     extra: dict[str, Any]
 
 
@@ -51,6 +52,8 @@ class ConversationMemberSchema(ApiSchema):
     joined_at: datetime
     left_at: datetime | None = None
     extra: dict[str, Any]
+    profile_name: str | None = None
+    profile_avatar: str | None = None
     created_at: datetime
     created_by: str | None = None
     updated_at: datetime
@@ -68,6 +71,7 @@ class MsgConversationSchema(ApiSchema):
     status: str
     last_message_id: str | None = None
     last_message_at: datetime | None = None
+    last_message: str | None = None
     extra: dict[str, Any]
     created_at: datetime
     created_by: str | None = None

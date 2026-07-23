@@ -6,7 +6,7 @@ Generated at: 2026-07-23 16:28:52
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Select, delete, func, select, update
+from sqlalchemy import Select, delete, func, not_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import BusinessError, NotFoundError
@@ -78,6 +78,25 @@ class MsgGroupRepository:
         items = list((await self.db.execute(stmt)).scalars().all())
         total = (await self.db.execute(count_stmt)).scalar_one()
         return items, total
+
+    # ==================== Group Search ====================
+
+    async def search_groups(
+        self, keyword: str, exclude_group_ids: list[str], limit: int = 50
+    ) -> list[MsgGroup]:
+        """Search groups by name keyword, excluding dissolved groups and given group IDs."""
+        stmt = (
+            select(MsgGroup)
+            .where(
+                MsgGroup.name.ilike(f"%{keyword}%"),
+                MsgGroup.status != GroupStatus.DISSOLVED.value,
+            )
+            .order_by(MsgGroup.member_count.desc())
+            .limit(limit)
+        )
+        if exclude_group_ids:
+            stmt = stmt.where(not_(MsgGroup.id.in_(exclude_group_ids)))
+        return list((await self.db.execute(stmt)).scalars().all())
 
     # ==================== Group Membership ====================
 

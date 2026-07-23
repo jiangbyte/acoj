@@ -19,7 +19,10 @@ from app.modules.user.admin.repository import AdminUserProfileRepository
 from app.modules.user.portal.model import PortalUserProfile
 from app.modules.user.portal.repository import PortalUserProfileRepository
 from app.platform.db.transaction import transactional
+from app.modules.message.conversation.schema import CreateDirectConversationRequest
+from app.modules.message.conversation.service import MsgConversationService
 from app.modules.message.friend.model import MsgFriend
+from app.platform.storage.url import resolve_file_url
 from app.modules.message.friend.repository import (
     MsgFriendRepository,
 )
@@ -87,7 +90,7 @@ async def _enrich_friend_schema(
         friend_account_id=friend.friend_account_id,
         name=getattr(profile, "name", None),
         nickname=getattr(profile, "nickname", None),
-        avatar=getattr(profile, "avatar", None),
+        avatar=resolve_file_url(getattr(profile, "avatar", None)),
         signature=getattr(profile, "signature", None),
         remark=friend.remark,
         friend_at=friend.friend_at,
@@ -105,11 +108,11 @@ async def _build_friend_request_schema(
         applicant_type=req.applicant_type,
         applicant_id=req.applicant_id,
         applicant_name=getattr(applicant_profile, "name", None),
-        applicant_avatar=getattr(applicant_profile, "avatar", None),
+        applicant_avatar=resolve_file_url(getattr(applicant_profile, "avatar", None)),
         recipient_type=req.recipient_type,
         recipient_id=req.recipient_id,
         recipient_name=getattr(recipient_profile, "name", None),
-        recipient_avatar=getattr(recipient_profile, "avatar", None),
+        recipient_avatar=resolve_file_url(getattr(recipient_profile, "avatar", None)),
         message=req.message,
         status=req.status,
         handled_at=req.handled_at,
@@ -157,6 +160,13 @@ class MsgFriendService:
         ):
             raise BusinessError("Cannot send friend request to yourself")
 
+        # 申请人必须与当前登录用户一致，防止伪造 applicant 身份
+        if (
+            payload.applicant_type != str(session.account_type)
+            or payload.applicant_id != session.account_id
+        ):
+            raise BusinessError("Applicant must be the current user")
+
         async with transactional(self.db):
             # 检查是否已经是好友
             existing = await self.repo.find_friendship(
@@ -168,15 +178,24 @@ class MsgFriendService:
             if existing is not None:
                 raise BusinessError("Already friends")
 
-            # 检查是否有待处理的重复申请
-            pending = await self.repo.find_pending_request(
+            # 检查是否有已存在的好友申请（任意状态）
+            existing_req = await self.repo.find_any_request(
                 payload.applicant_type,
                 payload.applicant_id,
                 payload.recipient_type,
                 payload.recipient_id,
             )
-            if pending is not None:
-                raise BusinessError("A pending friend request already exists")
+            if existing_req is not None:
+                if existing_req.status == "PENDING":
+                    raise BusinessError("A pending friend request already exists")
+                if existing_req.status == "ACCEPTED":
+                    raise BusinessError("Already friends")
+                # REJECTED → 允许重新申请，更新已有记录为 PENDING
+                existing_req.status = "PENDING"
+                existing_req.message = payload.message
+                existing_req.handled_at = None
+                existing_req.updated_at = datetime.now(timezone.utc)
+                return
 
             await self.repo.create_friend_request(
                 {
@@ -210,6 +229,18 @@ class MsgFriendService:
 
             if payload.action == "ACCEPT":
                 _accept_friend_request(self.repo, req, payload.request_id)
+                # Auto-create direct conversation for accepted friend request
+                try:
+                    conv_service = MsgConversationService(self.db)
+                    await conv_service.create_direct(
+                        CreateDirectConversationRequest(
+                            account_type=req.applicant_type,
+                            account_id=req.applicant_id,
+                        ),
+                        session,
+                    )
+                except Exception:
+                    pass
             elif payload.action == "REJECT":
                 req.status = "REJECTED"
                 req.handled_at = datetime.now(timezone.utc)
@@ -220,7 +251,7 @@ class MsgFriendService:
     # ── Remove friend ───────────────────────────────────────────────────────
 
     async def remove(self, payload: RemoveFriendRequest, session: SessionPayload) -> None:
-        """删除好友：双向软删除"""
+        """删除好友：双向软删除 + 移除双方对话成员"""
         async with transactional(self.db):
             friendship = await self.repo.get_required(payload.friendship_id)
             await self.repo.delete_bidirectional(
@@ -229,6 +260,21 @@ class MsgFriendService:
                 friendship.friend_account_type,
                 friendship.friend_account_id,
             )
+
+            # 移除双方在 DIRECT 对话中的成员身份
+            from app.modules.message.conversation.repository import MsgConversationRepository
+            conv_repo = MsgConversationRepository(self.db)
+            direct_conv = await conv_repo.find_direct_conversation(
+                friendship.account_type, friendship.account_id,
+                friendship.friend_account_type, friendship.friend_account_id,
+            )
+            if direct_conv:
+                await conv_repo.remove_member(
+                    direct_conv.id, friendship.account_type, friendship.account_id,
+                )
+                await conv_repo.remove_member(
+                    direct_conv.id, friendship.friend_account_type, friendship.friend_account_id,
+                )
 
     # ── My friends ──────────────────────────────────────────────────────────
 
@@ -259,7 +305,7 @@ class MsgFriendService:
                 friend_account_id=f.friend_account_id,
                 name=getattr(profile, "name", None),
                 nickname=getattr(profile, "nickname", None),
-                avatar=getattr(profile, "avatar", None),
+                avatar=resolve_file_url(getattr(profile, "avatar", None)),
                 signature=getattr(profile, "signature", None),
                 remark=f.remark,
                 friend_at=f.friend_at,
@@ -271,21 +317,26 @@ class MsgFriendService:
     async def search(
         self, keyword: str, session: SessionPayload
     ) -> list[SearchUserSchema]:
-        """搜索用户（非自己、非好友），通过 profile 表的 name/nickname 匹配"""
+        """搜索用户（非自己、非好友），通过 profile 的 name/nickname 和登录用户名匹配"""
+        from app.modules.iam.account.model import SysAccount, SysAccountIdentity
+        from app.modules.iam.enums import AccountIdentityType
+
         keyword_like = f"%{keyword}%"
         results: list[SearchUserSchema] = []
+        seen: set[tuple[str, str]] = set()
 
         # 获取我的好友 ID 列表
         my_friends = await self.repo.list_my_friends(
             session.account_type, session.account_id
         )
-        friend_ids = {(f.friend_account_type, f.friend_account_id) for f in my_friends}
+        exclude_ids = {(f.friend_account_type, f.friend_account_id) for f in my_friends}
         # 也把自己排除
-        friend_ids.add((session.account_type, session.account_id))
+        exclude_ids.add((session.account_type, session.account_id))
 
-        # 分别从 AdminUserProfile 和 PortalUserProfile 搜索
         for account_type in (AccountType.ADMIN.value, AccountType.PORTAL.value):
             profile_model = _pick_profile_model(account_type)
+
+            # -- profile name/nickname 匹配 --
             stmt = (
                 select(profile_model)
                 .where(
@@ -296,21 +347,68 @@ class MsgFriendService:
                 )
                 .limit(50)
             )
-            profiles = list((await self.db.execute(stmt)).scalars().all())
-            for p in profiles:
-                if (account_type, p.account_id) in friend_ids:
+            for p in (await self.db.execute(stmt)).scalars().all():
+                key = (account_type, p.account_id)
+                if key in exclude_ids or key in seen:
                     continue
+                seen.add(key)
                 results.append(
                     SearchUserSchema(
                         account_type=account_type,
                         account_id=p.account_id,
                         name=getattr(p, "name", None),
                         nickname=getattr(p, "nickname", None),
-                        avatar=getattr(p, "avatar", None),
+                        avatar=resolve_file_url(getattr(p, "avatar", None)),
                         signature=getattr(p, "signature", None),
                         is_friend=False,
                     )
                 )
+
+            # -- 用户名（SysAccountIdentity.identifier）匹配 --
+            id_stmt = (
+                select(SysAccountIdentity.account_id, SysAccountIdentity.identifier)
+                .join(SysAccount, SysAccountIdentity.account_id == SysAccount.id)
+                .where(
+                    SysAccountIdentity.identity_type == AccountIdentityType.ACCOUNT.value,
+                    SysAccount.account_type == account_type,
+                    SysAccountIdentity.identifier.ilike(keyword_like),
+                )
+                .limit(50)
+            )
+            for row in (await self.db.execute(id_stmt)).all():
+                acct_id, username = row
+                key = (account_type, acct_id)
+                if key in exclude_ids or key in seen:
+                    continue
+                seen.add(key)
+                profile = await self.db.get(profile_model, acct_id)
+                results.append(
+                    SearchUserSchema(
+                        account_type=account_type,
+                        account_id=acct_id,
+                        account=username,
+                        name=getattr(profile, "name", None) if profile else None,
+                        nickname=getattr(profile, "nickname", None) if profile else None,
+                        avatar=resolve_file_url(getattr(profile, "avatar", None)) if profile else None,
+                        signature=getattr(profile, "signature", None) if profile else None,
+                        is_friend=False,
+                    )
+                )
+
+        # 为 profile-matched 结果批量填充 account 字段
+        ids_needing_account = [r.account_id for r in results if r.account is None]
+        if ids_needing_account:
+            acct_stmt = (
+                select(SysAccountIdentity.account_id, SysAccountIdentity.identifier)
+                .where(
+                    SysAccountIdentity.account_id.in_(list(dict.fromkeys(ids_needing_account))),
+                    SysAccountIdentity.identity_type == AccountIdentityType.ACCOUNT.value,
+                )
+            )
+            acct_map = {row[0]: row[1] for row in (await self.db.execute(acct_stmt)).all()}
+            for r in results:
+                if r.account is None:
+                    r.account = acct_map.get(r.account_id)
 
         return results
 
@@ -361,11 +459,11 @@ class MsgFriendService:
                 applicant_type=req.applicant_type,
                 applicant_id=req.applicant_id,
                 applicant_name=getattr(app_profile, "name", None),
-                applicant_avatar=getattr(app_profile, "avatar", None),
+                applicant_avatar=resolve_file_url(getattr(app_profile, "avatar", None)),
                 recipient_type=req.recipient_type,
                 recipient_id=req.recipient_id,
                 recipient_name=getattr(recip_profile, "name", None),
-                recipient_avatar=getattr(recip_profile, "avatar", None),
+                recipient_avatar=resolve_file_url(getattr(recip_profile, "avatar", None)),
                 message=req.message,
                 status=req.status,
                 handled_at=req.handled_at,

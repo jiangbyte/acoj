@@ -1,7 +1,7 @@
 """message module refactoring
 
 Revision ID: 0001_message_refactor
-Revises: 20338b04a088
+Revises:
 Create Date: 2026-07-23
 
 Complete refactoring of message module:
@@ -17,7 +17,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0001_message_refactor"
-down_revision: Union[str, None] = "20338b04a088"
+down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

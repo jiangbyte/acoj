@@ -14,6 +14,7 @@ from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.core.security.session import SessionPayload
 from app.platform.db.transaction import transactional
+from app.platform.storage.url import resolve_file_url
 from app.modules.message.enums import (
     ConversationMemberRole,
     ConversationStatus,
@@ -152,6 +153,7 @@ class MsgGroupService:
         async with transactional(self.db):
             await self.repo.remove_member(group_id, account_type, account_id)
             await self.repo.decrement_member_count(group_id)
+            await self._remove_member_from_conversation(group_id, account_type, account_id)
 
     async def my_list(self, session: SessionPayload) -> list[MsgGroupSchema]:
         """List my groups with member_count and pending request count."""
@@ -161,6 +163,17 @@ class MsgGroupService:
         groups = await self.repo.list_my_groups(account_type, account_id)
         schemas = to_schema_list(MsgGroupSchema, groups)
         return schemas
+
+    async def search_groups(
+        self, keyword: str, session: SessionPayload
+    ) -> list[MsgGroupSchema]:
+        """Search groups by name, excluding groups the user is already a member of."""
+        account_type = str(session.account_type)
+        account_id = session.account_id
+        my_groups = await self.repo.list_my_groups(account_type, account_id)
+        exclude_ids = [g.id for g in my_groups]
+        groups = await self.repo.search_groups(keyword, exclude_ids)
+        return to_schema_list(MsgGroupSchema, groups)
 
     async def group_detail(self, group_id: str, session: SessionPayload) -> MsgGroupSchema:
         """Get group detail. Verifies the user is a member."""
@@ -197,7 +210,7 @@ class MsgGroupService:
             profile = profiles.get(m.account_id)
             if profile:
                 schema.profile_name = profile.name or profile.nickname
-                schema.profile_avatar = profile.avatar
+                schema.profile_avatar = resolve_file_url(profile.avatar)
             schemas.append(schema)
         return schemas
 
@@ -222,6 +235,12 @@ class MsgGroupService:
             ]
             await self.repo.add_members_batch(payload.group_id, member_tuples)
             await self.repo.increment_member_count(payload.group_id, delta=count)
+
+            # Also add members to the conversation
+            for acct_type, acct_id in member_tuples:
+                await self._add_member_to_conversation(
+                    payload.group_id, acct_type, acct_id, role="MEMBER"
+                )
 
     async def remove_members(
         self, payload: GroupMemberRemoveRequest, session: SessionPayload
@@ -251,6 +270,9 @@ class MsgGroupService:
                 payload.group_id, payload.account_type, payload.account_id
             )
             await self.repo.decrement_member_count(payload.group_id)
+            await self._remove_member_from_conversation(
+                payload.group_id, payload.account_type, payload.account_id,
+            )
 
     async def set_member_role(
         self, payload: SetMemberRoleRequest, session: SessionPayload
@@ -300,12 +322,20 @@ class MsgGroupService:
             raise BusinessError("You already have a pending join request for this group")
 
         async with transactional(self.db):
-            await self.repo.create_join_request(
+            request = await self.repo.create_join_request(
                 group_id=payload.group_id,
                 applicant_type=account_type,
                 applicant_id=account_id,
                 message=payload.message,
             )
+
+        # Push WS notification to group owners/admins
+        try:
+            await self._push_join_request_created(
+                request, payload, account_type, account_id, group.name,
+            )
+        except Exception:
+            pass
 
     async def handle_join_request(
         self, payload: GroupJoinRequestHandle, session: SessionPayload
@@ -347,8 +377,77 @@ class MsgGroupService:
                         account_id=join_request.applicant_id,
                     )
                     await self.repo.increment_member_count(join_request.group_id)
+                    # Also add to conversation
+                    await self._add_member_to_conversation(
+                        join_request.group_id,
+                        join_request.applicant_type,
+                        join_request.applicant_id,
+                        role="MEMBER",
+                    )
 
             await self.db.flush()
+
+        # Push WS notification to applicant about the result
+        try:
+            from app.modules.message.websocket.handler import manager as ws_manager
+            ws_payload = {
+                "type": "join_request_handled",
+                "data": {
+                    "request_id": join_request.id,
+                    "group_id": group.id,
+                    "group_name": group.name,
+                    "status": payload.status,
+                },
+            }
+            await ws_manager.route_to_user(
+                join_request.applicant_type,
+                join_request.applicant_id,
+                ws_payload,
+            )
+        except Exception:
+            pass
+
+    async def _push_join_request_created(
+        self,
+        request: object,
+        payload: object,
+        account_type: str,
+        account_id: str,
+        group_name: str | None = None,
+    ) -> None:
+        """Push a new join request notification to group owners/admins via WebSocket."""
+        from app.modules.message.websocket.handler import manager as ws_manager
+
+        try:
+            profile = await self._get_profile(account_type, account_id)
+        except Exception:
+            profile = None
+
+        ws_payload = {
+            "type": "new_join_request",
+            "data": {
+                "id": request.id,
+                "group_id": payload.group_id,
+                "applicant_type": account_type,
+                "applicant_id": account_id,
+                "message": payload.message,
+                "status": "PENDING",
+                "created_at": (request.created_at.isoformat() if hasattr(request, 'created_at') and request.created_at else None),
+                "applicant_name": profile.name if profile else None,
+                "applicant_avatar": profile.avatar if profile else None,
+                "group_name": group_name,
+            },
+        }
+
+        members = await self.repo.list_members(payload.group_id)
+        for member in members:
+            if member.role in ("OWNER", "ADMIN"):
+                try:
+                    await ws_manager.route_to_user(
+                        member.account_type, member.account_id, ws_payload
+                    )
+                except Exception:
+                    pass
 
     async def my_join_requests(
         self, session: SessionPayload
@@ -450,7 +549,7 @@ class MsgGroupService:
             profile = profiles.get(req.applicant_id)
             if profile:
                 schema.applicant_name = profile.name or profile.nickname
-                schema.applicant_avatar = profile.avatar
+                schema.applicant_avatar = resolve_file_url(profile.avatar)
             schema.group_name = group_names.get(req.group_id)
             schemas.append(schema)
         return schemas
@@ -478,8 +577,9 @@ class MsgGroupService:
     async def _create_group_conversation(
         self, group_id: str, group_name: str, session: SessionPayload
     ) -> None:
-        """Create a conversation for the group."""
-        from app.modules.message.conversation.model import MsgConversation
+        """Create a conversation for the group and add the creator as a member."""
+        from app.modules.message.conversation.model import MsgConversation, MsgConversationMember
+        from datetime import datetime, timezone
 
         conversation = MsgConversation(
             conversation_type=ConversationType.GROUP.value,
@@ -491,6 +591,76 @@ class MsgGroupService:
         )
         self.db.add(conversation)
         await self.db.flush()
+
+        # Add the group creator as a conversation member
+        member = MsgConversationMember(
+            conversation_id=conversation.id,
+            account_type=str(session.account_type),
+            account_id=session.account_id,
+            role=ConversationMemberRole.OWNER.value,
+            joined_at=datetime.now(timezone.utc),
+        )
+        self.db.add(member)
+        await self.db.flush()
+
+    async def _get_group_conversation(self, group_id: str):
+        """Get the active group conversation for a group, or None."""
+        from app.modules.message.conversation.model import MsgConversation
+
+        stmt = select(MsgConversation).where(
+            MsgConversation.group_id == group_id,
+            MsgConversation.conversation_type == ConversationType.GROUP.value,
+            MsgConversation.status == ConversationStatus.ACTIVE.value,
+        )
+        return (await self.db.execute(stmt)).scalar_one_or_none()
+
+    async def _add_member_to_conversation(
+        self, group_id: str, account_type: str, account_id: str, role: str = "MEMBER"
+    ) -> None:
+        """Add a user to the group's active conversation if not already a member."""
+        from app.modules.message.conversation.model import MsgConversationMember
+        from datetime import datetime, timezone
+
+        conversation = await self._get_group_conversation(group_id)
+        if conversation is None:
+            return
+
+        existing = select(MsgConversationMember).where(
+            MsgConversationMember.conversation_id == conversation.id,
+            MsgConversationMember.account_type == account_type,
+            MsgConversationMember.account_id == account_id,
+            MsgConversationMember.left_at.is_(None),
+        )
+        if (await self.db.execute(existing)).scalar_one_or_none() is not None:
+            return
+
+        member = MsgConversationMember(
+            conversation_id=conversation.id,
+            account_type=account_type,
+            account_id=account_id,
+            role=role,
+            joined_at=datetime.now(timezone.utc),
+        )
+        self.db.add(member)
+
+    async def _remove_member_from_conversation(
+        self, group_id: str, account_type: str, account_id: str
+    ) -> None:
+        """Remove a user from the group's conversation (soft-delete via left_at)."""
+        from app.modules.message.conversation.model import MsgConversation
+
+        stmt = select(MsgConversation).where(
+            MsgConversation.group_id == group_id,
+            MsgConversation.conversation_type == ConversationType.GROUP.value,
+        )
+        conversation = (await self.db.execute(stmt)).scalar_one_or_none()
+        if conversation is None:
+            return
+
+        from app.modules.message.conversation.repository import MsgConversationRepository
+        await MsgConversationRepository(self.db).remove_member(
+            conversation.id, account_type, account_id
+        )
 
     async def _disable_group_conversation(self, group_id: str) -> None:
         """Mark the group's conversation as disabled."""

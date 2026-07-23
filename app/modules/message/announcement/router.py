@@ -177,6 +177,11 @@ async def pin(
 def register_current_user_routes():
     """Register announcement routes for the current authenticated user."""
 
+    @admin_router.get(
+        "/message/announcements/my-page",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[PageData[MsgAnnouncementSchema]],
+    )
     @portal_router.get(
         "/message/announcements/my-page",
         dependencies=[Depends(require_account_type(AccountType.PORTAL))],
@@ -193,6 +198,11 @@ def register_current_user_routes():
         )
         return success(await MsgAnnouncementService(db).page_my_announcements(query, session))
 
+    @admin_router.get(
+        "/message/announcements/my-detail",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[MsgAnnouncementSchema],
+    )
     @portal_router.get(
         "/message/announcements/my-detail",
         dependencies=[Depends(require_account_type(AccountType.PORTAL))],
@@ -205,6 +215,11 @@ def register_current_user_routes():
     ) -> ApiResponse[MsgAnnouncementSchema]:
         return success(await MsgAnnouncementService(db).my_detail(IdQuery(id=id), session))
 
+    @admin_router.get(
+        "/message/announcements/unread-count",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[int],
+    )
     @portal_router.get(
         "/message/announcements/unread-count",
         dependencies=[Depends(require_account_type(AccountType.PORTAL))],
@@ -216,6 +231,11 @@ def register_current_user_routes():
     ) -> ApiResponse[int]:
         return success(await MsgAnnouncementService(db).count_unread(session))
 
+    @admin_router.post(
+        "/message/announcements/read",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[None],
+    )
     @portal_router.post(
         "/message/announcements/read",
         dependencies=[Depends(require_account_type(AccountType.PORTAL))],
@@ -229,6 +249,11 @@ def register_current_user_routes():
         await MsgAnnouncementService(db).mark_read(payload, session)
         return success()
 
+    @admin_router.post(
+        "/message/announcements/read-all",
+        dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+        response_model=ApiResponse[None],
+    )
     @portal_router.post(
         "/message/announcements/read-all",
         dependencies=[Depends(require_account_type(AccountType.PORTAL))],

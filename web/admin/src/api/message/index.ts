@@ -2,195 +2,194 @@ import { http } from '@/utils'
 
 const prefix = '/api/v1/admin/message'
 
-export function summary() {
-  return http.get<any>(`${prefix}/summary`)
+// ── Conversation ─────────────────────────────────────────────────────
+
+export function conversationList(params?: { current?: number; size?: number }) {
+  return http.get<any>(`${prefix}/conversations/my-list`, { params })
 }
 
-export function headerItems() {
-  return http.get<any[]>(`${prefix}/header-items`)
+export function conversationDetail(id: string) {
+  return http.get<any>(`${prefix}/conversations/detail`, { params: { id } })
 }
 
-export function myNotification(params?: any) {
-  return http.get<any>(`${prefix}/notifications/my-page`, { params })
+export function createDirectConversation(data: { account_type: string; account_id: string }) {
+  return http.post<any>(`${prefix}/conversations/create-direct`, data)
 }
 
-export function myNotificationDetail(params: any) {
-  return http.get<any>(`${prefix}/notifications/my-detail`, { params })
+export function muteConversation(data: { conversation_id: string; is_muted: boolean }) {
+  return http.post<any>(`${prefix}/conversations/mute`, data)
 }
 
-export function readNotification(data: any) {
-  return http.post<any>(`${prefix}/notifications/read`, data)
+export function pinConversation(data: { conversation_id: string; is_pinned: boolean }) {
+  return http.post<any>(`${prefix}/conversations/pin`, data)
 }
 
-export function readAllNotification() {
-  return http.post<any>(`${prefix}/notifications/read-all`)
+export function leaveConversation(data: { id: string }) {
+  return http.post<any>(`${prefix}/conversations/leave`, data)
 }
 
-export function notificationPage(params?: any) {
-  return http.get<any>(`${prefix}/notifications/page`, { params })
+export function markConversationRead(data: { id: string }) {
+  return http.post<any>(`${prefix}/conversations/mark-read`, data)
 }
 
-export function notificationDetail(params: any) {
-  return http.get<any>(`${prefix}/notifications/detail`, { params })
-}
+// ── Message ──────────────────────────────────────────────────────────
 
-export function createNotification(data: any) {
-  return http.post<any>(`${prefix}/notifications/create`, data)
-}
-
-export function updateNotification(data: any) {
-  return http.post<any>(`${prefix}/notifications/update`, data)
-}
-
-export function publishNotification(data: any) {
-  return http.post<any>(`${prefix}/notifications/publish`, data)
-}
-
-export function revokeNotification(data: any) {
-  return http.post<any>(`${prefix}/notifications/revoke`, data)
-}
-
-export function removeNotification(data: any) {
-  return http.post<any>(`${prefix}/notifications/delete`, data)
-}
-
-export function myGroups() {
-  return http.get<any[]>(`${prefix}/messages/groups`)
-}
-
-export function groupPage(params?: any) {
-  return http.get<any>(`${prefix}/groups/page`, { params })
-}
-
-export function groupDetail(params: any) {
-  return http.get<any>(`${prefix}/groups/detail`, { params })
-}
-
-export function groupMembers(params: any) {
-  return http.get<any[]>(`${prefix}/groups/members`, { params })
-}
-
-export function createGroup(data: any) {
-  return http.post<any>(`${prefix}/groups/create`, data)
-}
-
-export function updateGroup(data: any) {
-  return http.post<any>(`${prefix}/groups/update`, data)
-}
-
-export function removeGroup(data: any) {
-  return http.post<any>(`${prefix}/groups/delete`, data)
-}
-
-export function addGroupMembers(data: any) {
-  return http.post<any>(`${prefix}/groups/add-members`, data)
-}
-
-export function removeGroupMembers(data: any) {
-  return http.post<any>(`${prefix}/groups/remove-members`, data)
-}
-
-export function myThreads(params?: any) {
-  return http.get<any>(`${prefix}/messages/threads`, { params })
-}
-
-export function threadPage(params?: any) {
-  return http.get<any>(`${prefix}/threads/page`, { params })
-}
-
-export function threadMessage(params?: any) {
-  return http.get<any>(`${prefix}/threads/messages`, { params })
-}
-
-export function myThreadMessage(params?: any) {
-  return http.get<any>(`${prefix}/messages/thread-messages`, { params })
-}
-
-export function sendMessage(data: any) {
+export function sendMessage(data: {
+  conversation_id?: string
+  group_id?: string
+  participant_refs?: Array<{ account_type: string; account_id: string }>
+  title?: string
+  parent_id?: string
+  content: string
+  content_type?: string
+  msg_type?: string
+  sender_name?: string
+  attachments?: Array<{
+    file_id?: string
+    name: string
+    url: string
+    content_type?: string
+    size?: number
+    attachment_type?: string
+    thumbnail_url?: string
+    sort?: number
+    extra?: Record<string, any>
+  }>
+  extra?: Record<string, any>
+}) {
   return http.post<any>(`${prefix}/messages/send`, data)
 }
 
-export function replyMessage(data: any) {
+export function replyMessage(data: {
+  conversation_id?: string
+  parent_id: string
+  content: string
+  content_type?: string
+  msg_type?: string
+  attachments?: Array<any>
+  extra?: Record<string, any>
+}) {
   return http.post<any>(`${prefix}/messages/reply`, data)
 }
 
-export function sendSystemMessage(data: any) {
-  return http.post<any>(`${prefix}/threads/send-system`, data)
+export function revokeMessage(data: { message_id: string }) {
+  return http.post<any>(`${prefix}/messages/revoke`, data)
 }
 
-export function readThread(data: any) {
-  return http.post<any>(`${prefix}/messages/read-thread`, data)
+export function readMessage(data: { conversation_id: string; terminal_id?: string }) {
+  return http.post<any>(`${prefix}/messages/read`, data)
 }
 
-export function reactMessage(data: any) {
-  return http.post<any>(`${prefix}/messages/react`, data)
+export function messagePage(params: { conversation_id: string; current?: number; size?: number }) {
+  return http.get<any>(`${prefix}/messages/page`, { params })
 }
 
-export function myTodos(params?: any) {
-  return http.get<any>(`${prefix}/todos/my-page`, { params })
+export function unreadCount(conversationId: string) {
+  return http.get<any>(`${prefix}/messages/unread-count`, { params: { conversation_id: conversationId } })
 }
 
-export function myTodoDetail(params: any) {
-  return http.get<any>(`${prefix}/todos/my-detail`, { params })
+// ── Group ────────────────────────────────────────────────────────────
+
+export function groupList() {
+  return http.get<any[]>(`${prefix}/groups/my-list`)
 }
 
-export function todoPage(params?: any) {
-  return http.get<any>(`${prefix}/todos/page`, { params })
+export function groupDetail(id: string) {
+  return http.get<any>(`${prefix}/groups/detail`, { params: { id } })
 }
 
-export function todoDetail(params: any) {
-  return http.get<any>(`${prefix}/todos/detail`, { params })
+export function createGroup(data: {
+  name: string
+  avatar?: string
+  description?: string
+  join_mode?: string
+  max_members?: number
+}) {
+  return http.post<any>(`${prefix}/groups/create`, data)
 }
 
-export function createTodo(data: any) {
-  return http.post<any>(`${prefix}/todos/create`, data)
+export function updateGroup(data: {
+  id: string
+  name?: string
+  avatar?: string
+  description?: string
+  join_mode?: string
+  max_members?: number
+}) {
+  return http.post<any>(`${prefix}/groups/update`, data)
 }
 
-export function updateTodo(data: any) {
-  return http.post<any>(`${prefix}/todos/update`, data)
+export function dissolveGroup(data: { id: string }) {
+  return http.post<any>(`${prefix}/groups/dissolve`, data)
 }
 
-export function removeTodo(data: any) {
-  return http.post<any>(`${prefix}/todos/delete`, data)
+export function leaveGroup(data: { id: string }) {
+  return http.post<any>(`${prefix}/groups/leave`, data)
 }
 
-export function cancelTodoAdmin(data: any) {
-  return http.post<any>(`${prefix}/todos/cancel-admin`, data)
+export function groupMemberList(id: string) {
+  return http.get<any[]>(`${prefix}/groups/members/list`, { params: { id } })
 }
 
-export function startTodo(data: any) {
-  return http.post<any>(`${prefix}/todos/start`, data)
+export function searchGroups(keyword: string) {
+  return http.get<any[]>(`${prefix}/groups/search`, { params: { keyword } })
 }
 
-export function completeTodo(data: any) {
-  return http.post<any>(`${prefix}/todos/complete`, data)
+export function addGroupMembers(data: { group_id: string; members: Array<{ account_type: string; account_id: string }> }) {
+  return http.post<any>(`${prefix}/groups/members/add`, data)
 }
 
-export function cancelTodo(data: any) {
-  return http.post<any>(`${prefix}/todos/cancel`, data)
+export function removeGroupMember(data: { group_id: string; account_type: string; account_id: string }) {
+  return http.post<any>(`${prefix}/groups/members/remove`, data)
 }
 
-export function myFriends() {
+export function setGroupMemberRole(data: { group_id: string; account_type: string; account_id: string; role: string }) {
+  return http.post<any>(`${prefix}/groups/members/set-role`, data)
+}
+
+export function applyJoinGroup(data: { group_id: string; message?: string }) {
+  return http.post<any>(`${prefix}/groups/join-requests/apply`, data)
+}
+
+export function handleJoinGroupRequest(data: { id: string; status: string }) {
+  return http.post<any>(`${prefix}/groups/join-requests/handle`, data)
+}
+
+export function myJoinRequests() {
+  return http.get<any[]>(`${prefix}/groups/join-requests/my`)
+}
+
+export function pendingJoinRequests() {
+  return http.get<any[]>(`${prefix}/groups/join-requests/pending`)
+}
+
+export function pendingJoinRequestCount() {
+  return http.get<any>(`${prefix}/groups/join-requests/pending-count`)
+}
+
+// ── Friend ───────────────────────────────────────────────────────────
+
+export function friendList() {
   return http.get<any[]>(`${prefix}/friends/my-list`)
 }
 
-export function friendSearch(keyword: string) {
+export function searchUsers(keyword: string) {
   return http.get<any[]>(`${prefix}/friends/search`, { params: { keyword } })
 }
 
-export function applyFriend(data: any) {
+export function applyFriend(data: { applicant_type: string; applicant_id: string; recipient_type: string; recipient_id: string; message?: string }) {
   return http.post<any>(`${prefix}/friends/apply`, data)
 }
 
-export function handleFriendRequest(data: any) {
+export function handleFriendRequest(data: { request_id: string; action: string }) {
   return http.post<any>(`${prefix}/friends/handle-request`, data)
 }
 
-export function removeFriend(data: any) {
+export function removeFriend(data: { friendship_id: string }) {
   return http.post<any>(`${prefix}/friends/remove`, data)
 }
 
-export function setFriendRemark(data: any) {
+export function setFriendRemark(data: { friendship_id: string; remark?: string }) {
   return http.post<any>(`${prefix}/friends/set-remark`, data)
 }
 
@@ -202,32 +201,46 @@ export function myFriendRequestCount() {
   return http.get<any>(`${prefix}/friends/my-request-count`)
 }
 
-export function applyJoinGroup(data: any) {
-  return http.post<any>(`${prefix}/messages/groups/join-request`, data)
+// ── Notification ────────────────────────────────────────────────────
+
+export function notificationMyPage(params?: { current?: number; size?: number; category?: string }) {
+  return http.get<any>(`${prefix}/notifications/my-page`, { params })
 }
 
-export function handleJoinGroupRequest(data: any) {
-  return http.post<any>(`${prefix}/messages/groups/handle-join-request`, data)
+export function notificationMyDetail(id: string) {
+  return http.get<any>(`${prefix}/notifications/my-detail`, { params: { id } })
 }
 
-export function myJoinRequests() {
-  return http.get<any[]>(`${prefix}/messages/groups/my-join-requests`)
+export function notificationUnreadCount() {
+  return http.get<any>(`${prefix}/notifications/unread-count`)
 }
 
-export function groupJoinRequests(groupId: string) {
-  return http.get<any[]>(`${prefix}/messages/groups/join-requests`, { params: { group_id: groupId } })
+export function readNotification(data: { ids: string[] }) {
+  return http.post<any>(`${prefix}/notifications/read`, data)
 }
 
-export function pendingJoinRequestCount() {
-  return http.get<any>(`${prefix}/messages/groups/pending-join-request-count`)
+export function readAllNotification() {
+  return http.post<any>(`${prefix}/notifications/read-all`)
 }
 
-export function createEventSource() {
-  const token = localStorage.getItem('token')
-  if (!token) {
-    return null
-  }
-  const baseURL = import.meta.env.VITE_API_URL || ''
-  const url = `${baseURL}${prefix}/realtime/events?token=${encodeURIComponent(token)}`
-  return new EventSource(url)
+// ── Announcement ────────────────────────────────────────────────────
+
+export function announcementMyPage(params?: { current?: number; size?: number }) {
+  return http.get<any>(`${prefix}/announcements/my-page`, { params })
+}
+
+export function announcementMyDetail(id: string) {
+  return http.get<any>(`${prefix}/announcements/my-detail`, { params: { id } })
+}
+
+export function announcementUnreadCount() {
+  return http.get<any>(`${prefix}/announcements/unread-count`)
+}
+
+export function readAnnouncement(data: { ids: string[] }) {
+  return http.post<any>(`${prefix}/announcements/read`, data)
+}
+
+export function readAllAnnouncement() {
+  return http.post<any>(`${prefix}/announcements/read-all`)
 }

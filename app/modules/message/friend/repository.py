@@ -185,6 +185,20 @@ class MsgFriendRepository:
         )
         return (await self.db.execute(stmt)).scalar_one_or_none()
 
+    async def find_any_request(
+        self, applicant_type: str, applicant_id: str, recipient_type: str, recipient_id: str
+    ) -> MsgFriendRequest | None:
+        """查找任意状态的好友申请记录（不限制 status）"""
+        stmt = select(MsgFriendRequest).where(
+            and_(
+                MsgFriendRequest.applicant_type == applicant_type,
+                MsgFriendRequest.applicant_id == applicant_id,
+                MsgFriendRequest.recipient_type == recipient_type,
+                MsgFriendRequest.recipient_id == recipient_id,
+            )
+        )
+        return (await self.db.execute(stmt)).scalar_one_or_none()
+
     async def find_friend_requests_by_recipient(
         self, recipient_type: str, recipient_id: str, status: str = "PENDING"
     ) -> list[MsgFriendRequest]:

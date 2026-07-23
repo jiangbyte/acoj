@@ -12,7 +12,6 @@ from app.deps.auth import get_current_session, require_account_type, require_per
 from app.deps.db import get_db_session
 from app.modules.iam.enums import ResourceModuleClient
 from app.modules.iam.resource.schema import (
-    CurrentResourceModuleSchema,
     ResourceAdminPageQuery,
     ResourceButtonCreateRequest,
     ResourceButtonPageQuery,
@@ -137,14 +136,14 @@ async def page(
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
     ],
-    response_model=ApiResponse[list[CurrentResourceModuleSchema]],
+    response_model=ApiResponse[list[SysResourceSchema]],
 )
 async def current_resources(
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-) -> ApiResponse[list[CurrentResourceModuleSchema]]:
+) -> ApiResponse[list[SysResourceSchema]]:
     return success(
-        await ResourceService(db).list_current_resource_modules(
+        await ResourceService(db).list_current_resources(
             session,
             module_client=ResourceModuleClient.ADMIN,
         )

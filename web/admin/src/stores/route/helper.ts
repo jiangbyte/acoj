@@ -297,3 +297,41 @@ function arrayToTree<T extends { id?: string; parent_id?: string | null; childre
 
   return tree
 }
+
+/**
+ * 将扁平资源列表按 module_id 分组为 ResourceModule[]。
+ *
+ * 模块元信息（name、code、client 等）从资源附带的 module_id_name 推导，
+ * icon、color、sort 使用默认值。后续可以从独立模块接口补充。
+ */
+export function groupResourcesByModule(resources: AppRoute.RowRoute[]): AppRoute.ResourceModule[] {
+  const moduleMap = new Map<string, {
+    id: string
+    name: string
+    code: string
+    client: 'ADMIN' | 'PORTAL'
+    icon: string | null
+    color: string | null
+    sort: number
+    resources: AppRoute.RowRoute[]
+  }>()
+
+  for (const resource of resources) {
+    if (!resource.module_id) continue
+    if (!moduleMap.has(resource.module_id)) {
+      moduleMap.set(resource.module_id, {
+        id: resource.module_id,
+        name: resource.module_id_name ?? resource.module_id,
+        code: resource.module_id_name ?? resource.module_id,
+        client: 'ADMIN',
+        icon: null,
+        color: null,
+        sort: 99,
+        resources: [],
+      })
+    }
+    moduleMap.get(resource.module_id)!.resources.push(resource)
+  }
+
+  return Array.from(moduleMap.values()).sort((a, b) => a.sort - b.sort)
+}

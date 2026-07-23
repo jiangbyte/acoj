@@ -364,15 +364,13 @@ async def test_current_resource_modules_group_admin_resources(db_session):
     )
     await db_session.commit()
 
-    modules = await ResourceService(db_session).list_current_resource_modules(
+    resources = await ResourceService(db_session).list_current_resources(
         _session("admin", ["*:*:*"]),
         module_client=ResourceModuleClient.ADMIN,
     )
 
-    assert [module.id for module in modules] == ["module_admin"]
-    assert modules[0].code == "admin"
-    assert [resource.id for resource in modules[0].resources] == ["resource_admin"]
-    assert modules[0].resources[0].module_client == ResourceModuleClient.ADMIN.value
+    assert [resource.id for resource in resources] == ["resource_admin"]
+    assert resources[0].module_client == ResourceModuleClient.ADMIN.value
 
 
 async def test_public_portal_resources_return_enabled_portal_resources_without_session(db_session):
@@ -462,11 +460,9 @@ async def test_public_portal_resource_modules_group_resources(db_session):
     )
     await db_session.commit()
 
-    modules = await ResourceService(db_session).list_public_portal_resource_modules()
+    resources = await ResourceService(db_session).list_public_portal_resources()
 
-    assert [module.code for module in modules] == ["HEADER", "CONTENT"]
-    assert [resource.id for resource in modules[0].resources] == ["resource_header"]
-    assert [resource.id for resource in modules[1].resources] == ["resource_content"]
+    assert sorted([resource.id for resource in resources]) == ["resource_content", "resource_header"]
 
 
 async def test_resource_tree_filters_by_module_id_and_client(db_session):

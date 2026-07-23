@@ -45,7 +45,6 @@ export function resolveFileUrl(value?: string | null) {
   }
   return `${baseURL.replace(/\/$/, '')}/${rawValue.replace(/^\//, '')}`
 }
-
 export function buildAdminFileDownloadUrl(id?: string | number | null) {
   const rawId = String(id ?? '').trim()
   if (!rawId) {

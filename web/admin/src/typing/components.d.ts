@@ -14,6 +14,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppLoading: typeof import('./../components/common/AppLoading.vue')['default']
     CaptchaInput: typeof import('./../components/common/CaptchaInput.vue')['default']
+    ChatModalPane: typeof import('./../components/message/ChatModalPane.vue')['default']
     CommonColorPicker: typeof import('./../components/common/CommonColorPicker.vue')['default']
     CommonWrapper: typeof import('./../components/common/CommonWrapper.vue')['default']
     DarkModeSwitch: typeof import('./../components/common/DarkModeSwitch.vue')['default']
@@ -108,6 +109,7 @@ declare module 'vue' {
 declare global {
   const AppLoading: typeof import('./../components/common/AppLoading.vue')['default']
   const CaptchaInput: typeof import('./../components/common/CaptchaInput.vue')['default']
+  const ChatModalPane: typeof import('./../components/message/ChatModalPane.vue')['default']
   const CommonColorPicker: typeof import('./../components/common/CommonColorPicker.vue')['default']
   const CommonWrapper: typeof import('./../components/common/CommonWrapper.vue')['default']
   const DarkModeSwitch: typeof import('./../components/common/DarkModeSwitch.vue')['default']

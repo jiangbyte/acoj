@@ -8,6 +8,7 @@ from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import to_schema, to_schema_list
 from app.core.security.session import SessionPayload
 from app.platform.db.transaction import transactional
+from app.platform.storage.url import resolve_file_url
 from app.modules.message.message.model import MsgMessage
 from app.modules.message.message.repository import MessageRepository
 from app.modules.message.message.schema import (
@@ -20,7 +21,36 @@ from app.modules.message.message.schema import (
     UnreadCountResponse,
 )
 from app.modules.message.conversation.service import MsgConversationService
-from app.modules.message.terminal.repository import MsgTerminalRepository
+from app.modules.message.offline.model import MsgOfflineQueue
+from app.core.config.enums import AccountType
+from app.modules.user.admin.repository import AdminUserProfileRepository
+from app.modules.user.portal.repository import PortalUserProfileRepository
+
+
+def _pick_profile_repo(db: AsyncSession, account_type: str):
+    """根据账户类型返回对应的 profile 仓库"""
+    if account_type == AccountType.ADMIN.value:
+        return AdminUserProfileRepository(db)
+    if account_type == AccountType.PORTAL.value:
+        return PortalUserProfileRepository(db)
+    raise BusinessError(f"Unsupported account type: {account_type}")
+
+
+async def _get_profile(db: AsyncSession, account_type: str, account_id: str):
+    """获取单个用户的资料"""
+    repo = _pick_profile_repo(db, account_type)
+    return await repo.get_by_account_id(account_id)
+
+
+async def _get_profiles_batch(
+    db: AsyncSession, account_type: str, account_ids: list[str]
+) -> dict[str, object]:
+    """批量获取同一类型用户的资料，返回 {account_id: profile} 映射"""
+    if not account_ids:
+        return {}
+    repo = _pick_profile_repo(db, account_type)
+    profiles = await repo.list_by_account_ids(list(dict.fromkeys(account_ids)))
+    return {p.account_id: p for p in profiles}
 
 
 def _message_schema(item: MsgMessage, attachments: list) -> MessageSchema:
@@ -39,24 +69,84 @@ class MessageService:
         async with transactional(self.db):
             conversation_id = payload.conversation_id
             if not conversation_id and payload.group_id:
-                from app.modules.message.conversation.model import MsgConversation
+                from app.modules.message.conversation.model import MsgConversation, MsgConversationMember
                 stmt = select(MsgConversation).where(
                     MsgConversation.group_id == payload.group_id,
                     MsgConversation.status == "ACTIVE",
                 )
                 conv = (await self.db.execute(stmt)).scalar_one_or_none()
                 if conv is None:
-                    raise BusinessError("No active conversation found for this group")
+                    # Auto-create conversation for this group
+                    from app.modules.message.group.model import MsgGroup, MsgGroupMember
+                    group_stmt = select(MsgGroup).where(MsgGroup.id == payload.group_id)
+                    group = (await self.db.execute(group_stmt)).scalar_one_or_none()
+                    if group is None:
+                        raise BusinessError("Group not found")
+
+                    conv = MsgConversation(
+                        conversation_type="GROUP",
+                        title=group.name,
+                        group_id=group.id,
+                        owner_account_type=group.owner_account_type,
+                        owner_account_id=group.owner_account_id,
+                        status="ACTIVE",
+                    )
+                    self.db.add(conv)
+                    await self.db.flush()
+
+                    # Add all active group members to the conversation
+                    member_stmt = select(MsgGroupMember).where(
+                        MsgGroupMember.group_id == payload.group_id,
+                        MsgGroupMember.left_at.is_(None),
+                    )
+                    group_members = list((await self.db.execute(member_stmt)).scalars().all())
+                    for gm in group_members:
+                        conv_member = MsgConversationMember(
+                            conversation_id=conv.id,
+                            account_type=gm.account_type,
+                            account_id=gm.account_id,
+                            role=gm.role,
+                        )
+                        self.db.add(conv_member)
+                    await self.db.flush()
+
                 conversation_id = conv.id
 
             if not conversation_id:
-                from app.modules.message.conversation.service import MsgConversationService
+                from app.modules.message.conversation.schema import CreateDirectConversationRequest
+
                 conv_service = MsgConversationService(self.db)
-                participants = [{"account_type": str(session.account_type), "account_id": session.account_id}]
-                for ref in (payload.participant_refs or []):
-                    participants.append({"account_type": ref.get("account_type", "PORTAL"), "account_id": ref.get("account_id")})
-                conv = await conv_service.find_or_create_direct(participants, session)
-                conversation_id = conv.id
+                if payload.participant_refs:
+                    ref = payload.participant_refs[0]
+                    conv = await conv_service.create_direct(
+                        CreateDirectConversationRequest(
+                            account_type=ref.get("account_type", "PORTAL"),
+                            account_id=ref.get("account_id"),
+                        ),
+                        session,
+                    )
+                    conversation_id = conv.id
+                else:
+                    raise BusinessError("No conversation_id, group_id, or participant_refs provided")
+
+            # ── Access control: conversation must be ACTIVE and sender must be a member ──
+            from app.modules.message.conversation.repository import MsgConversationRepository
+            conv_repo = MsgConversationRepository(self.db)
+            conv = await conv_repo.get_required(conversation_id)
+            if conv.status != "ACTIVE":
+                raise BusinessError("This conversation is no longer active")
+            if await conv_repo.get_member(
+                conversation_id, str(session.account_type), session.account_id
+            ) is None:
+                raise BusinessError("You are not a member of this conversation")
+
+            # Auto-fill sender_name from profile if not provided
+            sender_name = payload.sender_name
+            if not sender_name:
+                profile = await _get_profile(self.db, str(session.account_type), session.account_id)
+                if profile:
+                    sender_name = getattr(profile, "nickname", None) or getattr(profile, "name", None)
+            payload.sender_name = sender_name
 
             msg = await self.repo.create_message(
                 payload, conversation_id,
@@ -73,7 +163,17 @@ class MessageService:
             await conv_repo.increment_unread(conversation_id, str(session.account_type), session.account_id)
 
             attachments = await self.repo.map_attachments([msg.id])
-            return _message_schema(msg, attachments.get(msg.id, []))
+            schema = _message_schema(msg, attachments.get(msg.id, []))
+
+            # Enrich sender profile
+            sender_profile = await _get_profile(self.db, str(session.account_type), session.account_id)
+            if sender_profile:
+                schema.sender_nickname = getattr(sender_profile, "nickname", None) or getattr(sender_profile, "name", None)
+                schema.sender_avatar = resolve_file_url(getattr(sender_profile, "avatar", None))
+
+            await _push_new_message(self.db, msg, schema, conversation_id,
+                                    str(session.account_type), session.account_id)
+            return schema
 
     async def reply(self, payload: SendMessageRequest, session: SessionPayload) -> MessageSchema:
         if not payload.parent_id:
@@ -103,7 +203,31 @@ class MessageService:
         schemas = []
         for item in items:
             schemas.append(_message_schema(item, attachment_map.get(item.id, [])))
+        # Enrich sender profiles
+        await self._enrich_message_schemas(schemas)
         return build_page(query.pagination, total, schemas)
+
+    async def _enrich_message_schemas(self, schemas: list[MessageSchema]) -> None:
+        """批量填充消息发送者资料"""
+        admin_ids: list[str] = []
+        portal_ids: list[str] = []
+        for s in schemas:
+            if s.sender_account_type and s.sender_account_id:
+                (admin_ids if s.sender_account_type == "ADMIN" else portal_ids).append(s.sender_account_id)
+
+        admin_profiles = await _get_profiles_batch(self.db, "ADMIN", admin_ids) if admin_ids else {}
+        portal_profiles = await _get_profiles_batch(self.db, "PORTAL", portal_ids) if portal_ids else {}
+
+        for s in schemas:
+            if not s.sender_account_type or not s.sender_account_id:
+                continue
+            profiles = admin_profiles if s.sender_account_type == "ADMIN" else portal_profiles
+            profile = profiles.get(s.sender_account_id)
+            if profile:
+                s.sender_nickname = getattr(profile, "nickname", None) or getattr(profile, "name", None)
+                s.sender_avatar = resolve_file_url(getattr(profile, "avatar", None))
+                if not s.sender_name:
+                    s.sender_name = s.sender_nickname
 
     async def mark_read(self, payload: MessageReadRequest, session: SessionPayload) -> None:
         """Mark conversation as read. Finds the latest message and uses it as cursor."""
@@ -127,3 +251,55 @@ class MessageService:
     async def unread_count(self, conversation_id: str, session: SessionPayload) -> UnreadCountResponse:
         count = await self.repo.count_unread(conversation_id, str(session.account_type), session.account_id)
         return UnreadCountResponse(unread_count=count)
+
+
+async def _push_new_message(
+    db: AsyncSession,
+    message: MsgMessage,
+    schema: MessageSchema,
+    conversation_id: str,
+    sender_account_type: str,
+    sender_account_id: str,
+) -> None:
+    """Push new message to all conversation participants via WebSocket.
+    Online users get it in real-time; offline users get a queue entry.
+    Uses lazy imports to avoid circular dependencies.
+    """
+    from app.modules.message.conversation.repository import MsgConversationRepository
+    from app.modules.message.websocket.handler import on_new_message, manager as ws_manager
+
+    members = await MsgConversationRepository(db).list_members(conversation_id)
+
+    payload = {
+        "type": "new_message",
+        "data": schema.model_dump(mode="json"),
+    }
+
+    now = datetime.now(timezone.utc)
+    for member in members:
+        if member.account_type == sender_account_type and member.account_id == sender_account_id:
+            continue
+
+        # Push via WS (local + Redis cross-worker)
+        try:
+            await on_new_message(member.account_type, member.account_id, payload)
+        except Exception:
+            pass
+
+        # Write offline queue ONLY when the user is truly unreachable:
+        # not online locally AND Redis is unavailable (cross-worker can't deliver).
+        if not ws_manager.is_online(member.account_type, member.account_id) and not ws_manager.has_redis():
+            offline = MsgOfflineQueue(
+                message_id=message.id,
+                conversation_id=conversation_id,
+                target_account_type=member.account_type,
+                target_account_id=member.account_id,
+                event_type="NEW_MESSAGE",
+                event_payload=payload,
+                status="PENDING",
+                created_at=now,
+            )
+            db.add(offline)
+
+    if db.new:  # flush if we added any offline entries
+        await db.flush()

@@ -126,17 +126,29 @@ async def page(
 # ── Portal / current-user routes ──────────────────────────────────────────────
 
 
+@admin_router.get(
+    "/message/conversations/my-list",
+    dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+    response_model=ApiResponse[PageData[MsgConversationSchema]],
+)
 @portal_router.get(
     "/message/conversations/my-list",
-    response_model=ApiResponse[list[MsgConversationSchema]],
+    response_model=ApiResponse[PageData[MsgConversationSchema]],
 )
 async def my_list(
     db: Annotated[AsyncSession, Depends(get_db_session)],
     session: Annotated[SessionPayload, Depends(get_current_session)],
-) -> ApiResponse[list[MsgConversationSchema]]:
-    return success(await MsgConversationService(db).my_list(session))
+    current: Current = 1,
+    size: Size = 20,
+) -> ApiResponse[PageData[MsgConversationSchema]]:
+    return success(await MsgConversationService(db).my_list(session, PageQuery(current=current, size=size)))
 
 
+@admin_router.get(
+    "/message/conversations/detail",
+    dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+    response_model=ApiResponse[MsgConversationSchema],
+)
 @portal_router.get(
     "/message/conversations/detail",
     response_model=ApiResponse[MsgConversationSchema],
@@ -146,9 +158,14 @@ async def portal_detail(
     session: Annotated[SessionPayload, Depends(get_current_session)],
     id: Annotated[Id, Query()],
 ) -> ApiResponse[MsgConversationSchema]:
-    return success(await MsgConversationService(db).detail(IdQuery(id=id)))
+    return success(await MsgConversationService(db).detail(IdQuery(id=id), session))
 
 
+@admin_router.post(
+    "/message/conversations/create-direct",
+    dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+    response_model=ApiResponse[MsgConversationSchema],
+)
 @portal_router.post(
     "/message/conversations/create-direct",
     response_model=ApiResponse[MsgConversationSchema],
@@ -161,6 +178,11 @@ async def create_direct(
     return success(await MsgConversationService(db).create_direct(payload, session))
 
 
+@admin_router.post(
+    "/message/conversations/mute",
+    dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+    response_model=ApiResponse[None],
+)
 @portal_router.post(
     "/message/conversations/mute",
     response_model=ApiResponse[None],
@@ -174,6 +196,11 @@ async def mute(
     return success()
 
 
+@admin_router.post(
+    "/message/conversations/pin",
+    dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+    response_model=ApiResponse[None],
+)
 @portal_router.post(
     "/message/conversations/pin",
     response_model=ApiResponse[None],
@@ -187,6 +214,11 @@ async def pin(
     return success()
 
 
+@admin_router.post(
+    "/message/conversations/leave",
+    dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+    response_model=ApiResponse[None],
+)
 @portal_router.post(
     "/message/conversations/leave",
     response_model=ApiResponse[None],
@@ -200,6 +232,11 @@ async def leave(
     return success()
 
 
+@admin_router.post(
+    "/message/conversations/mark-read",
+    dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+    response_model=ApiResponse[None],
+)
 @portal_router.post(
     "/message/conversations/mark-read",
     response_model=ApiResponse[None],
