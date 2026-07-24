@@ -67,8 +67,6 @@ class PositionRepository:
         filters = []
         if query.name:
             filters.append(SysPosition.name.contains(query.name))
-        if query.code:
-            filters.append(SysPosition.code.contains(query.code))
         if query.category:
             filters.append(SysPosition.category == query.category)
         if query.status:

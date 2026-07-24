@@ -11,7 +11,8 @@ import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 import ModalGrantResource from '../role/components/ModalGrantResource.vue'
-import ModalGrantUser from '../role/components/ModalGrantUser.vue'
+import ModalGrantUser from '../components/ModalGrantUser.vue'
+import ModalGrantRoleToGroup from '../components/ModalGrantRoleToGroup.vue'
 
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
@@ -82,16 +83,8 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     type: 'selection',
     fixed: 'left',
-  },
-  {
-    title: 'ID',
-    width: 80,
-    path: 'id',
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
+   },
+   {
     title: '用户组名称',
     path: 'name',
     width: 180,
@@ -233,15 +226,8 @@ function openGrantModal(type: string, row: any) {
   }
   if (type === 'user') {
     grantUserModalRef.value?.openModal(group, groupApi, '分配用户')
-  } else if (type === 'role') {
-    grantRoleModalRef.value?.openModal(group, groupApi, '分配角色', {
-      ownMethod: 'ownRoles',
-      grantMethod: 'grantRoles',
-      listKey: 'roles',
-      selectedKey: 'role_ids',
-      submitKey: 'role_ids',
-      searchFields: ['code', 'name'],
-    })
+   } else if (type === 'role') {
+      grantRoleModalRef.value?.openModal(group)
   } else if (type === 'resource') {
     grantResourceModalRef.value?.openModal(group, groupApi, '分配资源')
   }
@@ -305,7 +291,7 @@ async function deleteData(ids: string[]) {
       remote
       :title="'用户组管理'"
       row-key="id"
-      :scroll-x="1100"
+      :scroll-x="1020"
       :columns="tableColumns"
       :data="state.groups"
       :loading="state.loading"
@@ -351,7 +337,7 @@ async function deleteData(ids: string[]) {
     <ModalForm ref="formModalRef" @saved="fetchPage" />
     <ModalDetail ref="detailModalRef" />
     <ModalGrantUser ref="grantUserModalRef" @saved="fetchPage" />
-    <ModalGrantUser ref="grantRoleModalRef" @saved="fetchPage" />
+    <ModalGrantRoleToGroup ref="grantRoleModalRef" @saved="fetchPage" />
     <ModalGrantResource ref="grantResourceModalRef" @saved="fetchPage" />
   </NFlex>
 </template>

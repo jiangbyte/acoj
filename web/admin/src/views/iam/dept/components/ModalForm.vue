@@ -12,7 +12,6 @@ const emit = defineEmits<{
 const formRef = ref<FormInst | null>(null)
 const defaultFormData = {
   name: '',
-  code: '',
   category: null as string | null,
   parent_id: null as string | null,
   master_id: null as string | null,
@@ -38,7 +37,6 @@ const modalTitle = computed(() =>
 
 const rules = computed<FormRules>(() => ({
   name: createRequiredRule('部门名称', 'input'),
-  code: createRequiredRule('部门编码', 'input'),
   category: createRequiredRule('部门分类', 'change'),
   status: createRequiredRule('状态', 'change'),
 }))
@@ -124,7 +122,6 @@ async function submitForm() {
     const payload = {
       ...state.formModel,
       name: state.formModel.name.trim(),
-      code: state.formModel.code.trim(),
       parent_id: toNullableString(state.formModel.parent_id),
       master_id: toNullableString(state.formModel.master_id),
       deputy_master_id: toNullableString(state.formModel.deputy_master_id),
@@ -210,11 +207,8 @@ defineExpose({ openModal })
           <NFormItem :label="'部门名称'" path="name">
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
-          <NFormItem :label="'部门编码'" path="code">
-            <NInput v-model:value="state.formModel.code" />
-          </NFormItem>
           <NFormItem :label="'部门分类'" path="category">
-            <DictSelect v-model="state.formModel.category" dict-code="DEPT_CATEGORY" />
+            <DictSelect v-model="state.formModel.category" dict-code="DEPT_CATEGORY" :placeholder="'请选择部门分类'" />
           </NFormItem>
           <NFormItem :label="'父级部门'" path="parent_id">
             <NTreeSelect
@@ -222,7 +216,7 @@ defineExpose({ openModal })
               clearable
               filterable
               :options="parentTreeOptions"
-              :placeholder="'请选择父级部门'"
+              :placeholder="'Top 等级'"
               key-field="key"
               label-field="label"
               children-field="children"

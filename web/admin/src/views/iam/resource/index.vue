@@ -141,7 +141,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: '资源编码',
     path: 'code',
-    width: 180,
+    width: 150,
     ellipsis: {
       tooltip: true,
     },
@@ -149,7 +149,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: '资源类型',
     path: 'resource_type',
-    width: 130,
+    width: 100,
     render: (row) => dictTypeData('RESOURCE_TYPE', row.resource_type) || row.resource_type,
   },
   {
@@ -164,7 +164,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: '路由路径',
     path: 'path',
-    width: 210,
+    width: 100,
     ellipsis: {
       tooltip: true,
     },
@@ -205,7 +205,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: '状态',
     path: 'status',
-    width: 110,
+    width: 100,
     render: (row) => (
       <NTag color={createTagColor(dictTypeColor('COMMON_STATUS', row.status))} bordered={false}>
         {dictTypeData('COMMON_STATUS', row.status) || row.status}
@@ -240,16 +240,15 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
               {renderButtonIcon('icon-park-outline:edit')}
             </NButton>
           ) : null}
-          {moreOptions.length ? (
-            <NDropdown
-              trigger="click"
-              options={moreOptions}
-              onSelect={(key) => handleMoreAction(String(key), row)}
-            >
-              <NButton type="warning" size="small" text={true}>
-                {renderButtonIcon('icon-park-outline:more')}
-              </NButton>
-            </NDropdown>
+          {row.resource_type !== 'BUTTON' && row.resource_type !== 'ACTION' && hasPermission('iam:resource:create') ? (
+            <NButton type="warning" size="small" text={true} onClick={() => openCreateModal(row.id)}>
+              {renderButtonIcon('icon-park-outline:plus')}
+            </NButton>
+          ) : null}
+          {row.resource_type !== 'BUTTON' && row.resource_type !== 'ACTION' && hasPermission('iam:resource:list') ? (
+            <NButton type="warning" size="small" text={true} onClick={() => openButtonPermissionModal(row)}>
+              {renderButtonIcon('icon-park-outline:config')}
+            </NButton>
           ) : null}
           {hasPermission('iam:resource:delete') ? (
             <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>

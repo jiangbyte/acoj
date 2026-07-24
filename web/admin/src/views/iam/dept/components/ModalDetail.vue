@@ -49,9 +49,6 @@ defineExpose({
           <NDescriptionsItem :label="'部门名称'">
             {{ displayValue(state.dept.name) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'部门编码'">
-            {{ displayValue(state.dept.code) }}
-          </NDescriptionsItem>
           <NDescriptionsItem :label="'部门分类'">
             {{
               dictTypeData('DEPT_CATEGORY', state.dept.category) ||
@@ -86,15 +83,15 @@ defineExpose({
           <NDescriptionsItem :label="'创建时间'">
             {{ formatDateTime(state.dept.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'创建人'">
-            {{ displayValue(state.dept.created_by) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="'更新时间'">
-            {{ formatDateTime(state.dept.updated_at) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="'更新人'">
-            {{ displayValue(state.dept.updated_by) }}
-          </NDescriptionsItem>
+         <NDescriptionsItem :label="'创建人'">
+            {{ displayValue(state.dept.created_name) }}
+         </NDescriptionsItem>
+         <NDescriptionsItem :label="'更新时间'">
+           {{ formatDateTime(state.dept.updated_at) }}
+         </NDescriptionsItem>
+         <NDescriptionsItem :label="'更新人'">
+            {{ displayValue(state.dept.updated_name) }}
+         </NDescriptionsItem>
         </NDescriptions>
       </NSpin>
     </NScrollbar>

@@ -88,21 +88,13 @@ const pagination = computed<PaginationProps>(() => ({
 }))
 
 const tableColumns = computed<ProDataTableColumns<any>>(() => [
-  {
-    type: 'selection',
-    fixed: 'left',
-  },
-  {
-    title: 'ID',
-    width: 80,
-    path: 'id',
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
-    title: '编码',
-    path: 'code',
+   {
+     type: 'selection',
+     fixed: 'left',
+   },
+   {
+     title: '编码',
+     path: 'code',
     width: 190,
     ellipsis: {
       tooltip: true,
@@ -209,6 +201,7 @@ onMounted(() => {
 
 function handleCategoryUpdate(value: string) {
   state.category = value
+  state.searchValues = {}
   state.treeSearchKey = ''
   state.selectedTreeKeys = []
   state.checkedRowKeys = []
@@ -372,8 +365,9 @@ function sortAndFilterTree(nodes: any[], keyword: string): any[] {
         return true
       }
       const raw = node.raw
+      if (!raw) return false
       return (
-        raw.code.toLowerCase().includes(keyword) ||
+        (raw.code ?? '').toLowerCase().includes(keyword) ||
         String(raw.label ?? '')
           .toLowerCase()
           .includes(keyword) ||
@@ -475,7 +469,7 @@ function flattenDictTree(items: any[]) {
         remote
         :title="'字典管理'"
         row-key="id"
-        :scroll-x="1590"
+       :scroll-x="1510"
         :columns="tableColumns"
         :data="state.dicts"
         :loading="state.loading"

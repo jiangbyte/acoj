@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { FormInst, FormRules } from 'naive-ui'
-import { roleApi } from '@/api'
+import { deptApi, roleApi } from '@/api'
 import { createRequiredRule, toNullableString } from '@/utils'
 import { computed, reactive, ref } from 'vue'
 
@@ -27,6 +27,7 @@ const state = reactive({
   submitLoading: false,
   dataId: null as string | null,
   formModel: { ...defaultFormData },
+  deptTree: [] as any[],
 })
 
 const modalTitle = computed(() =>
@@ -41,10 +42,21 @@ const rules = computed<FormRules>(() => ({
   status: createRequiredRule('状态', 'change'),
 }))
 
+function buildDeptTreeOptions(nodes: any[]): any[] {
+  return nodes.map((node: any) => ({
+    key: node.id,
+    label: node.name,
+    children: node.children ? buildDeptTreeOptions(node.children) : undefined,
+  }))
+}
+
+const deptTreeOptions = computed(() => buildDeptTreeOptions(state.deptTree))
+
 async function openModal(id?: string) {
   state.dataId = id ?? null
   state.formModel = { ...defaultFormData }
   state.showModal = true
+  fetchDeptTree()
 
   if (id) {
     await fetchDetail(id)
@@ -63,6 +75,13 @@ async function fetchDetail(id: string) {
   } finally {
     state.loading = false
   }
+}
+
+async function fetchDeptTree() {
+  try {
+    const resp = await deptApi.tree()
+    state.deptTree = resp.data ?? []
+  } catch { state.deptTree = [] }
 }
 
 function closeModal() {
@@ -128,11 +147,11 @@ defineExpose({
           label-width="110"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="'角色编码'" path="code">
-            <NInput v-model:value="state.formModel.code" />
-          </NFormItem>
           <NFormItem :label="'角色名称'" path="name">
             <NInput v-model:value="state.formModel.name" />
+          </NFormItem>
+          <NFormItem :label="'角色编码'" path="code">
+            <NInput v-model:value="state.formModel.code" />
           </NFormItem>
           <NFormItem :label="'角色分类'" path="category">
             <DictSelect v-model="state.formModel.category" dict-code="SYS_BIZ_CATEGORY" />
@@ -140,8 +159,17 @@ defineExpose({
           <NFormItem :label="'范围类型'" path="scope_type">
             <DictSelect v-model="state.formModel.scope_type" dict-code="ROLE_SCOPE_TYPE" />
           </NFormItem>
-          <NFormItem :label="'所属部门ID'" path="owner_dept_id">
-            <NInput v-model:value="state.formModel.owner_dept_id" />
+          <NFormItem :label="'所属部门'" path="owner_dept_id">
+            <NTreeSelect
+              v-model:value="state.formModel.owner_dept_id"
+              clearable
+              filterable
+              :options="deptTreeOptions"
+              :placeholder="'请选择所属部门'"
+              key-field="key"
+              label-field="label"
+              children-field="children"
+            />
           </NFormItem>
           <NFormItem :label="'排序'" path="sort">
             <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />

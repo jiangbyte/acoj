@@ -46,7 +46,7 @@ defineExpose({
     :title="'账号详情'"
     style="width: 680px"
   >
-    <NScrollbar class="max-h-[min(640px,calc(100vh-300px))] pr-16px">
+    <NScrollbar class="h-[480px] pr-16px">
       <NSpin :show="state.loading">
         <NTabs type="line" animated>
           <NTabPane name="account" :tab="'账号信息'">

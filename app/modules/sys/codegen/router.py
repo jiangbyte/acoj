@@ -105,14 +105,12 @@ async def page(
     name: str | None = Query(default=None, max_length=128),
     main_table: str | None = Query(default=None, max_length=128),
     gen_type: CodegenType | None = Query(default=None),
-    status: str | None = Query(default=None, max_length=32),
 ) -> ApiResponse[PageData[SysCodegenPlanSchema]]:
     query = CodegenPlanPageQuery(
         pagination=PageQuery(current=current, size=size),
         name=name,
         main_table=main_table,
         gen_type=gen_type,  # type: ignore[arg-type]
-        status=status,
     )
     return success(await CodegenService(db).page_admin(query))
 

@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import StorageProvider
 from app.core.config.settings import settings
+from app.core.config.enums import AccountType
+from app.modules.user.utils.profile import get_profiles_batch
 from app.core.exceptions.business import BusinessError, NotFoundError
 from app.core.response.pagination import PageData, PageQuery, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
@@ -114,9 +116,11 @@ class FileService:
                 await self.repo.delete(entity)
 
     async def detail(self, query: IdQuery) -> SysFileSchema:
-        return self._with_resolved_url(
+        schema = self._with_resolved_url(
             to_schema(SysFileSchema, await self.repo.get_required(query.id))
         )
+        await self._resolve_creator_names([schema])
+        return schema
 
     async def list_by_ids(self, payload: IdsRequest) -> list[SysFileSchema]:
         unique_ids = list(dict.fromkeys(payload.ids))
@@ -202,12 +206,29 @@ class FileService:
             self._with_resolved_url(schema)
             for schema in to_schema_list(SysFileSchema, items)
         ]
+        await self._resolve_creator_names(schemas)
         return build_page(page_query.pagination, total, schemas)
 
     def _with_resolved_url(self, schema: SysFileSchema) -> SysFileSchema:
         schema.url = str(self._get_storage(schema.storage_provider).get_object_url(schema.object_name)) or schema.url
         return schema
 
+    async def _resolve_creator_names(self, items: list[SysFileSchema]) -> None:
+        """批量查询 created_by / updated_by 对应的昵称，写入 created_name / updated_name。"""
+        account_ids: set[str] = set()
+        for item in items:
+            if item.created_by:
+                account_ids.add(item.created_by)
+            if item.updated_by:
+                account_ids.add(item.updated_by)
+        if not account_ids:
+            return
+        profiles = await get_profiles_batch(self.db, AccountType.ADMIN, list(account_ids))
+        for item in items:
+            if item.created_by and item.created_by in profiles:
+                item.created_name = getattr(profiles[item.created_by], "nickname", None)
+            if item.updated_by and item.updated_by in profiles:
+                item.updated_name = getattr(profiles[item.updated_by], "nickname", None)
     def _get_storage(self, provider: StorageProvider | str | None = None):
         storage_provider = StorageProvider(provider or settings.storage.provider)
         if storage_provider not in self._storage_cache:

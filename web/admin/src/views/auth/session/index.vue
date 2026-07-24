@@ -26,7 +26,6 @@ const searchForm = createProSearchForm<any>({
   onSubmit(values) {
     state.searchValues = normalizeSearchValues(values, {
       account: (value) => String(value).trim(),
-      account_id: (value) => String(value).trim(),
       ip: (value) => String(value).trim(),
     })
     state.page = 1
@@ -63,9 +62,8 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     field: 'select',
     fieldProps: { options: dictList('ACCOUNT_TYPE') },
   },
-  { title: '账号', path: 'account', field: 'input' },
-  { title: '账号 ID', path: 'account_id', field: 'input' },
-  { title: '客户端 IP', path: 'ip', field: 'input' },
+   { title: '账号', path: 'account', field: 'input' },
+   { title: '客户端 IP', path: 'ip', field: 'input' },
 ])
 
 const pagination = computed<PaginationProps>(() => ({
@@ -305,16 +303,18 @@ function confirmExitToken(token: string) {
       preset="card"
       draggable
       :title="'设备详情'"
-      style="width: min(960px, calc(100vw - 32px))"
-    >
-      <NDataTable
-        :row-key="(row) => row.token"
-        :scroll-x="1170"
-        :columns="tokenColumns"
-        :data="state.tokens"
-        :pagination="false"
-      />
-    </NModal>
+     style="width: min(960px, calc(100vw - 32px))"
+   >
+      <NScrollbar class="h-[540px]">
+        <NDataTable
+          :row-key="(row) => row.token"
+          :scroll-x="1170"
+          :columns="tokenColumns"
+          :data="state.tokens"
+          :pagination="false"
+        />
+      </NScrollbar>
+   </NModal>
   </NFlex>
 </template>
 

@@ -46,11 +46,11 @@ defineExpose({
           <NDescriptionsItem :label="'角色ID'">
             {{ displayValue(state.role.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'角色编码'">
-            {{ displayValue(state.role.code) }}
-          </NDescriptionsItem>
           <NDescriptionsItem :label="'角色名称'">
             {{ displayValue(state.role.name) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'角色编码'">
+            {{ displayValue(state.role.code) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'角色分类'">
             {{
@@ -64,8 +64,8 @@ defineExpose({
               displayValue(state.role.scope_type)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'所属部门ID'">
-            {{ displayValue(state.role.owner_dept_id) }}
+          <NDescriptionsItem :label="'所属部门'">
+            {{ displayValue(state.role.owner_dept_name) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'排序'">
             {{ displayValue(state.role.sort) }}
@@ -90,13 +90,13 @@ defineExpose({
             {{ formatDateTime(state.role.created_at) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'创建人'">
-            {{ displayValue(state.role.created_by) }}
+            {{ displayValue(state.role.created_name) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'更新时间'">
             {{ formatDateTime(state.role.updated_at) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'更新人'">
-            {{ displayValue(state.role.updated_by) }}
+            {{ displayValue(state.role.updated_name) }}
           </NDescriptionsItem>
         </NDescriptions>
       </NSpin>

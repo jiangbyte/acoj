@@ -9,7 +9,6 @@ from app.core.schema.base import ApiSchema
 
 class PositionCreateRequest(ApiSchema):
     name: str = Field(min_length=1, max_length=64)
-    code: str = Field(min_length=1, max_length=64)
     category: str = Field(min_length=1, max_length=32)
     owner_dept_id: str | None = Field(default=None, max_length=64)
     sort: int = 99
@@ -26,7 +25,6 @@ class PositionUpdateRequest(PositionCreateRequest):
 class PositionAdminPageQuery(ApiSchema):
     pagination: PageQuery
     name: str | None = Field(default=None, max_length=64)
-    code: str | None = Field(default=None, max_length=64)
     category: str | None = Field(default=None, max_length=32)
     status: str | None = Field(default=None, max_length=32)
 
@@ -34,7 +32,6 @@ class PositionAdminPageQuery(ApiSchema):
 class SysPositionSchema(ApiSchema):
     id: str
     name: str
-    code: str
     category: str
     owner_dept_id: str | None = None
     sort: int
@@ -44,5 +41,7 @@ class SysPositionSchema(ApiSchema):
     extra: dict
     created_at: datetime
     created_by: str | None = None
+    created_name: str | None = None
     updated_at: datetime
     updated_by: str | None = None
+    updated_name: str | None = None

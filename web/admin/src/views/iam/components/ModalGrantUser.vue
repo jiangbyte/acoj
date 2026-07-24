@@ -80,13 +80,15 @@ const userColumns = computed<DataTableColumns<any>>(() => [
     title: '头像',
     key: 'avatar',
     width: 56,
-    render: (row) => {
-      const avatar = resolveFileUrl(row.avatar)
-      if (avatar) {
-        return <NAvatar size="small" src={avatar} imgProps={avatarImgProps} />
-      }
-      return row.name ? <NAvatar size="small">{row.name?.slice(0, 1)}</NAvatar> : null
-    },
+   render: (row) => {
+     const avatar = resolveFileUrl(row.avatar)
+      const name = row.name || row.account || ''
+      return (
+        <NAvatar size="small" src={avatar} imgProps={avatarImgProps}>
+          {avatar ? undefined : String(name || '-').slice(0, 1).toUpperCase()}
+        </NAvatar>
+      )
+   },
   },
   {
     title: '名称',

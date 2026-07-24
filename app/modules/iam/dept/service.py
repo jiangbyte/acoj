@@ -3,6 +3,8 @@ from collections.abc import Mapping, Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import AuthorizationError
+from app.core.config.enums import AccountType
+from app.modules.user.utils.profile import get_profiles_batch
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.core.security.data_scope import build_data_scope_filter, resolve_data_scope_dept_ids
@@ -104,12 +106,26 @@ class DeptService:
         account_ids = set()
         parent_ids = set()
         for dto in dtos:
-            if dto.master_id:
-                account_ids.add(dto.master_id)
-            if dto.deputy_master_id:
-                account_ids.add(dto.deputy_master_id)
-            if dto.parent_id:
-                parent_ids.add(dto.parent_id)
+           if dto.master_id:
+               account_ids.add(dto.master_id)
+           if dto.deputy_master_id:
+               account_ids.add(dto.deputy_master_id)
+           if dto.parent_id:
+               parent_ids.add(dto.parent_id)
+        # 解析创建人/更新人昵称
+        creator_ids: set[str] = set()
+        for dto in dtos:
+            if dto.created_by:
+                creator_ids.add(dto.created_by)
+            if dto.updated_by:
+                creator_ids.add(dto.updated_by)
+        if creator_ids:
+            profiles = await get_profiles_batch(self.db, AccountType.ADMIN, list(creator_ids))
+            for dto in dtos:
+                if dto.created_by and dto.created_by in profiles:
+                    dto.created_name = getattr(profiles[dto.created_by], "nickname", None)
+                if dto.updated_by and dto.updated_by in profiles:
+                    dto.updated_name = getattr(profiles[dto.updated_by], "nickname", None)
         if account_ids:
             name_map = await self.repo.resolve_account_names(list(account_ids))
             for dto in dtos:
@@ -174,15 +190,15 @@ def _build_dept_tree_nodes(
             DeptTreeNode(
                 id=str(raw_item["id"]),
                 name=str(raw_item["name"]),
-                code=str(raw_item["code"]),
                 category=str(raw_item["category"]),
                 parent_id=str(raw_item["parent_id"]) if raw_item.get("parent_id") else None,
                 status=str(raw_item.get("status", "ENABLED")),
                 sort=int(raw_item.get("sort", 99)),
                 is_virtual=bool(raw_item.get("is_virtual", False)),
                 master_name=str(raw_item["master_name"]) if raw_item.get("master_name") else None,
-                deputy_master_name=str(raw_item["deputy_master_name"]) if raw_item.get("deputy_master_name") else None,
-                children=_build_dept_tree_nodes(raw_item.get("children", [])),  # type: ignore[arg-type]
+            deputy_master_name=str(raw_item["deputy_master_name"]) if raw_item.get("deputy_master_name") else None,
+            updated_at=str(raw_item["updated_at"]) if raw_item.get("updated_at") else None,
+            children=_build_dept_tree_nodes(raw_item.get("children", [])),  # type: ignore[arg-type]
             )
         )
     return nodes

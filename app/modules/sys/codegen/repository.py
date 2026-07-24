@@ -66,8 +66,6 @@ class CodegenRepository:
             filters.append(SysCodegenPlan.main_table.ilike(f"%{query.main_table}%"))
         if query.gen_type:
             filters.append(SysCodegenPlan.gen_type == query.gen_type)
-        if query.status:
-            filters.append(SysCodegenPlan.status == query.status)
         if filters:
             stmt = stmt.where(*filters)
             count_stmt = count_stmt.where(*filters)

@@ -19,6 +19,7 @@ from app.modules.iam.account.model import SysAccount
 from app.modules.iam.resource.model import SysResource
 from app.modules.iam.relation.model import SysIamRelation
 from app.modules.iam.relation.repository import IamRelationRepository, account_dept_condition
+from app.modules.iam.dept.model import SysDept
 from app.modules.iam.role.model import SysRole
 from app.modules.iam.role.schema import (
     RoleAdminPageQuery,
@@ -302,6 +303,15 @@ class RoleRepository:
         for account_id in account_ids:
             self.db.add(self.relations.account_role(account_id, payload.id))
         await self.db.flush()
+
+    async def resolve_dept_names(self, dept_ids: list[str]) -> dict[str, str]:
+        """批量查询部门名称，返回 {dept_id: name} 映射。"""
+        unique_ids = list(dict.fromkeys(dept_ids))
+        if not unique_ids:
+            return {}
+        stmt = select(SysDept.id, SysDept.name).where(SysDept.id.in_(unique_ids))
+        rows = (await self.db.execute(stmt)).all()
+        return {row[0]: row[1] for row in rows}
 
     async def list_account_ids_by_role(self, role_id: str) -> list[str]:
         stmt = select(SysIamRelation.subject_id).where(

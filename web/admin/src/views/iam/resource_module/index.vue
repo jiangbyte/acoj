@@ -95,14 +95,6 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'left',
   },
   {
-    title: 'ID',
-    width: 80,
-    path: 'id',
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
     title: '模块名称',
     path: 'name',
     width: 160,
@@ -325,7 +317,7 @@ async function deleteData(ids: string[]) {
       remote
       :title="'资源模块管理'"
       row-key="id"
-      :scroll-x="1500"
+      :scroll-x="1420"
       :columns="tableColumns"
       :data="state.modules"
       :loading="state.loading"

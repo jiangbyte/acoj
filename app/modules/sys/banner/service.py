@@ -39,11 +39,16 @@ class BannerService:
             await self.repo.delete_many(payload.ids)
 
     async def detail(self, query: IdQuery) -> SysBannerSchema:
-        return to_schema(SysBannerSchema, await self.repo.get_required(query.id))
+        entity = await self.repo.get_required(query.id)
+        schema = to_schema(SysBannerSchema, entity)
+        await _resolve_nicknames(self.db, [schema])
+        return schema
 
     async def page_admin(self, query: BannerAdminPageQuery) -> PageData[SysBannerSchema]:
-        items, total = await self.repo.page_admin(query)
-        return build_page(query.pagination, total, to_schema_list(SysBannerSchema, items))
+        entities, total = await self.repo.page_admin(query)
+        schemas = to_schema_list(SysBannerSchema, entities)
+        await _resolve_nicknames(self.db, schemas)
+        return build_page(query.pagination, total, schemas)
 
     async def list_public(self, query: BannerPublicListQuery) -> list[SysBannerSchema]:
         items = await self.repo.list_public(now=datetime.now(UTC), query=query)
@@ -57,6 +62,26 @@ class BannerService:
             return
         await redis.hincrby(banner_interaction_delta_key(), payload.id, 1)
 
+
+async def _resolve_nicknames(db, items: list) -> list:
+    from app.core.config.enums import AccountType
+    from app.modules.user.utils.profile import get_profiles_batch
+
+    creator_ids = list({i.created_by for i in items if i.created_by})
+    updater_ids = list({i.updated_by for i in items if i.updated_by})
+    all_ids = list(dict.fromkeys(creator_ids + updater_ids))
+    if not all_ids:
+        return items
+
+    profiles = await get_profiles_batch(db, AccountType.ADMIN, all_ids)
+    nickname_map = {aid: p.nickname for aid, p in profiles.items()}
+
+    for item in items:
+        if item.created_by and item.created_by in nickname_map:
+            item.created_name = nickname_map[item.created_by]
+        if item.updated_by and item.updated_by in nickname_map:
+            item.updated_name = nickname_map[item.updated_by]
+    return items
 
 async def _read_positive_deltas(redis: Redis, key: str) -> dict[str, int]:
     raw_values = await redis.hgetall(key)

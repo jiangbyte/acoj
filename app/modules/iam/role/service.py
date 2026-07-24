@@ -1,6 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config.enums import AccountType
 from app.core.exceptions.business import AuthorizationError
+from app.modules.user.utils.profile import get_profiles_batch
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.core.security.data_scope import build_data_scope_filter, resolve_data_scope_dept_ids
@@ -66,7 +68,9 @@ class RoleService:
     async def detail(self, query: IdQuery, session: SessionPayload | None = None) -> SysRoleSchema:
         if session is not None:
             await self._ensure_roles_visible(session, "iam:role:detail", [query.id])
-        return to_schema(SysRoleSchema, await self.repo.get_required(query.id))
+        schema = to_schema(SysRoleSchema, await self.repo.get_required(query.id))
+        await self._resolve_names([schema])
+        return schema
 
     async def page_admin(
         self,
@@ -79,7 +83,9 @@ class RoleService:
             else None
         )
         items, total = await self.repo.page_admin(query, data_scope_filter)
-        return build_page(query.pagination, total, to_schema_list(SysRoleSchema, items))
+        schemas = to_schema_list(SysRoleSchema, items)
+        await self._resolve_names(schemas)
+        return build_page(query.pagination, total, schemas)
 
     async def own_resource(
         self,
@@ -138,6 +144,26 @@ class RoleService:
             old_account_ids = await self.repo.list_account_ids_by_role(payload.id)
             await self.repo.replace_role_accounts(payload)
         await self._refresh_accounts(sorted(set(old_account_ids + payload.account_ids)))
+
+    async def _resolve_names(self, dtos: list[SysRoleSchema]) -> None:
+        """批量解析部门名称和创建人/更新人昵称。"""
+        dept_ids = {d.owner_dept_id for d in dtos if d.owner_dept_id}
+        creator_ids = set()
+        for d in dtos:
+            if d.created_by: creator_ids.add(d.created_by)
+            if d.updated_by: creator_ids.add(d.updated_by)
+        if dept_ids:
+            dept_map = await self.repo.resolve_dept_names(list(dept_ids))
+            for d in dtos:
+                if d.owner_dept_id and d.owner_dept_id in dept_map:
+                    d.owner_dept_name = dept_map[d.owner_dept_id]
+        if creator_ids:
+            profiles = await get_profiles_batch(self.db, AccountType.ADMIN, list(creator_ids))
+            for d in dtos:
+                if d.created_by and d.created_by in profiles:
+                    d.created_name = getattr(profiles[d.created_by], "nickname", None)
+                if d.updated_by and d.updated_by in profiles:
+                    d.updated_name = getattr(profiles[d.updated_by], "nickname", None)
 
     async def _refresh_accounts(self, account_ids: list[str]) -> None:
         await AccountSessionService(self.db).refresh_accounts_sessions(sorted(set(account_ids)))

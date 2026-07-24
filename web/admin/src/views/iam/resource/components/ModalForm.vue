@@ -240,77 +240,94 @@ function findResourceNode(items: any[], id: string): any | null {
           label-width="110"
           :disabled="state.loading || state.treeLoading || state.submitLoading"
         >
-          <NFormItem :label="'资源名称'" path="name">
-            <NInput v-model:value="state.formModel.name" />
-          </NFormItem>
-          <NFormItem :label="'资源编码'" path="code">
-            <NInput v-model:value="state.formModel.code" />
-          </NFormItem>
-          <NFormItem :label="'资源类型'" path="resource_type">
-            <DictSelect v-model="state.formModel.resource_type" dict-code="RESOURCE_TYPE" />
-          </NFormItem>
-          <NFormItem :label="'父级资源ID'" path="parent_id">
-            <NTreeSelect
-              v-model:value="state.formModel.parent_id"
-              clearable
-              filterable
-              :options="parentTreeOptions"
-              :placeholder="'父级资源ID'"
-              key-field="id"
-              label-field="name"
-              children-field="children"
-            />
-          </NFormItem>
-          <NFormItem :label="'资源模块'" path="module_id">
-            <NSelect
-              v-model:value="state.formModel.module_id"
-              filterable
-              clearable
-              :options="state.moduleOptions"
-            />
-          </NFormItem>
-          <NFormItem :label="'路由路径'" path="path">
-            <NInput v-model:value="state.formModel.path" />
-          </NFormItem>
-          <NFormItem :label="'组件'" path="component">
-            <NInput v-model:value="state.formModel.component" />
-          </NFormItem>
-          <NFormItem :label="'重定向'" path="redirect">
-            <NInput v-model:value="state.formModel.redirect" />
-          </NFormItem>
-          <NFormItem :label="'图标'" path="icon">
-            <IconSelect v-model:value="state.formModel.icon" />
-          </NFormItem>
-          <NFormItem :label="'颜色'" path="color">
-            <CommonColorPicker v-model="state.formModel.color" />
-          </NFormItem>
-          <NFormItem :label="'外链'" path="href">
-            <NInput v-model:value="state.formModel.href" />
-          </NFormItem>
-          <NFormItem :label="'排序'" path="sort">
-            <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
-          </NFormItem>
-          <NFormItem :label="'可见'" path="is_visible">
-            <NSwitch v-model:value="state.formModel.is_visible" />
-          </NFormItem>
-          <NFormItem :label="'缓存'" path="is_cache">
-            <NSwitch v-model:value="state.formModel.is_cache" />
-          </NFormItem>
-          <NFormItem :label="'固定标签'" path="is_affix">
-            <NSwitch v-model:value="state.formModel.is_affix" />
-          </NFormItem>
-          <NFormItem :label="'状态'" path="status">
-            <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
-          </NFormItem>
+          <NGrid :cols="2" :x-gap="16">
+            <NGi>
+              <NFormItem :label="'资源名称'" path="name">
+                <NInput v-model:value="state.formModel.name" />
+              </NFormItem>
+            </NGi>
+            <NGi>
+              <NFormItem :label="'资源编码'" path="code">
+                <NInput v-model:value="state.formModel.code" />
+              </NFormItem>
+            </NGi>
+            <NGi>
+              <NFormItem :label="'资源类型'" path="resource_type">
+                <DictSelect v-model="state.formModel.resource_type" dict-code="RESOURCE_TYPE" :placeholder="'请选择资源类型'" />
+              </NFormItem>
+            </NGi>
+            <NGi>
+              <NFormItem :label="'资源模块'" path="module_id">
+                <NSelect v-model:value="state.formModel.module_id" filterable clearable :options="state.moduleOptions" />
+              </NFormItem>
+            </NGi>
+            <NGi>
+              <NFormItem :label="'父级资源ID'" path="parent_id">
+                <NTreeSelect v-model:value="state.formModel.parent_id" clearable filterable :options="parentTreeOptions"
+                  :placeholder="'父级资源ID'" key-field="id" label-field="name" children-field="children" />
+              </NFormItem>
+            </NGi>
+            <NGi>
+              <NFormItem :label="'排序'" path="sort">
+                <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
+              </NFormItem>
+            </NGi>
+            <NGi>
+              <NFormItem :label="'图标'" path="icon">
+                <IconSelect v-model:value="state.formModel.icon" />
+              </NFormItem>
+            </NGi>
+            <NGi>
+              <NFormItem :label="'布局'" path="layout">
+                <NInput v-model:value="state.formModel.layout" placeholder="default / fullscreen" />
+              </NFormItem>
+            </NGi>
+            <NGi :span="2">
+              <NFormItem :label="'颜色'" path="color">
+                <CommonColorPicker v-model="state.formModel.color" />
+              </NFormItem>
+            </NGi>
+            <NGi>
+              <NFormItem :label="'路由路径'" path="path">
+                <NInput v-model:value="state.formModel.path" />
+              </NFormItem>
+            </NGi>
+            <NGi>
+              <NFormItem :label="'组件'" path="component">
+                <NInput v-model:value="state.formModel.component" />
+              </NFormItem>
+            </NGi>
+            <NGi>
+              <NFormItem :label="'重定向'" path="redirect">
+                <NInput v-model:value="state.formModel.redirect" />
+              </NFormItem>
+            </NGi>
+            <NGi>
+              <NFormItem :label="'外链'" path="href">
+                <NInput v-model:value="state.formModel.href" />
+              </NFormItem>
+            </NGi>
+            <NGi :span="2">
+              <NFlex :size="24">
+                <NFormItem :label="'可见'" path="is_visible">
+                  <NSwitch v-model:value="state.formModel.is_visible" />
+                </NFormItem>
+                <NFormItem :label="'缓存'" path="is_cache">
+                  <NSwitch v-model:value="state.formModel.is_cache" />
+                </NFormItem>
+                <NFormItem :label="'固定标签'" path="is_affix">
+                  <NSwitch v-model:value="state.formModel.is_affix" />
+                </NFormItem>
+              </NFlex>
+            </NGi>
+            <NGi :span="2">
+              <NFormItem :label="'状态'" path="status">
+                <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
+              </NFormItem>
+            </NGi>
+          </NGrid>
           <NFormItem :label="'描述'" path="description">
-            <NInput
-              v-model:value="state.formModel.description"
-              type="textarea"
-              :autosize="{ minRows: 3, maxRows: 5 }"
-            />
-          </NFormItem>
-          <NFormItem :label="'布局'" path="layout">
-            <NInput v-model:value="state.formModel.layout" placeholder="default / fullscreen" />
+            <NInput v-model:value="state.formModel.description" type="textarea" :autosize="{ minRows: 3, maxRows: 5 }" />
           </NFormItem>
         </NForm>
       </NScrollbar>

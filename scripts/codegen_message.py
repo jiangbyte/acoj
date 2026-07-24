@@ -32,12 +32,14 @@ PLANS = [
         "entity": "MsgNotification",
         "business": "通知管理",
         "module_path": "message/notification",
+        "generate_frontend": True,
     },
     {
         "table": "msg_announcement",
         "entity": "MsgAnnouncement",
         "business": "公告管理",
         "module_path": "message/announcement",
+        "generate_frontend": True,
     },
     {
         "table": "msg_group",
@@ -212,15 +214,33 @@ async def gen_table(engine, cfg: dict):
 
     files = render_files(plan, fields, [])
 
-    # Only write backend files (model, schema, repository, service, router, module)
-    backend_files = [f for f in files if f.path.endswith(".py")]
-    for f in backend_files:
-        filepath = Path(f.path)
-        filepath.parent.mkdir(parents=True, exist_ok=True)
-        filepath.write_text(f.content, encoding="utf-8")
-        print(f"    Wrote {filepath}")
-
-    print(f"  Done ({len(backend_files)} backend files)")
+    if cfg.get("generate_frontend"):
+        # Only write frontend files (.ts, .vue) for tables that already have backend
+        frontend_files = [f for f in files if f.path.endswith((".ts", ".vue"))]
+        for f in frontend_files:
+            filepath = Path(f.path)
+            filepath.parent.mkdir(parents=True, exist_ok=True)
+            filepath.write_text(f.content, encoding="utf-8")
+            print(f"    Wrote {filepath}")
+        # Also write the API index export (append line)
+        append_file = "web/admin/src/api/index.ts"
+        append_path = Path(append_file)
+        for f in files:
+            if f.path.endswith(".ts.append"):
+                with open(append_file, "a", encoding="utf-8") as af:
+                    af.write("\n" + f.content)
+                print(f"    Appended export to {append_file}")
+                break
+        print(f"  Done ({len(frontend_files)} frontend files)")
+    else:
+        # Only write backend files (model, schema, repository, service, router, module)
+        backend_files = [f for f in files if f.path.endswith(".py")]
+        for f in backend_files:
+            filepath = Path(f.path)
+            filepath.parent.mkdir(parents=True, exist_ok=True)
+            filepath.write_text(f.content, encoding="utf-8")
+            print(f"    Wrote {filepath}")
+        print(f"  Done ({len(backend_files)} backend files)")
 
 
 async def main():

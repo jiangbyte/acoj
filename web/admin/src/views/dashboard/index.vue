@@ -157,13 +157,17 @@ async function renderFileChart() {
   if (!fileChartRef.value) {
     return
   }
-  const chart = new Chart({ container: fileChartRef.value, autoFit: true, height: 240 })
+  const chart = new Chart({ container: fileChartRef.value, autoFit: true, height: 280 })
   chart.options({
     type: 'interval',
+    coordinate: { type: 'theta' },
     data: state.overview.file_type_share,
-    encode: { x: 'name', y: 'value', color: 'name' },
-    axis: { x: { title: false }, y: { title: false, grid: true } },
-    legend: false,
+    encode: { y: 'value', color: 'name' },
+    transform: [{ type: 'stackY' }],
+    legend: { color: { position: 'bottom' } },
+    labels: [
+      { text: 'name', position: 'outside', style: { fontSize: 12 } },
+    ],
   })
   charts.push(chart)
   await chart.render()
@@ -326,6 +330,6 @@ async function renderFileChart() {
 }
 
 .chart-box--small {
-  height: 240px;
+  height: 280px;
 }
 </style>

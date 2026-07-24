@@ -96,7 +96,7 @@ defineExpose({
   >
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
-        <NDescriptions label-placement="left" bordered :column="1">
+       <NDescriptions label-placement="left" bordered :column="1" label-style="min-width: 120px" class="file-detail-descriptions">
           <NDescriptionsItem :label="'预览'">
             <NImage
               v-if="isImage && fileUrl"
@@ -120,9 +120,7 @@ defineExpose({
           </NDescriptionsItem>
           <NDescriptionsItem :label="'对象路径'">
             <NFlex align="center" :size="8">
-              <NEllipsis class="file-detail-text">
-                {{ displayValue(state.file.object_name) }}
-              </NEllipsis>
+              <span class="file-detail-text">{{ displayValue(state.file.object_name) }}</span>
               <NButton size="small" text type="primary" @click="copyText(state.file.object_name)">
                 复制
               </NButton>
@@ -130,9 +128,7 @@ defineExpose({
           </NDescriptionsItem>
           <NDescriptionsItem :label="'访问URL'">
             <NFlex align="center" :size="8">
-              <NEllipsis class="file-detail-text">
-                {{ displayValue(fileUrl) }}
-              </NEllipsis>
+              <span class="file-detail-text">{{ displayValue(fileUrl) }}</span>
               <NButton v-if="fileUrl" size="small" text type="primary" @click="openFile">
                 打开
               </NButton>
@@ -163,13 +159,13 @@ defineExpose({
             {{ formatDateTime(state.file.created_at) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'创建人'">
-            {{ displayValue(state.file.created_by) }}
+            {{ displayValue(state.file.created_name) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'更新时间'">
             {{ formatDateTime(state.file.updated_at) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'更新人'">
-            {{ displayValue(state.file.updated_by) }}
+            {{ displayValue(state.file.updated_name) }}
           </NDescriptionsItem>
         </NDescriptions>
       </NSpin>
@@ -183,6 +179,6 @@ defineExpose({
 }
 
 .file-detail-text {
-  max-width: 460px;
+  word-break: break-all;
 }
 </style>

@@ -228,9 +228,6 @@ defineExpose({
     :mask-closable="false"
   >
     <NDrawerContent :title="modalTitle" closable :native-scrollbar="false">
-      <NAlert type="warning" :bordered="false" class="mb-10px">
-        非超级管理员角色不能授权系统模块菜单资源。
-      </NAlert>
       <NSpin :show="state.loading">
         <NRadioGroup v-model:value="state.activeModuleId" size="small" class="mb-10px">
           <NRadioButton

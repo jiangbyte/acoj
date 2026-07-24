@@ -66,3 +66,17 @@ function formatChinaDate(timestamp: number) {
 function pad(value: string | number, length = 2) {
   return String(value).padStart(length, '0')
 }
+
+
+/** 将表单 datetime 字符串转为 API 兼容的带时区格式 */
+export function toApiDateTime(value: unknown): string | null {
+  if (value === undefined || value === null || value === '') return null
+  const s = String(value).trim()
+  if (!s) return null
+  // Already ISO with timezone (from API) → pass through unchanged
+  if (/[TZz]/.test(s) || /[+-]\d{2}:?\d{2}$/.test(s)) return s
+  // China-time display string → parse as local time → ISO UTC (matching backend format)
+  const d = new Date(s)
+  if (isNaN(d.getTime())) return null
+  return d.toISOString()
+}

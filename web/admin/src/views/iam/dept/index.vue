@@ -33,7 +33,6 @@ const searchForm = createProSearchForm<any>({
   onSubmit(values) {
     state.searchValues = normalizeSearchValues(values, {
       name: (value) => String(value).trim(),
-      code: (value) => String(value).trim(),
       category: (value) => String(value).trim(),
       status: (value) => String(value).trim(),
     })
@@ -47,11 +46,6 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
     title: '部门名称',
     path: 'name',
-    field: 'input',
-  },
-  {
-    title: '部门编码',
-    path: 'code',
     field: 'input',
   },
   {
@@ -81,14 +75,6 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     title: '部门名称',
     path: 'name',
     width: 220,
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
-    title: '部门编码',
-    path: 'code',
-    width: 160,
     ellipsis: {
       tooltip: true,
     },

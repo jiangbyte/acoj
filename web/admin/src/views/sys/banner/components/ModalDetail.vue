@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { bannerApi } from '@/api'
-import { createTagColor, displayValue, formatDateTime } from '@/utils'
+import { createTagColor, displayValue, formatDateTime, resolveFileUrl } from '@/utils'
 import { computed, reactive } from 'vue'
 import { dictTypeData, dictTypeColor } from '@/utils/dict'
 
@@ -11,6 +11,7 @@ const state = reactive({
 })
 
 const imageAlt = computed(() => state.banner?.title ?? '图片')
+const imageUrl = computed(() => resolveFileUrl(state.banner?.image))
 
 async function openModal(id: string) {
   state.banner = {}
@@ -45,9 +46,6 @@ defineExpose({
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="'展示图ID'">
-            {{ displayValue(state.banner.id) }}
-          </NDescriptionsItem>
           <NDescriptionsItem :label="'标题'">
             {{ displayValue(state.banner.title) }}
           </NDescriptionsItem>
@@ -55,10 +53,10 @@ defineExpose({
             <NImage
               v-if="state.banner.image"
               class="banner-detail-image"
-              :src="state.banner.image"
+              :src="imageUrl"
               :alt="imageAlt"
-              :width="180"
-              :height="72"
+              :width="220"
+              :height="140"
               object-fit="cover"
             />
             <template v-else> - </template>
@@ -80,9 +78,7 @@ defineExpose({
           </NDescriptionsItem>
           <NDescriptionsItem :label="'展示范围'">
             <NTag
-              :color="
-                createTagColor(dictTypeColor('BANNER_DISPLAY_SCOPE', state.banner.display_scope))
-              "
+              :color="createTagColor(dictTypeColor('BANNER_DISPLAY_SCOPE', state.banner.display_scope))"
               :bordered="false"
             >
               {{ dictTypeData('BANNER_DISPLAY_SCOPE', state.banner.display_scope) }}
@@ -114,17 +110,17 @@ defineExpose({
           <NDescriptionsItem :label="'描述'">
             {{ displayValue(state.banner.description) }}
           </NDescriptionsItem>
+          <NDescriptionsItem :label="'创建人'">
+            {{ displayValue(state.banner.created_name) }}
+          </NDescriptionsItem>
           <NDescriptionsItem :label="'创建时间'">
             {{ formatDateTime(state.banner.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="'创建人'">
-            {{ displayValue(state.banner.created_by) }}
+          <NDescriptionsItem :label="'更新人'">
+            {{ displayValue(state.banner.updated_name) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'更新时间'">
             {{ formatDateTime(state.banner.updated_at) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="'更新人'">
-            {{ displayValue(state.banner.updated_by) }}
           </NDescriptionsItem>
         </NDescriptions>
       </NSpin>

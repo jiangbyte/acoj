@@ -23,34 +23,7 @@ from app.modules.message.message.schema import (
 from app.modules.message.conversation.service import MsgConversationService
 from app.modules.message.offline.model import MsgOfflineQueue
 from app.core.config.enums import AccountType
-from app.modules.user.admin.repository import AdminUserProfileRepository
-from app.modules.user.portal.repository import PortalUserProfileRepository
-
-
-def _pick_profile_repo(db: AsyncSession, account_type: str):
-    """根据账户类型返回对应的 profile 仓库"""
-    if account_type == AccountType.ADMIN.value:
-        return AdminUserProfileRepository(db)
-    if account_type == AccountType.PORTAL.value:
-        return PortalUserProfileRepository(db)
-    raise BusinessError(f"Unsupported account type: {account_type}")
-
-
-async def _get_profile(db: AsyncSession, account_type: str, account_id: str):
-    """获取单个用户的资料"""
-    repo = _pick_profile_repo(db, account_type)
-    return await repo.get_by_account_id(account_id)
-
-
-async def _get_profiles_batch(
-    db: AsyncSession, account_type: str, account_ids: list[str]
-) -> dict[str, object]:
-    """批量获取同一类型用户的资料，返回 {account_id: profile} 映射"""
-    if not account_ids:
-        return {}
-    repo = _pick_profile_repo(db, account_type)
-    profiles = await repo.list_by_account_ids(list(dict.fromkeys(account_ids)))
-    return {p.account_id: p for p in profiles}
+from app.modules.user.utils.profile import get_profiles_batch, get_profile
 
 
 def _message_schema(item: MsgMessage, attachments: list) -> MessageSchema:
@@ -143,7 +116,7 @@ class MessageService:
             # Auto-fill sender_name from profile if not provided
             sender_name = payload.sender_name
             if not sender_name:
-                profile = await _get_profile(self.db, str(session.account_type), session.account_id)
+                profile = await get_profile(self.db, str(session.account_type), session.account_id)
                 if profile:
                     sender_name = getattr(profile, "nickname", None) or getattr(profile, "name", None)
             payload.sender_name = sender_name
@@ -166,7 +139,7 @@ class MessageService:
             schema = _message_schema(msg, attachments.get(msg.id, []))
 
             # Enrich sender profile
-            sender_profile = await _get_profile(self.db, str(session.account_type), session.account_id)
+            sender_profile = await get_profile(self.db, str(session.account_type), session.account_id)
             if sender_profile:
                 schema.sender_nickname = getattr(sender_profile, "nickname", None) or getattr(sender_profile, "name", None)
                 schema.sender_avatar = resolve_file_url(getattr(sender_profile, "avatar", None))
@@ -215,8 +188,8 @@ class MessageService:
             if s.sender_account_type and s.sender_account_id:
                 (admin_ids if s.sender_account_type == "ADMIN" else portal_ids).append(s.sender_account_id)
 
-        admin_profiles = await _get_profiles_batch(self.db, "ADMIN", admin_ids) if admin_ids else {}
-        portal_profiles = await _get_profiles_batch(self.db, "PORTAL", portal_ids) if portal_ids else {}
+        admin_profiles = await get_profiles_batch(self.db, AccountType.ADMIN, admin_ids) if admin_ids else {}
+        portal_profiles = await get_profiles_batch(self.db, AccountType.PORTAL, portal_ids) if portal_ids else {}
 
         for s in schemas:
             if not s.sender_account_type or not s.sender_account_id:

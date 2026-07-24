@@ -5,15 +5,14 @@ import { Icon } from '@iconify/vue/offline'
 import { codegenApi, resourceModuleApi } from '@/api'
 import IconSelect from '@/components/common/IconSelect.vue'
 import MonacoPreview from '@/components/editor/MonacoPreview.vue'
-import { createRequiredRule, createTagColor, dictDataAll, dictTypeColor, dictTypeData, formatDateTime, hasPermission, normalizeSearchValues, refreshDict, renderButtonIcon } from '@/utils'
-import { NButton, NCheckbox, NFlex, NInput, NInputNumber, NSelect, NTag, NTreeSelect } from 'naive-ui'
+import { createRequiredRule, dictDataAll, formatDateTime, hasPermission, normalizeSearchValues, refreshDict, renderButtonIcon } from '@/utils'
+import { NButton, NCheckbox, NFlex, NInput, NInputNumber, NSelect, NTreeSelect } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 
 const defaultForm = {
   name: '',
   gen_type: 'TABLE',
-  status: 'ENABLED',
   author: '',
   description: '',
   main_table: '',
@@ -142,17 +141,6 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   { title: '方案名称', path: 'name', field: 'input' },
   { title: '主表', path: 'main_table', field: 'input' },
   { title: '生成类型', path: 'gen_type', field: 'select', fieldProps: { options: genTypeOptions } },
-  {
-    title: '状态',
-    path: 'status',
-    field: 'select',
-    fieldProps: {
-      options: [
-        { label: '启用', value: 'ENABLED' },
-        { label: '禁用', value: 'DISABLED' },
-      ],
-    },
-  },
 ])
 
 const pagination = computed<PaginationProps>(() => ({
@@ -182,16 +170,6 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   { title: '子表', path: 'sub_table', width: 180, ellipsis: { tooltip: true } },
   { title: '模块路径', path: 'main_module_path', width: 220, ellipsis: { tooltip: true } },
   { title: '权限前缀', path: 'permission_prefix', width: 170, ellipsis: { tooltip: true } },
-  {
-    title: '状态',
-    path: 'status',
-    width: 100,
-    render: row => (
-      <NTag color={createTagColor(dictTypeColor('COMMON_STATUS', row.status))} bordered={false}>
-        {dictTypeData('COMMON_STATUS', row.status) || row.status}
-      </NTag>
-    ),
-  },
   { title: '更新时间', path: 'updated_at', width: 190, render: row => formatDateTime(row.updated_at) },
   {
     title: '操作',

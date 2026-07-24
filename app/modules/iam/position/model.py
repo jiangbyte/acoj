@@ -11,11 +11,8 @@ class SysPosition(Base, TimestampMixin):
     """职位表，用于描述岗位体系，本身不直接承担授权关系。"""
 
     __tablename__ = "sys_position"
-    __table_args__ = (UniqueConstraint("code", name="uq_sys_position_code"),)
-
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
     name: Mapped[str] = mapped_column(String(64), nullable=False, comment="职位名称")
-    code: Mapped[str] = mapped_column(String(64), nullable=False, comment="职位编码")
     category: Mapped[str] = mapped_column(String(32), nullable=False, comment="职位类别")
     owner_dept_id: Mapped[str | None] = mapped_column(String(64), comment="所属部门ID")
     sort: Mapped[int] = mapped_column(Integer, default=99, nullable=False, comment="排序")

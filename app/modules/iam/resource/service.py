@@ -1,6 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config.enums import AccountType
 from app.core.exceptions.business import AuthorizationError, ConflictError
+from app.modules.user.utils.profile import get_profiles_batch
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.core.security.data_scope import resolve_data_scope_dept_ids
@@ -190,6 +192,7 @@ class ResourceService:
             module_name, module_client = module_meta_map.get(schema.module_id or "", ("", None))
             schema.module_id_name = module_name
             schema.module_client = module_client
+        await self._resolve_creator_names(schemas)
         return schemas
 
     async def _build_button_schemas(
@@ -331,14 +334,18 @@ class ResourceModuleService:
             await self.repo.delete_many(payload.ids)
 
     async def detail(self, query: IdQuery) -> SysResourceModuleSchema:
-        return to_schema(SysResourceModuleSchema, await self.repo.get_required(query.id))
+        schema = to_schema(SysResourceModuleSchema, await self.repo.get_required(query.id))
+        await self._resolve_creator_names([schema])
+        return schema
 
     async def page_admin(
         self,
         query: ResourceModuleAdminPageQuery,
     ) -> PageData[SysResourceModuleSchema]:
         items, total = await self.repo.page_admin(query)
-        return build_page(query.pagination, total, to_schema_list(SysResourceModuleSchema, items))
+        schemas = to_schema_list(SysResourceModuleSchema, items)
+        await self._resolve_creator_names(schemas)
+        return build_page(query.pagination, total, schemas)
 
     async def selector(
         self,

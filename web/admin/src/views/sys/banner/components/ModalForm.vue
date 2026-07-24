@@ -2,7 +2,7 @@
 import type { FormInst, FormRules } from 'naive-ui'
 import ImageUpload from '@/components/upload/ImageUpload.vue'
 import { bannerApi } from '@/api'
-import { createRequiredRule, formatDateTime, toNullableString } from '@/utils'
+import { createRequiredRule, formatDateTime, toApiDateTime, toNullableString } from '@/utils'
 import { computed, reactive, ref } from 'vue'
 
 const emit = defineEmits<{
@@ -23,8 +23,7 @@ const defaultFormData = {
   display_scope: 'PORTAL',
   sort: 0,
   status: 'ENABLED',
-  start_at: '',
-  end_at: '',
+  dateRange: null,
 }
 const state = reactive({
   showModal: false,
@@ -63,9 +62,10 @@ async function fetchDetail(id: string) {
   state.loading = true
   try {
     const response = await bannerApi.detail({ id })
+    const startStr = response.data?.start_at ? formatDateTime(response.data.start_at, '') : null
+    const endStr = response.data?.end_at ? formatDateTime(response.data.end_at, '') : null
     state.formModel = Object.assign({}, defaultFormData, response.data, {
-      start_at: formatDateTime(response.data?.start_at, ''),
-      end_at: formatDateTime(response.data?.end_at, ''),
+      dateRange: startStr && endStr ? [startStr, endStr] : null,
     })
   } finally {
     state.loading = false
@@ -87,8 +87,8 @@ async function submitForm() {
       summary: toNullableString(state.formModel.summary),
       description: toNullableString(state.formModel.description),
       sort: Number(state.formModel.sort ?? 0),
-      start_at: toNullableString(state.formModel.start_at),
-      end_at: toNullableString(state.formModel.end_at),
+      start_at: state.formModel.dateRange?.[0] ? toApiDateTime(state.formModel.dateRange[0]) : null,
+      end_at: state.formModel.dateRange?.[1] ? toApiDateTime(state.formModel.dateRange[1]) : null,
     }
 
     if (state.dataId) {
@@ -144,11 +144,7 @@ defineExpose({
             <NInput v-model:value="state.formModel.url" />
           </NFormItem>
           <NFormItem :label="'链接类型'" path="link_type">
-            <DictSelect
-              v-model="state.formModel.link_type"
-              dict-code="BANNER_LINK_TYPE"
-              type="radio"
-            />
+            <DictSelect v-model="state.formModel.link_type" dict-code="BANNER_LINK_TYPE" type="radio" />
           </NFormItem>
           <NFormItem :label="'分类'" path="category">
             <DictSelect v-model="state.formModel.category" dict-code="BANNER_CATEGORY" />
@@ -168,21 +164,20 @@ defineExpose({
           <NFormItem :label="'状态'" path="status">
             <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
           </NFormItem>
-          <NFormItem :label="'开始时间'" path="start_at">
-            <NInput v-model:value="state.formModel.start_at" />
-          </NFormItem>
-          <NFormItem :label="'结束时间'" path="end_at">
-            <NInput v-model:value="state.formModel.end_at" />
+          <NFormItem :label="'展示时间'" path="dateRange">
+            <NDatePicker
+              v-model:formatted-value="state.formModel.dateRange"
+              type="datetimerange"
+              clearable
+              value-format="yyyy-MM-dd HH:mm:ss"
+              class="w-full"
+            />
           </NFormItem>
           <NFormItem :label="'摘要'" path="summary">
             <NInput v-model:value="state.formModel.summary" />
           </NFormItem>
           <NFormItem :label="'描述'" path="description">
-            <NInput
-              v-model:value="state.formModel.description"
-              type="textarea"
-              :autosize="{ minRows: 3, maxRows: 5 }"
-            />
+            <NInput v-model:value="state.formModel.description" type="textarea" :autosize="{ minRows: 3, maxRows: 5 }" />
           </NFormItem>
         </NForm>
       </NScrollbar>

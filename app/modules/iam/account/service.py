@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
+from app.core.config.enums import AccountStatusEnum
 from app.core.exceptions.business import AuthorizationError, BusinessError
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema
@@ -57,6 +58,7 @@ class AccountService:
         self.relation_repo = IamRelationRepository(db)
 
     async def create(self, payload: AccountCreateRequest) -> None:
+        self._ensure_status_not_cancelled(payload)
         self._ensure_login_contact_payload(payload)
         password = await self._resolve_password(payload.password, payload.password_key_id)
         async with transactional(self.db):
@@ -80,6 +82,7 @@ class AccountService:
     ) -> None:
         if session is not None:
             await self._ensure_accounts_visible(session, "iam:account:update", [payload.id])
+        self._ensure_status_not_cancelled(payload)
         self._ensure_login_contact_payload(payload)
         password = (
             await self._resolve_password(payload.password, payload.password_key_id)
@@ -443,6 +446,20 @@ class AccountService:
             bio=payload.bio,
             level=payload.level,
         )
+
+    def _ensure_status_not_cancelled(
+        self,
+        payload: AccountCreateRequest | AccountUpdateRequest,
+    ) -> None:
+        if payload.account_status == AccountStatusEnum.CANCELLED:
+            raise BusinessError("注销状态不允许通过管理端设置")
+
+    def _ensure_status_not_cancelled(
+        self,
+        payload: AccountCreateRequest | AccountUpdateRequest,
+    ) -> None:
+        if payload.account_status == AccountStatusEnum.CANCELLED:
+            raise BusinessError("注销状态不允许通过管理端设置")
 
     def _ensure_login_contact_payload(
         self,

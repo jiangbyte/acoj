@@ -26,7 +26,6 @@ class SysCodegenPlan(Base, TimestampMixin):
     )
     name: Mapped[str] = mapped_column(String(128), nullable=False, comment="方案名称")
     gen_type: Mapped[str] = mapped_column(String(32), nullable=False, comment="生成类型")
-    status: Mapped[str] = mapped_column(String(32), nullable=False, default="ENABLED", comment="状态")
     author: Mapped[str] = mapped_column(String(64), nullable=False, comment="作者")
     description: Mapped[str | None] = mapped_column(Text, comment="描述")
 

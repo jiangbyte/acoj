@@ -11,7 +11,7 @@ import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 import ModalGrantResource from './components/ModalGrantResource.vue'
-import ModalGrantUser from './components/ModalGrantUser.vue'
+import ModalGrantUser from '../components/ModalGrantUser.vue'
 
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
@@ -46,13 +46,13 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: '角色编码',
-    path: 'code',
+    title: '角色名称',
+    path: 'name',
     field: 'input',
   },
   {
-    title: '角色名称',
-    path: 'name',
+    title: '角色编码',
+    path: 'code',
     field: 'input',
   },
   {
@@ -105,9 +105,9 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'left',
   },
   {
-    title: 'ID',
-    width: 80,
-    path: 'id',
+    title: '角色名称',
+    path: 'name',
+    width: 160,
     ellipsis: {
       tooltip: true,
     },
@@ -116,14 +116,6 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     title: '角色编码',
     path: 'code',
     width: 150,
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
-    title: '角色名称',
-    path: 'name',
-    width: 160,
     ellipsis: {
       tooltip: true,
     },
@@ -141,8 +133,8 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     render: (row) => dictTypeData('ROLE_SCOPE_TYPE', row.scope_type) || row.scope_type,
   },
   {
-    title: '所属部门ID',
-    path: 'owner_dept_id',
+    title: '所属部门',
+    path: 'owner_dept_name',
     width: 150,
     ellipsis: {
       tooltip: true,
@@ -343,7 +335,7 @@ async function deleteData(ids: string[]) {
       remote
       :title="'角色管理'"
       row-key="id"
-      :scroll-x="1600"
+      :scroll-x="1520"
       :columns="tableColumns"
       :data="state.roles"
       :loading="state.loading"

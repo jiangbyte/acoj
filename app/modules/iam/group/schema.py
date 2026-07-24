@@ -39,8 +39,10 @@ class SysGroupSchema(ApiSchema):
     extra: dict
     created_at: datetime
     created_by: str | None = None
+    created_name: str | None = None
     updated_at: datetime
     updated_by: str | None = None
+    updated_name: str | None = None
 
 
 class GroupRoleAssignRequest(ApiSchema):
@@ -94,4 +96,3 @@ class GroupOwnResourceResponse(ApiSchema):
 class GroupGrantResourceRequest(ApiSchema):
     id: str = Field(min_length=1, max_length=64)
     grant_info_list: list[GroupResourceGrantInfo] = Field(default_factory=list)
-

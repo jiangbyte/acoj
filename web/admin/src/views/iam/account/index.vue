@@ -10,9 +10,10 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
-import ModalGrantDept from './components/ModalGrantDept.vue'
+import ModalGrantDept from '../components/ModalGrantDept.vue'
 import ModalGrantResource from '../role/components/ModalGrantResource.vue'
-import ModalGrantUser from '../role/components/ModalGrantUser.vue'
+import ModalGrantGroup from '../components/ModalGrantGroup.vue'
+import ModalGrantRole from '../components/ModalGrantRole.vue'
 
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
@@ -110,16 +111,8 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     type: 'selection',
     fixed: 'left',
-  },
-  {
-    title: 'ID',
-    width: 80,
-    path: 'id',
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
+   },
+   {
     title: '头像',
     key: 'avatar',
     width: 80,
@@ -332,29 +325,10 @@ function openGrantModal(type: string, row: any) {
     code: row.account,
     name: row.nickname || '-',
   }
-  if (type === 'role') {
-    grantRoleModalRef.value?.openModal(account, accountApi, '分配角色', {
-      ownMethod: 'ownRoles',
-      grantMethod: 'grantRoles',
-      listKey: 'roles',
-      selectedKey: 'role_ids',
-      submitKey: 'role_ids',
-      searchFields: ['code', 'name'],
-    })
-  } else if (type === 'group') {
-    grantGroupModalRef.value?.openModal(
-      account,
-      accountApi,
-      '分配用户组',
-      {
-        ownMethod: 'ownGroups',
-        grantMethod: 'grantGroups',
-        listKey: 'groups',
-        selectedKey: 'group_ids',
-        submitKey: 'group_ids',
-        searchFields: ['name'],
-      },
-    )
+   if (type === 'role') {
+      grantRoleModalRef.value?.openModal(account)
+   } else if (type === 'group') {
+      grantGroupModalRef.value?.openModal(account)
   } else if (type === 'dept') {
     grantDeptModalRef.value?.openModal(account)
   } else if (type === 'resource') {
@@ -424,7 +398,7 @@ async function deleteData(ids: string[]) {
       remote
       :title="'账号管理'"
       row-key="id"
-      :scroll-x="2040"
+      :scroll-x="1960"
       :columns="tableColumns"
       :data="state.accounts"
       :loading="state.loading"
@@ -469,8 +443,8 @@ async function deleteData(ids: string[]) {
 
     <ModalForm ref="formModalRef" @saved="fetchPage" />
     <ModalDetail ref="detailModalRef" />
-    <ModalGrantUser ref="grantRoleModalRef" @saved="fetchPage" />
-    <ModalGrantUser ref="grantGroupModalRef" @saved="fetchPage" />
+    <ModalGrantRole ref="grantRoleModalRef" @saved="fetchPage" />
+    <ModalGrantGroup ref="grantGroupModalRef" @saved="fetchPage" />
     <ModalGrantDept ref="grantDeptModalRef" @saved="fetchPage" />
     <ModalGrantResource ref="grantResourceModalRef" @saved="fetchPage" />
   </NFlex>

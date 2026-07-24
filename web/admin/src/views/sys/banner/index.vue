@@ -4,7 +4,7 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { NButton, NFlex, NIcon, NImage, NTag } from 'naive-ui'
 import { bannerApi } from '@/api'
-import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon, resolveFileUrl } from '@/utils'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
@@ -104,14 +104,6 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'left',
   },
   {
-    title: 'ID',
-    width: 80,
-    path: 'id',
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
     title: '标题',
     path: 'title',
     width: 180,
@@ -122,16 +114,8 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: '图片',
     key: 'image',
-    width: 130,
-    render: (row) => (
-      <NImage
-        src={row.image}
-        alt={row.title || '图片'}
-        width={96}
-        height={42}
-        objectFit="cover"
-      />
-    ),
+    width: 90,
+    render: (row) => renderImage(row),
   },
   {
     title: '展示范围',
@@ -191,12 +175,24 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
+    title: '开始时间',
+    path: 'start_at',
+    width: 190,
+    ellipsis: { tooltip: true },
+    render: (row) => formatDateTime(row.start_at),
+  },
+  {
+    title: '结束时间',
+    path: 'end_at',
+    width: 190,
+    ellipsis: { tooltip: true },
+    render: (row) => formatDateTime(row.end_at),
+  },
+  {
     title: '更新时间',
     path: 'updated_at',
     width: 190,
-    ellipsis: {
-      tooltip: true,
-    },
+    ellipsis: { tooltip: true },
     render: (row) => formatDateTime(row.updated_at),
   },
   {
@@ -248,6 +244,22 @@ async function fetchPage() {
   } finally {
     state.loading = false
   }
+}
+
+function renderImage(row: any) {
+  const src = resolveFileUrl(row.image)
+  if (!src) {
+    return <span>-</span>
+  }
+  return (
+    <NImage
+      src={src}
+      alt={row.title || '图片'}
+      width={72}
+      height={48}
+      objectFit="cover"
+    />
+  )
 }
 
 function openDetailModal(id: string) {

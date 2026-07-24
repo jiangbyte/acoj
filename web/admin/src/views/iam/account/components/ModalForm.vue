@@ -3,6 +3,7 @@ import type { FormInst, FormItemRule, FormRules } from 'naive-ui'
 import ImageUpload from '@/components/upload/ImageUpload.vue'
 import { accountApi } from '@/api'
 import { createRequiredRule, isValidEmail, toNullableString } from '@/utils'
+import { dictList } from '@/utils/dict'
 import { encryptPasswords } from '@/utils/security'
 import { computed, reactive, ref } from 'vue'
 
@@ -43,6 +44,10 @@ const state = reactive({
   dataId: null as string | null,
   formModel: { ...defaultFormData },
 })
+
+const accountStatusOptions = computed(() =>
+  dictList('ACCOUNT_STATUS').filter((o: any) => !o.value.includes('CANCELLED'))
+)
 
 const modalTitle = computed(() =>
   state.dataId ? '编辑账号' : '新增账号',
@@ -211,7 +216,7 @@ defineExpose({
     :segmented="{ content: true, action: true }"
   >
     <NSpin :show="state.loading">
-      <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
+      <NScrollbar class="h-[480px] pr-16px">
         <NForm
           ref="formRef"
           :model="state.formModel"
@@ -233,14 +238,18 @@ defineExpose({
                 />
               </NFormItem>
               <NFormItem :label="'账号类型'" path="account_type">
-                <DictSelect v-model="state.formModel.account_type" dict-code="ACCOUNT_TYPE" />
+                <DictSelect v-model="state.formModel.account_type" dict-code="ACCOUNT_TYPE" :disabled="!!state.dataId" />
               </NFormItem>
               <NFormItem :label="'账号状态'" path="account_status">
-                <DictSelect
-                  v-model="state.formModel.account_status"
-                  dict-code="ACCOUNT_STATUS"
-                  type="radio"
-                />
+                <NRadioGroup v-model:value="state.formModel.account_status">
+                  <NRadio
+                    v-for="option in accountStatusOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </NRadio>
+                </NRadioGroup>
               </NFormItem>
             </NTabPane>
 

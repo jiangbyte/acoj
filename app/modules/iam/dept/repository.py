@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import TypedDict
 
 from sqlalchemy import Select, delete, func, select
@@ -18,7 +19,6 @@ from app.modules.iam.reference_guard import (
 class DeptTreeRecord(TypedDict):
     id: str
     name: str
-    code: str
     category: str
     parent_id: str | None
     status: str
@@ -26,6 +26,7 @@ class DeptTreeRecord(TypedDict):
     is_virtual: bool
     master_id: str | None
     deputy_master_id: str | None
+    updated_at: str
     children: list["DeptTreeRecord"]
 
 
@@ -55,6 +56,7 @@ class DeptRepository:
         data = payload.model_dump(exclude={"id"})
         for key, value in data.items():
             setattr(entity, key, value)
+        entity.updated_at = datetime.now(UTC)
         await self.db.flush()
 
     async def delete_many(self, dept_ids: list[str]) -> None:
@@ -89,8 +91,6 @@ class DeptRepository:
         filters = []
         if query.name:
             filters.append(SysDept.name.contains(query.name))
-        if query.code:
-            filters.append(SysDept.code.contains(query.code))
         if query.category:
             filters.append(SysDept.category == query.category)
         if query.parent_id:
@@ -136,7 +136,6 @@ class DeptRepository:
             dept.id: {
                 "id": dept.id,
                 "name": dept.name,
-                "code": dept.code,
                 "category": dept.category,
                 "parent_id": dept.parent_id,
                 "status": dept.status,
@@ -144,6 +143,7 @@ class DeptRepository:
                 "is_virtual": dept.is_virtual,
                 "master_id": dept.master_id,
                 "deputy_master_id": dept.deputy_master_id,
+                "updated_at": str(dept.updated_at),
                 "children": [],
             }
             for dept in depts

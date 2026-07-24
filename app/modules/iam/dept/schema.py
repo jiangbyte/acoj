@@ -9,7 +9,6 @@ from app.core.schema.base import ApiSchema
 
 class DeptCreateRequest(ApiSchema):
     name: str
-    code: str
     category: str
     parent_id: str | None = None
     master_id: str | None = None
@@ -27,7 +26,6 @@ class DeptUpdateRequest(DeptCreateRequest):
 class DeptAdminPageQuery(ApiSchema):
     pagination: PageQuery
     name: str | None = Field(default=None, max_length=64)
-    code: str | None = Field(default=None, max_length=64)
     category: str | None = Field(default=None, max_length=64)
     parent_id: str | None = Field(default=None, max_length=64)
     status: str | None = Field(default=None, max_length=32)
@@ -42,7 +40,6 @@ class SysDeptSchema(ApiSchema):
     deputy_master_id: str | None = None
     deputy_master_name: str | None = None
     name: str
-    code: str
     category: str
     sort: int
     is_virtual: bool
@@ -50,14 +47,15 @@ class SysDeptSchema(ApiSchema):
     extra: dict
     created_at: datetime
     created_by: str | None = None
+    created_name: str | None = None
     updated_at: datetime
     updated_by: str | None = None
+    updated_name: str | None = None
 
 
 class DeptTreeNode(ApiSchema):
     id: str
     name: str
-    code: str
     category: str
     parent_id: str | None = None
     status: str
@@ -65,4 +63,5 @@ class DeptTreeNode(ApiSchema):
     is_virtual: bool = False
     master_name: str | None = None
     deputy_master_name: str | None = None
+    updated_at: datetime | None = None
     children: list["DeptTreeNode"] = Field(default_factory=list)

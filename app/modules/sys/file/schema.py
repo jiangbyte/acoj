@@ -18,8 +18,10 @@ class SysFileSchema(ApiSchema):
     url: str
     created_at: datetime = Field(examples=["2026-06-17T12:00:00Z"])
     created_by: str | None = None
+    created_name: str | None = None
     updated_at: datetime = Field(examples=["2026-06-17T12:00:00Z"])
     updated_by: str | None = None
+    updated_name: str | None = None
 
 
 class FileUploadRequest(ApiSchema):

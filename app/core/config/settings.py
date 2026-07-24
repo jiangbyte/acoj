@@ -41,6 +41,7 @@ class RedisSettings(BaseSettings):
 
     url: str = "redis://localhost:6379/0"
 
+    max_connections: int = 1000
 
 class AuthSettings(BaseSettings):
     token_name: str = "Authorization"

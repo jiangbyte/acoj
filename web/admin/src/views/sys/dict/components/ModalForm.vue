@@ -3,7 +3,7 @@ import type { FormInst, FormRules } from 'naive-ui'
 import { dictApi } from '@/api'
 import CommonColorPicker from '@/components/common/CommonColorPicker.vue'
 import { createRequiredRule, isHexColor, toNullableString } from '@/utils'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 const props = defineProps<{
   dicts: any[]
@@ -63,6 +63,10 @@ const rules = computed<FormRules>(() => ({
   status: createRequiredRule('状态', 'change'),
 }))
 
+// 切换分类时重置父级字典
+watch(() => state.formModel.category, () => {
+  state.formModel.parent_id = null
+})
 async function openModal(id?: string, options?: { category?: string; parentId?: string | null }) {
   state.dataId = id ?? null
   state.formModel = {
@@ -136,10 +140,6 @@ function updateCode(value: string) {
   state.formModel.code = value.toUpperCase()
 }
 
-function updateCategory(value: string) {
-  state.formModel.category = value
-  state.formModel.parent_id = null
-}
 
 function buildTreeOptions(items: any[], excludeId?: string | null) {
   const excludeIds = excludeId ? collectChildIds(items, excludeId) : new Set<string>()
@@ -226,12 +226,11 @@ defineExpose({
         :disabled="state.loading || state.submitLoading"
       >
         <NFormItem :label="'分类'" path="category">
-          <DictSelect
-            v-model="state.formModel.category"
-            dict-code="SYS_BIZ_CATEGORY"
-            type="radio"
-            @change="updateCategory"
-          />
+         <DictSelect
+           v-model="state.formModel.category"
+           dict-code="SYS_BIZ_CATEGORY"
+           type="radio"
+         />
         </NFormItem>
         <NFormItem :label="'父级字典'" path="parent_id">
           <NTreeSelect

@@ -13,7 +13,6 @@ CodegenTableRole = Literal["MAIN", "SUB"]
 class CodegenPlanCreateRequest(ApiSchema):
     name: str = Field(min_length=1, max_length=128)
     gen_type: CodegenType = "TABLE"
-    status: str = Field(default="ENABLED", max_length=32)
     author: str = Field(min_length=1, max_length=64)
     description: str | None = None
     main_table: str = Field(min_length=1, max_length=128)
@@ -76,14 +75,12 @@ class CodegenPlanPageQuery(ApiSchema):
     name: str | None = Field(default=None, max_length=128)
     main_table: str | None = Field(default=None, max_length=128)
     gen_type: CodegenType | None = None
-    status: str | None = Field(default=None, max_length=32)
 
 
 class SysCodegenPlanSchema(ApiSchema):
     id: str
     name: str
     gen_type: CodegenType
-    status: str
     author: str | None = None
     description: str | None = None
     main_table: str

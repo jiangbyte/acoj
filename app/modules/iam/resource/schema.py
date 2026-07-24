@@ -119,8 +119,10 @@ class SysResourcePermissionRelSchema(ApiSchema):
     description: str | None = None
     created_at: datetime
     created_by: str | None = None
+    created_name: str | None = None
     updated_at: datetime
     updated_by: str | None = None
+    updated_name: str | None = None
 
 
 class ResourceButtonSchema(SysResourceSchema):
@@ -172,8 +174,10 @@ class SysResourceModuleSchema(ApiSchema):
     extra: dict
     created_at: datetime
     created_by: str | None = None
+    created_name: str | None = None
     updated_at: datetime
     updated_by: str | None = None
+    updated_name: str | None = None
 
 
 class ResourceModuleSelectorOption(ApiSchema):

@@ -1,6 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import AuthorizationError
+from app.core.config.enums import AccountType
+from app.modules.user.utils.profile import get_profiles_batch
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.core.security.data_scope import build_data_scope_filter, resolve_data_scope_dept_ids
@@ -76,7 +78,9 @@ class GroupService:
     async def detail(self, query: IdQuery, session: SessionPayload | None = None) -> SysGroupSchema:
         if session is not None:
             await self._ensure_groups_visible(session, "iam:group:detail", [query.id])
-        return to_schema(SysGroupSchema, await self.repo.get_required(query.id))
+        schema = to_schema(SysGroupSchema, await self.repo.get_required(query.id))
+        await self._resolve_creator_names([schema])
+        return schema
 
     async def page_admin(
         self,
@@ -89,7 +93,9 @@ class GroupService:
             else None
         )
         items, total = await self.repo.page_admin(query, data_scope_filter)
-        return build_page(query.pagination, total, to_schema_list(SysGroupSchema, items))
+        schemas = to_schema_list(SysGroupSchema, items)
+        await self._resolve_creator_names(schemas)
+        return build_page(query.pagination, total, schemas)
 
     async def assign_group_role(
         self,
@@ -200,6 +206,23 @@ class GroupService:
                 payload.grant_info_list,
             )
         await self._refresh_accounts(account_ids)
+
+    async def _resolve_creator_names(self, items: list[SysGroupSchema]) -> None:
+        """批量查询 created_by / updated_by 对应的昵称。"""
+        account_ids: set[str] = set()
+        for item in items:
+            if item.created_by:
+                account_ids.add(item.created_by)
+            if item.updated_by:
+                account_ids.add(item.updated_by)
+        if not account_ids:
+            return
+        profiles = await get_profiles_batch(self.db, AccountType.ADMIN, list(account_ids))
+        for item in items:
+            if item.created_by and item.created_by in profiles:
+                item.created_name = getattr(profiles[item.created_by], "nickname", None)
+            if item.updated_by and item.updated_by in profiles:
+                item.updated_name = getattr(profiles[item.updated_by], "nickname", None)
 
     async def _refresh_accounts(self, account_ids: list[str]) -> None:
         await AccountSessionService(self.db).refresh_accounts_sessions(sorted(set(account_ids)))

@@ -11,7 +11,6 @@ const emit = defineEmits<{
 const formRef = ref<FormInst | null>(null)
 const defaultFormData = {
   name: '',
-  code: '',
   category: null as string | null,
   sort: 0,
   is_virtual: false,
@@ -33,7 +32,6 @@ const modalTitle = computed(() =>
 
 const rules = computed<FormRules>(() => ({
   name: createRequiredRule('岗位名称', 'input'),
-  code: createRequiredRule('岗位编码', 'input'),
   category: createRequiredRule('岗位分类', 'change'),
   status: createRequiredRule('状态', 'change'),
 }))
@@ -73,7 +71,6 @@ async function submitForm() {
     const payload = {
       ...state.formModel,
       name: state.formModel.name.trim(),
-      code: state.formModel.code.trim(),
       sort: Number(state.formModel.sort ?? 0),
       is_virtual: Boolean(state.formModel.is_virtual),
       description: toNullableString(state.formModel.description),
@@ -126,11 +123,8 @@ defineExpose({
           <NFormItem :label="'岗位名称'" path="name">
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
-          <NFormItem :label="'岗位编码'" path="code">
-            <NInput v-model:value="state.formModel.code" />
-          </NFormItem>
           <NFormItem :label="'岗位分类'" path="category">
-            <DictSelect v-model="state.formModel.category" dict-code="POSITION_CATEGORY" />
+           <DictSelect v-model="state.formModel.category" dict-code="POSITION_CATEGORY" :placeholder="'请选择岗位分类'" />
           </NFormItem>
           <NFormItem :label="'排序'" path="sort">
             <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />

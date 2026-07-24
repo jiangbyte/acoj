@@ -28,7 +28,6 @@ const searchForm = createProSearchForm<any>({
   onSubmit(values) {
     state.searchValues = normalizeSearchValues(values, {
       name: (value) => String(value).trim(),
-      code: (value) => String(value).trim(),
     })
     state.page = 1
     fetchPage()
@@ -44,11 +43,6 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
     title: '岗位名称',
     path: 'name',
-    field: 'input',
-  },
-  {
-    title: '岗位编码',
-    path: 'code',
     field: 'input',
   },
   {
@@ -93,25 +87,9 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'left',
   },
   {
-    title: 'ID',
-    width: 80,
-    path: 'id',
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
     title: '岗位名称',
     path: 'name',
     width: 160,
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
-    title: '岗位编码',
-    path: 'code',
-    width: 150,
     ellipsis: {
       tooltip: true,
     },
@@ -277,7 +255,7 @@ async function deleteData(ids: string[]) {
       remote
       :title="'岗位管理'"
       row-key="id"
-      :scroll-x="1320"
+      :scroll-x="1090"
       :columns="tableColumns"
       :data="state.positions"
       :loading="state.loading"
