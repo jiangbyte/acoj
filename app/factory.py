@@ -13,6 +13,8 @@ from app.middleware.access_log import AccessLogMiddleware
 from app.middleware.auth_context import AuthContextMiddleware
 from app.middleware.cors import add_cors
 from app.middleware.operation_audit import OperationAuditMiddleware
+from app.middleware.rate_limit import RateLimitMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.trace import TraceMiddleware
 from app.platform.db.session import engine
 from app.platform.observability.manager import setup_observability
@@ -35,8 +37,10 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     app.add_middleware(TraceMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(AccessLogMiddleware)
     app.add_middleware(OperationAuditMiddleware)
+    app.add_middleware(RateLimitMiddleware)
     app.add_middleware(AuthContextMiddleware)
     add_cors(app)
     register_exception_handlers(app)

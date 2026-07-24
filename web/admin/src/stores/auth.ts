@@ -67,6 +67,7 @@ export const useAuthStore = defineStore('auth-store', {
       account: string,
       password: string,
       redirect?: string,
+      rememberMe?: boolean,
       identityType = 'ACCOUNT',
       security?: { password_key_id: string; captcha_id: string; captcha_value: string },
     ) {
@@ -74,6 +75,7 @@ export const useAuthStore = defineStore('auth-store', {
         account,
         password,
         identity_type: identityType,
+        remember_me: rememberMe ?? true,
         password_key_id: security?.password_key_id,
         captcha_id: security?.captcha_id,
         captcha_value: security?.captcha_value,
@@ -81,6 +83,14 @@ export const useAuthStore = defineStore('auth-store', {
       const token = response.data.token
       localStorage.setItem(tokenKey, token)
       this.token = token
+
+      // 检查密码是否过期
+      const passwordExpired = response.data.password_expired ?? false
+      if (passwordExpired) {
+        // 跳转到修改密码页
+        await router.push('/auth/change-password')
+        return
+      }
 
       const meResponse = await authApi.me()
       const now = Date.now()

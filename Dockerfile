@@ -9,6 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tini \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user for security hardening (等保要求)
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     APP__HOST=0.0.0.0 \
@@ -43,6 +46,10 @@ COPY gunicorn.conf.py ./
 COPY entrypoint.sh ./
 
 RUN chmod +x entrypoint.sh && mkdir -p /app/storage /app/.runtime
+
+# Grant write permission to non-root user for runtime directories
+RUN chown -R appuser:appgroup /app/storage /app/.runtime
+USER appuser
 
 VOLUME ["/app/storage"]
 EXPOSE 8000

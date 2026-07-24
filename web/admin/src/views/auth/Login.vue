@@ -99,6 +99,7 @@ async function handleSubmit() {
       form[activeField.value].trim(),
       encrypted.values.password || '',
       redirect,
+      form.remember,
       activeType.value,
       {
         password_key_id: encrypted.password_key_id,

@@ -10,7 +10,10 @@ module = ModuleSpec(
             router="app.modules.iam.account.router:router",
         ),
     ),
-    models=("app.modules.iam.account.model",),
+    models=(
+        "app.modules.iam.account.model",
+        "app.modules.iam.account.password_history",
+    ),
     tasks=("app.modules.iam.account.tasks",),
     beat_schedules=(
         BeatScheduleSpec(

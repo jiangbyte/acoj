@@ -229,6 +229,7 @@ defineExpose({
                   "
                 />
               </NFormItem>
+              <PasswordStrengthBar :password="state.formModel.password" />
               <NFormItem :label="'账号类型'" path="account_type">
                 <DictSelect v-model="state.formModel.account_type" dict-code="ACCOUNT_TYPE" :disabled="!!state.dataId" />
               </NFormItem>

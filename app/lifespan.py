@@ -44,6 +44,21 @@ async def apply_db_config_overrides():
     # AUTH_PASSWORD
     settings.auth.default_password = config_reader.get("auth.default_password", settings.auth.default_password)
 
+
+    # AUDIT_ALERT
+    settings.audit_alert.enabled = config_reader.get_bool("audit_alert.enabled", settings.audit_alert.enabled)
+    settings.audit_alert.webhook_url = config_reader.get("audit_alert.webhook_url", settings.audit_alert.webhook_url)
+    settings.audit_alert.webhook_secret = config_reader.get("audit_alert.webhook_secret", settings.audit_alert.webhook_secret)
+    settings.audit_alert.analysis_interval_seconds = config_reader.get_int("audit_alert.analysis_interval_seconds", settings.audit_alert.analysis_interval_seconds)
+    settings.audit_alert.alert_cooldown_seconds = config_reader.get_int("audit_alert.alert_cooldown_seconds", settings.audit_alert.alert_cooldown_seconds)
+    settings.audit_alert.rule_brute_force = config_reader.get_bool("audit_alert.rule_brute_force", settings.audit_alert.rule_brute_force)
+    settings.audit_alert.rule_unusual_hours = config_reader.get_bool("audit_alert.rule_unusual_hours", settings.audit_alert.rule_unusual_hours)
+    settings.audit_alert.rule_sensitive_ops = config_reader.get_bool("audit_alert.rule_sensitive_ops", settings.audit_alert.rule_sensitive_ops)
+    settings.audit_alert.rule_bulk_delete = config_reader.get_bool("audit_alert.rule_bulk_delete", settings.audit_alert.rule_bulk_delete)
+    settings.audit_alert.rule_ip_anomaly = config_reader.get_bool("audit_alert.rule_ip_anomaly", settings.audit_alert.rule_ip_anomaly)
+    settings.audit_alert.brute_force_threshold = config_reader.get_int("audit_alert.brute_force_threshold", settings.audit_alert.brute_force_threshold)
+    settings.audit_alert.bulk_delete_threshold = config_reader.get_int("audit_alert.bulk_delete_threshold", settings.audit_alert.bulk_delete_threshold)
+    settings.audit_alert.ip_anomaly_threshold = config_reader.get_int("audit_alert.ip_anomaly_threshold", settings.audit_alert.ip_anomaly_threshold)
     # STORAGE — 优先从 sys_storage_config 加载
     active_storage = config_reader.get_active_storage()
     if active_storage:

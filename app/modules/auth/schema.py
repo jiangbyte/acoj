@@ -11,6 +11,7 @@ class LoginRequest(CaptchaMixin, PasswordKeyMixin):
     account: str = Field(min_length=3, max_length=128)
     password: str = Field(min_length=1, max_length=512)
     identity_type: AccountIdentityType = AccountIdentityType.ACCOUNT
+    remember_me: bool = True
 
 
 class LoginPayload(ApiSchema):
@@ -20,6 +21,7 @@ class LoginPayload(ApiSchema):
     password: str
     account_type: AccountType
     identity_type: AccountIdentityType = AccountIdentityType.ACCOUNT
+    remember_me: bool = True
     client_ip: str | None = None
     user_agent: str | None = None
     device_label: str | None = None
@@ -29,6 +31,7 @@ class LoginResponse(ApiSchema):
     token: str
     account_id: str
     account_type: AccountType
+    password_expired: bool = False
 
 
 class RegisterRequest(CaptchaMixin, PasswordKeyMixin):

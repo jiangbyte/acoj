@@ -16,6 +16,7 @@ const tabs = [
   { name: 'AUTH_LOGIN', label: '登录安全配置' },
   { name: 'AUTH_REGISTER', label: '注册配置' },
   { name: 'AUTH_PASSWORD', label: '密码配置' },
+  { name: 'AUDIT_ALERT', label: '审计告警配置' },
   { name: 'STORAGE', label: '存储基础配置' },
   { name: 'UPLOAD', label: '上传配置' },
   { name: 'MAIL', label: '邮箱配置' },

@@ -7,6 +7,7 @@ from app.core.config.enums import AccountType
 from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
 from app.core.schema.base import Id, IdQuery, IdsRequest
+from app.core.schema.base import ApiSchema
 from app.deps.auth import require_account_type, require_permission
 from app.deps.db import get_db_session
 from app.modules.sys.config.schema import (
@@ -17,6 +18,12 @@ from app.modules.sys.config.schema import (
     SysConfigSchema,
 )
 from app.modules.sys.config.service import ConfigService
+from pydantic import Field
+
+
+class TestWebhookRequest(ApiSchema):
+    webhook_url: str = Field(default="", max_length=1024)
+    webhook_secret: str = Field(default="", max_length=256)
 
 router = APIRouter()
 
@@ -136,3 +143,20 @@ async def batch_save(
 ) -> ApiResponse[None]:
     await ConfigService(db).batch_save(payload)
     return success()
+
+
+@router.post(
+    "/sys/config/audit-alert/test-webhook",
+    dependencies=[Depends(require_account_type(AccountType.ADMIN))],
+)
+async def test_audit_alert_webhook(
+    payload: TestWebhookRequest,
+) -> ApiResponse[dict]:
+    from app.modules.sys.audit.alert import send_test_webhook
+
+    err = await send_test_webhook(payload.webhook_url, payload.webhook_secret)
+    if err:
+        from app.core.exceptions.business import BusinessError
+
+        raise BusinessError(err)
+    return success({"message": "测试消息已发送"})

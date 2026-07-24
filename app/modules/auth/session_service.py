@@ -23,6 +23,8 @@ class AccountSessionService:
         account: SysAccount,
         token: str,
         *,
+        remember_me: bool = True,
+        password_expired: bool = False,
         client_ip: str | None = None,
         user_agent: str | None = None,
         device_label: str | None = None,
@@ -32,10 +34,13 @@ class AccountSessionService:
             account,
             token,
             authorization,
+            remember_me=remember_me,
+            password_expired=password_expired,
             client_ip=client_ip,
             user_agent=user_agent,
             device_label=device_label,
         )
+
 
     async def refresh_account_sessions(self, account_id: str) -> None:
         await self.refresh_accounts_sessions([account_id])
@@ -57,10 +62,13 @@ class AccountSessionService:
                 current_account: SysAccount = account,
                 current_authorization: dict = authorization,
             ) -> SessionPayload:
+                # 从旧会话中保留 remember_me
+                old = await session_store.get(token)
                 return self._build_session_payload_from_authorization(
                     current_account,
                     token,
                     current_authorization,
+                    remember_me=old.remember_me if old else True,
                 )
 
             payload_factories[(account.account_type, account.id)] = payload_factory
@@ -79,6 +87,8 @@ class AccountSessionService:
         token: str,
         authorization: dict,
         *,
+        remember_me: bool = True,
+        password_expired: bool = False,
         client_ip: str | None = None,
         user_agent: str | None = None,
         device_label: str | None = None,
@@ -94,6 +104,8 @@ class AccountSessionService:
             token=token,
             account_id=account.id,
             account_type=account.account_type,
+            remember_me=remember_me,
+            password_expired=password_expired,
             role_ids=authorization["role_ids"],
             dept_ids=authorization["dept_ids"],
             group_ids=authorization["group_ids"],

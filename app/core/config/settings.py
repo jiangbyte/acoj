@@ -46,8 +46,9 @@ class RedisSettings(BaseSettings):
 
 class AuthSettings(BaseSettings):
     token_name: str = "Authorization"
-    token_ttl_seconds: int = 60 * 60 * 24 * 30
-    refresh_ttl_seconds: int = 60 * 60 * 24 * 30
+    token_ttl_seconds: int = 60 * 60 * 4  # 4 小时
+    refresh_ttl_seconds: int = 60 * 60 * 4  # 4 小时
+    token_ttl_short_seconds: int = 60 * 60 * 2  # 不勾选"记住我"时 2 小时
     admin_register_enabled: bool = False
     portal_register_enabled: bool = True
     login_failure_window_seconds: int = 15 * 60
@@ -58,6 +59,11 @@ class AuthSettings(BaseSettings):
     default_password: str = ""
     captcha_ttl_seconds: int = 5 * 60
     password_crypto_key_ttl_seconds: int = 10 * 60
+    session_idle_timeout_seconds: int = 0  # 0 表示不启用空闲超时
+    session_bind_ip: bool = True
+    session_bind_user_agent: bool = False
+    max_concurrent_sessions: int = 5
+    password_expire_days: int = 90
 
 
 class MailSettings(BaseSettings):
@@ -76,15 +82,34 @@ class CorsSettings(BaseSettings):
     allow_origins: list[str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:5163",
+        "http://127.0.0.1:5163",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
     ]
     allow_credentials: bool = True
-    allow_methods: list[str] = ["*"]
-    allow_headers: list[str] = ["*"]
+    allow_methods: list[str] = [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "OPTIONS",
+    ]
+    allow_headers: list[str] = [
+        "Authorization",
+        "Content-Type",
+        "X-Request-Id",
+        "Accept",
+        "Origin",
+    ]
 
 
 class CelerySettings(BaseSettings):
     broker_url: str = "amqp://guest:guest@127.0.0.1:5672//"
     worker_log_level: str = "INFO"
+    log_dir: str = "logs"
+    log_file_max_mb: int = 100
     beat_log_level: str = "INFO"
     worker_pool: str = "solo"
     worker_concurrency: int = 1
@@ -168,6 +193,8 @@ class ObservabilitySettings(BaseSettings):
     log_enabled: bool = True
     log_level: str = "INFO"
     log_json: bool = False
+    log_dir: str = "logs"
+    log_file_max_mb: int = 100
     metrics_enabled: bool = False
     metrics_path: str = "/metrics"
     tracing_enabled: bool = False
@@ -178,6 +205,38 @@ class ObservabilitySettings(BaseSettings):
     db_observability_enabled: bool = False
     http_client_observability_enabled: bool = False
 
+
+
+class AuditAlertSettings(BaseSettings):
+    """审计告警配置。"""
+
+    enabled: bool = False
+    webhook_url: str = ""
+    webhook_secret: str = ""
+    analysis_interval_seconds: int = 300
+    alert_cooldown_seconds: int = 1800
+
+    rule_brute_force: bool = True
+    rule_unusual_hours: bool = True
+    rule_sensitive_ops: bool = True
+    rule_bulk_delete: bool = True
+    rule_ip_anomaly: bool = True
+
+    brute_force_threshold: int = 10
+    bulk_delete_threshold: int = 20
+    ip_anomaly_threshold: int = 3
+
+
+class PasswordPolicySettings(BaseSettings):
+    min_length: int = 8
+    max_length: int = 128
+    require_uppercase: bool = True
+    require_lowercase: bool = True
+    require_digit: bool = True
+    require_special: bool = True
+    expire_days: int = 90
+    history_check_count: int = 5
+    common_password_check: bool = True
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -196,6 +255,8 @@ class Settings(BaseSettings):
     celery: CelerySettings = Field(default_factory=CelerySettings)
     mq: MQSettings = Field(default_factory=MQSettings)
     storage: StorageSettings = Field(default_factory=StorageSettings)
+    password_policy: PasswordPolicySettings = Field(default_factory=PasswordPolicySettings)
+    audit_alert: AuditAlertSettings = Field(default_factory=AuditAlertSettings)
     id_generator: IdGeneratorSettings = Field(default_factory=IdGeneratorSettings)
     swagger: SwaggerSettings = Field(default_factory=SwaggerSettings)
     observability: ObservabilitySettings = Field(default_factory=ObservabilitySettings)

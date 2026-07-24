@@ -53,8 +53,10 @@ sqlite = [
 dev = [
   "aiosqlite>=0.21.0",
   "asyncpg>=0.30.0",
+  "bandit>=1.8.0",
   "fakeredis>=2.30.0",
   "mypy>=1.16.0",
+  "pip-audit>=2.8.0",
   "pytest>=8.4.0",
   "pytest-asyncio>=1.0.0",
   "pytest-html>=4.1.0",
@@ -86,6 +88,11 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N"]
+
+[tool.bandit]
+exclude_dirs = ["tests", "migrations", ".venv", "web"]
+skips = ["B101", "B311"]
+targets = ["app"]
 
 [tool.mypy]
 python_version = "3.11"

@@ -160,6 +160,7 @@ async function resetPassword() {
         <n-form-item path="password" :label="'新密码'">
           <n-input v-model:value="form.password" type="password" show-password-on="click" />
         </n-form-item>
+        <PasswordStrengthBar :password="form.password" />
         <n-form-item path="confirmPassword" :label="'确认密码'">
           <n-input v-model:value="form.confirmPassword" type="password" show-password-on="click" />
         </n-form-item>

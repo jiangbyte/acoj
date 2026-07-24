@@ -21,6 +21,10 @@ from app.modules.auth.schema import (
 from app.modules.auth.session_service import AccountSessionService
 from app.modules.iam.account.model import SysAccount
 from app.modules.iam.account.repository import AccountRepository
+from app.modules.iam.account.password_helper import (
+    is_password_expired,
+    validate_and_record_password,
+)
 from app.modules.iam.account.schema import AccountCancelPayload, AccountCreateRequest
 from app.modules.iam.enums import AccountIdentityType
 from app.modules.sys.config.config_reader import config_reader
@@ -76,14 +80,35 @@ class AuthService:
             )
             raise
         assert account is not None
+
+        # 密码过期标记（不影响登录，仅用于前端提示）
+        password_expired_ = await is_password_expired(self.db, account.id)
+
         session_payload = await self.session_service.build_session_payload(
             account,
             generate_token(),
+            remember_me=payload.remember_me,
+            password_expired=password_expired_,
             client_ip=payload.client_ip,
             user_agent=payload.user_agent,
             device_label=payload.device_label,
         )
-        await session_store.set(session_payload, ttl_seconds=settings.auth.token_ttl_seconds)
+
+        # 根据 remember_me 选择合适 TTL
+        ttl = (
+            settings.auth.token_ttl_seconds
+            if payload.remember_me
+            else settings.auth.token_ttl_short_seconds
+        )
+        await session_store.set(session_payload, ttl_seconds=ttl)
+
+        # 清理超出并发限制的旧会话
+        await session_store.prune_excess_sessions(
+            account_type=str(session_payload.account_type),
+            account_id=session_payload.account_id,
+            max_sessions=settings.auth.max_concurrent_sessions,
+        )
+
         await login_protection_service.record_success(
             account_type=payload.account_type,
             account=payload.account,
@@ -121,6 +146,16 @@ class AuthService:
                 account_payload,
                 password_hash=hash_password(payload.password),
             )
+
+            # 记录密码历史
+            await validate_and_record_password(
+                self.db,
+                account.id,
+                payload.password,
+                changed_by=account.id,
+                change_reason="register",
+            )
+
             await PortalUserProfileRepository(self.db).upsert(
                 PortalProfileUpsertPayload(
                     account_id=account.id,
@@ -247,10 +282,15 @@ class AuthService:
         account = await self.account_repo.get_required(str(data["account_id"]))
         self._validate_account_status(account, account_type)
         async with transactional(self.db):
-            await self.account_repo.update_password_hash(
+            # 校验密码强度 + 复用检查
+            await validate_and_record_password(
+                self.db,
                 account.id,
-                hash_password(payload.password),
+                payload.password,
+                changed_by=account.id,
+                change_reason="self_reset",
             )
+            await self.account_repo.update_password_hash(account.id, hash_password(payload.password))
         await redis.delete(key)
         await self.session_service.delete_account_sessions(account.account_type, account.id)
         await OperationAuditService(self.db).record(

@@ -68,6 +68,7 @@ async def admin_login(
             password=password or "",
             account_type=AccountType.ADMIN,
             identity_type=payload.identity_type,
+            remember_me=payload.remember_me,
             client_ip=_client_ip(request),
             user_agent=request.headers.get("user-agent"),
             device_label=_device_label(request.headers.get("user-agent")),
@@ -78,6 +79,7 @@ async def admin_login(
             token=session.token,
             account_id=session.account_id,
             account_type=AccountType(str(session.account_type)),
+            password_expired=session.password_expired,
         )
     )
 
@@ -97,6 +99,7 @@ async def portal_login(
             password=password or "",
             account_type=AccountType.PORTAL,
             identity_type=payload.identity_type,
+            remember_me=payload.remember_me,
             client_ip=_client_ip(request),
             user_agent=request.headers.get("user-agent"),
             device_label=_device_label(request.headers.get("user-agent")),
@@ -107,6 +110,7 @@ async def portal_login(
             token=session.token,
             account_id=session.account_id,
             account_type=AccountType(str(session.account_type)),
+            password_expired=session.password_expired,
         )
     )
 

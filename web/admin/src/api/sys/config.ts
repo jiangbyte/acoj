@@ -33,3 +33,9 @@ export function remove(data: any) {
 export function batchSave(data: { items: Array<{ id: string; config_key: string; config_value: string | null }> }) {
   return http.post<any>(`${configPrefix}/batch-save`, data)
 }
+
+export function testAuditAlertWebhook(data: { webhook_url: string; webhook_secret: string }) {
+  return http.post<any>(`${configPrefix}/audit-alert/test-webhook`, data, {
+    skipErrorMessage: true,
+  })
+}

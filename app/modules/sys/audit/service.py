@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, to_schema, to_schema_list
+from app.core.security.masking import mask_identifier
 from app.deps.context import (
     account_id_ctx,
     account_type_ctx,
@@ -49,9 +50,9 @@ class OperationAuditService:
         payload = OperationAuditCreate(
             module=module,
             resource_type=resource_type,
-            resource_id=resource_id,
+            resource_id=mask_identifier(resource_id) if resource_id else None,
             action=action,
-            summary=summary,
+            summary=mask_identifier(summary) if summary else None,
             before_data=before_data,
             after_data=after_data,
             account_id=account_id if account_id is not None else account_id_ctx.get(),

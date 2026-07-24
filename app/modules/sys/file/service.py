@@ -267,9 +267,55 @@ class FileService:
         }
         if allowed_content_types and payload.content_type.lower() not in allowed_content_types:
             self._reject_upload("content_type_not_allowed", "File content type is not allowed")
+        self._validate_content_magic_bytes(payload)
         self._normalize_category(payload.category)
         if payload.object_name:
             self._validate_object_name(payload.object_name)
+
+    def _validate_content_magic_bytes(self, payload: FileUploadRequest) -> None:
+        """Validate file content magic bytes against declared content type.
+
+        Only checks content types that have known magic signatures in the
+        registry below.  Types that were explicitly allowed in the config
+        table (``upload_allowed_content_types``) but *lack* a registered
+        magic signature are silently skipped — this keeps the validator
+        compatible with custom / future types without false positives.
+        """
+        content = getattr(payload, "content", None)
+        if not content or not isinstance(content, (bytes, bytearray)):
+            return
+        if len(content) < 12:
+            return
+        header = content[:12]
+
+        # Registry: (magic_prefix, content_type_prefix)
+        _MAGIC_REGISTRY: dict[str, bytes] = {
+            "image/jpeg": b"\xff\xd8\xff",
+            "image/png": b"\x89PNG\r\n\x1a\n",
+            "image/gif": b"GIF",
+            "image/webp": b"RIFF",
+            "application/pdf": b"%PDF",
+        }
+
+        ct = (payload.content_type or "").lower()
+
+        # 在注册表中查找匹配的 content-type 前缀
+        known_prefix = None
+        for ctype_prefix, magic_prefix in _MAGIC_REGISTRY.items():
+            if ct.startswith(ctype_prefix):
+                known_prefix = ctype_prefix
+                break
+
+        if known_prefix is None:
+            # 该 content-type 在注册表中没有魔数规则 → 跳过检查
+            return
+
+        expected_magic = _MAGIC_REGISTRY[known_prefix]
+        if not header.startswith(expected_magic):
+            self._reject_upload(
+                "content_magic_mismatch",
+                f"文件内容类型与声明不符（期望 {payload.content_type}）",
+            )
 
     def _normalize_category(self, category: str) -> str:
         value = str(category or "").strip().strip("/")

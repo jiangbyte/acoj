@@ -18,6 +18,7 @@ vitepress/*.local
 *.so
 .playwright-mcp
 .claude
+logs
 
 # 任意一级的node_modules目录
 /**/node_modules/

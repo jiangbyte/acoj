@@ -43,29 +43,6 @@ HEI FastAPI 是一个面向中后台、门户和通用业务系统的全栈脚�
 - 内置后台任务：Banner 交互量定时落库、注销账号清理。
 - 支持结构化日志、Prometheus metrics、OpenTelemetry tracing。
 
-![img.png](docs/IMAGES/img.png)
-
-![img_1.png](docs/IMAGES/img_1.png)
-
-![img_2.png](docs/IMAGES/img_2.png)
-
-![img_3.png](docs/IMAGES/img_3.png)
-
-![img_4.png](docs/IMAGES/img_4.png)
-
-![img_5.png](docs/IMAGES/img_5.png)
-
-![img_6.png](docs/IMAGES/img_6.png)
-
-![img.png](docs/IMAGES/img11111.png)
-
-![img.png](docs/IMAGES/img11.png)
-
-![img_1.png](docs/IMAGES/img12.png)
-
-![img_2.png](docs/IMAGES/img13.png)
-
-![img_3.png](docs/IMAGES/img14.png)
 
 ## 运行要求
 
