@@ -31,8 +31,6 @@ const defaultFormData = {
   phone_identity_verified: false,
   email_identity_bind_status: 'BOUND',
   phone_identity_bind_status: 'BOUND',
-  employee_no: '',
-  title: '',
   bio: '',
   level: '',
   remark: '',
@@ -118,8 +116,6 @@ async function fetchDetail(id: string) {
       phone_identity_verified: Boolean(response.data?.phone_identity_verified),
       email_identity_bind_status: response.data?.email_identity_bind_status ?? 'BOUND',
       phone_identity_bind_status: response.data?.phone_identity_bind_status ?? 'BOUND',
-      employee_no: response.data?.employee_no ?? '',
-      title: response.data?.title ?? '',
       bio: response.data?.bio ?? '',
       level: response.data?.level ?? '',
       remark: response.data?.remark ?? '',
@@ -160,8 +156,6 @@ async function submitForm() {
       phone_identity_verified: Boolean(state.formModel.phone_login_enabled),
       email_identity_bind_status: 'BOUND',
       phone_identity_bind_status: 'BOUND',
-      employee_no: toNullableString(state.formModel.employee_no),
-      title: toNullableString(state.formModel.title),
       bio: toNullableString(state.formModel.bio),
       level: toNullableString(state.formModel.level),
       remark: toNullableString(state.formModel.remark),
@@ -177,8 +171,6 @@ async function submitForm() {
       payload.bio = null
       payload.level = null
     } else {
-      payload.employee_no = null
-      payload.title = null
       payload.remark = null
     }
 
@@ -290,17 +282,14 @@ defineExpose({
               </NFormItem>
               <NFormItem
                 v-if="state.formModel.account_type === 'ADMIN'"
-                :label="'工号'"
-                path="employee_no"
+                :label="'个性签名'"
+                path="signature"
               >
-                <NInput v-model:value="state.formModel.employee_no" />
-              </NFormItem>
-              <NFormItem
-                v-if="state.formModel.account_type === 'ADMIN'"
-                :label="'标题'"
-                path="title"
-              >
-                <NInput v-model:value="state.formModel.title" />
+                <NInput
+                  v-model:value="state.formModel.signature"
+                  type="textarea"
+                  :autosize="{ minRows: 3, maxRows: 5 }"
+                />
               </NFormItem>
               <NFormItem
                 v-if="state.formModel.account_type === 'PORTAL'"

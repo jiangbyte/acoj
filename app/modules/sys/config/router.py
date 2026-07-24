@@ -11,6 +11,7 @@ from app.deps.auth import require_account_type, require_permission
 from app.deps.db import get_db_session
 from app.modules.sys.config.schema import (
     ConfigAdminPageQuery,
+    ConfigBatchSaveRequest,
     ConfigCreateRequest,
     ConfigUpdateRequest,
     SysConfigSchema,
@@ -104,3 +105,34 @@ async def page(
         category=category,
     )
     return success(await ConfigService(db).page_admin(query))
+
+
+@router.get(
+    "/sys/config/list",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("sys:config:page")),
+    ],
+    response_model=ApiResponse[list[SysConfigSchema]],
+)
+async def list_config(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    category: str | None = Query(default=None, max_length=255),
+) -> ApiResponse[list[SysConfigSchema]]:
+    return success(await ConfigService(db).list_by_category(category))
+
+
+@router.post(
+    "/sys/config/batch-save",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("sys:config:update")),
+    ],
+    response_model=ApiResponse[None],
+)
+async def batch_save(
+    payload: ConfigBatchSaveRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[None]:
+    await ConfigService(db).batch_save(payload)
+    return success()

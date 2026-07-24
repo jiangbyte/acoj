@@ -19,8 +19,6 @@ class AdminProfileResponse(ApiSchema):
     email: str | None = None
     phone_login_enabled: bool = False
     email_login_enabled: bool = False
-    title: str | None = None
-    employee_no: str | None = None
     remark: str | None = None
     created_at: datetime | None = Field(default=None, examples=["2026-06-17T12:00:00Z"])
     updated_at: datetime | None = Field(default=None, examples=["2026-06-17T12:00:00Z"])
@@ -36,8 +34,6 @@ class AdminProfileUpsertPayload(ApiSchema):
     signature: str | None = None
     phone: str | None = None
     email: str | None = None
-    title: str | None = None
-    employee_no: str | None = None
     remark: str | None = None
 
 
@@ -48,8 +44,6 @@ class AdminUserCenterProfileUpdateRequest(ApiSchema):
     nickname: str | None = Field(default=None, max_length=64)
     avatar: str | None = None
     signature: str | None = None
-    title: str | None = Field(default=None, max_length=64)
-    employee_no: str | None = Field(default=None, max_length=64)
     remark: str | None = None
 
 

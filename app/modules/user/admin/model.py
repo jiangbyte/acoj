@@ -17,6 +17,4 @@ class AdminUserProfile(Base, TimestampMixin):
     signature: Mapped[str | None] = mapped_column(Text, comment="个性签名")
     phone: Mapped[str | None] = mapped_column(String(32), comment="手机号")
     email: Mapped[str | None] = mapped_column(String(128), comment="邮箱")
-    title: Mapped[str | None] = mapped_column(String(64), comment="岗位头衔")
-    employee_no: Mapped[str | None] = mapped_column(String(64), comment="员工编号")
     remark: Mapped[str | None] = mapped_column(Text, comment="备注")

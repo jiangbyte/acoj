@@ -160,7 +160,23 @@ class ConnectionManager:
             return
         while True:
             try:
-                async for msg in pubsub.listen():
+                while True:
+                    try:
+                        msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=10)
+                    except asyncio.TimeoutError:
+                        # Timeout — send heartbeat ping to keep connection alive
+                        try:
+                            await pubsub.ping()
+                        except Exception:
+                            await asyncio.sleep(1)
+                        continue
+                    except Exception as e:
+                        # Re-raise socket errors for the outer handler
+                        raise e
+                    
+                    if msg is None:
+                        continue
+                    
                     if msg["type"] != "pmessage":
                         continue
                     # channel format: ws:user:{account_type}:{account_id}

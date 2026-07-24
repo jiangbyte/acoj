@@ -18,6 +18,7 @@ class AppSettings(BaseSettings):
     debug: bool = True
     workers: int = 1
     worker_max: int = 4
+    config_crypto_key: str = ""
     timezone: str = "Asia/Shanghai"
 
 
@@ -54,6 +55,7 @@ class AuthSettings(BaseSettings):
     login_ip_max_failures: int = 30
     login_lock_seconds: int = 15 * 60
     password_reset_token_ttl_seconds: int = 10 * 60
+    default_password: str = ""
     captcha_ttl_seconds: int = 5 * 60
     password_crypto_key_ttl_seconds: int = 10 * 60
 
@@ -67,8 +69,7 @@ class MailSettings(BaseSettings):
     from_name: str = "hei-fastapi"
     use_tls: bool = True
     timeout_seconds: float = 10.0
-    admin_password_reset_url: str = "http://localhost:5173/auth/forgot-password"
-    portal_password_reset_url: str = "http://localhost:5174/auth/reset-password"
+    password_reset_url: str = "http://localhost:5173/auth/forgot-password"
 
 
 class CorsSettings(BaseSettings):

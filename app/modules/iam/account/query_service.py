@@ -77,8 +77,6 @@ class AccountQueryService:
                     email=getattr(profile, "email", None),
                     email_login_enabled=_identity_login_enabled(email_identity),
                     phone_login_enabled=_identity_login_enabled(phone_identity),
-                    employee_no=getattr(profile, "employee_no", None),
-                    title=getattr(profile, "title", None),
                     bio=getattr(profile, "bio", None),
                     level=getattr(profile, "level", None),
                     remark=getattr(profile, "remark", None),

@@ -31,7 +31,7 @@ class FileUploadRequest(ApiSchema):
     content: bytes
     content_type: str
     storage_provider: StorageProvider | None = None
-    category: str = "uploads"
+    category: str = ""
     object_name: str | None = None
 
 

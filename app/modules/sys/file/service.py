@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import re
 from datetime import UTC, datetime
 from pathlib import PurePosixPath
@@ -31,6 +32,8 @@ from app.platform.storage.local import LocalStorage
 from app.platform.storage.manager import get_storage
 from app.platform.storage.url import is_external_url, normalize_object_name
 
+logger = logging.getLogger(__name__)
+
 
 class FileService:
     """文件服务，负责对象存储写入与文件元数据落库的一致性编排。"""
@@ -41,16 +44,16 @@ class FileService:
         self.storage = get_storage()
         self._storage_cache = {StorageProvider(settings.storage.provider): self.storage}
 
-    def build_object_name(self, filename: str, category: str = "uploads") -> str:
-        """构造对象存储路径，内部保留按日期分片的紧凑命名格式。"""
+    def build_object_name(self, filename: str, category: str = "") -> str:
+        """构造对象存储路径，按日期分片 + UUID，不暴露原始文件名。"""
         safe_name = PurePosixPath(filename).name
         suffix = PurePosixPath(safe_name).suffix.lower()
-        stem = PurePosixPath(safe_name).stem or "file"
         now = datetime.now(UTC)
         category = self._normalize_category(category)
+        prefix = f"{category}/" if category else ""
         return (
-            f"{category}/{now:%Y}/{now:%m}/{now:%d}/"
-            f"{stem}-{uuid4().hex}{suffix}"
+            f"{prefix}{now:%Y}/{now:%m}/{now:%d}/"
+            f"{uuid4().hex}{suffix}"
         )
 
     async def upload(self, payload: FileUploadRequest) -> SysFileSchema:
@@ -237,6 +240,15 @@ class FileService:
 
     def _validate_upload(self, payload: FileUploadRequest) -> None:
         safe_name = PurePosixPath(payload.filename).name
+        logger.info(
+            "upload validation | filename=%s suffix=%s "
+            "allowed_extensions=%s denied_extensions=%s "
+            "content_type=%s allowed_content_types=%s",
+            payload.filename, PurePosixPath(safe_name).suffix.lower(),
+            settings.storage.upload_allowed_extensions,
+            settings.storage.upload_denied_extensions,
+            payload.content_type, settings.storage.upload_allowed_content_types,
+        )
         suffix = PurePosixPath(safe_name).suffix.lower()
         if not safe_name or safe_name in {".", ".."}:
             self._reject_upload("invalid_filename", "Invalid filename")
@@ -260,9 +272,9 @@ class FileService:
             self._validate_object_name(payload.object_name)
 
     def _normalize_category(self, category: str) -> str:
-        value = str(category or "uploads").strip().strip("/")
+        value = str(category or "").strip().strip("/")
         if not value:
-            value = "uploads"
+            return "" 
         if len(value) > settings.storage.upload_category_max_length:
             self._reject_upload("invalid_category", "Upload category is too long")
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9/_-]*", value):

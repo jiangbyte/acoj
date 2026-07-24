@@ -38,3 +38,13 @@ class SysConfigSchema(ApiSchema):
     created_by: str | None = None
     updated_at: datetime
     updated_by: str | None = None
+
+
+class ConfigBatchItem(ApiSchema):
+    id: str = Field(min_length=1, max_length=64)
+    config_key: str = Field(min_length=1, max_length=255)
+    config_value: str | None = None
+
+
+class ConfigBatchSaveRequest(ApiSchema):
+    items: list[ConfigBatchItem]

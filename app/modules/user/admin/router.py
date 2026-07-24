@@ -74,8 +74,6 @@ async def get_me(
                 email=account.email,
                 phone_login_enabled=account.phone_login_enabled,
                 email_login_enabled=account.email_login_enabled,
-                title=account.title,
-                employee_no=account.employee_no,
                 remark=account.remark,
                 created_at=account.created_at,
                 updated_at=account.updated_at,

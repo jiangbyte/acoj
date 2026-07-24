@@ -351,10 +351,27 @@ class ResourceModuleService:
         self,
         client: ResourceModuleClient | None = None,
     ) -> list[ResourceModuleSelectorOption]:
-        return to_schema_list(
-            ResourceModuleSelectorOption,
-            await self.repo.list_enabled_modules(client),
-        )
+       return to_schema_list(
+           ResourceModuleSelectorOption,
+           await self.repo.list_enabled_modules(client),
+       )
+
+    async def _resolve_creator_names(self, items: list[SysResourceModuleSchema]) -> None:
+        """批量查询 created_by / updated_by 对应的昵称。"""
+        account_ids: set[str] = set()
+        for item in items:
+            if item.created_by:
+                account_ids.add(item.created_by)
+            if item.updated_by:
+                account_ids.add(item.updated_by)
+        if not account_ids:
+            return
+        profiles = await get_profiles_batch(self.db, AccountType.ADMIN, list(account_ids))
+        for item in items:
+            if item.created_by and item.created_by in profiles:
+                item.created_name = getattr(profiles[item.created_by], "nickname", None)
+            if item.updated_by and item.updated_by in profiles:
+                item.updated_name = getattr(profiles[item.updated_by], "nickname", None)
 
 
 def _build_resource_tree_nodes(
@@ -377,3 +394,4 @@ def _build_resource_tree_nodes(
         else:
             roots.append(node)
     return roots
+

@@ -6,7 +6,7 @@ Generated at: 2026-07-23 16:28:51
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Select, delete, func, or_, select, update
+from sqlalchemy import Select, String, cast, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import NotFoundError
@@ -87,7 +87,8 @@ class MsgAnnouncementRepository:
             ),
             or_(
                 MsgAnnouncement.target_scope == TargetScope.ALL.value,
-                MsgAnnouncement.target_account_type == account_type,
+                (func.json_array_length(MsgAnnouncement.target_account_types) == 0)
+                | cast(MsgAnnouncement.target_account_types, String).contains('"' + account_type + '"'),
             ),
         )
         count_stmt = select(func.count(MsgAnnouncement.id)).where(
@@ -98,7 +99,8 @@ class MsgAnnouncementRepository:
             ),
             or_(
                 MsgAnnouncement.target_scope == TargetScope.ALL.value,
-                MsgAnnouncement.target_account_type == account_type,
+                (func.json_array_length(MsgAnnouncement.target_account_types) == 0)
+                | cast(MsgAnnouncement.target_account_types, String).contains('"' + account_type + '"'),
             ),
         )
         stmt = stmt.order_by(
@@ -131,7 +133,8 @@ class MsgAnnouncementRepository:
             ),
             or_(
                 MsgAnnouncement.target_scope == TargetScope.ALL.value,
-                MsgAnnouncement.target_account_type == account_type,
+                (func.json_array_length(MsgAnnouncement.target_account_types) == 0)
+                | cast(MsgAnnouncement.target_account_types, String).contains('"' + account_type + '"'),
             ),
         )
         published_ids = {str(v) for v in (await self.db.execute(published_stmt)).scalars().all()}
@@ -176,7 +179,8 @@ class MsgAnnouncementRepository:
             ),
             or_(
                 MsgAnnouncement.target_scope == TargetScope.ALL.value,
-                MsgAnnouncement.target_account_type == account_type,
+                (func.json_array_length(MsgAnnouncement.target_account_types) == 0)
+                | cast(MsgAnnouncement.target_account_types, String).contains('"' + account_type + '"'),
             ),
         )
         published_ids = [str(v) for v in (await self.db.execute(published_stmt)).scalars().all()]

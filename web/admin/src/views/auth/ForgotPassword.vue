@@ -14,7 +14,7 @@ const captchaRef = ref<InstanceType<typeof CaptchaInput> | null>(null)
 const loading = ref(false)
 
 const form = reactive({
-  email: typeof route.query.email === 'string' ? route.query.email : '',
+  email: '',
   token: typeof route.query.token === 'string' ? route.query.token : '',
   password: '',
   confirmPassword: '',
@@ -149,7 +149,7 @@ async function resetPassword() {
 
     <n-form ref="formRef" :model="form" :rules="rules" size="large">
       <n-form-item path="email" :label="'登录邮箱'">
-        <n-input v-model:value="form.email" :disabled="isResetMode" clearable>
+        <n-input v-model:value="form.email"  clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:mail" />
           </template>

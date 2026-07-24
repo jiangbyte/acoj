@@ -9,10 +9,12 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config.enums import AccountType
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.modules.message.enums import NotificationStatus
 from app.modules.message.notification.model import MsgNotificationRead
+from app.modules.user.utils.profile import get_profiles_batch
 from app.platform.db.transaction import transactional
 from app.modules.message.notification.repository import (
     MsgNotificationRepository,
@@ -45,11 +47,14 @@ class MsgNotificationService:
             await self.repo.delete_many(payload.ids)
 
     async def detail(self, query: IdQuery) -> MsgNotificationSchema:
-        return to_schema(MsgNotificationSchema, await self.repo.get_required(query.id))
+        entity = await self.repo.get_required(query.id)
+        schema = to_schema(MsgNotificationSchema, entity)
+        return await self._enrich_profiles(schema)
 
     async def page_admin(self, query: MsgNotificationAdminPageQuery) -> PageData[MsgNotificationSchema]:
         items, total = await self.repo.page_admin(query)
-        return build_page(query.pagination, total, to_schema_list(MsgNotificationSchema, items))
+        schemas = to_schema_list(MsgNotificationSchema, items)
+        return build_page(query.pagination, total, await self._batch_enrich_profiles(schemas))
 
     async def publish(self, payload: IdsRequest) -> None:
         """Set status=PUBLISHED and publish_at=now (only from DRAFT)."""
@@ -69,15 +74,17 @@ class MsgNotificationService:
         try:
             from app.modules.message.websocket.handler import manager as ws_manager
             for notification in published:
-                target_type = notification.target_account_type
-                target_id = notification.target_account_id
-                if notification.target_scope == "SPECIFIC" and target_type and target_id:
+                if notification.target_scope == "SPECIFIC" and notification.target_account_ids:
                     schema = to_schema(MsgNotificationSchema, notification)
                     ws_payload = {
                         "type": "new_notification",
                         "data": schema.model_dump(mode="json"),
                     }
-                    await ws_manager.route_to_user(target_type, target_id, ws_payload)
+                    acct_types = notification.target_account_types or []
+                    for i, acct_id in enumerate(notification.target_account_ids):
+                        acct_type = acct_types[i] if i < len(acct_types) else None
+                        if acct_type:
+                            await ws_manager.route_to_user(acct_type, acct_id, ws_payload)
         except Exception:
             pass
 
@@ -126,3 +133,35 @@ class MsgNotificationService:
     async def mark_all_read(self, session) -> None:
         async with transactional(self.db):
             await self.repo.mark_all_read(session.account_type, session.account_id)
+
+    async def _enrich_profiles(self, schema: MsgNotificationSchema) -> MsgNotificationSchema:
+        ids = []
+        if schema.created_by:
+            ids.append(schema.created_by)
+        if schema.updated_by:
+            ids.append(schema.updated_by)
+        if not ids:
+            return schema
+        profiles = await get_profiles_batch(self.db, AccountType.ADMIN, ids)
+        if schema.created_by and schema.created_by in profiles:
+            schema.created_name = profiles[schema.created_by].name
+        if schema.updated_by and schema.updated_by in profiles:
+            schema.updated_name = profiles[schema.updated_by].name
+        return schema
+
+    async def _batch_enrich_profiles(self, schemas: list[MsgNotificationSchema]) -> list[MsgNotificationSchema]:
+        all_ids = set()
+        for schema in schemas:
+            if schema.created_by:
+                all_ids.add(schema.created_by)
+            if schema.updated_by:
+                all_ids.add(schema.updated_by)
+        if not all_ids:
+            return schemas
+        profiles = await get_profiles_batch(self.db, AccountType.ADMIN, list(all_ids))
+        for schema in schemas:
+            if schema.created_by and schema.created_by in profiles:
+                schema.created_name = profiles[schema.created_by].name
+            if schema.updated_by and schema.updated_by in profiles:
+                schema.updated_name = profiles[schema.updated_by].name
+        return schemas

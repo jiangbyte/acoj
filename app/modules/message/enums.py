@@ -131,3 +131,10 @@ class AttachmentType(StrEnum):
     IMAGE = "IMAGE"
     VIDEO = "VIDEO"
     AUDIO = "AUDIO"
+
+
+class FeedbackStatus(StrEnum):
+    PENDING = "PENDING"
+    REVIEWED = "REVIEWED"
+    RESOLVED = "RESOLVED"
+    CLOSED = "CLOSED"

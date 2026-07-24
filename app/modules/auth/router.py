@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, Header, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
+from app.core.config.settings import settings
+from app.core.exceptions.business import BusinessError
 from app.core.response.schema import success
 from app.core.security.transport import (
     CaptchaApiResponse,
@@ -115,6 +117,8 @@ async def portal_register(
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> RegisterApiResponse:
     """门户端注册入口，创建门户账户主体和门户资料。"""
+    if not settings.auth.portal_register_enabled:
+        raise BusinessError("Portal registration is disabled")
     await verify_captcha(payload.captcha_id, payload.captcha_value)
     password = (await decrypt_passwords(payload.password_key_id, payload.password))[0]
     return success(

@@ -8,6 +8,10 @@ export function page(params: any) {
   })
 }
 
+export function list(params: { category?: string }) {
+  return http.get<any[]>(`${configPrefix}/list`, { params })
+}
+
 export function detail(params: any) {
   return http.get<any>(`${configPrefix}/detail`, {
     params,
@@ -24,4 +28,8 @@ export function update(data: any) {
 
 export function remove(data: any) {
   return http.post<any>(`${configPrefix}/delete`, data)
+}
+
+export function batchSave(data: { items: Array<{ id: string; config_key: string; config_value: string | null }> }) {
+  return http.post<any>(`${configPrefix}/batch-save`, data)
 }

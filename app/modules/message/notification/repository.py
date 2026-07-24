@@ -6,7 +6,7 @@ Generated at: 2026-07-23 16:28:50
 
 from datetime import datetime
 
-from sqlalchemy import Select, delete, func, select
+from sqlalchemy import Select, String, cast, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import NotFoundError
@@ -89,8 +89,8 @@ class MsgNotificationRepository:
             ])
         )
         filters.append(
-            (MsgNotification.target_account_type == account_type)
-            | (MsgNotification.target_account_type.is_(None))
+            (func.json_array_length(MsgNotification.target_account_types) == 0)
+            | cast(MsgNotification.target_account_types, String).contains('"' + account_type + '"')
         )
 
         if query.category:
@@ -118,7 +118,7 @@ class MsgNotificationRepository:
         published_stmt = select(func.count(MsgNotification.id)).where(
             MsgNotification.status == NotificationStatus.PUBLISHED,
             MsgNotification.target_scope.in_([TargetScope.ALL, TargetScope.ACCOUNT_TYPE]),
-            (MsgNotification.target_account_type == account_type) | (MsgNotification.target_account_type.is_(None)),
+            (func.json_array_length(MsgNotification.target_account_types) == 0) | cast(MsgNotification.target_account_types, String).contains('"' + account_type + '"'),
         )
         published_total = (await self.db.execute(published_stmt)).scalar_one()
 
@@ -157,7 +157,7 @@ class MsgNotificationRepository:
         published_ids_stmt = select(MsgNotification.id).where(
             MsgNotification.status == NotificationStatus.PUBLISHED,
             MsgNotification.target_scope.in_([TargetScope.ALL, TargetScope.ACCOUNT_TYPE]),
-            (MsgNotification.target_account_type == account_type) | (MsgNotification.target_account_type.is_(None)),
+            (func.json_array_length(MsgNotification.target_account_types) == 0) | cast(MsgNotification.target_account_types, String).contains('"' + account_type + '"'),
         )
         published_ids = list((await self.db.execute(published_ids_stmt)).scalars().all())
         if not published_ids:

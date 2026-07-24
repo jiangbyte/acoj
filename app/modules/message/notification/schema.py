@@ -20,8 +20,10 @@ class MsgNotificationCreateRequest(ApiSchema):
     category: str
     severity: str
     target_scope: str
-    target_account_type: str | None = None
-    target_account_id: str | None = None
+    target_account_types: list[str] = Field(default_factory=list)
+    target_account_ids: list[str] = Field(default_factory=list)
+    target_dept_ids: list[str] = Field(default_factory=list)
+    target_role_ids: list[str] = Field(default_factory=list)
     sender_account_type: str | None = None
     sender_account_id: str | None = None
     source_type: str | None = None
@@ -51,8 +53,10 @@ class MsgNotificationSchema(ApiSchema):
     category: str
     severity: str
     target_scope: str
-    target_account_type: str | None = None
-    target_account_id: str | None = None
+    target_account_types: list[str] = Field(default_factory=list)
+    target_account_ids: list[str] = Field(default_factory=list)
+    target_dept_ids: list[str] = Field(default_factory=list)
+    target_role_ids: list[str] = Field(default_factory=list)
     sender_account_type: str | None = None
     sender_account_id: str | None = None
     source_type: str | None = None
@@ -65,6 +69,8 @@ class MsgNotificationSchema(ApiSchema):
     created_by: str | None = None
     updated_at: datetime
     updated_by: str | None = None
+    created_name: str | None = None
+    updated_name: str | None = None
     is_read: bool = False
 
 

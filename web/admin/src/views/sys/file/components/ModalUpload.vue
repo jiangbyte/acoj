@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { FormInst, FormRules } from 'naive-ui'
-import FileUpload from '@/components/upload/FileUpload.vue'
-import { createRequiredRule } from '@/utils'
+import type { UploadFileInfo } from 'naive-ui'
+import { fileApi } from '@/api'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
+import { Icon } from '@iconify/vue/offline'
 import { dictList } from '@/utils/dict'
 
 const emit = defineEmits<{
@@ -18,9 +18,6 @@ const fallbackStorageProviderOptions = [
   { label: '阿里云 OSS', value: 'oss' },
 ]
 
-const formRef = ref<FormInst | null>(null)
-const uploadRef = ref<any>(null)
-
 const storageProviderOptions = computed(() => {
   const options = dictList('STORAGE_PROVIDER')
   return options.length ? options : fallbackStorageProviderOptions
@@ -31,20 +28,11 @@ const defaultStorageProvider = computed(() => String(storageProviderOptions.valu
 const state = reactive({
   showModal: false,
   submitLoading: false,
-  formModel: {
-    file: null as File | null,
-    storage_provider: '',
-  },
+  storageProvider: '',
+  uploadFileList: [] as UploadFileInfo[],
+  succeeded: 0,
+  failed: 0,
 })
-
-const rules = computed<FormRules>(() => ({
-  file: {
-    validator: () => !!state.formModel.file,
-    message: '请选择文件',
-    trigger: 'change',
-  },
-  storage_provider: createRequiredRule('存储提供商', 'change'),
-}))
 
 function openModal() {
   resetForm()
@@ -52,12 +40,10 @@ function openModal() {
 }
 
 function resetForm() {
-  state.formModel = {
-    file: null,
-    storage_provider: defaultStorageProvider.value,
-  }
-  uploadRef.value?.clear?.()
-  formRef.value?.restoreValidation()
+  state.storageProvider = defaultStorageProvider.value
+  state.uploadFileList = []
+  state.succeeded = 0
+  state.failed = 0
 }
 
 function handleUpdateShow(show: boolean) {
@@ -76,22 +62,42 @@ function closeModal() {
   state.showModal = false
 }
 
-function handleFileSelected() {
-  formRef.value?.restoreValidation()
-}
-
 async function submitForm() {
-  await formRef.value?.validate()
-  const file = state.formModel.file
-  if (!file) {
+  const pending = state.uploadFileList.filter((f) => f.status === 'pending' || f.status === 'error')
+  if (!pending.length) {
+    window.$message.warning('请先选择文件')
     return
   }
   state.submitLoading = true
+  state.succeeded = 0
+  state.failed = 0
   try {
-    const uploaded = await uploadRef.value?.upload?.()
-    emit('uploaded', uploaded)
-    emit('saved')
-    state.showModal = false
+    for (const fileInfo of pending) {
+      const file = fileInfo.file
+      if (!file) continue
+      fileInfo.status = 'uploading'
+      try {
+        await fileApi.upload(file, {
+          storage_provider: state.storageProvider,
+        })
+        fileInfo.status = 'finished'
+        fileInfo.percentage = 100
+        state.succeeded++
+      } catch {
+        fileInfo.status = 'error'
+        state.failed++
+      }
+    }
+    const total = state.succeeded + state.failed
+    if (state.succeeded > 0) {
+      window.$message.success(`上传完成：成功 ${state.succeeded} 个${state.failed > 0 ? `，失败 ${state.failed} 个` : ''}`)
+      emit('saved')
+      if (state.failed === 0) {
+        state.showModal = false
+      }
+    } else {
+      window.$message.error('上传失败')
+    }
   } finally {
     state.submitLoading = false
   }
@@ -138,34 +144,34 @@ defineExpose({
     :segmented="{ content: true, action: true }"
     @update:show="handleUpdateShow"
   >
-    <NForm
-      ref="formRef"
-      :model="state.formModel"
-      :rules="rules"
-      label-placement="left"
-      label-width="110"
-      :disabled="state.submitLoading"
-    >
-      <NFormItem :label="'存储提供商'" path="storage_provider">
+    <NForm label-placement="left" label-width="110" :disabled="state.submitLoading">
+      <NFormItem :label="'存储提供商'">
         <NSelect
-          v-model:value="state.formModel.storage_provider"
+          v-model:value="state.storageProvider"
           :options="storageProviderOptions"
           :disabled="state.submitLoading"
         />
       </NFormItem>
-      <NFormItem :label="'文件上传'" path="file">
-        <FileUpload
-          ref="uploadRef"
-          v-model:file="state.formModel.file"
-          mode="upload"
-          upload-variant="dragger"
-          :auto-upload="false"
-          :storage-provider="state.formModel.storage_provider"
-          :button-text="'点击或拖拽文件到此处'"
-          :compact="false"
-          @selected="handleFileSelected"
-          @cleared="handleFileSelected"
-        />
+      <NFormItem :label="'选择文件'">
+        <NUpload
+          class="w-full"
+          multiple
+          :default-upload="false"
+          :disabled="state.submitLoading"
+          :file-list="state.uploadFileList"
+          :show-cancel-button="!state.submitLoading"
+          :show-retry-button="false"
+          @update:file-list="state.uploadFileList = $event"
+        >
+          <NUploadDragger>
+            <div class="upload-dragger">
+              <NIcon size="28">
+                <Icon icon="icon-park-outline:upload" />
+              </NIcon>
+              <div>点击或拖拽文件到此处</div>
+            </div>
+          </NUploadDragger>
+        </NUpload>
       </NFormItem>
     </NForm>
 
@@ -175,9 +181,19 @@ defineExpose({
           取消
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          确认上传
+          {{ state.submitLoading ? `上传中 ${state.succeeded + state.failed}/${state.uploadFileList.length}` : '确认上传' }}
         </NButton>
       </NSpace>
     </template>
   </NModal>
 </template>
+
+<style scoped>
+.upload-dragger {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 24px 0;
+  color: var(--text-color-3);
+}
+</style>

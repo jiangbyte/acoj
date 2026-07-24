@@ -15,7 +15,7 @@ const captchaRef = ref<InstanceType<typeof CaptchaInput> | null>(null)
 const loading = ref(false)
 
 const form = reactive({
-  email: typeof route.query.email === 'string' ? route.query.email : '',
+  email: '',
   token: typeof route.query.token === 'string' ? route.query.token : '',
   password: '',
   confirmPassword: '',
@@ -111,7 +111,7 @@ async function handleSubmit() {
   <AuthLayout :title="'重置密码'" :subtitle="'使用邮件重置链接设置新密码。'">
     <n-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="handleSubmit">
       <n-form-item path="email" :label="'登录邮箱'">
-        <n-input v-model:value="form.email" :placeholder="'请输入登录邮箱'" :disabled="Boolean(form.token)" clearable>
+        <n-input v-model:value="form.email" :placeholder="'请输入登录邮箱'"  clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:mail" />
           </template>

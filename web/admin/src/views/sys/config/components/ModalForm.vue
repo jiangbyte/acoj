@@ -9,10 +9,11 @@ const emit = defineEmits<{
 }>()
 
 const formRef = ref<FormInst | null>(null)
+
 const defaultFormData = {
   config_key: '',
   config_value: '',
-  category: '',
+  category: 'OTHER',
   remark: '',
   sort_code: 0,
   ext_json: '{}',
@@ -57,7 +58,7 @@ async function fetchDetail(id: string) {
     const data = response.data ?? {}
     state.formModel = Object.assign({}, defaultFormData, data, {
       config_value: data.config_value ?? '',
-      category: data.category ?? '',
+      category: data.category ?? 'OTHER',
       remark: data.remark ?? '',
       sort_code: data.sort_code ?? 0,
       ext_json: stringifyExtJson(data.ext_json),
@@ -167,9 +168,7 @@ defineExpose({
               :autosize="{ minRows: 3, maxRows: 8 }"
             />
           </NFormItem>
-          <NFormItem :label="'分类'" path="category">
-            <NInput v-model:value="state.formModel.category" />
-          </NFormItem>
+
           <NFormItem :label="'备注'" path="remark">
             <NInput v-model:value="state.formModel.remark" />
           </NFormItem>

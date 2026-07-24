@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
 from app.core.config.enums import AccountStatusEnum
+from app.core.config.settings import settings
 from app.core.exceptions.business import AuthorizationError, BusinessError
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema
@@ -61,6 +62,10 @@ class AccountService:
         self._ensure_status_not_cancelled(payload)
         self._ensure_login_contact_payload(payload)
         password = await self._resolve_password(payload.password, payload.password_key_id)
+        if not password:
+            password = (settings.auth.default_password or "").strip()
+        if not password:
+            raise BusinessError("Password is required")
         async with transactional(self.db):
             account = await self.repo.create(
                 payload,
@@ -425,8 +430,6 @@ class AccountService:
             signature=payload.signature,
             phone=payload.phone,
             email=payload.email,
-            employee_no=payload.employee_no,
-            title=payload.title,
             remark=payload.remark,
         )
 

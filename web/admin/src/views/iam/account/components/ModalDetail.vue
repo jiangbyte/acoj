@@ -190,12 +190,6 @@ defineExpose({
               <NDescriptionsItem :label="'邮箱'">
                 {{ displayValue(state.account.email) }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="'工号'">
-                {{ displayValue(state.account.employee_no) }}
-              </NDescriptionsItem>
-              <NDescriptionsItem :label="'标题'">
-                {{ displayValue(state.account.title) }}
-              </NDescriptionsItem>
               <NDescriptionsItem :label="'等级'">
                 {{ displayValue(state.account.level) }}
               </NDescriptionsItem>

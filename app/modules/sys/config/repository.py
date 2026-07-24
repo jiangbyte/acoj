@@ -1,10 +1,11 @@
-from sqlalchemy import Select, delete, func, select
+from sqlalchemy import Select, case, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import NotFoundError
 from app.modules.sys.config.model import SysConfig
 from app.modules.sys.config.schema import (
     ConfigAdminPageQuery,
+    ConfigBatchItem,
     ConfigCreateRequest,
     ConfigUpdateRequest,
 )
@@ -44,6 +45,30 @@ class ConfigRepository:
         if len(existing_ids) != len(unique_ids):
             raise NotFoundError("Config not found")
         await self.db.execute(delete(SysConfig).where(SysConfig.id.in_(unique_ids)))
+
+    async def list_by_category(self, category: str | None = None) -> list[SysConfig]:
+        stmt = select(SysConfig).order_by(SysConfig.sort_code.asc(), SysConfig.id.desc())
+        if category:
+            stmt = stmt.where(SysConfig.category == category)
+        return list((await self.db.execute(stmt)).scalars().all())
+
+    async def batch_save(self, items: list[ConfigBatchItem]) -> None:
+        """通过单条 SQL CASE WHEN 批量更新，避免 N+1 问题。"""
+        if not items:
+            return
+        when_clauses = {
+            item.id: item.config_value for item in items
+        }
+        id_list = list(when_clauses.keys())
+        stmt = (
+            update(SysConfig)
+            .where(SysConfig.id.in_(id_list))
+            .values(
+                config_value=case(when_clauses, value=SysConfig.id, else_=SysConfig.config_value),
+            )
+        )
+        await self.db.execute(stmt)
+        await self.db.flush()
 
     async def page_admin(self, query: ConfigAdminPageQuery) -> tuple[list[SysConfig], int]:
         stmt: Select[tuple[SysConfig]] = select(SysConfig)

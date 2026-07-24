@@ -23,6 +23,7 @@ from app.modules.iam.account.model import SysAccount
 from app.modules.iam.account.repository import AccountRepository
 from app.modules.iam.account.schema import AccountCancelPayload, AccountCreateRequest
 from app.modules.iam.enums import AccountIdentityType
+from app.modules.sys.config.config_reader import config_reader
 from app.modules.sys.audit.service import OperationAuditService
 from app.modules.user.portal.repository import PortalUserProfileRepository
 from app.modules.user.portal.schema import PortalProfileUpsertPayload
@@ -186,7 +187,7 @@ class AuthService:
         reset_token = generate_token()
         redis = self._required_redis()
         await redis.setex(
-            password_reset_token_key(account_type.value, email),
+            password_reset_token_key(reset_token),
             settings.auth.password_reset_token_ttl_seconds,
             json.dumps(
                 {
@@ -197,15 +198,25 @@ class AuthService:
             ),
         )
         reset_link = self._build_password_reset_link(account_type, email, reset_token)
-        await send_mail(
-            email,
-            f"{settings.app.name} password reset",
-            (
-                "Use the link below to reset your password. "
-                "It expires in 10 minutes.\n\n"
-                f"{reset_link}"
-            ),
+        expire_minutes = settings.auth.password_reset_token_ttl_seconds // 60
+        tmpl_subject = config_reader.get("mail.template.forgot_password.subject") or "{{app_name}} 密码重置"
+        tmpl_body = config_reader.get("mail.template.forgot_password.body") or (
+            "请点击以下链接重置密码，"
+            "该链接将在 {{expire_minutes}} 分钟内有效。\n\n{{reset_link}}"
         )
+        subject = (
+            tmpl_subject.replace("{{app_name}}", settings.app.name)
+            .replace("{{reset_link}}", reset_link)
+            .replace("{{email}}", email)
+            .replace("{{expire_minutes}}", str(expire_minutes))
+        )
+        body = (
+            tmpl_body.replace("{{app_name}}", settings.app.name)
+            .replace("{{reset_link}}", reset_link)
+            .replace("{{email}}", email)
+            .replace("{{expire_minutes}}", str(expire_minutes))
+        )
+        await send_mail(email, subject, body)
         await self._record_password_reset_request(
             account_type,
             email,
@@ -222,15 +233,15 @@ class AuthService:
         client_ip: str | None = None,
         user_agent: str | None = None,
     ) -> None:
-        email = payload.email.strip().lower()
-        key = password_reset_token_key(account_type.value, email)
+        key = password_reset_token_key(payload.token)
         redis = self._required_redis()
         raw = await redis.get(key)
         raw_text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
         if not raw_text:
             raise AuthenticationError("Invalid or expired reset link")
         data = json.loads(raw_text)
-        if data.get("email") != email or not verify_password(payload.token, data["token_hash"]):
+        email = payload.email.strip().lower()
+        if email != data.get("email") or not verify_password(payload.token, data["token_hash"]):
             raise AuthenticationError("Invalid or expired reset link")
 
         account = await self.account_repo.get_required(str(data["account_id"]))
@@ -333,13 +344,9 @@ class AuthService:
         email: str,
         token: str,
     ) -> str:
-        base_url = (
-            settings.mail.admin_password_reset_url
-            if account_type == AccountType.ADMIN
-            else settings.mail.portal_password_reset_url
-        )
+        base_url = settings.mail.password_reset_url
         separator = "&" if "?" in base_url else "?"
-        return f"{base_url}{separator}{urlencode({'email': email, 'token': token})}"
+        return f"{base_url}{separator}{urlencode({'token': token})}"
 
     async def _record_password_reset_request(
         self,

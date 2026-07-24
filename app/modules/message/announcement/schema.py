@@ -19,7 +19,10 @@ class MsgAnnouncementCreateRequest(ApiSchema):
     content_type: str
     severity: str
     target_scope: str
-    target_account_type: str | None = None
+    target_account_types: list[str] = Field(default_factory=list)
+    target_account_ids: list[str] = Field(default_factory=list)
+    target_dept_ids: list[str] = Field(default_factory=list)
+    target_role_ids: list[str] = Field(default_factory=list)
     publish_locations: dict[str, Any]
     is_pinned: bool
     pinned_until: datetime | None = None
@@ -64,7 +67,10 @@ class MsgAnnouncementSchema(ApiSchema):
     content_type: str
     severity: str
     target_scope: str
-    target_account_type: str | None = None
+    target_account_types: list[str] = Field(default_factory=list)
+    target_account_ids: list[str] = Field(default_factory=list)
+    target_dept_ids: list[str] = Field(default_factory=list)
+    target_role_ids: list[str] = Field(default_factory=list)
     publish_locations: dict[str, Any]
     is_pinned: bool
     pinned_until: datetime | None = None
@@ -76,8 +82,10 @@ class MsgAnnouncementSchema(ApiSchema):
     expire_at: datetime | None = None
     view_count: int
     extra: dict[str, Any]
-    is_read: bool = False
     created_at: datetime
     created_by: str | None = None
     updated_at: datetime
     updated_by: str | None = None
+    created_name: str | None = None
+    updated_name: str | None = None
+    is_read: bool = False

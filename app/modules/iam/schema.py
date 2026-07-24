@@ -41,8 +41,6 @@ class SysAccountSchema(ApiSchema):
     email_identity_bind_status: AccountIdentityBindStatus | None = None
     phone_identity_bind_status: AccountIdentityBindStatus | None = None
     identities: list[AccountIdentitySchema] = Field(default_factory=list)
-    employee_no: str | None = None
-    title: str | None = None
     bio: str | None = None
     level: str | None = None
     remark: str | None = None

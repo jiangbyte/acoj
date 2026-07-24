@@ -101,13 +101,12 @@ class PortalUserProfileService:
         self._ensure_avatar_file(content, content_type)
         profile = await self.repo.get_by_account_id(session.account_id)
         previous_avatar = profile.avatar if profile else None
-        avatar_object_name = self._build_avatar_object_name(session.account_id, content_type)
+        avatar_object_name = self._build_avatar_object_name(content_type)
         uploaded = await FileService(self.db).upload(
             FileUploadRequest(
                 filename=PurePosixPath(avatar_object_name).name,
                 content=content,
                 content_type=content_type,
-                category="avatars",
                 object_name=avatar_object_name,
             )
         )
@@ -212,10 +211,10 @@ class PortalUserProfileService:
         if content_type not in AVATAR_CONTENT_TYPES:
             raise BusinessError("Avatar file must be a JPEG, PNG, or WebP image")
 
-    def _build_avatar_object_name(self, account_id: str, content_type: str) -> str:
-        timestamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
+    def _build_avatar_object_name(self, content_type: str) -> str:
+        now = datetime.now(UTC)
         extension = AVATAR_CONTENT_TYPES[content_type]
-        return f"avatars/portal/{account_id}/avatar-{timestamp}-{uuid4().hex}{extension}"
+        return f"{now:%Y}/{now:%m}/{now:%d}/{uuid4().hex}{extension}"
 
     async def _delete_previous_avatar(
         self,

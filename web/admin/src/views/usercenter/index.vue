@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { FormInst, FormItemRule, FormRules } from 'naive-ui'
-import { authApi, messageApi } from '@/api'
-import MessageDetailModal from '@/components/message/MessageDetailModal.vue'
+import { authApi } from '@/api'
 import { useAuthStore } from '@/stores'
 import { formatDateTime, isValidEmail, resolveFileUrl } from '@/utils'
 import { encryptPasswords } from '@/utils/security'
@@ -9,7 +8,6 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import AvatarUploadModal from './components/AvatarUploadModal.vue'
 
 const authStore = useAuthStore()
-const detailModalRef = ref<InstanceType<typeof MessageDetailModal> | null>(null)
 const emailFormRef = ref<FormInst | null>(null)
 const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 
@@ -22,15 +20,11 @@ const state = reactive({
   activeTab: 'basic_info',
   avatarModalShow: false,
   me: null as any,
-  notifications: [] as any[],
-  threads: [] as any[],
   profileForm: {
     name: '',
     nickname: '',
     avatar: '',
     signature: '',
-    title: '',
-    employee_no: '',
     remark: '',
   },
   passwordForm: {
@@ -80,31 +74,18 @@ const emailRules = computed<FormRules>(() => ({
 }))
 
 onMounted(async () => {
-  await loadPage()
-})
-
-async function loadPage() {
   state.loading = true
   try {
-    await Promise.all([loadMe(), loadMessage()])
+    await loadMe()
   } finally {
     state.loading = false
   }
-}
+})
 
 async function loadMe() {
   const data = await authStore.refreshUserInfo()
   state.me = data
   syncForms(data)
-}
-
-async function loadMessage() {
-  const [notificationsResponse, conversationsResponse] = await Promise.all([
-    messageApi.notificationMyPage({ current: 1, size: 5 }),
-    messageApi.conversationList(),
-  ])
-  state.notifications = notificationsResponse.data?.records ?? []
-  state.threads = conversationsResponse.data?.records ?? []
 }
 
 function syncForms(data: any) {
@@ -113,8 +94,6 @@ function syncForms(data: any) {
   state.profileForm.nickname = data?.nickname ?? currentProfile.nickname ?? ''
   state.profileForm.avatar = data?.avatar ?? currentProfile.avatar ?? ''
   state.profileForm.signature = currentProfile.signature ?? ''
-  state.profileForm.title = currentProfile.title ?? ''
-  state.profileForm.employee_no = currentProfile.employee_no ?? ''
   state.profileForm.remark = currentProfile.remark ?? ''
   state.phoneForm.phone = currentProfile.phone ?? ''
   state.emailForm.email = currentProfile.email ?? ''
@@ -129,8 +108,6 @@ async function saveProfile() {
       name: state.profileForm.name || null,
       nickname: state.profileForm.nickname || null,
       signature: state.profileForm.signature || null,
-      title: state.profileForm.title || null,
-      employee_no: state.profileForm.employee_no || null,
       remark: state.profileForm.remark || null,
     })
     await refreshMe()
@@ -240,14 +217,6 @@ async function refreshMe() {
   syncForms(data)
 }
 
-async function openDetail(type: 'notification' | 'message', item: any) {
-  await detailModalRef.value?.open(type, item)
-}
-
-async function handleDetailChanged() {
-  await loadMessage()
-}
-
 function mapNames(items?: Array<{ id: string; name: string }>) {
   return (items ?? [])
     .map((item) => item.name)
@@ -307,9 +276,6 @@ function displayValue(value: unknown) {
             <NDivider />
 
             <NDescriptions :column="1" label-placement="left" size="small">
-              <NDescriptionsItem :label="'标题'">
-                {{ displayValue(profile.title) }}
-              </NDescriptionsItem>
               <NDescriptionsItem :label="'部门'">
                 {{ mainDept }}
               </NDescriptionsItem>
@@ -324,12 +290,12 @@ function displayValue(value: unknown) {
             <NDivider />
 
             <div class="text-sm font-medium">
-              签名
+              个性签名
             </div>
             <div
               class="mt-2 min-h-18 rounded border border-[var(--border-color)] p-3 text-sm text-[var(--text-color-3)]"
             >
-              {{ displayValue(profile.signature || profile.remark) }}
+              {{ displayValue(profile.signature) }}
             </div>
           </NCard>
         </NGridItem>
@@ -352,19 +318,13 @@ function displayValue(value: unknown) {
                   <NFormItem :label="'账号'">
                     <NInput :value="state.me?.account" disabled />
                   </NFormItem>
-                  <NFormItem :label="'名称'">
+                  <NFormItem :label="'姓名'">
                     <NInput v-model:value="state.profileForm.name" />
                   </NFormItem>
                   <NFormItem :label="'昵称'">
                     <NInput v-model:value="state.profileForm.nickname" />
                   </NFormItem>
-                  <NFormItem :label="'标题'">
-                    <NInput v-model:value="state.profileForm.title" />
-                  </NFormItem>
-                  <NFormItem :label="'工号'">
-                    <NInput v-model:value="state.profileForm.employee_no" />
-                  </NFormItem>
-                  <NFormItem :label="'签名'">
+                  <NFormItem :label="'个性签名'">
                     <NInput v-model:value="state.profileForm.signature" type="textarea" />
                   </NFormItem>
                   <NFormItem :label="'备注'">
@@ -447,41 +407,6 @@ function displayValue(value: unknown) {
                 </NForm>
               </NTabPane>
 
-              <NTabPane name="notifications" :tab="'通知'">
-                <NList v-if="state.notifications.length" bordered clickable hoverable>
-                  <NListItem
-                    v-for="item in state.notifications"
-                    :key="item.id"
-                    class="cursor-pointer"
-                    @click="openDetail('notification', item)"
-                  >
-                    <NThing :title="item.title">
-                      <template #description>
-                        {{ formatDateTime(item.publish_at || item.created_at) }}
-                      </template>
-                    </NThing>
-                  </NListItem>
-                </NList>
-                <NEmpty v-else class="py-12" :description="'暂无数据'" />
-              </NTabPane>
-
-              <NTabPane name="messages" :tab="'消息'">
-                <NList v-if="state.threads.length" bordered clickable hoverable>
-                  <NListItem
-                    v-for="item in state.threads"
-                    :key="item.id"
-                    class="cursor-pointer"
-                    @click="openDetail('message', item)"
-                  >
-                    <NThing :title="item.title || item.name || '会话'">
-                      <template #description>
-                        {{ formatDateTime(item.updated_at || item.created_at) }}
-                      </template>
-                    </NThing>
-                  </NListItem>
-                </NList>
-                <NEmpty v-else class="py-12" :description="'暂无数据'" />
-              </NTabPane>
             </NTabs>
           </NCard>
         </NGridItem>
@@ -525,7 +450,6 @@ function displayValue(value: unknown) {
       @uploaded="refreshMe"
     />
 
-    <MessageDetailModal ref="detailModalRef" @changed="handleDetailChanged" />
   </div>
 </template>
 
