@@ -1,7 +1,6 @@
 # 数据库迁移
 
-本项目使用 Alembic 管理数据库结构迁移。迁移只负责表、字段、索引、约束等结构变更，不负责初始化
-业务数据。超管账号、初始角色等业务数据由独立 seed 脚本处理。
+本项目使用 Alembic 管理数据库结构迁移。迁移只负责表、字段、索引、约束等结构变更，不负责初始化业务数据。超管账号、初始角色等业务数据由独立 seed 脚本处理。
 
 ## 配置来源
 
@@ -17,7 +16,7 @@
 
 ## 执行迁移
 
-源码环境：
+### 源码环境
 
 ```bash
 python scripts/migrate.py
@@ -28,6 +27,8 @@ python scripts/migrate.py
 ```bash
 alembic upgrade head
 ```
+
+### Docker 容器内
 
 Docker 后端镜像没有复制 `scripts/`，镜像内应使用 Alembic 命令：
 
@@ -73,12 +74,11 @@ python scripts/migrate.py
 python scripts/check_migration.py
 ```
 
-`check_migration.py` 用于确认当前数据库结构和 SQLAlchemy model 没有未生成的结构差异。
+`check_migration.py` 用于确认当前数据库结构和 SQLAlchemy model 之间没有未记录的结构差异。
 
 ## 重建初始迁移
 
-如果项目早期还没有稳定发布，想清空 `migrations/versions` 并重新生成一份全新的初始迁移，不要直接拿
-已有开发库生成。已有库里已经有业务表，Alembic 会把它当作“当前结构”，生成结果会不正确。
+如果项目早期还没有稳定发布，想清空 `migrations/versions` 并重新生成一份全新的初始迁移，不要直接拿已有开发库生成 — 已有库里已经有业务表，Alembic 会把它当作"当前结构"，生成结果会不正确。
 
 推荐使用脚本通过临时空库生成：
 
@@ -105,8 +105,7 @@ python scripts/rebuild_initial_migration.py --yes --shadow-db hei_fastapi_migrat
 python scripts/rebuild_initial_migration.py --yes --keep-db
 ```
 
-重建初始迁移后，旧开发库里的 `alembic_version` 会指向已经删除的旧 revision。要迁移旧开发库，最干净的
-方式是删除并重建数据库，再执行：
+重建初始迁移后，旧开发库里的 `alembic_version` 会指向已经删除的旧 revision。要迁移旧开发库，最干净的方式是删除并重建数据库，再执行：
 
 ```bash
 python scripts/migrate.py
@@ -148,12 +147,29 @@ python scripts/seed_super_admin.py
 python scripts/seed_super_admin.py --help
 ```
 
-当前后端 Docker 镜像没有复制 `scripts/`。如果要在容器内 seed，需要自行扩展镜像或挂载源码脚本；否则在
-源码环境执行 seed。
+当前后端 Docker 镜像没有复制 `scripts/`。如果要在容器内 seed，需要自行扩展镜像或挂载源码脚本；否则在源码环境执行 seed。
+
+## Docker 环境迁移参考
+
+以下是一个完整的 Docker 环境一键迁移示例（基于 PostgreSQL），包含数据复制：
+
+```bash
+# 强制断开旧库连接 → 删除重建空库 → 从源库全量复制到新库
+docker exec -e PGPASSWORD=123456 -it postgres psql -U postgres -c \
+  "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'hei_fastapi_test' AND pid <> pg_backend_pid();" && \
+docker exec -e PGPASSWORD=123456 -it postgres psql -U postgres -c \
+  "DROP DATABASE IF EXISTS hei_fastapi_test;" && \
+docker exec -e PGPASSWORD=123456 -it postgres psql -U postgres -c \
+  "CREATE DATABASE hei_fastapi_test;" && \
+docker exec -e PGPASSWORD=123456 postgres pg_dump -U postgres -d hei_fastapi \
+  --inserts --column-inserts --no-owner --no-privileges | \
+docker exec -e PGPASSWORD=123456 -i postgres psql -U postgres -d hei_fastapi_test && \
+echo "迁移完成！"
+```
 
 ## 常见问题
 
-`Target database is not up to date`：
+**Target database is not up to date**：
 
 当前数据库没有升级到最新 migration。先执行：
 
@@ -163,7 +179,7 @@ python scripts/migrate.py
 
 然后再生成新的迁移。
 
-生成的 migration 为空：
+**生成的 migration 为空**：
 
 说明当前 model 和数据库结构没有检测到差异。可以运行：
 
@@ -173,7 +189,7 @@ python scripts/check_migration.py
 
 确认是否已经一致。
 
-Docker 容器内找不到 `scripts/migrate.py`：
+**Docker 容器内找不到 scripts/migrate.py**：
 
 这是预期行为。后端镜像只复制 `app/`、`migrations/`、`alembic.ini` 等运行必需文件。容器内迁移使用：
 
@@ -181,10 +197,14 @@ Docker 容器内找不到 `scripts/migrate.py`：
 python -m alembic upgrade head
 ```
 
-需要初始化数据：
+**需要初始化数据**：
 
 不要写进 Alembic migration。当前超管初始化使用独立脚本：
 
 ```bash
 python scripts/seed_super_admin.py
 ```
+
+---
+
+参见 [migrations/README.md](migrations/README.md) 获取目录级简要说明。

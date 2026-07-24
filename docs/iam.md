@@ -1,192 +1,123 @@
-# IAM 授权与数据权限设计
+# IAM 设计说明
 
-本文描述当前项目的 IAM/RBAC 实现。管理端使用 `ADMIN` 账号体系，门户端使用 `PORTAL` 账号体系；
-两者登录态、路由入口和前端应用彼此独立。
+HEI FastAPI 的 IAM（Identity and Access Management）基于 RBAC 模型扩展，支持账号、角色、部门、用户组、岗位、资源菜单和权限的统一管理。
 
-## 总体链路
+---
 
-IAM 由认证会话、资源授权、按钮权限绑定、功能权限判断和数据权限过滤组成：
+## 核心概念
 
-- 认证会话：登录后生成 `SessionPayload`，写入 Redis。
-- 资源授权：主体拥有资源节点后，可看到菜单、页面、按钮，并继承资源绑定的权限项。
-- 按钮权限绑定：权限 key 只在资源管理的按钮权限中绑定，可设置数据范围。
-- 功能权限：路由使用 `require_permission("module:resource:action")` 判断当前 session 是否拥有权限 key。
-- 数据权限：业务查询使用当前 session 中由按钮权限绑定推导出的权限授权，把数据范围转换为 SQLAlchemy 条件。
+### 账号体系
 
-`SessionPayload` 当前缓存字段包括：
+| 概念 | 说明 |
+|---|---|
+| `sys_account` | 统一账号表，存储密码哈希、状态、登录追踪等通用属性 |
+| `sys_account_identity` | 登录身份表，一个账号可绑定多个身份（用户名、邮箱、手机号） |
+| 账号类型 | `ADMIN`（管理端）和 `PORTAL`（门户端），独立登录入口 |
+| 密码策略 | 复杂度要求（大小写/数字/特殊字符）、过期天数、历史检查（最近 5 次）、常见密码黑名单 |
 
-- `account_id`
-- `account_type`
-- `role_ids`
-- `dept_ids`
-- `group_ids`
-- `resource_ids`
-- `button_codes`
-- `permission_keys`
-- `permission_grants`
+账号状态：正常、锁定、禁用、已注销。注销的账号有定时清理任务。
 
-授权变更后，服务会批量刷新相关账号在线 session，避免用户必须重新登录才能拿到新权限。
+### 权限核心实体
 
-## 路由前缀和账号边界
+| 实体 | 表 | 说明 |
+|---|---|---|
+| 角色 | `sys_role` | 权限集合，支持 scope 类型、内置标识、分类 |
+| 部门 | `sys_dept` | 组织架构树 |
+| 用户组 | `sys_group` | 跨部门的用户集合 |
+| 岗位 | `sys_position` | 职能岗位 |
+| 资源 | `sys_resource` | 菜单/功能/页面 5 级树形结构 |
+| 资源模块 | `sys_resource_module` | 资源按模块分组 |
 
-管理端 IAM 接口统一挂载在：
+### 统一关系模型
 
-```text
-/api/v1/admin/*
-```
+**`sys_iam_relation`** — 所有 IAM 关系通过这一张多态关系表表达：
 
-门户端资源接口挂载在：
+- 账号 ↔ 角色
+- 账号 ↔ 部门
+- 角色 ↔ 资源
+- 角色 ↔ 权限
+- 资源 ↔ 权限
 
-```text
-/api/v1/portal/*
-```
+关系支持属性：
 
-后端路由通过 `require_account_type(AccountType.ADMIN)` 或 `require_account_type(AccountType.PORTAL)`
-限制账号体系。admin 前端不应调用 portal 接口，portal 前端也不应调用 admin 接口。
+| 属性 | 说明 |
+|---|---|
+| `grant_mode` | 授权模式 |
+| `effect` | `ALLOW` / `DENY`，判断优先级 |
+| `data_scope` | 数据范围：`ALL` / `DEPT_AND_CHILD` / `DEPT` / `SELF` / `CUSTOM` |
+| `expired_at` | 过期时间 |
 
-## 授权主体和入口
+---
 
-公开授权入口使用业务专用接口，不公开通用 grant 路由。底层 `GrantRepository` 只作为内部复用能力。
+## 权限判定流程
 
-管理端当前授权入口包含：
+1. 用户登录 → 获取账号信息和角色列表
+2. 根据角色关联的资源 → 计算可访问菜单和页面
+3. 根据角色关联的权限键 → 计算按钮级操作权限
+4. 根据角色的数据范围 → 限制数据查询范围
 
-账号：
+### 数据范围说明
 
-- `GET /api/v1/admin/sys/accounts/own-resource`
-- `POST /api/v1/admin/sys/accounts/grant-resource`
-- `GET /api/v1/admin/sys/accounts/own-role`
-- `POST /api/v1/admin/sys/accounts/grant-role`
-- `GET /api/v1/admin/sys/accounts/own-group`
-- `POST /api/v1/admin/sys/accounts/grant-group`
-- `GET /api/v1/admin/sys/accounts/own-dept`
-- `POST /api/v1/admin/sys/accounts/grant-dept`
+| 范围 | 含义 |
+|---|---|
+| `ALL` | 全部数据 |
+| `DEPT_AND_CHILD` | 本部门及子部门 |
+| `DEPT` | 仅本部门 |
+| `SELF` | 仅本人 |
+| `CUSTOM` | 自定义范围（配合部门选择） |
 
-角色：
+---
 
-- `GET /api/v1/admin/sys/roles/own-resource`
-- `POST /api/v1/admin/sys/roles/grant-resource`
-- `GET /api/v1/admin/sys/roles/own-user`
-- `POST /api/v1/admin/sys/roles/grant-user`
+## 权限注册与同步
 
-用户组：
+系统启动时自动扫描所有路由的标签和元数据，提取权限键并注册到 Redis 权限注册表。
 
-- `GET /api/v1/admin/sys/groups/own-resource`
-- `POST /api/v1/admin/sys/groups/grant-resource`
-- `GET /api/v1/admin/sys/groups/own-role`
-- `POST /api/v1/admin/sys/groups/grant-role`
-- `GET /api/v1/admin/sys/groups/own-user`
-- `POST /api/v1/admin/sys/groups/grant-user`
+- 权限键格式遵循资源路由路径
+- 管理端 `sys_resource` 模块提供页面前端可见资源的查询接口
+- 启动时通过 `apply_db_config_overrides()` 同步覆盖后端的运行时配置（Auth、Storage、Mail、Audit 参数）
 
-## 资源授权和按钮权限绑定语义
+---
 
-资源授权表达“主体拥有哪些资源”：
+## 会话管理
 
-- 资源节点来自 `sys_resource`。
-- 按钮权限绑定来自 `RESOURCE_PERMISSION` 关系。
-- 资源可用于菜单、页面、按钮和接口权限推导。
-- `CASCADE` 资源授权会把资源绑定的权限推导为有效权限。
+| 特性 | 说明 |
+|---|---|
+| Token 存储 | Redis，支持集群共享 |
+| Token 绑定 | 可选 IP 绑定、User-Agent 绑定 |
+| 并发限制 | 可配置最大并发会话数 |
+| 空闲超时 | 可配置空闲超时时间 |
+| 有效期 | 支持 Token TTL 和 Refresh TTL 分离 |
 
-按钮权限绑定表达“按钮资源对应哪个权限”：
+---
 
-- 权限 key 必须存在于 Redis 权限注册表。
-- 账号、角色、用户组不再直接绑定权限，只能通过资源授权获得按钮资源，再继承按钮绑定的权限。
-- 按钮权限绑定携带 `data_scope`、`custom_scope_dept_ids`。
-- 历史 `SUBJECT_PERMISSION_GRANT` 直授记录不会进入会话权限计算。
+## 登录安全
 
-## 权限注册表
+| 防护 | 机制 |
+|---|---|
+| 暴力破解 | 账号级和 IP 级登录失败计数，超过阈值临时锁定 |
+| 密码加密 | RSA 公钥加密传输 |
+| 验证码 | 登录/注册支持验证码校验 |
+| 审计告警 | 异常时段登录、敏感操作、批量删除、IP 异常行为检测 |
 
-权限注册强依赖 Redis：
+---
 
-- 应用启动时扫描所有带 `require_permission(...)` 的 FastAPI 路由。
-- 扫描结果写入 Redis。
-- 绑定按钮权限时只允许选择 Redis 注册表中存在的权限 key。
-- Redis 不可用时应用启动失败。
-- 不使用进程内权限注册表作为兜底。
+## 审计
 
-路由路径会在注册时归一化：
+关键操作通过 `OperationAuditMiddleware` 自动记录到 `sys_operation_audit` 表：
 
-- 去掉 `/api/v1` 等版本前缀。
-- 去掉路由 tag 对应的入口前缀，如 `/admin`、`/portal`。
-- 一个权限 key 只保留一条注册记录。
+- 写队列使用有界异步队列（默认 1000），队满时丢弃但不阻塞请求
+- Celery 定时任务分析异常行为并生成审计告警
+- 支持的告警规则：暴力破解、非常规时段操作、敏感操作、批量删除、IP 异常
 
-本地开发和测试真实应用启动时必须先启动 Redis。单元测试如需绕过权限注册，应通过 monkeypatch 精确替换
-对应服务中的 `list_registered_permission_keys` 或 `ensure_registered_permission`。
+---
 
-## 数据权限规则
+## 账号类型隔离
 
-统一使用 `app.core.security.data_scope.build_data_scope_filter` 构造 SQLAlchemy 条件。
+| 维度 | 管理端 (ADMIN) | 门户端 (PORTAL) |
+|---|---|---|
+| 登录入口 | `/api/v1/admin/auth/*` | `/api/v1/portal/auth/*` |
+| 用户资料表 | `admin_user_profile` | `portal_user_profile` |
+| 注册方式 | 默认不开放 | 可配置开放注册 |
+| 功能范围 | 系统管理、IAM、业务管理 | 个人门户、消息、空间 |
 
-支持的数据范围：
-
-- `ALL`：不追加数据过滤。
-- `SELF`：`owner_column == session.account_id`。
-- `DEPT`：`dept_column in session.dept_ids`。
-- `DEPT_AND_CHILD`：读取部门树，在内存中计算当前部门及所有子部门。
-- `CUSTOM`：`dept_column in custom_scope_dept_ids`。
-
-默认安全策略：
-
-- 有 `*:*:*` 权限时视为不受数据权限限制。
-- 没有匹配权限授权时默认 `SELF`。
-- 缺少 `owner_column` 或 `dept_column` 时返回 `false()`，不放开数据。
-- `ALL` 返回 `true()`。
-
-接入示例：
-
-```python
-from sqlalchemy import select
-
-from app.core.security.data_scope import build_data_scope_filter
-
-condition = await build_data_scope_filter(
-    db,
-    session,
-    "sys:file:page",
-    owner_column=SysFile.created_by,
-)
-stmt = select(SysFile).where(condition)
-```
-
-带部门字段的业务表应同时传入 `owner_column` 和 `dept_column`：
-
-```python
-condition = await build_data_scope_filter(
-    db,
-    session,
-    "biz:order:page",
-    owner_column=BizOrder.created_by,
-    dept_column=BizOrder.dept_id,
-)
-```
-
-如果业务只需要解析部门 ID 列表，可以使用：
-
-```python
-from app.core.security.data_scope import resolve_data_scope_dept_ids
-
-dept_ids = await resolve_data_scope_dept_ids(db, session, "biz:order:page")
-```
-
-返回值含义：
-
-- `None`：不限制部门。
-- `[]`：没有可见部门。
-- 非空列表：限制在这些部门内。
-
-## 前端资源使用
-
-管理端默认通过：
-
-```text
-/api/v1/admin/sys/resources/current
-```
-
-获取当前账号资源树，再生成动态路由和菜单。
-
-门户端默认通过：
-
-```text
-/api/v1/portal/sys/resources/current
-```
-
-获取门户资源。用户中心、认证页、错误页等基础页面仍由前端静态路由承载。
+两个端共享统一的账号表（`sys_account`），但通过 `account_type` 字段隔离，各自拥有独立的登录身份和会话上下文。

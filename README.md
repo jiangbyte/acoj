@@ -2,68 +2,154 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.116%2B-009688?logo=fastapi&logoColor=white)
-![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0%2B-D71F00)
-![Alembic](https://img.shields.io/badge/Alembic-Migrations-6BA81E)
-![Pydantic](https://img.shields.io/badge/Pydantic-v2-E92063)
 ![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-Ready-3178C6?logo=typescript&logoColor=white)
-![Naive UI](https://img.shields.io/badge/Naive%20UI-2.44-18A058)
-![Monaco Editor](https://img.shields.io/badge/Monaco%20Editor-0.55-007ACC)
-![uni-app](https://img.shields.io/badge/uni--app-H5%20%2F%20Mini%20Program-2B9939)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supported-4169E1?logo=postgresql&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-6.2%2B-DC382D?logo=redis&logoColor=white)
-![RabbitMQ](https://img.shields.io/badge/RabbitMQ-Supported-FF6600?logo=rabbitmq&logoColor=white)
-![Celery](https://img.shields.io/badge/Celery-5.5%2B-37814A)
-![Jinja2](https://img.shields.io/badge/Jinja2-Templates-B41717)
-![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-Ready-000000)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)
+![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?logo=rabbitmq&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-HEI FastAPI 是一个面向中后台、门户和通用业务系统的全栈脚手架。仓库包含 FastAPI 后端、管理端 Web
-应用 `web/admin`、门户端 Web 应用 `web/portal`，以及对应的 uni-app 多端应用 `web/admin-uniapp`、
-`web/portal-uniapp`。后端内置账号体系、RBAC、资源菜单、文件存储、消息通知、定时任务、数据库迁移和
-基础可观测能力。
+HEI FastAPI 是一个面向中后台、门户和通用业务系统的全栈脚手架。
 
-希望以现代 Python / Vue 技术栈，向 RuoYi（若依）开源生态致敬。
+仓库包含 **FastAPI 异步后端**、**Vue 3 管理端 SPA**、**Vue 3 门户端 SPA** 以及对应的 **uni-app 多端应用**。后端内置完善的 IAM/RBAC、资源菜单、文件存储、消息通知、代码生成、定时任务、数据库迁移和可观测性能力。
 
-> 原先考虑英文优先，中文切换，但最终因为个人需求等原因，删除了 i18n 国际化支持。
+---
 
-## 功能概览
+## 功能亮点
 
-- 后端：FastAPI、SQLAlchemy Async、Alembic、Pydantic v2、Redis、RabbitMQ、Celery、Jinja2。
-- Web 前端：Vue 3、Vite、TypeScript、Pinia、Naive UI / Pro Naive UI、UnoCSS、Monaco Editor。
-- 多端前端：uni-app、Vue 3、Pinia、UnoCSS，可构建 H5 和常见小程序平台。
-- API 统一挂载在 `/api/v1` 下，按 `admin`、`portal`、`internal` 入口组织。
-- 内置 IAM/RBAC：账号、角色、部门、用户组、岗位、资源、权限注册与关系模型。
-- 内置用户中心：管理端用户、门户用户、头像上传、资料修改、手机号修改。
-- 内置系统能力：字典、Banner、文件管理、操作审计、本地/S3/MinIO/OSS 存储。
-- 内置代码生成：支持普通表、树表、左树右表、主子表，生成 FastAPI 后端、管理端页面、API 和菜单权限 SQL。
-- 内置消息能力：站内消息、通知、待办、实时事件接口。
-- 内置后台任务：Banner 交互量定时落库、注销账号清理。
-- 支持结构化日志、Prometheus metrics、OpenTelemetry tracing。
+**后端**
+- FastAPI 异步框架 + SQLAlchemy 2.0 Async + Pydantic v2
+- 模块化自动装配：新增模块只需定义 `ModuleSpec`，无需修改中央路由
+- Alembic 数据库迁移、Celery 异步任务 + redbeat 定时调度
+- 支持 PostgreSQL / MySQL / SQLite 多数据库
 
+**IAM / RBAC**
+- 统一账号体系（`sys_account` + `sys_account_identity`），支持 ADMIN / PORTAL 双端隔离
+- 角色、部门、用户组、岗位、资源菜单完整分层
+- 统一多态关系模型 `sys_iam_relation`，支持 allow/deny/数据范围/过期
+- 会话管理：Redis Token、IP 绑定、并发限制、空闲超时
+- 密码策略：复杂度、过期、历史检查、常见密码检测
+- 登录安全：短信/邮箱验证码、RSA 加密、暴力破解防护、审计告警
 
-## 运行要求
+**系统能力**
+- 字典管理、系统配置（DB 运行时覆盖）、Banner 管理
+- 文件管理：本地存储 / S3 / MinIO / OSS 多后端适配
+- 操作审计：有界异步队列写库 + Celery 定时告警分析
+- 代码生成：支持普通表、树表、左树右表、主子表，生成后端 + 前端 + 菜单 SQL
+- 等保安全加固：安全头、速率限制、审计告警、密码策略
 
-后端开发环境：
+**消息与通讯**
+- 站内消息、通知、待办、公告、反馈
+- 即时通讯：好友、聊天组、会话管理
+- WebSocket 实时事件推送
 
-- Python 3.11+
-- PostgreSQL
-- Redis
-- RabbitMQ：启用 Celery worker/beat 时需要。
+**可观测性**
+- 结构化日志、Prometheus metrics、OpenTelemetry tracing
+- Celery 任务和数据库操作的可观测性
 
-前端开发环境：
+**前端**
+- 管理端：Vue 3 / Naive UI / Pro Naive UI / Monaco Editor / @antv/g2
+- 门户端：Vue 3 / Naive UI / UnoCSS
+- 移动端：uni-app（H5 + 微信小程序等平台）
+- 支持多种富文本和代码编辑器集成
 
-- Node.js 22+
-- pnpm
+---
 
-可选依赖：
+## 截图展示
 
-- S3 / MinIO / OSS：对象存储。
-- Prometheus / OpenTelemetry Collector：可观测性。
+| | |
+|---|---|
+| ![运营工作台](docs/IMAGES/img.png) | ![通知管理](docs/IMAGES/img_1.png) |
+| ![公告管理](docs/IMAGES/img_2.png) | ![反馈管理](docs/IMAGES/img_3.png) |
+| ![在线会话](docs/IMAGES/img_4.png) | ![字典管理](docs/IMAGES/img_5.png) |
+| ![文件管理](docs/IMAGES/img_6.png) | ![系统配置](docs/IMAGES/img_7.png) |
+| ![代码生成](docs/IMAGES/img_8.png) | ![账号管理](docs/IMAGES/img_9.png) |
+| ![资源管理](docs/IMAGES/img_10.png) | ![多种编辑器集成](docs/IMAGES/img_11.png) |
+| ![图标选择器](docs/IMAGES/img_12.png) |
 
-## 快速启动
+---
+
+## 项目结构
+
+```text
+app/
+  api/          API 版本装配入口
+  core/         配置、安全、日志、异常、统一响应
+  deps/         FastAPI 依赖注入
+  middleware/   中间件（Trace、安全头、审计、限速、CORS）
+  modules/      业务模块（自动发现，声明式装配）
+  platform/     DB、Redis、Cache、Storage、MQ、Celery、可观测性等基础设施
+  worker/       Celery app 入口
+migrations/     Alembic 数据库迁移
+scripts/        开发、测试、迁移和 seed 辅助脚本
+tests/          单元测试和 API 测试
+web/
+  admin/            管理端 Vue 3 SPA
+  portal/           门户端 Vue 3 SPA
+  admin-uniapp/     uni-app 管理端（H5 / 小程序）
+  portal-uniapp/    uni-app 门户端（H5 / 小程序）
+```
+
+---
+
+## 技术栈
+
+| 类别 | 技术 |
+|---|---|
+| **后端框架** | FastAPI 0.116+ / Pydantic v2 / Gunicorn + Uvicorn |
+| **数据库 ORM** | SQLAlchemy 2.0 Async / Alembic / asyncpg |
+| **缓存 & 会话** | Redis 6.2+ |
+| **任务队列** | Celery 5.5+ / celery-redbeat / RabbitMQ |
+| **消息队列** | RabbitMQ（pika） |
+| **存储** | Local / S3 (boto3) / MinIO / OSS (oss2) |
+| **可观测性** | OpenTelemetry / Prometheus / 结构化日志 |
+| **ID 生成** | 雪花算法 (snowflake-id) |
+| **管理端** | Vue 3 / Naive UI / Pro Naive UI / UnoCSS / Monaco Editor |
+| **门户端** | Vue 3 / Naive UI / UnoCSS |
+| **移动端** | uni-app 3 / uView Pro（H5 + 小程序） |
+| **构建工具** | Vite 8 / pnpm / TypeScript |
+| **容器化** | Docker（tini init、非 root 用户） |
+
+---
+
+## 内置模块
+
+所有模块通过 `ModuleSpec` 自动装配路由、模型、任务和生命周期。
+
+| 模块 | 功能 |
+|---|---|
+| `auth` | 登录、注册、找回密码、会话管理 |
+| `dashboard` | 管理端首页统计 |
+| `iam.account` | 统一账号管理、身份绑定、注销清理 |
+| `iam.role` | 角色管理 |
+| `iam.dept` | 部门管理（树结构） |
+| `iam.group` | 用户组管理 |
+| `iam.position` | 岗位管理 |
+| `iam.resource` | 资源菜单树、模块分组 |
+| `iam.permission` | 权限注册与查询 |
+| `iam.relation` | 统一 IAM 关系模型 |
+| `user.admin` | 管理端用户资料 |
+| `user.portal` | 门户端用户资料 |
+| `sys.file` | 文件管理与公开访问 |
+| `sys.dict` | 字典管理 |
+| `sys.config` | 系统配置（DB 运行时覆盖） |
+| `sys.banner` | Banner 管理、交互量定时落库 |
+| `sys.audit` | 操作审计查询与告警分析 |
+| `sys.codegen` | 代码生成器 |
+| `message.message` | 站内消息 |
+| `message.announcement` | 公告管理 |
+| `message.notification` | 通知管理 |
+| `message.feedback` | 反馈管理 |
+| `message.friend` | 好友关系 |
+| `message.group` | 聊天群组 |
+| `message.conversation` | 会话管理 |
+| `message.websocket` | WebSocket 实时事件 |
+| `message.terminal` | 消息终端 |
+| `internal.health` | 健康检查 |
+
+---
+
+## 快速开始
 
 ### 后端开发
 
@@ -72,29 +158,15 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,postgres]"
 cp .env.example .env
-vim .env
+# 编辑 .env 填写 DB__URL、REDIS__URL、CELERY__BROKER_URL 等
 python scripts/migrate.py
 python scripts/seed_super_admin.py
 ./entrypoint.sh
 ```
 
-`.env.example` 是带注释的配置模板，复制后需要按本机环境取消注释并填写 `DB__URL`、`REDIS__URL`、
-`CELERY__BROKER_URL` 和 `STORAGE__PROVIDER` 等关键项。轻量本地开发可以把存储切到 `local`。
+默认后端地址 `http://127.0.0.1:8000`，接口文档 `/docs`。轻量本地开发可将 `STORAGE__PROVIDER` 设为 `local`。
 
-`entrypoint.sh` 同时启动 Gunicorn (API)、Celery Worker 和 Celery Beat。开发和生产的启动方式完全一致，
-避免两套行为差异。默认后端地址为 `http://127.0.0.1:8000`，接口文档为 `/docs`。
-
-如果需要单独启停某部分：
-
-```bash
-gunicorn app.main:app -c gunicorn.conf.py          # 仅 API
-celery -A app.worker.main:celery_app worker ...     # 仅 worker
-celery -A app.worker.main:celery_app beat --scheduler redbeat.RedBeatScheduler ...  # 仅 beat
-```
-
-代码默认配置偏向本地开发：`APP__DEBUG=true`、`APP__WORKERS=1`。
-
-### Web 管理端开发
+### Web 管理端
 
 ```bash
 cd web/admin
@@ -102,15 +174,7 @@ pnpm install
 pnpm dev
 ```
 
-默认开发配置：
-
-```env
-VITE_PORT=5173
-VITE_HOME_PATH="/dashboard"
-VITE_API_URL="http://127.0.0.1:8000"
-```
-
-### Web 门户端开发
+### Web 门户端
 
 ```bash
 cd web/portal
@@ -118,160 +182,42 @@ pnpm install
 pnpm dev
 ```
 
-默认开发配置：
-
-```env
-VITE_PORT=5163
-VITE_HOME_PATH="/home"
-VITE_API_URL="http://127.0.0.1:8000"
-```
-
-### uni-app 管理端开发
+### uni-app 移动端
 
 ```bash
-cd web/admin-uniapp
+cd web/admin-uniapp  # 或 portal-uniapp
 pnpm install
 pnpm dev:h5
 ```
 
-默认开发配置：
-
-```env
-VITE_PORT=5174
-VITE_API_URL="http://127.0.0.1:8000"
-```
-
-### uni-app 门户端开发
-
-```bash
-cd web/portal-uniapp
-pnpm install
-pnpm dev:h5
-```
-
-默认开发配置：
-
-```env
-VITE_PORT=5174
-VITE_API_URL="http://127.0.0.1:8000"
-```
-
-两个 uni-app 应用默认端口相同，同时运行时需要临时改其中一个目录的 `VITE_PORT`。
-
-## 常用命令
-
-后端：
-
-```bash
-./entrypoint.sh
-python scripts/test.py
-python scripts/lint.py
-python scripts/migrate.py
-python scripts/makemigration.py "describe schema change"
-python scripts/check_migration.py
-python scripts/seed_super_admin.py
-```
-
-前端：
-
-```bash
-cd web/admin
-pnpm lint
-pnpm build
-pnpm preview
-
-cd web/portal
-pnpm lint
-pnpm build
-pnpm preview
-
-cd web/admin-uniapp
-pnpm lint
-pnpm type-check
-pnpm build:h5
-
-cd web/portal-uniapp
-pnpm lint
-pnpm type-check
-pnpm build:h5
-```
+---
 
 ## 配置
 
-后端配置使用 `pydantic-settings`，支持嵌套环境变量，分隔符为 `__`。加载顺序为真实环境变量优先，
-其次读取项目根目录 `.env` 和 `.env.local`。
+后端使用 `pydantic-settings`，支持嵌套环境变量（分隔符 `__`）。加载优先级：
 
-常用配置项：
-
-- `APP__HOST` / `APP__PORT`：监听地址和端口。
-- `APP__DEBUG`：开发模式。开启时 Gunicorn sentry/reload 生效（取决具体配置），并固定单 worker。
-- `APP__WORKERS`：API worker 数，`0` 表示按 CPU 自动计算，受 `APP__WORKER_MAX` 限制（由 Gunicorn 控制）。
-- `DB__URL`：数据库连接地址，默认 PostgreSQL asyncpg。
-- `DB__POOL_SIZE` / `DB__MAX_OVERFLOW`：单个进程的数据库连接池容量。
-- `DB__POOL_TIMEOUT_SECONDS`：连接池获取连接超时时间。
-- `DB__POOL_PRE_PING` / `DB__POOL_RECYCLE_SECONDS`：连接健康检查和回收，降低空闲断连影响。
-- `AUDIT__OPERATION_QUEUE_SIZE`：操作审计异步写库队列容量，队列满会丢弃审计日志但不阻塞主请求。
-- `REDIS__URL`：Redis 地址，用于会话、权限注册表、授权缓存、密码重置 token 和 redbeat 调度器存储。
-- `MAIL__HOST` / `MAIL__PORT` / `MAIL__FROM_EMAIL`：SMTP 配置，用于忘记密码重置链接邮件。
-- `MAIL__ADMIN_PASSWORD_RESET_URL` / `MAIL__PORTAL_PASSWORD_RESET_URL`：邮件中的重置密码前端链接地址。
-- `CELERY__BROKER_URL`：RabbitMQ broker 地址。
-- `CELERY__WORKER_WITHOUT_MINGLE` / `CELERY__WORKER_WITHOUT_GOSSIP`：兼容新版 RabbitMQ 的 worker 启动选项。
-- `STORAGE__PROVIDER`：文件存储方式，可选 `local`、`minio`、`s3`、`oss`。
-- `STORAGE__PUBLIC_PATH`：本地文件公开访问前缀，默认 `/api/v1/files`。
-- `STORAGE__LOCAL_ROOT`：本地存储根目录。
-- `STORAGE__BASE_URL`：对象存储公开域名或 CDN 域名。
-- `ID_GENERATOR__WORKER_ID` / `ID_GENERATOR__DATACENTER_ID`：雪花 ID 节点编号，多实例需避免重复。
-- `SWAGGER__ENABLED`：是否开启 `/docs`、`/redoc`、`/openapi.json`。
-- `OBSERVABILITY__ENABLED`：可观测性总开关。
-- `OBSERVABILITY__METRICS_ENABLED`：是否暴露 metrics。
-- `OBSERVABILITY__TRACING_ENABLED` / `OBSERVABILITY__OTLP_ENABLED`：是否启用 tracing 和 OTLP 导出。
-
-默认值差异需要特别注意：
-
-- 代码默认存储为 `s3`，`.env.example` 也按 S3/MinIO 给出完整模板。
-- Dockerfile 默认覆盖为 `STORAGE__PROVIDER=local`、`STORAGE__LOCAL_ROOT=/app/storage`。
-- 本地轻量开发可以使用 `local` 存储；多机部署不要依赖 Docker 本地 volume。
-
-本地轻量配置示例：
-
-```env
-APP__DEBUG=true
-APP__WORKERS=1
-REDIS__URL=redis://127.0.0.1:6379/0
-CELERY__BROKER_URL=amqp://admin:123456@127.0.0.1:5672//
-STORAGE__PROVIDER=local
-STORAGE__PUBLIC_PATH=/api/v1/files
-STORAGE__LOCAL_ROOT=storage
-OBSERVABILITY__ENABLED=false
+```
+真实环境变量 > .env / .env.local > settings.py 默认值
 ```
 
-生产前端构建使用各自目录下的 `.env.production`。当前 `VITE_API_URL=""`，表示浏览器请求同源 `/api/`，
-由前端容器内 nginx 反向代理到后端。前端 Docker 容器通过 `BACKEND_URL` 指定后端地址。
+核心配置项见 `.env.example`（带完整注释），常用项：
+
+- `APP__HOST` / `APP__PORT` — 监听地址和端口
+- `DB__URL` — 数据库连接地址
+- `REDIS__URL` — Redis 地址
+- `CELERY__BROKER_URL` — RabbitMQ broker 地址
+- `STORAGE__PROVIDER` — 文件存储方式（local / minio / s3 / oss）
+
+部分配置（Auth、Storage）支持通过系统配置表在运行态覆盖。
+
+---
 
 ## Docker 部署
-
-后端镜像入口使用 tini 作为 PID 1，Gunicorn (UvicornWorker) 处理 API 请求，同时后台运行 Celery Worker 和 Celery Beat (redbeat 调度器)。
 
 ### 后端镜像
 
 ```bash
 docker build -t hei-fastapi-backend .
-```
-
-后端镜像特点：
-
-- 入口为 `ENTRYPOINT ["tini", "--"]` + `CMD ["/app/entrypoint.sh"]`。
-- 启动后一个容器同时运行 **API (Gunicorn + UvicornWorker)**、**Celery Worker**、**Celery Beat**。
-- tini 是 Docker 官方推荐的 init 进程，负责 SIGTERM 转发和僵尸进程回收。
-- Celery Beat 使用 **celery-redbeat** 调度器，内置 Redis `SET NX` 锁，多副本部署时只有第一个容器实际运行 beat，节点死亡锁 TTL 到期后自动转移。
-- 镜像默认 `APP__DEBUG=false`、`APP__WORKERS=0`、`APP__WORKER_MAX=4`。
-- `APP__WORKERS=0` 时按 CPU 自动计算 worker 数，并受 `APP__WORKER_MAX` 限制（由 Gunicorn 控制）。
-- 镜像默认本地存储 `/app/storage`，需要挂载 volume。
-- 当前 Dockerfile 会复制构建上下文中的 `.env` 到镜像内；不要把生产密钥写进参与构建的 `.env`。
-- 镜像只复制 `app/`，不复制 `scripts/`、`migrations/` 和 `alembic.ini`。
-- 镜像不自动执行 Alembic 迁移，也不内置初始化超管脚本。
-
-```bash
 docker run -d \
   --name hei-fastapi-server \
   --env-file .env \
@@ -281,112 +227,74 @@ docker run -d \
   hei-fastapi-backend
 ```
 
-迁移和初始化建议在源码环境执行：
+镜像特点：
 
-```bash
-python scripts/migrate.py
-python scripts/seed_super_admin.py
-```
+- 入口使用 `tini` init 进程，同时运行 Gunicorn API + Celery Worker + Celery Beat
+- RedBeat 调度器内置 Redis `SET NX` 分布式锁，多副本仅一个节点执行 beat
+- 默认 `APP__DEBUG=false`、`APP__WORKERS=0`（按 CPU 自动计算，上限 4）
+- 镜像未复制 `scripts/` 和 `migrations/`，迁移应在源码环境执行
 
-如需在容器内执行迁移或 seed，需要自行扩展镜像，额外复制 `alembic.ini`、`migrations/` 和 `scripts/`。
-
-### 多副本部署
-
-多副本直接同镜像扩容。所有容器共享 Redis 锁，redbeat 确保仅一个 beat 实例调度定时任务。
-
-```bash
-docker run -d --name hei-fastapi-1 --env-file .env -v hei-fastapi-storage:/app/storage -p 8001:8000 hei-fastapi-backend
-docker run -d --name hei-fastapi-2 --env-file .env -v hei-fastapi-storage:/app/storage -p 8002:8000 hei-fastapi-backend
-```
-
-redbeat 锁行为：
+RedBeat 多副本锁行为：
 
 | 场景 | 行为 |
 |---|---|
 | 首节点启动 | SET NX → 获锁 → 运行 beat |
-| 后续节点启动 | SET NX → 锁已存在 → 静默等待 |
-| 持有锁节点宕机 | TTL 到期 → 自动释放 → 其他节点接管 |
-| 正常扩缩容/重启 | beat 退出 → 释放锁 → 重新竞争 |
+| 后续节点启动 | 锁已存在 → 静默等待 |
+| 持有锁节点宕机 | TTL 到期 → 锁释放 → 其他节点接管 |
+| 正常扩缩容 | beat 退出 → 释放锁 → 重新竞争 |
 
-多副本注意事项：
-
-- 所有副本必须使用同一组 `DB__URL`、`REDIS__URL`、`CELERY__BROKER_URL`。
-- API 连接上限约为 `副本数 * 实际 APP worker 数 * (DB__POOL_SIZE + DB__MAX_OVERFLOW)`。
-- worker / beat 也会创建数据库连接池，需要计入数据库最大连接数。
-- 单机多容器可以共用 `-v hei-fastapi-storage:/app/storage`。
-- 多机部署时 Docker 本地 volume 不共享，应改用 S3 / MinIO / OSS，或使用 NFS 等共享存储。
-- 多副本部署时 `ID_GENERATOR__WORKER_ID` / `ID_GENERATOR__DATACENTER_ID` 应按实例规划，避免雪花 ID 节点重复。
-- 多实例部署时 `ID_GENERATOR__WORKER_ID` / `ID_GENERATOR__DATACENTER_ID` 应按实例规划，避免雪花 ID 节点重复。
-
-## 前端 Docker
-
-当前仓库只有 Web 管理端和 Web 门户端提供 Dockerfile；两个 uni-app 应用暂未提供 Docker 镜像。
-
-Web 管理端：
+### 前端镜像
 
 ```bash
 docker build -t hei-fastapi-admin web/admin
-docker run -d \
-  --name hei-fastapi-admin \
-  -e BACKEND_URL="http://host.docker.internal:8000" \
-  -p 8081:81 \
-  hei-fastapi-admin
+docker run -d -e BACKEND_URL="http://host.docker.internal:8000" -p 8081:81 hei-fastapi-admin
+
+docker build -t hei-fastapi-portal web/portal
+docker run -d -e BACKEND_URL="http://host.docker.internal:8000" -p 8082:80 hei-fastapi-portal
 ```
 
-Web 门户端：
+---
+
+## 代码生成
+
+管理端路径 `/sys/codegen`，读取数据库表结构和注释，使用 Jinja2 模板渲染代码。
+
+**支持的生成类型：**
+
+- `TABLE` — 普通 CRUD
+- `TREE` — 树表
+- `LEFT_TREE_TABLE` — 左树右表
+- `MASTER_DETAIL` — 主子表
+
+**生成内容：**
+
+- 后端：`model.py`、`schema.py`、`repository.py`、`service.py`、`router.py`、`module.py`
+- 管理端：API 文件、`index.vue` 页面
+- SQL：菜单、按钮和权限关系 SQL
+
+默认预览和下载 zip 包，不直接写入仓库。
+
+---
+
+## 数据库迁移
+
+项目使用 Alembic 管理数据库结构迁移。迁移只负责结构变更，不写入业务种子数据。
+
+**基本流程：**
 
 ```bash
-docker build -t hei-fastapi-portal web/portal
-docker run -d \
-  --name hei-fastapi-portal \
-  -e BACKEND_URL="http://host.docker.internal:8000" \
-  -p 8082:80 \
-  hei-fastapi-portal
+python scripts/makemigration.py "describe schema change"
+python scripts/check_migration.py
+python scripts/migrate.py
 ```
 
-前端镜像说明：
+详细说明见 [docs/migration.md](docs/migration.md)。
 
-- 两个 Web 前端镜像都使用 Node 22 构建 `dist/`，再用 nginx 托管静态资源。
-- Web 管理端容器内 nginx 监听 `81`，Web 门户端监听 `80`。
-- nginx 官方镜像启动时会用 `envsubst` 渲染 `nginx/default.conf.template`。
-- 浏览器请求同源 `/api/`，nginx 通过 `${BACKEND_URL}` 反向代理到后端。
-- `CLIENT_MAX_BODY_SIZE` 可控制 nginx 上传体积限制，默认 `10m`。
+---
 
-## 项目结构
+## 模块扩展
 
-```text
-app/
-  api/          API 版本装配入口
-  core/         配置、安全、日志、异常、统一响应
-  deps/         FastAPI 依赖注入
-  middleware/   中间件
-  modules/      业务模块
-  platform/     DB、Redis、HTTP、Celery、MQ、存储、可观测性等基础设施
-  worker/       Celery app 入口与任务聚合
-migrations/     Alembic 数据库迁移
-scripts/        开发、测试、迁移和 seed 辅助脚本
-  codegen_ddl_tests/ 代码生成测试表 DDL
-tests/          单元测试和接口测试
-web/
-  admin/        Web 管理端 Vue 应用
-  portal/       Web 门户端 Vue 应用
-  admin-uniapp/ uni-app 管理端应用
-  portal-uniapp/uni-app 门户端应用
-```
-
-## API 与模块机制
-
-全局 API 聚合入口是 `app/api/router.py`。它会读取 `app/modules/**/module.py` 中的 `ModuleSpec`，
-自动装配路由、模型、任务、定时任务和生命周期钩子。
-
-运行时路径规则：
-
-- 管理端：`/api/v1/admin/*`
-- 门户端：`/api/v1/portal/*`
-- 内部健康检查：`/api/v1/internal/*`
-- 文件公开访问：默认 `/api/v1/files/*`
-
-模块声明示例：
+新增业务模块只需在 `app/modules/` 下创建子包，定义 `ModuleSpec` 声明式装配：
 
 ```python
 from app.platform.module import ModuleSpec, RouteSpec
@@ -394,259 +302,41 @@ from app.platform.module import ModuleSpec, RouteSpec
 module = ModuleSpec(
     name="example",
     routes=(
-        RouteSpec(
-            version="v1",
-            prefix="/admin",
-            tags=("admin",),
-            router="app.modules.example.router:router",
-        ),
+        RouteSpec(version="v1", prefix="/admin", tags=("admin",),
+                  router="app.modules.example.router:router"),
     ),
     models=("app.modules.example.model",),
-    startup_hooks=("app.modules.example.lifecycle:startup",),
-    shutdown_hooks=("app.modules.example.lifecycle:shutdown",),
 )
 ```
 
-新增 `v2` 接口时，在模块内追加 `RouteSpec(version="v2", ...)`，不需要修改全局 API 聚合文件。
+系统自动发现并注册路由、模型、任务和生命周期钩子。
 
-## 内置模块
-
-- `auth`：管理端/门户端登录、注册、退出、注销、找回密码、重置密码。
-- `dashboard`：管理端首页统计。
-- `iam.account`：账号、身份绑定、账号注销清理任务。
-- `iam.role` / `iam.dept` / `iam.group` / `iam.position`：角色、部门、用户组、岗位。
-- `iam.resource`：资源菜单、资源权限关系、门户端可见资源。
-- `iam.permission`：权限注册表查询与权限键注册辅助。
-- `iam.relation`：账号、角色、部门、用户组、岗位、资源等 IAM 关系模型。
-- `user.admin` / `user.portal`：管理端和门户端用户资料。
-- `sys.file`：文件管理和公开文件访问。
-- `sys.dict`：系统字典。
-- `sys.config`：系统配置管理。
-- `sys.banner`：Banner 管理、门户展示、交互量定时落库。
-- `sys.audit`：操作审计查询，写入通过有界队列异步处理。
-- `sys.codegen`：代码生成方案管理、数据库表字段反射、字段配置、代码预览和 zip 下载。
-- `message.message` / `message.notification` / `message.todo` / `message.realtime`：消息、通知、待办和实时事件接口。
-- `biz.cg_test_*`：代码生成器验证用示例模块，对应 `scripts/codegen_ddl_tests/` 的测试表。
-- `internal.health`：内部健康检查。
-
-## 代码生成
-
-管理端菜单路径为 `/sys/codegen`，后端接口挂载在 `/api/v1/admin/sys/codegen/*`。代码生成模块会读取当前数据库表结构和字段注释，保存生成方案和字段配置，并使用 Jinja2 模板渲染代码预览或 zip 包。
-
-支持的生成类型：
-
-- `TABLE`：普通 CRUD。
-- `TREE`：树表，需配置父级字段和展示字段。
-- `LEFT_TREE_TABLE`：左树右表，主表作为树，子表按外键分页查询。
-- `MASTER_DETAIL`：主子表，主表分页，子表按主表 ID 查询。
-
-生成内容包括：
-
-- 后端模块：`model.py`、`schema.py`、`repository.py`、`service.py`、`router.py`、`module.py`。
-- 管理端：API 文件和 `index.vue` 页面。
-- SQL：菜单、按钮和权限关系 SQL。生成 SQL 中的资源和关系 ID 使用项目现有雪花 ID 生成器，不使用 md5/uuid。
-
-当前实现默认只预览和下载 zip，不直接写入仓库目录。下载后按生成文件路径合并到项目，并补充对应 Alembic 迁移。
-
-代码生成模块自身的表结构由 Alembic 迁移维护。
-
-测试生成器可以导入 `scripts/codegen_ddl_tests/` 下的 PostgreSQL DDL：
-
-- `01_crud_activity.sql`：普通表。
-- `02_tree_catalog.sql`：树表。
-- `03_master_detail_order.sql`：主子表。
-- `04_left_tree_table_knowledge.sql`：左树右表。
-
-## Celery 与 MQ
-
-Celery app 入口：
-
-```bash
-app.worker.main:celery_app
-```
-
-使用 **celery-redbeat** 作为调度器，从 Redis 读取定时任务，内置分布式锁保证多副本只有一个 beat 运行。
-
-当前内置定时任务：
-
-- `banner.flush_interactions`：每 300 秒落库 Banner 交互量。
-- `account.purge_cancelled_accounts`：每 86400 秒清理已注销账号。
-
-RabbitMQ / Celery 兼容性说明：
-
-- worker 默认添加 `--without-mingle --without-gossip`，并关闭 remote control。
-- 这是为了避免新版 RabbitMQ 对 transient non-exclusive queues 的限制导致 worker 启动异常。
-- async 任务体通过持久事件循环 runner 执行，避免在 Windows / Redis asyncio 场景出现 `Event loop is closed`。
-
-项目还提供 `app.platform.mq` 作为普通 RabbitMQ 消费者封装。MQ consumer 默认不启动，需要配置
-`MQ__ENABLED=true`，并在模块自己的 `startup_hooks/shutdown_hooks` 中启动和停止。
-
-## 文件存储
-
-支持 `local`、`minio`、`s3`、`oss`。
-
-- `local`：文件写入 `STORAGE__LOCAL_ROOT`，访问 URL 使用 `STORAGE__PUBLIC_PATH`。
-- `minio` / `s3` / `oss`：通过对象存储 SDK 上传，`STORAGE__BASE_URL` 为空时返回签名访问地址。
-- 上传和删除存储对象时会放到线程池执行，避免阻塞 FastAPI 事件循环。
-- 头像上传会按头像大小上限读取，避免无界读入内存。
-
-Docker 默认使用本地存储并写入 `/app/storage`。单机部署请挂载 volume；多机部署建议改用对象存储。
-
-## 数据库迁移
-
-迁移只负责结构变更，不写入业务种子数据。详细说明见 [migrations/README.md](migrations/README.md) 和
-[docs/migration.md](docs/migration.md)。
-
-常规流程：
-
-```bash
-python scripts/makemigration.py "add xxx table"
-python scripts/check_migration.py
-python scripts/migrate.py
-```
-
-早期开发阶段如需重建完整初始迁移：
-
-```bash
-python scripts/rebuild_initial_migration.py --yes
-```
-
-初始化超管：
-
-```bash
-python scripts/seed_super_admin.py
-```
-
-默认账号和密码可通过环境变量或参数覆盖：
-
-```bash
-python scripts/seed_super_admin.py --help
-```
-
-## 测试与质量
-
-```bash
-python scripts/lint.py
-python scripts/test.py
-```
-
-也可以直接运行：
-
-```bash
-ruff check app tests
-pytest tests -q
-```
-
-## 扩展业务模块
-
-新增业务建议放在 `app/modules/<module_name>` 下，并按现有模块组织：
-
-```text
-app/modules/example/
-  __init__.py
-  module.py
-  model.py
-  schema.py
-  repository.py
-  service.py
-  router.py
-```
-
-典型流程：
-
-1. 在 `model.py` 定义 SQLAlchemy 模型。
-2. 在 `schema.py` 定义请求、响应和内部传输对象。
-3. 在 `repository.py` 封装数据访问。
-4. 在 `service.py` 编排业务逻辑和事务。
-5. 在 `router.py` 暴露 FastAPI 路由。
-6. 在 `module.py` 声明路由版本、前缀、模型、任务和生命周期钩子。
-7. 如包含 Celery 任务，在 `tasks.py` 中定义并加入 `ModuleSpec.tasks`。
-8. 如包含定时任务，在 `ModuleSpec.beat_schedules` 中声明。
-9. 如包含新表，生成并检查 Alembic 迁移。
+---
 
 ## 相关文档
 
-- [docs/iam.md](docs/iam.md)：IAM 设计说明。
-- [docs/migration.md](docs/migration.md)：迁移流程说明。
-- [migrations/README.md](migrations/README.md)：Alembic 迁移约定。
-- [web/admin/README.md](web/admin/README.md)：Web 管理端说明。
-- [web/portal/README.md](web/portal/README.md)：Web 门户端说明。
-- [web/admin-uniapp/README.md](web/admin-uniapp/README.md)：uni-app 管理端说明。
-- [web/portal-uniapp/README.md](web/portal-uniapp/README.md)：uni-app 门户端说明。
+- [docs/iam.md](docs/iam.md) — IAM 设计说明
+- [docs/migration.md](docs/migration.md) — 数据库迁移指南
+- [migrations/README.md](migrations/README.md) — 迁移目录说明
+- [web/admin/README.md](web/admin/README.md) — 管理端前端说明
+- [web/portal/README.md](web/portal/README.md) — 门户端前端说明
+- [web/admin-uniapp/README.md](web/admin-uniapp/README.md) — uni-app 管理端说明
+- [web/portal-uniapp/README.md](web/portal-uniapp/README.md) — uni-app 门户端说明
 
-## 参考项目
-
-- [RuoYi](https://gitee.com/y_project/RuoYi) — 经典后台管理系统与开源生态，本项目在产品形态上向其致敬
-- [snowy](https://gitee.com/xiaonuobase/snowy) — 国内首个国密前后分离快速开发平台
+---
 
 ## 贡献指南
 
-欢迎任何形式的贡献 — 提交 Issue、完善文档、修复 Bug、新增功能都行。
+欢迎提交 Issue、完善文档、修复 Bug、新增功能。
 
-### 工作流程
+1. Fork 本仓库
+2. 创建功能分支 `git checkout -b feat/your-feature-name`
+3. 开发并自测（`ruff check app tests`、`pytest tests -q`）
+4. 提交代码（推荐 Conventional Commits 风格）
+5. 推送并创建 Pull Request（目标分支 `main`）
 
-1. **Fork 本仓库** — 在 [GitHub](https://github.com) 上 fork 到自己的账号下。
-2. **克隆到本地**
-
-```bash
-git clone https://github.com/jiangbyte/hei-fastapi.git
-cd hei-fastapi
-```
-
-3. **创建功能分支**
-
-```bash
-git checkout -b feat/your-feature-name
-```
-
-4. **开发与自测**
-
-- 后端代码风格使用 Ruff（`ruff check app tests`）。
-- 确保单元测试通过（`pytest tests -q`）。
-- 如果涉及数据库变更，需生成对应的 Alembic 迁移。
-
-5. **提交代码**
-
-```bash
-git add .
-git commit -m "feat(scope): 简要描述改动"  # 推荐 Conventional Commits 风格
-```
-
-6. **推送并创建 Pull Request**
-
-```bash
-git push origin feat/your-feature-name
-```
-
-然后在 GitHub 上创建 Pull Request，目标分支为 `main`。PR 标题和描述请说明改动的动机和主要内容。
-
-### 同步上游
-
-开发过程中上游可能有新提交，建议定期同步：
-
-```bash
-git remote add upstream https://github.com/jiangbyte/hei-fastapi.git
-git fetch upstream
-git rebase upstream/main
-```
-
-### 说明
-
-- Gitee、CodeUp 仅作为代码同步平台，所有贡献最终会合并到同一份代码中。
-- 提交前请确保不与现有功能冲突，且通过基础 lint 和测试。
-- 如有较大改动，建议先提交 Issue 讨论方向，避免重复劳动。
+---
 
 ## License
 
-本项目基于 **MIT License** 发布。关于 MIT 许可证的副本，请参见 [LICENSE](LICENSE)。
-
-简单来说，你可以自由地：
-
-- **学习交流** — 阅读、运行、修改源码，用于个人技术学习。
-- **商用使用** — 按 MIT 许可证用于个人或企业项目；但当前仓库仍处早期阶段，不建议直接生产部署。
-- **毕业设计** — 直接作为毕设项目或在其基础上扩展。
-- **接单开发** — 作为自有脚手架用于外包项目、定制开发或二次开发交付。
-- **教育培训** — 在教学场景中使用，或作为培训项目案例。
-- **二次分发** — 分发修改版或衍生版，但需保留原始版权声明和许可证文本。
-
-唯一的要求是保留原始的版权声明和许可证文本。作者不对本软件的适用性提供任何明示或暗示的担保。
+MIT License。详见 [LICENSE](LICENSE)。
