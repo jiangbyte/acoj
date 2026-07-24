@@ -19,6 +19,7 @@ vitepress/*.local
 .playwright-mcp
 .claude
 logs
+.nuxt/
 
 # 任意一级的node_modules目录
 /**/node_modules/
