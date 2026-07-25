@@ -214,7 +214,6 @@ async function submit() {
 
 .login-card {
   width: 100%;
-
 }
 
 .form-field {

@@ -9,7 +9,9 @@ export function formatDateTime(value: unknown, fallback = '-') {
   }
 
   if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? fallback : formatChinaDate(value.getTime())
+    return Number.isNaN(value.getTime())
+      ? fallback
+      : formatChinaDate(value.getTime())
   }
 
   if (typeof value === 'number') {
@@ -55,12 +57,14 @@ function formatLocalMatch(match: RegExpMatchArray) {
 
 function formatChinaDate(timestamp: number) {
   const date = new Date(timestamp + CHINA_OFFSET_MS)
-  return [
-    date.getUTCFullYear(),
-    pad(date.getUTCMonth() + 1),
-    pad(date.getUTCDate()),
-  ].join('-')
-    + ` ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`
+  return (
+    [
+      date.getUTCFullYear(),
+      pad(date.getUTCMonth() + 1),
+      pad(date.getUTCDate()),
+    ].join('-') +
+    ` ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`
+  )
 }
 
 function pad(value: string | number, length = 2) {

@@ -87,7 +87,8 @@ export function request<T = any>(url: string, options: RequestOptions = {}) {
       },
       fail(error) {
         const errMsg: string = error.errMsg || ''
-        const message = errMsg === 'request:fail' ? '网络请求失败' : (errMsg || '网络请求失败')
+        const message =
+          errMsg === 'request:fail' ? '网络请求失败' : errMsg || '网络请求失败'
         showError(message, options.skipErrorMessage)
         reject(new ApiResponseError(message, undefined, undefined, error))
       },
@@ -124,7 +125,13 @@ export const http = {
             if (data.code === 0 || data.code === 200) {
               resolve(data.data as T)
             } else {
-              reject(new ApiResponseError(data.message || '上传失败', data.code, res.statusCode))
+              reject(
+                new ApiResponseError(
+                  data.message || '上传失败',
+                  data.code,
+                  res.statusCode
+                )
+              )
             }
           } catch {
             reject(new ApiResponseError('解析上传结果失败'))

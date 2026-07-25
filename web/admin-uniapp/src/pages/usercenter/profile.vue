@@ -2,11 +2,7 @@
   <Layout title="个人资料" :back="true">
     <view class="profile-container">
       <view class="avatar-section" @click="chooseAvatar">
-        <u-avatar
-          :src="form.avatar || ''"
-          size="200"
-          icon="account-fill"
-        />
+        <u-avatar :src="form.avatar || ''" size="200" icon="account-fill" />
       </view>
       <view class="form-card">
         <u-form :model="form">
@@ -23,7 +19,12 @@
       </view>
 
       <view class="submit-btn">
-        <u-button text="保存" type="primary" :loading="saving" @click="submit" />
+        <u-button
+          text="保存"
+          type="primary"
+          :loading="saving"
+          @click="submit"
+        />
       </view>
     </view>
   </Layout>

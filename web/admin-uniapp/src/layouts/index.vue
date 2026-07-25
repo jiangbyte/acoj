@@ -1,5 +1,5 @@
 <template>
-  <view >
+  <view>
     <u-navbar :title="title" :is-back="back" :placeholder="true" :border="true">
       <template #right>
         <slot name="right"></slot>
@@ -22,6 +22,4 @@ defineProps({
 })
 </script>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>

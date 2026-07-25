@@ -51,11 +51,7 @@
       </view>
       <view class="menu-card">
         <u-cell-group :border="false">
-          <u-cell-item
-            title="退出登录"
-            :arrow="false"
-            @click="confirmLogout"
-          />
+          <u-cell-item title="退出登录" :arrow="false" @click="confirmLogout" />
         </u-cell-group>
       </view>
     </view>
