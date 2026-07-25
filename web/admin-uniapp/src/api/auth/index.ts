@@ -49,3 +49,7 @@ export function updateEmail(data: any) {
 export function orgInfo() {
   return http.get<any>(`${prefix}/user-center/org-info`)
 }
+
+export function uploadAvatar(filePath: string) {
+  return http.upload<any>('/api/v1/admin/user-center/avatar/upload', filePath)
+}

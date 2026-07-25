@@ -24,7 +24,7 @@
             <u-input
               v-model="form[activeField]"
               :placeholder="currentLogin.placeholder"
-              border="surround"
+              border
               clearable
             ></u-input>
           </view>
@@ -37,7 +37,7 @@
               v-model="form.password"
               type="password"
               placeholder="请输入密码"
-              border="surround"
+              border
             ></u-input>
           </view>
         </u-form-item>
@@ -49,7 +49,7 @@
               <u-input
                 v-model="form.captcha_value"
                 placeholder="请输入验证码"
-                border="surround"
+                border
               ></u-input>
               <image
                 v-if="captchaImage"
@@ -80,13 +80,10 @@ import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { authApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
-import { useRouteStore } from '@/stores/route'
-import { refreshDict } from '@/utils/dict'
 
 type LoginType = 'ACCOUNT' | 'EMAIL' | 'PHONE'
 
 const authStore = useAuthStore()
-const routeStore = useRouteStore()
 const loading = ref(false)
 const captchaImage = ref('')
 const activeType = ref<LoginType>('ACCOUNT')
@@ -170,7 +167,6 @@ async function submit() {
       captcha_value: form.captcha_value,
       identity_type: activeType.value,
     })
-    await Promise.all([refreshDict(), routeStore.initRoutes()])
     uni.switchTab({ url: '/pages/dashboard/index' })
   } catch {
     form.captcha_value = ''
@@ -197,7 +193,6 @@ async function submit() {
   flex-direction: column;
   align-items: center;
   gap: var(--space-4);
-  margin-bottom: var(--space-12);
 }
 
 .login-header__logo {
@@ -219,7 +214,7 @@ async function submit() {
 
 .login-card {
   width: 100%;
-  max-width: 320px;
+
 }
 
 .form-field {

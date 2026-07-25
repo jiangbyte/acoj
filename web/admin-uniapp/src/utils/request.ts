@@ -60,11 +60,13 @@ export function request<T = any>(url: string, options: RequestOptions = {}) {
           return
         }
         if (statusCode < 200 || statusCode >= 300) {
+          const raw = response.data as any
+          const bodyCode = raw && typeof raw === 'object' ? raw.code : undefined
           const message =
             readMessage(response.data) || `请求失败(${statusCode})`
           showError(message, options.skipErrorMessage)
           reject(
-            new ApiResponseError(message, undefined, statusCode, response.data)
+            new ApiResponseError(message, bodyCode, statusCode, response.data)
           )
           return
         }
@@ -84,7 +86,8 @@ export function request<T = any>(url: string, options: RequestOptions = {}) {
         resolve(body as T)
       },
       fail(error) {
-        const message = error.errMsg || '网络请求失败'
+        const errMsg: string = error.errMsg || ''
+        const message = errMsg === 'request:fail' ? '网络请求失败' : (errMsg || '网络请求失败')
         showError(message, options.skipErrorMessage)
         reject(new ApiResponseError(message, undefined, undefined, error))
       },
@@ -106,6 +109,30 @@ export const http = {
     options?: RequestOptions
   ) {
     return request<T>(url, { ...(options ?? {}), method: 'POST', data })
+  },
+  upload<T = any>(url: string, filePath: string) {
+    return new Promise<T>((resolve, reject) => {
+      const token = getToken()
+      uni.uploadFile({
+        url: `${baseURL}${url}`,
+        filePath,
+        name: 'file',
+        header: { Authorization: token },
+        success(res) {
+          try {
+            const data = JSON.parse(res.data)
+            if (data.code === 0 || data.code === 200) {
+              resolve(data.data as T)
+            } else {
+              reject(new ApiResponseError(data.message || '上传失败', data.code, res.statusCode))
+            }
+          } catch {
+            reject(new ApiResponseError('解析上传结果失败'))
+          }
+        },
+        fail: reject,
+      })
+    })
   },
 }
 

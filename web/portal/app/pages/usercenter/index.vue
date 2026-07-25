@@ -82,7 +82,7 @@ async function saveProfile() {
       signature: state.profileForm.signature || null,
     })
     await authStore.refreshUserInfo()
-    toast.add({ title: '保存成功', color: 'success' })
+    toast.add({ title: '保存成功', color: 'none' })
   } catch {
     // error toast by interceptor
   } finally {

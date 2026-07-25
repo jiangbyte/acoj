@@ -22,8 +22,9 @@ export async function refreshDict() {
 
   refreshDictPromise = (async () => {
     try {
-      const dictApi = await import('@/api/sys/dict')
-      setDictTree(await dictApi.tree())
+      const { http } = await import('@/utils/request')
+      const data = await http.get<any[]>('/api/v1/admin/sys/dicts/tree')
+      setDictTree(data ?? [])
     } finally {
       refreshDictPromise = null
     }

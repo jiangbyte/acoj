@@ -5,7 +5,9 @@ import { useAuthStore } from '@/stores/auth'
 onLaunch(() => {
   const authStore = useAuthStore()
   if (!authStore.isLogin) {
-    uni.reLaunch({ url: '/pages/auth/login/login' })
+    setTimeout(() => {
+      uni.reLaunch({ url: '/pages/auth/login/login' })
+    }, 100)
   }
 })
 </script>

@@ -1,172 +1,80 @@
 <template>
   <Layout title="工作台">
-    <view class="flex flex-col">
-      <view v-if="moduleTabs.length > 1" class="bg-white">
-        <u-tabs
-          :list="moduleTabs"
-          :current="activeModuleIndex"
-          @change="handleModuleChange"
-        />
+    <view class="work-container">
+      <!-- 快捷入口 -->
+      <view class="mx-4 mt-5">
+        <text class="section-title">系统管理</text>
       </view>
-
-      <view
-        v-for="card in catalogCards"
-        :key="card.id"
-        class="mx-4 mt-3 bg-white rounded-lg"
-      >
-        <text class="block px-4 py-3 text-base font-bold text-gray-900">
-          {{ card.name }}
-        </text>
-        <u-grid :col="3" :border="false">
+      <view class="mx-4 mt-2 bg-white">
+        <u-grid :col="4" :border="false">
           <u-grid-item
-            v-for="item in card.entries"
-            :key="item.id"
-            @click="routeStore.openResource(item)"
+            v-for="(item, index) in gridItems"
+            :key="index"
+            @click="onGridClick(index)"
           >
-            <view class="flex flex-col items-center gap-1 py-3">
-              <u-icon :name="iconName(item.icon)" />
-              <text class="text-xs text-gray-700 truncate">{{ item.name }}</text>
+            <view class="grid-item-box">
+              <u-icon :name="item.icon" size="30" />
+              <text class="grid-text">{{ item.name }}</text>
             </view>
           </u-grid-item>
         </u-grid>
-      </view>
-
-      <view
-        v-if="!catalogCards.length"
-        class="empty-state"
-      >
-        <u-empty mode="list" text="暂无可用菜单" />
       </view>
     </view>
   </Layout>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import { onShow } from '@dcloudio/uni-app'
 import Layout from '@/layouts/index.vue'
 import { useAuthStore } from '@/stores/auth'
-import { type ResourceItem, useRouteStore } from '@/stores/route'
-import { isDictLoaded, refreshDict } from '@/utils/dict'
-import { arrayToTree, flattenTree } from '@/utils/tree'
-
-interface CatalogCard {
-  id: string
-  name: string
-  icon?: string | null
-  entries: ResourceItem[]
-}
 
 const authStore = useAuthStore()
-const routeStore = useRouteStore()
 
-const moduleTabs = computed(() =>
-  routeStore.modules.map((mod) => ({ name: mod.name }))
-)
+const gridItems = [
+  { name: '字典测试', icon: 'grid' },
+  { name: '请求测试', icon: 'reload' },
+]
 
-const activeModuleIndex = computed(() => {
-  const idx = routeStore.modules.findIndex(
-    (m) => m.id === routeStore.activeModuleId
-  )
-  return idx >= 0 ? idx : 0
-})
-
-const catalogCards = computed<CatalogCard[]>(() => {
-  const cards: CatalogCard[] = []
-  const mod = routeStore.activeModule
-  if (!mod) return cards
-
-  const visibleResources: ResourceItem[] = (mod.resources ?? [])
-    .filter((item) => item.status === 'ENABLED' && item.is_visible !== false)
-    .sort((a, b) => (a.sort ?? 99) - (b.sort ?? 99))
-    .map((item) => ({ ...item }))
-  const tree = arrayToTree<ResourceItem>(visibleResources)
-  const rootEntries: ResourceItem[] = []
-
-  tree.forEach((node: any) => {
-    if (node.resource_type === 'CATALOG') {
-      const entries = flattenTree<ResourceItem>(
-        (node.children ?? []) as ResourceItem[]
-      ).filter(isMenuEntry)
-      if (entries.length) {
-        cards.push({ id: node.id, name: node.name, icon: node.icon, entries })
-      }
-      return
-    }
-    if (isMenuEntry(node)) {
-      rootEntries.push(node)
-    }
-  })
-
-  if (rootEntries.length) {
-    cards.unshift({
-      id: `${mod.id}:root`,
-      name: '常用功能',
-      icon: mod.icon,
-      entries: rootEntries,
-    })
-  }
-
-  return cards
-})
-
-onShow(async () => {
+onShow(() => {
   if (!authStore.isLogin) {
     uni.reLaunch({ url: '/pages/auth/login/login' })
-    return
   }
-  await bootstrap()
 })
 
-onPullDownRefresh(async () => {
-  await refreshMenus()
-  uni.stopPullDownRefresh()
-})
-
-async function bootstrap() {
-  if (!isDictLoaded()) {
-    await refreshDict()
-  }
-  if (!routeStore.modules.length) {
-    await routeStore.initRoutes()
-  }
-}
-
-async function refreshMenus() {
-  await routeStore.initRoutes()
-}
-
-function iconName(icon?: string | null) {
-  if (!icon) return 'grid'
-  if (icon.includes('analysis')) return 'home'
-  if (icon.includes('message')) return 'chat'
-  if (icon.includes('user') || icon.includes('account') || icon.includes('people')) return 'account'
-  if (icon.includes('lock')) return 'lock'
-  if (icon.includes('setting')) return 'setting'
-  return 'grid'
-}
-
-function isMenuEntry(resource: ResourceItem) {
-  return (
-    ['MENU', 'PAGE'].includes(resource.resource_type) &&
-    Boolean(routeStore.resolveResourceKey(resource))
-  )
-}
-
-function handleModuleChange(event: any) {
-  const index = typeof event === 'number' ? event : event.index
-  const mod = routeStore.modules[index]
-  if (mod) {
-    routeStore.setActiveModule(mod.id)
+function onGridClick(index: number) {
+  const item = gridItems[index].name
+  if (item === '字典测试') {
+    uni.navigateTo({ url: '/pages/workbench/dict-test' })
+  } else if (item === '请求测试') {
+    uni.navigateTo({ url: '/pages/workbench/request-test' })
   }
 }
 </script>
 
 <style lang="scss" scoped>
-.empty-state {
-  min-height: calc(100vh - 200px);
+.work-container {
+  min-height: 100vh;
+  padding-bottom: 20px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.grid-item-box {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 15px 0;
+}
+
+.grid-text {
+  text-align: center;
+  font-size: 26rpx;
+  margin-top: 10rpx;
+  color: #555;
 }
 </style>
