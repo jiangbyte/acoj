@@ -35,6 +35,24 @@ from app.modules.iam.schema import PermissionRegistryItem, ResourceGrantModuleOp
 from app.platform.db.transaction import transactional
 
 
+async def _resolve_creator_names(db: AsyncSession, items: list) -> None:
+    """批量查询 created_by / updated_by 对应的昵称。"""
+    account_ids: set[str] = set()
+    for item in items:
+        if item.created_by:
+            account_ids.add(item.created_by)
+        if item.updated_by:
+            account_ids.add(item.updated_by)
+    if not account_ids:
+        return
+    profiles = await get_profiles_batch(db, AccountType.ADMIN, list(account_ids))
+    for item in items:
+        if item.created_by and item.created_by in profiles:
+            item.created_name = getattr(profiles[item.created_by], "nickname", None)
+        if item.updated_by and item.updated_by in profiles:
+            item.updated_name = getattr(profiles[item.updated_by], "nickname", None)
+
+
 class ResourceService:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -192,7 +210,7 @@ class ResourceService:
             module_name, module_client = module_meta_map.get(schema.module_id or "", ("", None))
             schema.module_id_name = module_name
             schema.module_client = module_client
-        await self._resolve_creator_names(schemas)
+        await _resolve_creator_names(self.db, schemas)
         return schemas
 
     async def _build_button_schemas(
@@ -335,7 +353,7 @@ class ResourceModuleService:
 
     async def detail(self, query: IdQuery) -> SysResourceModuleSchema:
         schema = to_schema(SysResourceModuleSchema, await self.repo.get_required(query.id))
-        await self._resolve_creator_names([schema])
+        await _resolve_creator_names(self.db, [schema])
         return schema
 
     async def page_admin(
@@ -344,7 +362,7 @@ class ResourceModuleService:
     ) -> PageData[SysResourceModuleSchema]:
         items, total = await self.repo.page_admin(query)
         schemas = to_schema_list(SysResourceModuleSchema, items)
-        await self._resolve_creator_names(schemas)
+        await _resolve_creator_names(self.db, schemas)
         return build_page(query.pagination, total, schemas)
 
     async def selector(
@@ -355,24 +373,6 @@ class ResourceModuleService:
            ResourceModuleSelectorOption,
            await self.repo.list_enabled_modules(client),
        )
-
-    async def _resolve_creator_names(self, items: list[SysResourceModuleSchema]) -> None:
-        """批量查询 created_by / updated_by 对应的昵称。"""
-        account_ids: set[str] = set()
-        for item in items:
-            if item.created_by:
-                account_ids.add(item.created_by)
-            if item.updated_by:
-                account_ids.add(item.updated_by)
-        if not account_ids:
-            return
-        profiles = await get_profiles_batch(self.db, AccountType.ADMIN, list(account_ids))
-        for item in items:
-            if item.created_by and item.created_by in profiles:
-                item.created_name = getattr(profiles[item.created_by], "nickname", None)
-            if item.updated_by and item.updated_by in profiles:
-                item.updated_name = getattr(profiles[item.updated_by], "nickname", None)
-
 
 def _build_resource_tree_nodes(
     resources: list[SysResource],

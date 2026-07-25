@@ -17,16 +17,35 @@ const ui = inject(MESSAGE_UI_STATE_KEY)!
       <NTabPane name="friends" tab="好友">
         <NScrollbar class="h-full">
           <NList v-if="data.friends.length" hoverable clickable>
-            <NListItem v-for="friend in data.friends" :key="friend.friendship_id" class="message-list-item cursor-pointer"
-              @click="actions.openFriend(friend)">
+            <NListItem
+              v-for="friend in data.friends"
+              :key="friend.friendship_id"
+              class="message-list-item cursor-pointer"
+              @click="actions.openFriend(friend)"
+            >
               <div class="message-list-row flex items-start gap-3 px-4 py-3">
-                <NAvatar v-if="friend.avatar" round :size="40" class="shrink-0" :src="resolveFileUrl(friend.avatar)" :img-props="avatarImgProps" />
-                <NAvatar v-else round :size="40" class="shrink-0">{{ (friend.name || friend.nickname || '?').charAt(0) }}</NAvatar>
+                <NAvatar
+                  v-if="friend.avatar"
+                  round
+                  :size="40"
+                  class="shrink-0"
+                  :src="resolveFileUrl(friend.avatar)"
+                  :img-props="avatarImgProps"
+                />
+                <NAvatar v-else round :size="40" class="shrink-0">
+                  {{ (friend.name || friend.nickname || '?').charAt(0) }}
+                </NAvatar>
                 <div class="message-list-body">
                   <div class="message-list-main-line flex items-center justify-between gap-3">
-                    <span class="message-ellipsis flex-1 text-sm font-600">{{ friend.name || friend.nickname || '未知' }}</span>
+                    <span class="message-ellipsis flex-1 text-sm font-600">{{
+                      friend.name || friend.nickname || '未知'
+                    }}</span>
                   </div>
-                  <span class="message-ellipsis mt-1 text-xs" :style="{ color: themeVars.textColor3 }">{{ friend.signature || '-' }}</span>
+                  <span
+                    class="message-ellipsis mt-1 text-xs"
+                    :style="{ color: themeVars.textColor3 }"
+                    >{{ friend.signature || '-' }}</span
+                  >
                 </div>
               </div>
             </NListItem>
@@ -37,16 +56,33 @@ const ui = inject(MESSAGE_UI_STATE_KEY)!
       <NTabPane name="groups" tab="群组">
         <NScrollbar class="h-full">
           <NList v-if="data.groups.length" hoverable clickable>
-            <NListItem v-for="group in data.groups" :key="group.id" class="message-list-item cursor-pointer"
-              @click="actions.openGroup(group)">
+            <NListItem
+              v-for="group in data.groups"
+              :key="group.id"
+              class="message-list-item cursor-pointer"
+              @click="actions.openGroup(group)"
+            >
               <div class="message-list-row flex items-start gap-3 px-4 py-3">
-                <NAvatar v-if="group.avatar" round :size="40" class="shrink-0" :src="resolveFileUrl(group.avatar)" :img-props="avatarImgProps" />
-                <NAvatar v-else round :size="40" class="shrink-0">{{ (group.name || '?').charAt(0) }}</NAvatar>
+                <NAvatar
+                  v-if="group.avatar"
+                  round
+                  :size="40"
+                  class="shrink-0"
+                  :src="resolveFileUrl(group.avatar)"
+                  :img-props="avatarImgProps"
+                />
+                <NAvatar v-else round :size="40" class="shrink-0">
+                  {{ (group.name || '?').charAt(0) }}
+                </NAvatar>
                 <div class="message-list-body">
                   <div class="message-list-main-line flex items-center justify-between gap-3">
                     <span class="message-ellipsis flex-1 text-sm font-600">{{ group.name }}</span>
                   </div>
-                  <span class="message-ellipsis mt-1 text-xs" :style="{ color: themeVars.textColor3 }">{{ group.member_count }} 人 · {{ group.description || '-' }}</span>
+                  <span
+                    class="message-ellipsis mt-1 text-xs"
+                    :style="{ color: themeVars.textColor3 }"
+                    >{{ group.member_count }} 人 · {{ group.description || '-' }}</span
+                  >
                 </div>
               </div>
             </NListItem>

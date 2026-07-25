@@ -43,15 +43,23 @@ async function saveAll() {
         <NFormItem label="默认密码" :style="{ marginBottom: 0 }">
           <div class="w-full">
             <NInput v-model:value="field.value" type="password" show-password-on="click" />
-            <div class="hint">{{ field.remark }}</div>
+            <div class="hint">
+              {{ field.remark }}
+            </div>
           </div>
         </NFormItem>
       </NGi>
     </NGrid>
-    <NButton type="primary" class="mt-16px" :loading="field.saving" @click="saveAll">保存配置</NButton>
+    <NButton type="primary" class="mt-16px" :loading="field.saving" @click="saveAll">
+      保存配置
+    </NButton>
   </NForm>
 </template>
 
 <style scoped>
-.hint { font-size: 12px; color: #aaa; margin-top: 2px; }
+.hint {
+  font-size: 12px;
+  color: #aaa;
+  margin-top: 2px;
+}
 </style>

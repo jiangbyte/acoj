@@ -26,9 +26,7 @@ const state = reactive({
   formModel: { ...defaultFormData },
 })
 
-const modalTitle = computed(() =>
-  state.dataId ? '编辑 岗位' : '新增 岗位',
-)
+const modalTitle = computed(() => (state.dataId ? '编辑 岗位' : '新增 岗位'))
 
 const rules = computed<FormRules>(() => ({
   name: createRequiredRule('岗位名称', 'input'),
@@ -124,7 +122,11 @@ defineExpose({
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
           <NFormItem :label="'岗位分类'" path="category">
-           <DictSelect v-model="state.formModel.category" dict-code="POSITION_CATEGORY" :placeholder="'请选择岗位分类'" />
+            <DictSelect
+              v-model="state.formModel.category"
+              dict-code="POSITION_CATEGORY"
+              :placeholder="'请选择岗位分类'"
+            />
           </NFormItem>
           <NFormItem :label="'排序'" path="sort">
             <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
@@ -148,12 +150,8 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton @click="closeModal">
-          取消
-        </NButton>
-        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          确认
-        </NButton>
+        <NButton @click="closeModal"> 取消 </NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm"> 确认 </NButton>
       </NSpace>
     </template>
   </NModal>

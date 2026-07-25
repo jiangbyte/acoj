@@ -26,10 +26,9 @@ export interface FileUploadOptions {
   storage_provider?: string | null
 }
 
-export type FileDownloadTarget = string | Partial<Pick<
-  SysFileItem,
-  'id' | 'object_name' | 'original_name' | 'storage_provider'
->>
+export type FileDownloadTarget =
+  | string
+  | Partial<Pick<SysFileItem, 'id' | 'object_name' | 'original_name' | 'storage_provider'>>
 
 export function page(params: any) {
   return http.get<any>(`${filePrefix}/page`, {
@@ -133,9 +132,9 @@ function getDownloadTargetFilename(target: FileDownloadTarget, fallbackFilename:
 }
 
 function isRemoteDownloadTarget(target: FileDownloadTarget) {
-  return typeof target !== 'string'
-    && !!target.storage_provider
-    && target.storage_provider !== 'local'
+  return (
+    typeof target !== 'string' && !!target.storage_provider && target.storage_provider !== 'local'
+  )
 }
 
 function openFileUrl(value?: string | null, filename = 'download') {

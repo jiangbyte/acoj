@@ -52,11 +52,7 @@ const tableUsers = computed(() => {
   return filteredUsers.value.slice(start, start + state.pageSize)
 })
 const selectedIds = computed(() => new Set(state.selectedData.map((item) => String(item.id))))
-const secondaryTitle = computed(() =>
-  state.searchFields.includes('code')
-    ? '角色编码'
-    : '账号',
-)
+const secondaryTitle = computed(() => (state.searchFields.includes('code') ? '角色编码' : '账号'))
 
 const userColumns = computed<DataTableColumns<any>>(() => [
   {
@@ -80,15 +76,19 @@ const userColumns = computed<DataTableColumns<any>>(() => [
     title: '头像',
     key: 'avatar',
     width: 56,
-   render: (row) => {
-     const avatar = resolveFileUrl(row.avatar)
+    render: (row) => {
+      const avatar = resolveFileUrl(row.avatar)
       const name = row.name || row.account || ''
       return (
         <NAvatar size="small" src={avatar} imgProps={avatarImgProps}>
-          {avatar ? undefined : String(name || '-').slice(0, 1).toUpperCase()}
+          {avatar
+            ? undefined
+            : String(name || '-')
+                .slice(0, 1)
+                .toUpperCase()}
         </NAvatar>
       )
-   },
+    },
   },
   {
     title: '名称',
@@ -234,20 +234,14 @@ defineExpose({
                 @keyup.enter="state.page = 1"
                 @clear="resetSearch"
               />
-              <NButton type="primary" @click="state.page = 1">
-                搜索
-              </NButton>
-              <NButton @click="resetSearch">
-                重置
-              </NButton>
+              <NButton type="primary" @click="state.page = 1"> 搜索 </NButton>
+              <NButton @click="resetSearch"> 重置 </NButton>
             </NInputGroup>
             <NFlex justify="space-between" align="center">
               <NText>
                 {{ `待处理列表: ${filteredUsers.length}` }}
               </NText>
-              <NButton dashed size="small" @click="addAllPageRecord">
-                新增当前页
-              </NButton>
+              <NButton dashed size="small" @click="addAllPageRecord"> 新增当前页 </NButton>
             </NFlex>
             <NDataTable
               size="small"
@@ -272,12 +266,8 @@ defineExpose({
         <NGi :span="8">
           <NSpace vertical>
             <NFlex justify="space-between" align="center">
-              <NText>{{
-                `已选择： ${state.selectedData.length}`
-              }}</NText>
-              <NButton dashed type="error" size="small" @click="delAllRecord">
-                全部移除
-              </NButton>
+              <NText>{{ `已选择： ${state.selectedData.length}` }}</NText>
+              <NButton dashed type="error" size="small" @click="delAllRecord"> 全部移除 </NButton>
             </NFlex>
             <NDataTable
               size="small"
@@ -294,9 +284,7 @@ defineExpose({
 
       <template #footer>
         <NSpace justify="end" align="center">
-          <NButton @click="closeModal">
-            关闭
-          </NButton>
+          <NButton @click="closeModal"> 关闭 </NButton>
           <NButton type="primary" :loading="state.submitLoading" @click="submitGrant">
             保存
           </NButton>

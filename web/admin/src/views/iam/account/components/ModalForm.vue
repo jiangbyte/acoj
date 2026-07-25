@@ -44,19 +44,15 @@ const state = reactive({
 })
 
 const accountStatusOptions = computed(() =>
-  dictList('ACCOUNT_STATUS').filter((o: any) => !o.value.includes('CANCELLED'))
+  dictList('ACCOUNT_STATUS').filter((o: any) => !o.value.includes('CANCELLED')),
 )
 
-const modalTitle = computed(() =>
-  state.dataId ? '编辑账号' : '新增账号',
-)
+const modalTitle = computed(() => (state.dataId ? '编辑账号' : '新增账号'))
 
 function validateEmailIdentity(_rule: FormItemRule, value: string) {
   const text = String(value ?? '').trim()
   if (!text) {
-    return state.formModel.email_login_enabled
-      ? new Error('请输入邮箱')
-      : true
+    return state.formModel.email_login_enabled ? new Error('请输入邮箱') : true
   }
   if (!isValidEmail(text)) {
     return new Error('请输入有效邮箱')
@@ -224,14 +220,16 @@ defineExpose({
                   v-model:value="state.formModel.password"
                   type="password"
                   show-password-on="click"
-                  :placeholder="
-                    state.dataId ? '留空则保持当前密码' : undefined
-                  "
+                  :placeholder="state.dataId ? '留空则保持当前密码' : undefined"
                 />
               </NFormItem>
               <PasswordStrengthBar :password="state.formModel.password" />
               <NFormItem :label="'账号类型'" path="account_type">
-                <DictSelect v-model="state.formModel.account_type" dict-code="ACCOUNT_TYPE" :disabled="!!state.dataId" />
+                <DictSelect
+                  v-model="state.formModel.account_type"
+                  dict-code="ACCOUNT_TYPE"
+                  :disabled="!!state.dataId"
+                />
               </NFormItem>
               <NFormItem :label="'账号状态'" path="account_status">
                 <NRadioGroup v-model:value="state.formModel.account_status">
@@ -329,12 +327,8 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton @click="closeModal">
-          取消
-        </NButton>
-        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          确认
-        </NButton>
+        <NButton @click="closeModal"> 取消 </NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm"> 确认 </NButton>
       </NSpace>
     </template>
   </NModal>

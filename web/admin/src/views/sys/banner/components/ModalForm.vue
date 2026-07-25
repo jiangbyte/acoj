@@ -33,9 +33,7 @@ const state = reactive({
   formModel: { ...defaultFormData },
 })
 
-const modalTitle = computed(() =>
-  state.dataId ? '编辑展示图' : '新增展示图',
-)
+const modalTitle = computed(() => (state.dataId ? '编辑展示图' : '新增展示图'))
 
 const rules = computed<FormRules>(() => ({
   title: createRequiredRule('标题', 'input'),
@@ -144,7 +142,11 @@ defineExpose({
             <NInput v-model:value="state.formModel.url" />
           </NFormItem>
           <NFormItem :label="'链接类型'" path="link_type">
-            <DictSelect v-model="state.formModel.link_type" dict-code="BANNER_LINK_TYPE" type="radio" />
+            <DictSelect
+              v-model="state.formModel.link_type"
+              dict-code="BANNER_LINK_TYPE"
+              type="radio"
+            />
           </NFormItem>
           <NFormItem :label="'分类'" path="category">
             <DictSelect v-model="state.formModel.category" dict-code="BANNER_CATEGORY" />
@@ -177,7 +179,11 @@ defineExpose({
             <NInput v-model:value="state.formModel.summary" />
           </NFormItem>
           <NFormItem :label="'描述'" path="description">
-            <NInput v-model:value="state.formModel.description" type="textarea" :autosize="{ minRows: 3, maxRows: 5 }" />
+            <NInput
+              v-model:value="state.formModel.description"
+              type="textarea"
+              :autosize="{ minRows: 3, maxRows: 5 }"
+            />
           </NFormItem>
         </NForm>
       </NScrollbar>
@@ -185,12 +191,8 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton @click="closeModal">
-          取消
-        </NButton>
-        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          确认
-        </NButton>
+        <NButton @click="closeModal"> 取消 </NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm"> 确认 </NButton>
       </NSpace>
     </template>
   </NModal>

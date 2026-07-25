@@ -14,7 +14,9 @@ const html = computed(() => props.value ?? '')
 </script>
 
 <template>
+  <!-- eslint-disable vue/no-v-html -->
   <div class="rich-text-preview" v-html="html" />
+  <!-- eslint-enable vue/no-v-html -->
 </template>
 
 <style scoped>

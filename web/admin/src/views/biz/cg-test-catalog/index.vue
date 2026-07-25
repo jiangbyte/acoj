@@ -8,7 +8,16 @@
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { cgTestCatalogApi } from '@/api'
-import { createTagColor, dictTypeColor, dictTypeData, displayValue, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import {
+  createTagColor,
+  dictTypeColor,
+  dictTypeData,
+  displayValue,
+  formatDateTime,
+  hasPermission,
+  normalizeSearchValues,
+  renderButtonIcon,
+} from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -44,7 +53,6 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   { title: '状态', path: 'status', field: 'input' },
 ])
 
-
 const tableColumns = computed<ProDataTableColumns<any>>(() => [
   { type: 'selection', fixed: 'left' },
   { title: '主键', path: 'id', width: 150, ellipsis: { tooltip: true } },
@@ -56,7 +64,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     path: 'status',
     width: 150,
     ellipsis: { tooltip: true },
-    render: row => (
+    render: (row) => (
       <NTag color={createTagColor(dictTypeColor('COMMON_STATUS', row.status))} bordered={false}>
         {dictTypeData('COMMON_STATUS', row.status) || displayValue(row.status)}
       </NTag>
@@ -67,20 +75,25 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     title: '是否显示',
     path: 'is_visible',
     width: 120,
-    render: row => (
+    render: (row) => (
       <NTag type={row.is_visible === true ? 'success' : 'default'} bordered={false}>
         {row.is_visible === true ? '是' : row.is_visible === false ? '否' : '-'}
       </NTag>
     ),
   },
   { title: '图标', path: 'icon', width: 150, ellipsis: { tooltip: true } },
-  { title: '更新时间', path: 'updated_at', width: 190, render: row => formatDateTime(row.updated_at) },
+  {
+    title: '更新时间',
+    path: 'updated_at',
+    width: 190,
+    render: (row) => formatDateTime(row.updated_at),
+  },
   {
     title: '操作',
     key: 'actions',
     width: 130,
     fixed: 'right',
-    render: row => (
+    render: (row) => (
       <NFlex size={12}>
         {hasPermission('biz:cgtestcatalog:detail') ? (
           <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
@@ -106,7 +119,6 @@ onMounted(() => {
   fetchTree()
 })
 
-
 async function fetchTree() {
   state.treeLoading = true
   try {
@@ -116,7 +128,6 @@ async function fetchTree() {
     state.treeLoading = false
   }
 }
-
 
 function filterTreeRows(items: any[], searchValues: any): any[] {
   return items
@@ -144,7 +155,9 @@ function containsValue(source: unknown, target: unknown) {
   if (target === undefined || target === null || target === '') {
     return true
   }
-  return String(source ?? '').toLowerCase().includes(String(target).toLowerCase())
+  return String(source ?? '')
+    .toLowerCase()
+    .includes(String(target).toLowerCase())
 }
 
 function equalsValue(source: unknown, target: unknown) {
@@ -186,7 +199,7 @@ function confirmDelete(value: string | string[]) {
 
 async function deleteRows(ids: string[]) {
   await cgTestCatalogApi.remove({ ids })
-  state.checkedRowKeys = state.checkedRowKeys.filter(key => !ids.includes(key))
+  state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
   window.$message.success('删除成功')
   await fetchTree()
 }
@@ -218,14 +231,31 @@ async function deleteRows(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('biz:cgtestcatalog:create')" type="primary" text @click="openCreateModal">
-            <template #icon><NIcon><Icon icon="icon-park-outline:plus" /></NIcon></template>
+          <NButton
+            v-if="hasPermission('biz:cgtestcatalog:create')"
+            type="primary"
+            text
+            @click="openCreateModal"
+          >
+            <template #icon>
+              <NIcon><Icon icon="icon-park-outline:plus" /></NIcon>
+            </template>
           </NButton>
           <NButton text :loading="state.treeLoading" @click="fetchTree">
-            <template #icon><NIcon><Icon icon="icon-park-outline:refresh" /></NIcon></template>
+            <template #icon>
+              <NIcon><Icon icon="icon-park-outline:refresh" /></NIcon>
+            </template>
           </NButton>
-          <NButton v-if="hasPermission('biz:cgtestcatalog:delete')" type="error" text :disabled="!hasCheckedRows" @click="confirmDelete(state.checkedRowKeys)">
-            <template #icon><NIcon><Icon icon="icon-park-outline:delete" /></NIcon></template>
+          <NButton
+            v-if="hasPermission('biz:cgtestcatalog:delete')"
+            type="error"
+            text
+            :disabled="!hasCheckedRows"
+            @click="confirmDelete(state.checkedRowKeys)"
+          >
+            <template #icon>
+              <NIcon><Icon icon="icon-park-outline:delete" /></NIcon>
+            </template>
           </NButton>
         </NFlex>
       </template>

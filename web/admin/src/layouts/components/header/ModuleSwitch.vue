@@ -32,12 +32,7 @@ function handleSelect(key: string | number) {
 </script>
 
 <template>
-  <n-dropdown
-    v-if="options.length"
-    trigger="click"
-    :options="options"
-    @select="handleSelect"
-  >
+  <n-dropdown v-if="options.length" trigger="click" :options="options" @select="handleSelect">
     <button
       class="module-switch"
       :class="{ 'module-switch--block': block }"

@@ -7,8 +7,15 @@ const data = inject(MESSAGE_DATA_KEY)!
 const actions = inject(MESSAGE_ACTIONS_KEY)!
 const ui = inject(MESSAGE_UI_STATE_KEY)!
 
-const totalUnreadCount = computed(() => data.conversations.reduce((s, c) => s + (c.unread_count || 0), 0))
-const requestBadgeCount = computed(() => data.friendRequests.filter((r:any) => r.status === 'PENDING').length + data.groupJoinRequests.filter((r:any) => r.status === 'PENDING').length + data.pendingGroupJoinRequests.length)
+const totalUnreadCount = computed(() =>
+  data.conversations.reduce((s, c) => s + (c.unread_count || 0), 0),
+)
+const requestBadgeCount = computed(
+  () =>
+    data.friendRequests.filter((r: any) => r.status === 'PENDING').length +
+    data.groupJoinRequests.filter((r: any) => r.status === 'PENDING').length +
+    data.pendingGroupJoinRequests.length,
+)
 const unreadNoticeCount = computed(() => data.notices.filter((n) => !n.is_read).length)
 const noticeBadgeTotal = computed(() => requestBadgeCount.value + unreadNoticeCount.value)
 
@@ -17,7 +24,10 @@ const avatarUrl = computed(() => resolveFileUrl(data.profile?.avatar))
 </script>
 
 <template>
-  <aside class="hidden h-full min-h-0 flex-col items-center py-3 md:flex" style="background-color: #2b2b2b;">
+  <aside
+    class="hidden h-full min-h-0 flex-col items-center py-3 md:flex"
+    style="background-color: #2b2b2b"
+  >
     <NAvatar
       v-if="avatarUrl"
       round
@@ -43,7 +53,9 @@ const avatarUrl = computed(() => resolveFileUrl(data.profile?.avatar))
           <NBadge :value="totalUnreadCount" :max="99" :show-zero="false">
             <NButton
               text
-              :class="ui.activeSection.value === 'chat' ? 'text-[var(--primary-color)]' : 'text-white'"
+              :class="
+                ui.activeSection.value === 'chat' ? 'text-[var(--primary-color)]' : 'text-white'
+              "
               aria-label="聊天"
               @click="actions.openChatSection()"
             >
@@ -60,7 +72,9 @@ const avatarUrl = computed(() => resolveFileUrl(data.profile?.avatar))
         <template #trigger>
           <NButton
             text
-            :class="ui.activeSection.value === 'contacts' ? 'text-[var(--primary-color)]' : 'text-white'"
+            :class="
+              ui.activeSection.value === 'contacts' ? 'text-[var(--primary-color)]' : 'text-white'
+            "
             aria-label="通讯录"
             @click="actions.openContactsSection()"
           >
@@ -77,7 +91,9 @@ const avatarUrl = computed(() => resolveFileUrl(data.profile?.avatar))
           <NBadge :value="noticeBadgeTotal" :max="99" :show-zero="false">
             <NButton
               text
-              :class="ui.activeSection.value === 'notice' ? 'text-[var(--primary-color)]' : 'text-white'"
+              :class="
+                ui.activeSection.value === 'notice' ? 'text-[var(--primary-color)]' : 'text-white'
+              "
               aria-label="通知"
               @click="actions.openNoticeSection()"
             >
@@ -94,12 +110,7 @@ const avatarUrl = computed(() => resolveFileUrl(data.profile?.avatar))
     <div class="mt-auto">
       <NTooltip placement="right">
         <template #trigger>
-          <NButton
-            text
-            class="text-white"
-            aria-label="返回工作台"
-            @click="actions.goHome()"
-          >
+          <NButton text class="text-white" aria-label="返回工作台" @click="actions.goHome()">
             <template #icon>
               <NovaIcon icon="icon-park-outline:arrow-left" :size="20" />
             </template>

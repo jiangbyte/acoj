@@ -35,23 +35,18 @@ const state = reactive({
   treeRows: [] as any[],
 })
 
-const modalTitle = computed(() => state.dataId ? '编辑CgTestKnowledgeCategory' : '新增CgTestKnowledgeCategory')
-const parentTreeOptions = computed(() =>
-  buildParentTreeOptions(state.treeRows, state.dataId),
+const modalTitle = computed(() =>
+  state.dataId ? '编辑CgTestKnowledgeCategory' : '新增CgTestKnowledgeCategory',
 )
+const parentTreeOptions = computed(() => buildParentTreeOptions(state.treeRows, state.dataId))
 const rules = computed<FormRules>(() => ({
-  code: [
-    createRequiredRule('分类编码', 'input'),
-  ],
-  name: [
-    createRequiredRule('分类名称', 'input'),
-  ],
-  status: [
-    createRequiredRule('状态', 'change'),
-  ],
+  code: [createRequiredRule('分类编码', 'input')],
+  name: [createRequiredRule('分类名称', 'input')],
+  status: [createRequiredRule('状态', 'change')],
   sort: [
     {
-      validator: () => typeof state.formModel.sort === 'number' && Number.isFinite(state.formModel.sort),
+      validator: () =>
+        typeof state.formModel.sort === 'number' && Number.isFinite(state.formModel.sort),
       message: '请输入排序',
       trigger: ['input', 'blur'],
     },
@@ -159,7 +154,11 @@ function closeModal() {
   state.submitLoading = false
 }
 
-function buildParentTreeOptions(items: any[], editingId: string | null, disabledParent = false): any[] {
+function buildParentTreeOptions(
+  items: any[],
+  editingId: string | null,
+  disabledParent = false,
+): any[] {
   return items.map((item) => {
     const itemId = String(item.id ?? '')
     const disabled = disabledParent || (editingId !== null && itemId === editingId)
@@ -208,7 +207,14 @@ defineExpose({
   >
     <NSpin :show="state.loading || state.treeLoading">
       <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
-        <NForm ref="formRef" :model="state.formModel" :rules="rules" label-placement="left" label-width="110" :disabled="state.loading || state.treeLoading || state.submitLoading">
+        <NForm
+          ref="formRef"
+          :model="state.formModel"
+          :rules="rules"
+          label-placement="left"
+          label-width="110"
+          :disabled="state.loading || state.treeLoading || state.submitLoading"
+        >
           <NFormItem label="父级" path="parent_id">
             <NTreeSelect
               v-model:value="state.formModel.parent_id"
@@ -238,10 +244,18 @@ defineExpose({
             <NSwitch v-model:value="state.formModel.is_visible" />
           </NFormItem>
           <NFormItem label="描述" path="description">
-            <NInput v-model:value="state.formModel.description" type="textarea" :autosize="{ minRows: 3, maxRows: 8 }" />
+            <NInput
+              v-model:value="state.formModel.description"
+              type="textarea"
+              :autosize="{ minRows: 3, maxRows: 8 }"
+            />
           </NFormItem>
           <NFormItem label="扩展信息" path="extra">
-            <NInput v-model:value="state.formModel.extra" type="textarea" :autosize="{ minRows: 4, maxRows: 12 }" />
+            <NInput
+              v-model:value="state.formModel.extra"
+              type="textarea"
+              :autosize="{ minRows: 4, maxRows: 12 }"
+            />
           </NFormItem>
         </NForm>
       </NScrollbar>
@@ -249,8 +263,8 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end">
-        <NButton @click="closeModal">取消</NButton>
-        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">确认</NButton>
+        <NButton @click="closeModal"> 取消 </NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm"> 确认 </NButton>
       </NSpace>
     </template>
   </NModal>

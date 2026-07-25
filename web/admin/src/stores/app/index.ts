@@ -28,7 +28,6 @@ export const useAppStore = defineStore('app-store', {
 
     // 页面内容渲染开关。reloadPage 会短暂关闭再打开，用于触发当前路由视图重载。
     loadFlag: true,
-
   }),
   getters: {
     // 用户选择的主题模式，可能是 light、dark 或 auto。

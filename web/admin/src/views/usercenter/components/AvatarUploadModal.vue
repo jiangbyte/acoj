@@ -148,9 +148,7 @@ function resetSource() {
           <div class="avatar-preview">
             <img v-if="state.previewUrl" :src="state.previewUrl" alt="" />
           </div>
-          <div class="mt-3 text-sm text-[var(--text-color-3)]">
-            实时预览
-          </div>
+          <div class="mt-3 text-sm text-[var(--text-color-3)]">实时预览</div>
         </div>
       </div>
       <div v-else class="avatar-empty">
@@ -173,12 +171,8 @@ function resetSource() {
           {{ state.fileName || '仅支持 JPG、PNG 和 WebP 图片，裁剪后上传' }}
         </div>
         <NSpace>
-          <NButton @click="modalShow = false">
-            取消
-          </NButton>
-          <NButton v-if="state.source" secondary @click="openFilePicker">
-            重新选择
-          </NButton>
+          <NButton @click="modalShow = false"> 取消 </NButton>
+          <NButton v-if="state.source" secondary @click="openFilePicker"> 重新选择 </NButton>
           <NButton type="primary" :loading="state.uploading" @click="uploadAvatar">
             裁剪并上传
           </NButton>

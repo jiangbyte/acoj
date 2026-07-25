@@ -222,9 +222,7 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton @click="closeModal">
-          关闭
-        </NButton>
+        <NButton @click="closeModal"> 关闭 </NButton>
       </NSpace>
     </template>
   </NModal>

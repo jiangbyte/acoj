@@ -6,7 +6,16 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { msgAnnouncementApi } from '@/api'
-import { createTagColor, dictList, dictTypeColor, dictTypeData, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import {
+  createTagColor,
+  dictList,
+  dictTypeColor,
+  dictTypeData,
+  formatDateTime,
+  hasPermission,
+  normalizeSearchValues,
+  renderButtonIcon,
+} from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -43,7 +52,12 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   { title: '标题', path: 'title', field: 'input' },
-  { title: '状态', path: 'status', field: 'select', fieldProps: { options: dictList('PUBLISH_STATUS') } },
+  {
+    title: '状态',
+    path: 'status',
+    field: 'select',
+    fieldProps: { options: dictList('PUBLISH_STATUS') },
+  },
 ])
 
 const pagination = computed<PaginationProps>(() => ({
@@ -67,33 +81,78 @@ const pagination = computed<PaginationProps>(() => ({
 const tableColumns = computed<ProDataTableColumns<any>>(() => [
   { type: 'selection', fixed: 'left' },
   { title: '标题', path: 'title', width: 200, ellipsis: { tooltip: true } },
-  { title: '等级', path: 'severity', width: 80, render: row => {
-    const color = createTagColor(dictTypeColor('NOTIFICATION_SEVERITY', row.severity))
-    const label = dictTypeData('NOTIFICATION_SEVERITY', row.severity)
-    return <NTag color={color} bordered={false}>{label || row.severity}</NTag>
-  }},
-  { title: '目标范围', path: 'target_scope', width: 90, render: row => {
-    const label = dictTypeData('TARGET_SCOPE', row.target_scope)
-    return <span>{label || row.target_scope}</span>
-  }},
-  { title: '置顶', path: 'is_pinned', width: 70, render: row => (
-    <NTag bordered={false} type={row.is_pinned ? 'warning' : 'default'}>{row.is_pinned ? '是' : '否'}</NTag>
-  )},
-  { title: '状态', path: 'status', width: 80, render: row => {
-    const color = createTagColor(dictTypeColor('PUBLISH_STATUS', row.status))
-    const label = dictTypeData('PUBLISH_STATUS', row.status)
-    return <NTag color={color} bordered={false}>{label || row.status}</NTag>
-  }},
+  {
+    title: '等级',
+    path: 'severity',
+    width: 80,
+    render: (row) => {
+      const color = createTagColor(dictTypeColor('NOTIFICATION_SEVERITY', row.severity))
+      const label = dictTypeData('NOTIFICATION_SEVERITY', row.severity)
+      return (
+        <NTag color={color} bordered={false}>
+          {label || row.severity}
+        </NTag>
+      )
+    },
+  },
+  {
+    title: '目标范围',
+    path: 'target_scope',
+    width: 90,
+    render: (row) => {
+      const label = dictTypeData('TARGET_SCOPE', row.target_scope)
+      return <span>{label || row.target_scope}</span>
+    },
+  },
+  {
+    title: '置顶',
+    path: 'is_pinned',
+    width: 70,
+    render: (row) => (
+      <NTag bordered={false} type={row.is_pinned ? 'warning' : 'default'}>
+        {row.is_pinned ? '是' : '否'}
+      </NTag>
+    ),
+  },
+  {
+    title: '状态',
+    path: 'status',
+    width: 80,
+    render: (row) => {
+      const color = createTagColor(dictTypeColor('PUBLISH_STATUS', row.status))
+      const label = dictTypeData('PUBLISH_STATUS', row.status)
+      return (
+        <NTag color={color} bordered={false}>
+          {label || row.status}
+        </NTag>
+      )
+    },
+  },
   { title: '查看次数', path: 'view_count', width: 80, align: 'right' },
-  { title: '发布时间', path: 'publish_at', width: 170, render: row => formatDateTime(row.publish_at) },
-  { title: '过期时间', path: 'expire_at', width: 170, render: row => formatDateTime(row.expire_at) },
-  { title: '更新时间', path: 'updated_at', width: 170, render: row => formatDateTime(row.updated_at) },
+  {
+    title: '发布时间',
+    path: 'publish_at',
+    width: 170,
+    render: (row) => formatDateTime(row.publish_at),
+  },
+  {
+    title: '过期时间',
+    path: 'expire_at',
+    width: 170,
+    render: (row) => formatDateTime(row.expire_at),
+  },
+  {
+    title: '更新时间',
+    path: 'updated_at',
+    width: 170,
+    render: (row) => formatDateTime(row.updated_at),
+  },
   {
     title: '操作',
     key: 'actions',
     width: 130,
     fixed: 'right',
-    render: row => (
+    render: (row) => (
       <NFlex size={12}>
         {hasPermission('message:announcement:detail') ? (
           <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
@@ -122,13 +181,19 @@ onMounted(() => {
 async function fetchPage() {
   state.loading = true
   try {
-    const response = await msgAnnouncementApi.page({ current: state.page, size: state.pageSize, ...state.searchValues })
+    const response = await msgAnnouncementApi.page({
+      current: state.page,
+      size: state.pageSize,
+      ...state.searchValues,
+    })
     const data = response.data ?? {}
     state.rows = data.records ?? []
     state.total = data.total ?? 0
     state.page = data.current ?? state.page
     state.pageSize = data.size ?? state.pageSize
-    state.checkedRowKeys = state.checkedRowKeys.filter(key => state.rows.some(item => item.id === key))
+    state.checkedRowKeys = state.checkedRowKeys.filter((key) =>
+      state.rows.some((item) => item.id === key),
+    )
   } finally {
     state.loading = false
   }
@@ -166,7 +231,7 @@ function confirmDelete(value: string | string[]) {
 
 async function deleteRows(ids: string[]) {
   await msgAnnouncementApi.remove({ ids })
-  state.checkedRowKeys = state.checkedRowKeys.filter(key => !ids.includes(key))
+  state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
   window.$message.success('删除成功')
   await fetchPage()
 }
@@ -198,14 +263,31 @@ async function deleteRows(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('message:announcement:create')" type="primary" text @click="openCreateModal">
-            <template #icon><NIcon><Icon icon="icon-park-outline:plus" /></NIcon></template>
+          <NButton
+            v-if="hasPermission('message:announcement:create')"
+            type="primary"
+            text
+            @click="openCreateModal"
+          >
+            <template #icon>
+              <NIcon><Icon icon="icon-park-outline:plus" /></NIcon>
+            </template>
           </NButton>
           <NButton text :loading="state.loading" @click="fetchPage">
-            <template #icon><NIcon><Icon icon="icon-park-outline:refresh" /></NIcon></template>
+            <template #icon>
+              <NIcon><Icon icon="icon-park-outline:refresh" /></NIcon>
+            </template>
           </NButton>
-          <NButton v-if="hasPermission('message:announcement:delete')" type="error" text :disabled="!hasCheckedRows" @click="confirmDelete(state.checkedRowKeys)">
-            <template #icon><NIcon><Icon icon="icon-park-outline:delete" /></NIcon></template>
+          <NButton
+            v-if="hasPermission('message:announcement:delete')"
+            type="error"
+            text
+            :disabled="!hasCheckedRows"
+            @click="confirmDelete(state.checkedRowKeys)"
+          >
+            <template #icon>
+              <NIcon><Icon icon="icon-park-outline:delete" /></NIcon>
+            </template>
           </NButton>
         </NFlex>
       </template>

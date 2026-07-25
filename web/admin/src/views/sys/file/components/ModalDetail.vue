@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import { fileApi } from '@/api'
-import {
-  displayValue,
-  formatDateTime,
-  formatFileSize,
-  isImageFile,
-  resolveFileUrl,
-} from '@/utils'
+import { displayValue, formatDateTime, formatFileSize, isImageFile, resolveFileUrl } from '@/utils'
 import { computed, reactive } from 'vue'
 import { dictTypeData } from '@/utils/dict'
 
@@ -96,7 +90,13 @@ defineExpose({
   >
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
-       <NDescriptions label-placement="left" bordered :column="1" label-style="min-width: 120px" class="file-detail-descriptions">
+        <NDescriptions
+          label-placement="left"
+          bordered
+          :column="1"
+          label-style="min-width: 120px"
+          class="file-detail-descriptions"
+        >
           <NDescriptionsItem :label="'预览'">
             <NImage
               v-if="isImage && fileUrl"
@@ -107,7 +107,13 @@ defineExpose({
               :height="140"
               object-fit="cover"
             />
-            <NButton v-else-if="state.file.id" type="primary" text :loading="state.downloading" @click="downloadFile">
+            <NButton
+              v-else-if="state.file.id"
+              type="primary"
+              text
+              :loading="state.downloading"
+              @click="downloadFile"
+            >
               下载
             </NButton>
             <template v-else> - </template>
@@ -132,7 +138,14 @@ defineExpose({
               <NButton v-if="fileUrl" size="small" text type="primary" @click="openFile">
                 打开
               </NButton>
-              <NButton v-if="state.file.id" size="small" text type="primary" :loading="state.downloading" @click="downloadFile">
+              <NButton
+                v-if="state.file.id"
+                size="small"
+                text
+                type="primary"
+                :loading="state.downloading"
+                @click="downloadFile"
+              >
                 下载
               </NButton>
               <NButton v-if="fileUrl" size="small" text type="primary" @click="copyText(fileUrl)">

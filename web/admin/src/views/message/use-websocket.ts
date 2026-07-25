@@ -9,11 +9,21 @@ export interface WsMessage {
 
 export interface WsHandlers {
   onNewMessage?: (data: any) => void
-  onTyping?: (data: { conversation_id: string; account_type: string; account_id: string; is_typing: boolean }) => void
+  onTyping?: (data: {
+    conversation_id: string
+    account_type: string
+    account_id: string
+    is_typing: boolean
+  }) => void
   onOfflineMessages?: (messages: any[]) => void
   onNewNotification?: (data: any) => void
   onNewJoinRequest?: (data: any) => void
-  onJoinRequestHandled?: (data: { request_id: string; group_id: string; group_name: string; status: string }) => void
+  onJoinRequestHandled?: (data: {
+    request_id: string
+    group_id: string
+    group_name: string
+    status: string
+  }) => void
 }
 
 /* ---- module-level singleton state ---- */
@@ -141,7 +151,11 @@ function connect() {
     ws.onerror = () => {
       // error 后 close 可能不会触发 onclose，直接触发重连
       connectPromise = null
-      try { ws?.close() } catch { /* ignore */ }
+      try {
+        ws?.close()
+      } catch {
+        /* ignore */
+      }
       scheduleReconnect()
     }
   })

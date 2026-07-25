@@ -2,7 +2,7 @@
 import type { FormInst, FormItemRule, FormRules } from 'naive-ui'
 import { authApi } from '@/api'
 import { useAuthStore } from '@/stores'
-import { formatDateTime, isValidEmail, resolveFileUrl } from '@/utils'
+import { isValidEmail, resolveFileUrl } from '@/utils'
 import { encryptPasswords } from '@/utils/security'
 import { computed, onMounted, reactive, ref } from 'vue'
 import AvatarUploadModal from './components/AvatarUploadModal.vue'
@@ -60,9 +60,7 @@ const contactText = computed(() => {
   return parts.length ? parts.join(' / ') : '未设置'
 })
 const bindConfirmTitle = computed(() =>
-  state.bindConfirm.type === 'phone'
-    ? '确认更新手机号'
-    : '确认更新邮箱',
+  state.bindConfirm.type === 'phone' ? '确认更新手机号' : '确认更新邮箱',
 )
 const emailRules = computed<FormRules>(() => ({
   email: [
@@ -158,9 +156,7 @@ async function saveEmail() {
 function validateEmailForm(_rule: FormItemRule, value: string) {
   const text = String(value ?? '').trim()
   if (!text) {
-    return state.emailForm.email_login_enabled
-      ? new Error('请输入邮箱')
-      : true
+    return state.emailForm.email_login_enabled ? new Error('请输入邮箱') : true
   }
   if (!isValidEmail(text)) {
     return new Error('请输入有效邮箱')
@@ -289,9 +285,7 @@ function displayValue(value: unknown) {
 
             <NDivider />
 
-            <div class="text-sm font-medium">
-              个性签名
-            </div>
+            <div class="text-sm font-medium">个性签名</div>
             <div
               class="mt-2 min-h-18 rounded border border-[var(--border-color)] p-3 text-sm text-[var(--text-color-3)]"
             >
@@ -406,7 +400,6 @@ function displayValue(value: unknown) {
                   </NFormItem>
                 </NForm>
               </NTabPane>
-
             </NTabs>
           </NCard>
         </NGridItem>
@@ -434,9 +427,7 @@ function displayValue(value: unknown) {
       </NForm>
       <template #footer>
         <NSpace justify="end">
-          <NButton @click="state.bindConfirm.show = false">
-            取消
-          </NButton>
+          <NButton @click="state.bindConfirm.show = false"> 取消 </NButton>
           <NButton type="primary" :loading="state.bindConfirm.loading" @click="confirmBind">
             确认
           </NButton>
@@ -449,7 +440,6 @@ function displayValue(value: unknown) {
       :avatar="avatarUrl"
       @uploaded="refreshMe"
     />
-
   </div>
 </template>
 

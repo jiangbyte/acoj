@@ -91,25 +91,28 @@ export function normalizeUploadedFile(
 ): NormalizedUploadedFile {
   const raw = isRecord(data) ? data : {}
   const fallbackRecord = isRecord(fallback) ? fallback : {}
-  const objectName = getStringValue(raw, 'object_name')
-    || getStringValue(raw, 'objectName')
-    || getStringValue(fallbackRecord, 'object_name')
-    || getStringValue(fallbackRecord, 'objectName')
+  const objectName =
+    getStringValue(raw, 'object_name') ||
+    getStringValue(raw, 'objectName') ||
+    getStringValue(fallbackRecord, 'object_name') ||
+    getStringValue(fallbackRecord, 'objectName')
   const rawUrl = getStringValue(raw, 'url') || getStringValue(fallbackRecord, 'url')
   const resolvedUrl = resolveFileUrl(rawUrl || objectName) || rawUrl || objectName
-  const name = getStringValue(raw, 'original_name')
-    || getStringValue(raw, 'originalName')
-    || getStringValue(raw, 'name')
-    || getStringValue(fallbackRecord, 'original_name')
-    || getStringValue(fallbackRecord, 'originalName')
-    || getStringValue(fallbackRecord, 'name')
-    || objectName
-  const contentType = getStringValue(raw, 'content_type')
-    || getStringValue(raw, 'contentType')
-    || getStringValue(fallbackRecord, 'content_type')
-    || getStringValue(fallbackRecord, 'contentType')
-    || getStringValue(fallbackRecord, 'type')
-    || null
+  const name =
+    getStringValue(raw, 'original_name') ||
+    getStringValue(raw, 'originalName') ||
+    getStringValue(raw, 'name') ||
+    getStringValue(fallbackRecord, 'original_name') ||
+    getStringValue(fallbackRecord, 'originalName') ||
+    getStringValue(fallbackRecord, 'name') ||
+    objectName
+  const contentType =
+    getStringValue(raw, 'content_type') ||
+    getStringValue(raw, 'contentType') ||
+    getStringValue(fallbackRecord, 'content_type') ||
+    getStringValue(fallbackRecord, 'contentType') ||
+    getStringValue(fallbackRecord, 'type') ||
+    null
   const size = getNumberValue(raw, 'size') ?? getNumberValue(fallbackRecord, 'size')
 
   return {
@@ -180,13 +183,13 @@ function getFileName(file?: FileLike | string | null) {
     return ''
   }
   return String(
-    file.original_name
-      || file.originalName
-      || file.name
-      || file.object_name
-      || file.objectName
-      || file.url
-      || '',
+    file.original_name ||
+      file.originalName ||
+      file.name ||
+      file.object_name ||
+      file.objectName ||
+      file.url ||
+      '',
   )
 }
 

@@ -30,8 +30,6 @@ class PortalUserProfileRepository:
         profile.signature = payload.signature
         profile.phone = payload.phone
         profile.email = payload.email
-        profile.bio = payload.bio
-        profile.level = payload.level
         await self.db.flush()
         return profile
 

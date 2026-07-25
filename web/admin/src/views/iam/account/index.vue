@@ -3,7 +3,14 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { accountApi } from '@/api'
-import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon, resolveFileUrl } from '@/utils'
+import {
+  createTagColor,
+  formatDateTime,
+  hasPermission,
+  normalizeSearchValues,
+  renderButtonIcon,
+  resolveFileUrl,
+} from '@/utils'
 import { NAvatar, NButton, NDropdown, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -111,8 +118,8 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     type: 'selection',
     fixed: 'left',
-   },
-   {
+  },
+  {
     title: '头像',
     key: 'avatar',
     width: 80,
@@ -300,13 +307,12 @@ function renderAvatar(row: any) {
   const avatar = resolveFileUrl(row.avatar)
   const name = row.nickname || row.name || row.account || ''
   return (
-    <NAvatar
-      round
-      size={32}
-      src={avatar}
-      imgProps={avatarImgProps}
-    >
-      {avatar ? undefined : String(name || '-').slice(0, 1).toUpperCase()}
+    <NAvatar round size={32} src={avatar} imgProps={avatarImgProps}>
+      {avatar
+        ? undefined
+        : String(name || '-')
+            .slice(0, 1)
+            .toUpperCase()}
     </NAvatar>
   )
 }
@@ -325,18 +331,14 @@ function openGrantModal(type: string, row: any) {
     code: row.account,
     name: row.nickname || '-',
   }
-   if (type === 'role') {
-      grantRoleModalRef.value?.openModal(account)
-   } else if (type === 'group') {
-      grantGroupModalRef.value?.openModal(account)
+  if (type === 'role') {
+    grantRoleModalRef.value?.openModal(account)
+  } else if (type === 'group') {
+    grantGroupModalRef.value?.openModal(account)
   } else if (type === 'dept') {
     grantDeptModalRef.value?.openModal(account)
   } else if (type === 'resource') {
-    grantResourceModalRef.value?.openModal(
-      account,
-      accountApi,
-      '分配资源',
-    )
+    grantResourceModalRef.value?.openModal(account, accountApi, '分配资源')
   }
 }
 
@@ -355,9 +357,7 @@ function confirmDelete(value: string | string[]) {
     title: isBatch ? '批量删除' : '删除',
     draggable: true,
     maskClosable: false,
-    content: isBatch
-      ? `删除 ${ids.length} 个账号?`
-      : '删除该账号?',
+    content: isBatch ? `删除 ${ids.length} 个账号?` : '删除该账号?',
     positiveText: '确认',
     negativeText: '取消',
     onPositiveClick: () => deleteData(ids),
@@ -386,9 +386,7 @@ async function deleteData(ids: string[]) {
         :reset-button-props="{ content: '重置' }"
         :search-button-props="{ content: '搜索' }"
         :collapse-button-props="{
-          content: searchForm.collapsed.value
-            ? '展开'
-            : '收起',
+          content: searchForm.collapsed.value ? '展开' : '收起',
         }"
       />
     </ProCard>
@@ -408,14 +406,27 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('iam:account:create')" type="primary" text :title="'新增'" :aria-label="'新增'" @click="openCreateModal">
+          <NButton
+            v-if="hasPermission('iam:account:create')"
+            type="primary"
+            text
+            :title="'新增'"
+            :aria-label="'新增'"
+            @click="openCreateModal"
+          >
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchPage">
+          <NButton
+            text
+            :title="'刷新'"
+            :aria-label="'刷新'"
+            :loading="state.loading"
+            @click="fetchPage"
+          >
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />

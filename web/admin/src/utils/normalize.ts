@@ -44,10 +44,7 @@ export function isValidEmail(value: unknown) {
   return EMAIL_PATTERN.test(text)
 }
 
-export function createRequiredRule(
-  field: string,
-  trigger: 'input' | 'change',
-) {
+export function createRequiredRule(field: string, trigger: 'input' | 'change') {
   return {
     required: true,
     message: `请输入${field}`,

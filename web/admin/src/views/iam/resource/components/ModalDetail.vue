@@ -100,25 +100,13 @@ defineExpose({
             {{ displayValue(state.resource.sort) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'可见'">
-            {{
-              state.resource.is_visible
-                ? '是'
-                : '否'
-            }}
+            {{ state.resource.is_visible ? '是' : '否' }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'缓存'">
-            {{
-              state.resource.is_cache
-                ? '是'
-                : '否'
-            }}
+            {{ state.resource.is_cache ? '是' : '否' }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'固定标签'">
-            {{
-              state.resource.is_affix
-                ? '是'
-                : '否'
-            }}
+            {{ state.resource.is_affix ? '是' : '否' }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'状态'">
             <NTag

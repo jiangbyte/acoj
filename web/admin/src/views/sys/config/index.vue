@@ -217,11 +217,7 @@ async function deleteData(ids: string[]) {
         </NTabs>
 
         <!-- 非 OTHER：表单式配置页 -->
-        <CategoryConfigForm
-          v-if="!isOtherTab"
-          :key="state.activeTab"
-          :category="state.activeTab"
-        />
+        <CategoryConfigForm v-if="!isOtherTab" :key="state.activeTab" :category="state.activeTab" />
 
         <!-- OTHER：保持表格 + 搜索 + 分页 -->
         <template v-else>
@@ -251,24 +247,39 @@ async function deleteData(ids: string[]) {
               <NFlex>
                 <NButton
                   v-if="hasPermission('sys:config:create')"
-                  type="primary" text :title="'新增'" :aria-label="'新增'"
+                  type="primary"
+                  text
+                  :title="'新增'"
+                  :aria-label="'新增'"
                   @click="openCreateModal"
                 >
-                  <template #icon><NIcon><Icon icon="icon-park-outline:plus" /></NIcon></template>
+                  <template #icon>
+                    <NIcon><Icon icon="icon-park-outline:plus" /></NIcon>
+                  </template>
                 </NButton>
                 <NButton
-                  text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading"
+                  text
+                  :title="'刷新'"
+                  :aria-label="'刷新'"
+                  :loading="state.loading"
                   @click="fetchPage"
                 >
-                  <template #icon><NIcon><Icon icon="icon-park-outline:reload" /></NIcon></template>
+                  <template #icon>
+                    <NIcon><Icon icon="icon-park-outline:reload" /></NIcon>
+                  </template>
                 </NButton>
                 <NButton
                   v-if="hasPermission('sys:config:delete')"
-                  type="error" text :title="'批量删除'" :aria-label="'批量删除'"
+                  type="error"
+                  text
+                  :title="'批量删除'"
+                  :aria-label="'批量删除'"
                   :disabled="!hasCheckedRows"
                   @click="confirmDelete(state.checkedRowKeys)"
                 >
-                  <template #icon><NIcon><Icon icon="icon-park-outline:delete" /></NIcon></template>
+                  <template #icon>
+                    <NIcon><Icon icon="icon-park-outline:delete" /></NIcon>
+                  </template>
                 </NButton>
               </NFlex>
             </template>

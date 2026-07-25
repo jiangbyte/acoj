@@ -3,7 +3,13 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { positionApi } from '@/api'
-import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import {
+  createTagColor,
+  formatDateTime,
+  hasPermission,
+  normalizeSearchValues,
+  renderButtonIcon,
+} from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -109,8 +115,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     title: '虚拟岗位',
     path: 'is_virtual',
     width: 110,
-    render: (row) =>
-      row.is_virtual ? '是' : '否',
+    render: (row) => (row.is_virtual ? '是' : '否'),
   },
   {
     title: '状态',
@@ -212,9 +217,7 @@ function confirmDelete(value: string | string[]) {
     title: isBatch ? '批量删除' : '删除',
     draggable: true,
     maskClosable: false,
-    content: isBatch
-      ? `删除 ${ids.length} 个岗位?`
-      : '删除该岗位?',
+    content: isBatch ? `删除 ${ids.length} 个岗位?` : '删除该岗位?',
     positiveText: '确认',
     negativeText: '取消',
     onPositiveClick: () => deleteData(ids),
@@ -243,9 +246,7 @@ async function deleteData(ids: string[]) {
         :reset-button-props="{ content: '重置' }"
         :search-button-props="{ content: '搜索' }"
         :collapse-button-props="{
-          content: searchForm.collapsed.value
-            ? '展开'
-            : '收起',
+          content: searchForm.collapsed.value ? '展开' : '收起',
         }"
       />
     </ProCard>
@@ -265,14 +266,27 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('iam:position:create')" type="primary" text :title="'新增'" :aria-label="'新增'" @click="openCreateModal">
+          <NButton
+            v-if="hasPermission('iam:position:create')"
+            type="primary"
+            text
+            :title="'新增'"
+            :aria-label="'新增'"
+            @click="openCreateModal"
+          >
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchPage">
+          <NButton
+            text
+            :title="'刷新'"
+            :aria-label="'刷新'"
+            :loading="state.loading"
+            @click="fetchPage"
+          >
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { UploadFileInfo } from 'naive-ui'
 import { fileApi } from '@/api'
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { Icon } from '@iconify/vue/offline'
 import { dictList } from '@/utils/dict'
@@ -23,7 +23,9 @@ const storageProviderOptions = computed(() => {
   return options.length ? options : fallbackStorageProviderOptions
 })
 
-const defaultStorageProvider = computed(() => String(storageProviderOptions.value[0]?.value || 'local'))
+const defaultStorageProvider = computed(() =>
+  String(storageProviderOptions.value[0]?.value || 'local'),
+)
 
 const state = reactive({
   showModal: false,
@@ -88,9 +90,10 @@ async function submitForm() {
         state.failed++
       }
     }
-    const total = state.succeeded + state.failed
     if (state.succeeded > 0) {
-      window.$message.success(`上传完成：成功 ${state.succeeded} 个${state.failed > 0 ? `，失败 ${state.failed} 个` : ''}`)
+      window.$message.success(
+        `上传完成：成功 ${state.succeeded} 个${state.failed > 0 ? `，失败 ${state.failed} 个` : ''}`,
+      )
       emit('saved')
       if (state.failed === 0) {
         state.showModal = false
@@ -177,11 +180,13 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton :disabled="state.submitLoading" @click="closeModal">
-          取消
-        </NButton>
+        <NButton :disabled="state.submitLoading" @click="closeModal"> 取消 </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ state.submitLoading ? `上传中 ${state.succeeded + state.failed}/${state.uploadFileList.length}` : '确认上传' }}
+          {{
+            state.submitLoading
+              ? `上传中 ${state.succeeded + state.failed}/${state.uploadFileList.length}`
+              : '确认上传'
+          }}
         </NButton>
       </NSpace>
     </template>

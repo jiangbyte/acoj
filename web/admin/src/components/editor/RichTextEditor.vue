@@ -56,19 +56,15 @@ const resolvedEditorConfig = computed<RichTextEditorConfig>(() => {
   const menuConf = {
     ...((props.editorConfig.MENU_CONF ?? {}) as Record<string, unknown>),
     uploadImage: {
-      ...(((props.editorConfig.MENU_CONF as Record<string, unknown> | undefined)?.uploadImage ?? {}) as Record<
-        string,
-        unknown
-      >),
+      ...(((props.editorConfig.MENU_CONF as Record<string, unknown> | undefined)?.uploadImage ??
+        {}) as Record<string, unknown>),
       customUpload: async (file: File, insertFn: InsertFileFn) => {
         await uploadAndInsert(file, insertFn)
       },
     },
     uploadVideo: {
-      ...(((props.editorConfig.MENU_CONF as Record<string, unknown> | undefined)?.uploadVideo ?? {}) as Record<
-        string,
-        unknown
-      >),
+      ...(((props.editorConfig.MENU_CONF as Record<string, unknown> | undefined)?.uploadVideo ??
+        {}) as Record<string, unknown>),
       customUpload: async (file: File, insertFn: InsertFileFn) => {
         await uploadAndInsert(file, insertFn)
       },
@@ -142,7 +138,7 @@ onBeforeUnmount(() => {
       :default-config="resolvedEditorConfig"
       :mode="mode"
       :style="editorStyle"
-      @onCreated="handleCreated"
+      @on-created="handleCreated"
       @update:model-value="updateValue"
     />
   </div>

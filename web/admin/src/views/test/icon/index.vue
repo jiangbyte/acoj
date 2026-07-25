@@ -53,9 +53,7 @@ function clearIcon() {
                   </template>
                   {{ item.split(':')[1] }}
                 </NButton>
-                <NButton size="small" tertiary @click="clearIcon">
-                  清空
-                </NButton>
+                <NButton size="small" tertiary @click="clearIcon"> 清空 </NButton>
               </NSpace>
             </NFormItem>
           </NForm>
@@ -69,9 +67,9 @@ function clearIcon() {
               <NovaIcon v-if="icon" :icon="icon" :size="40" />
             </div>
             <div class="icon-preview__meta">
-              <NText depth="3">完整值</NText>
+              <NText depth="3"> 完整值 </NText>
               <NCode :code="icon || '-'" />
-              <NText depth="3">图标名</NText>
+              <NText depth="3"> 图标名 </NText>
               <NCode :code="currentName || '-'" />
             </div>
           </div>

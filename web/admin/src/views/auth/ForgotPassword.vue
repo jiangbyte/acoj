@@ -142,14 +142,23 @@ async function resetPassword() {
 </script>
 
 <template>
-  <AuthLayout :title="isResetMode ? '重置管理端密码' : '找回管理端密码'" :subtitle="isResetMode ? '使用邮件重置链接设置新密码。' : '向已启用的管理端登录邮箱发送密码重置链接。'">
+  <AuthLayout
+    :title="isResetMode ? '重置管理端密码' : '找回管理端密码'"
+    :subtitle="
+      isResetMode ? '使用邮件重置链接设置新密码。' : '向已启用的管理端登录邮箱发送密码重置链接。'
+    "
+  >
     <n-alert class="auth-alert" type="info" :bordered="false">
-      {{ isResetMode ? '该重置链接在过期前仅可使用一次。' : '仅当该邮箱已启用管理端登录时，系统才会发送重置链接。' }}
+      {{
+        isResetMode
+          ? '该重置链接在过期前仅可使用一次。'
+          : '仅当该邮箱已启用管理端登录时，系统才会发送重置链接。'
+      }}
     </n-alert>
 
     <n-form ref="formRef" :model="form" :rules="rules" size="large">
       <n-form-item path="email" :label="'登录邮箱'">
-        <n-input v-model:value="form.email"  clearable>
+        <n-input v-model:value="form.email" clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:mail" />
           </template>
@@ -185,10 +194,8 @@ async function resetPassword() {
       </n-button>
 
       <div class="auth-links">
-        <RouterLink to="/auth/login">返回登录</RouterLink>
-        <n-button v-if="isResetMode" text type="primary" @click="sendLink">
-          发送新链接
-        </n-button>
+        <RouterLink to="/auth/login"> 返回登录 </RouterLink>
+        <n-button v-if="isResetMode" text type="primary" @click="sendLink"> 发送新链接 </n-button>
       </div>
     </n-form>
   </AuthLayout>

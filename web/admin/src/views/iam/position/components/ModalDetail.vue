@@ -59,11 +59,7 @@ defineExpose({
             {{ displayValue(state.position.sort) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'虚拟岗位'">
-            {{
-              state.position.is_virtual
-                ? '是'
-                : '否'
-            }}
+            {{ state.position.is_virtual ? '是' : '否' }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'状态'">
             <NTag
@@ -82,15 +78,15 @@ defineExpose({
           <NDescriptionsItem :label="'创建时间'">
             {{ formatDateTime(state.position.created_at) }}
           </NDescriptionsItem>
-         <NDescriptionsItem :label="'创建人'">
+          <NDescriptionsItem :label="'创建人'">
             {{ displayValue(state.position.created_name) }}
-         </NDescriptionsItem>
-         <NDescriptionsItem :label="'更新时间'">
-           {{ formatDateTime(state.position.updated_at) }}
-         </NDescriptionsItem>
-         <NDescriptionsItem :label="'更新人'">
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'更新时间'">
+            {{ formatDateTime(state.position.updated_at) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'更新人'">
             {{ displayValue(state.position.updated_name) }}
-         </NDescriptionsItem>
+          </NDescriptionsItem>
         </NDescriptions>
       </NSpin>
     </NScrollbar>

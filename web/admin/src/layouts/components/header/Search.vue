@@ -177,7 +177,7 @@ function handleMouseEnter(index: number) {
 </script>
 
 <template>
-  <CommonWrapper @click="openModal" class="px-2">
+  <CommonWrapper class="px-2" @click="openModal">
     <NovaIcon icon="icon-park-outline:search" />
     <n-tag v-if="!appStore.isMobile" round size="small" class="font-mono cursor-pointer">
       CtrlK
@@ -233,12 +233,7 @@ function handleMouseEnter(index: number) {
         </n-el>
       </ul>
 
-      <n-empty
-        v-else
-        size="large"
-        class="h-450px flex-center"
-        :description="'暂无结果'"
-      />
+      <n-empty v-else size="large" class="h-450px flex-center" :description="'暂无结果'" />
     </n-scrollbar>
 
     <template #footer>

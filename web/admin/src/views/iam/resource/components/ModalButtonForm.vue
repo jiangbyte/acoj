@@ -33,12 +33,8 @@ const state = reactive({
 })
 
 const modalTitle = computed(() => {
-  const action = state.formModel.id
-    ? '编辑按钮'
-    : '新增按钮'
-  return state.parent?.name
-    ? `${action} - ${state.parent.name}`
-    : action
+  const action = state.formModel.id ? '编辑按钮' : '新增按钮'
+  return state.parent?.name ? `${action} - ${state.parent.name}` : action
 })
 const rules = computed<FormRules>(() => ({
   code: createRequiredRule('资源编码', 'input'),
@@ -160,9 +156,7 @@ defineExpose({
         <NFormItem :label="'权限标识'" path="permission_key">
           <NInputGroup>
             <NInput v-model:value="state.formModel.permission_key" readonly />
-            <NButton type="primary" secondary @click="openPermissionSelector">
-              选择权限
-            </NButton>
+            <NButton type="primary" secondary @click="openPermissionSelector"> 选择权限 </NButton>
           </NInputGroup>
         </NFormItem>
         <NFormItem :label="'数据范围'" path="data_scope">
@@ -204,12 +198,8 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton @click="closeModal">
-          取消
-        </NButton>
-        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          确认
-        </NButton>
+        <NButton @click="closeModal"> 取消 </NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm"> 确认 </NButton>
       </NSpace>
     </template>
   </NModal>

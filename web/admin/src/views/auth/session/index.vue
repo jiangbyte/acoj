@@ -3,7 +3,13 @@ import type { DataTableColumns, PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { sessionApi } from '@/api'
-import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import {
+  createTagColor,
+  formatDateTime,
+  hasPermission,
+  normalizeSearchValues,
+  renderButtonIcon,
+} from '@/utils'
 import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NDataTable, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
@@ -62,8 +68,8 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     field: 'select',
     fieldProps: { options: dictList('ACCOUNT_TYPE') },
   },
-   { title: '账号', path: 'account', field: 'input' },
-   { title: '客户端 IP', path: 'ip', field: 'input' },
+  { title: '账号', path: 'account', field: 'input' },
+  { title: '客户端 IP', path: 'ip', field: 'input' },
 ])
 
 const pagination = computed<PaginationProps>(() => ({
@@ -91,7 +97,10 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     path: 'account_type',
     width: 130,
     render: (row) => (
-      <NTag color={createTagColor(dictTypeColor('ACCOUNT_TYPE', row.account_type))} bordered={false}>
+      <NTag
+        color={createTagColor(dictTypeColor('ACCOUNT_TYPE', row.account_type))}
+        bordered={false}
+      >
         {dictTypeData('ACCOUNT_TYPE', row.account_type) || row.account_type}
       </NTag>
     ),
@@ -170,13 +179,12 @@ const tokenColumns = computed<DataTableColumns<any>>(() => [
     key: 'actions',
     width: 90,
     fixed: 'right',
-    render: (row) => (
+    render: (row) =>
       hasPermission('auth:session:tokenexit') ? (
         <NButton type="error" size="small" text={true} onClick={() => confirmExitToken(row.token)}>
           {renderButtonIcon('icon-park-outline:logout')}
         </NButton>
-      ) : null
-    ),
+      ) : null,
   },
 ])
 
@@ -223,7 +231,9 @@ function confirmExitAccount(row: any) {
     positiveText: '确认',
     negativeText: '取消',
     onPositiveClick: async () => {
-      await sessionApi.exit({ targets: [{ account_type: row.account_type, account_id: row.account_id }] })
+      await sessionApi.exit({
+        targets: [{ account_type: row.account_type, account_id: row.account_id }],
+      })
       window.$message.success('强制下线成功')
       await fetchAll()
     },
@@ -253,11 +263,18 @@ function confirmExitToken(token: string) {
     <NGrid cols="2 s:3 xl:6" responsive="screen" :x-gap="10" :y-gap="10">
       <NGridItem v-for="item in analysisCards" :key="item.key">
         <NCard class="session-stat" :bordered="false">
-          <div class="session-stat__icon" :style="{ color: item.color, backgroundColor: `${item.color}14` }">
+          <div
+            class="session-stat__icon"
+            :style="{ color: item.color, backgroundColor: `${item.color}14` }"
+          >
             <NovaIcon :icon="item.icon" :size="22" />
           </div>
-          <div class="session-stat__title">{{ analysisTitleMap[item.key] ?? item.key }}</div>
-          <div class="session-stat__value">{{ state.analysis[item.key] ?? 0 }}</div>
+          <div class="session-stat__title">
+            {{ analysisTitleMap[item.key] ?? item.key }}
+          </div>
+          <div class="session-stat__value">
+            {{ state.analysis[item.key] ?? 0 }}
+          </div>
         </NCard>
       </NGridItem>
     </NGrid>
@@ -269,9 +286,7 @@ function confirmExitToken(token: string) {
         :reset-button-props="{ content: '重置' }"
         :search-button-props="{ content: '搜索' }"
         :collapse-button-props="{
-          content: searchForm.collapsed.value
-            ? '展开'
-            : '收起',
+          content: searchForm.collapsed.value ? '展开' : '收起',
         }"
       />
     </ProCard>
@@ -288,7 +303,13 @@ function confirmExitToken(token: string) {
       :pagination="pagination"
     >
       <template #toolbar>
-        <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchAll">
+        <NButton
+          text
+          :title="'刷新'"
+          :aria-label="'刷新'"
+          :loading="state.loading"
+          @click="fetchAll"
+        >
           <template #icon>
             <NIcon>
               <Icon icon="icon-park-outline:reload" />
@@ -303,8 +324,8 @@ function confirmExitToken(token: string) {
       preset="card"
       draggable
       :title="'设备详情'"
-     style="width: min(960px, calc(100vw - 32px))"
-   >
+      style="width: min(960px, calc(100vw - 32px))"
+    >
       <NScrollbar class="h-[540px]">
         <NDataTable
           :row-key="(row) => row.token"
@@ -314,7 +335,7 @@ function confirmExitToken(token: string) {
           :pagination="false"
         />
       </NScrollbar>
-   </NModal>
+    </NModal>
   </NFlex>
 </template>
 

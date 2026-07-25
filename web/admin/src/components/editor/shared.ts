@@ -2,7 +2,7 @@ import { fileApi } from '@/api'
 import { normalizeUploadedFile } from '@/utils'
 import type { NormalizedUploadedFile } from '@/utils'
 
-export interface EditorUploadedFile extends NormalizedUploadedFile {}
+export type EditorUploadedFile = NormalizedUploadedFile
 
 export async function uploadEditorFile(file: File): Promise<EditorUploadedFile> {
   const response = await fileApi.upload(file)

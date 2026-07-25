@@ -3,8 +3,14 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { resourceApi, resourceModuleApi } from '@/api'
 import NovaIcon from '@/components/common/NovaIcon.vue'
-import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
-import { NButton, NDropdown, NFlex, NIcon, NTag } from 'naive-ui'
+import {
+  createTagColor,
+  formatDateTime,
+  hasPermission,
+  normalizeSearchValues,
+  renderButtonIcon,
+} from '@/utils'
+import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
@@ -199,8 +205,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     title: '可见',
     path: 'is_visible',
     width: 90,
-    render: (row) =>
-      row.is_visible ? '是' : '否',
+    render: (row) => (row.is_visible ? '是' : '否'),
   },
   {
     title: '状态',
@@ -227,7 +232,6 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     width: 150,
     fixed: 'right',
     render: (row) => {
-      const moreOptions = resourceMoreOptions(row)
       return (
         <NFlex size={12}>
           {hasPermission('iam:resource:detail') ? (
@@ -240,13 +244,27 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
               {renderButtonIcon('icon-park-outline:edit')}
             </NButton>
           ) : null}
-          {row.resource_type !== 'BUTTON' && row.resource_type !== 'ACTION' && hasPermission('iam:resource:create') ? (
-            <NButton type="warning" size="small" text={true} onClick={() => openCreateModal(row.id)}>
+          {row.resource_type !== 'BUTTON' &&
+          row.resource_type !== 'ACTION' &&
+          hasPermission('iam:resource:create') ? (
+            <NButton
+              type="warning"
+              size="small"
+              text={true}
+              onClick={() => openCreateModal(row.id)}
+            >
               {renderButtonIcon('icon-park-outline:plus')}
             </NButton>
           ) : null}
-          {row.resource_type !== 'BUTTON' && row.resource_type !== 'ACTION' && hasPermission('iam:resource:list') ? (
-            <NButton type="warning" size="small" text={true} onClick={() => openButtonPermissionModal(row)}>
+          {row.resource_type !== 'BUTTON' &&
+          row.resource_type !== 'ACTION' &&
+          hasPermission('iam:resource:list') ? (
+            <NButton
+              type="warning"
+              size="small"
+              text={true}
+              onClick={() => openButtonPermissionModal(row)}
+            >
               {renderButtonIcon('icon-park-outline:config')}
             </NButton>
           ) : null}
@@ -323,31 +341,6 @@ function openButtonPermissionModal(row: any) {
   buttonPermissionModalRef.value?.openModal(row)
 }
 
-function resourceMoreOptions(row: any) {
-  const options = []
-  if (hasPermission('iam:resource:create')) {
-    options.push({
-      label: '新增子资源',
-      key: 'add-child',
-    })
-  }
-  if (hasPermission('iam:resource:list')) {
-    options.push({
-      label: '按钮权限',
-      key: 'button-permissions',
-    })
-  }
-  return row.resource_type === 'BUTTON' || row.resource_type === 'ACTION' ? [] : options
-}
-
-function handleMoreAction(key: string, row: any) {
-  if (key === 'add-child') {
-    openCreateModal(row.id)
-  } else if (key === 'button-permissions') {
-    openButtonPermissionModal(row)
-  }
-}
-
 function handleCheckedRowKeys(keys: Array<string | number>) {
   state.checkedRowKeys = keys.map(String)
 }
@@ -363,9 +356,7 @@ function confirmDelete(value: string | string[]) {
     title: isBatch ? '批量删除' : '删除',
     draggable: true,
     maskClosable: false,
-    content: isBatch
-      ? `删除 ${ids.length} 个资源?`
-      : '删除该资源?',
+    content: isBatch ? `删除 ${ids.length} 个资源?` : '删除该资源?',
     positiveText: '确认',
     negativeText: '取消',
     onPositiveClick: () => deleteData(ids),
@@ -443,9 +434,7 @@ function flattenResourceTree(items: any[]) {
         :reset-button-props="{ content: '重置' }"
         :search-button-props="{ content: '搜索' }"
         :collapse-button-props="{
-          content: searchForm.collapsed.value
-            ? '展开'
-            : '收起',
+          content: searchForm.collapsed.value ? '展开' : '收起',
         }"
       />
     </ProCard>
@@ -482,14 +471,27 @@ function flattenResourceTree(items: any[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('iam:resource:create')" type="primary" text :title="'新增'" :aria-label="'新增'" @click="openCreateModal()">
+          <NButton
+            v-if="hasPermission('iam:resource:create')"
+            type="primary"
+            text
+            :title="'新增'"
+            :aria-label="'新增'"
+            @click="openCreateModal()"
+          >
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchTree">
+          <NButton
+            text
+            :title="'刷新'"
+            :aria-label="'刷新'"
+            :loading="state.loading"
+            @click="fetchTree"
+          >
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />

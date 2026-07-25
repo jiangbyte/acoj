@@ -33,6 +33,7 @@ const props = withDefaults(
     preview: 'file',
     compact: false,
     valueType: 'auto',
+    file: null,
   },
 )
 
@@ -56,7 +57,9 @@ const state = reactive({
 })
 
 const currentUrl = computed(() => state.fileUrl || resolveFileUrl(props.value))
-const currentName = computed(() => state.fileName || props.file?.name || props.value || '未选择文件')
+const currentName = computed(
+  () => state.fileName || props.file?.name || props.value || '未选择文件',
+)
 const uploadText = computed(() => props.buttonText || '上传')
 const actionIcon = computed(() => props.icon || 'icon-park-outline:upload')
 
@@ -123,9 +126,7 @@ function setSelectedFile(file: File | null, shouldEmit: boolean, fileInfo?: Uplo
   state.fileName = file?.name || ''
   state.fileSize = file?.size ?? null
   state.contentType = file?.type || null
-  state.uploadFileList = file
-    ? [fileInfo ?? createUploadFileInfo(file)]
-    : []
+  state.uploadFileList = file ? [fileInfo ?? createUploadFileInfo(file)] : []
   if (shouldEmit) {
     emit('update:file', file)
     if (file) {
@@ -190,9 +191,18 @@ defineExpose({
 
 <template>
   <div class="file-upload" :class="{ 'file-upload--compact': compact && mode !== 'upload' }">
-    <input ref="inputRef" class="file-upload__input" type="file" :accept="accept" @change="handleFileChange" />
+    <input
+      ref="inputRef"
+      class="file-upload__input"
+      type="file"
+      :accept="accept"
+      @change="handleFileChange"
+    />
 
-    <div v-if="mode !== 'upload' && !compact && preview === 'image' && currentUrl" class="file-upload__image">
+    <div
+      v-if="mode !== 'upload' && !compact && preview === 'image' && currentUrl"
+      class="file-upload__image"
+    >
       <NImage :src="currentUrl" object-fit="cover" :alt="currentName" width="160" height="90" />
     </div>
     <video
@@ -204,7 +214,10 @@ defineExpose({
     <NEllipsis v-else-if="mode !== 'upload' && !compact" class="file-upload__name">
       {{ currentName }}
     </NEllipsis>
-    <div v-if="mode !== 'upload' && !compact && (state.fileSize !== null || state.contentType)" class="file-upload__meta">
+    <div
+      v-if="mode !== 'upload' && !compact && (state.fileSize !== null || state.contentType)"
+      class="file-upload__meta"
+    >
       <span v-if="state.fileSize !== null">{{ formatFileSize(state.fileSize) }}</span>
       <span v-if="state.contentType">{{ state.contentType }}</span>
     </div>
@@ -262,9 +275,7 @@ defineExpose({
         </template>
         {{ uploadText }}
       </NButton>
-      <NButton v-if="value" size="small" text type="error" @click="clearValue">
-        清除
-      </NButton>
+      <NButton v-if="value" size="small" text type="error" @click="clearValue"> 清除 </NButton>
     </div>
   </div>
 </template>

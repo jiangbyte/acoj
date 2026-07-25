@@ -227,14 +227,14 @@ async function deleteRows(ids: string[]) {
             text
             @click="openCreateModal"
           >
-            <template #icon
-              ><NIcon><Icon icon="icon-park-outline:plus" /></NIcon
-            ></template>
+            <template #icon>
+              <NIcon><Icon icon="icon-park-outline:plus" /></NIcon>
+            </template>
           </NButton>
           <NButton text :loading="state.loading" @click="fetchPage">
-            <template #icon
-              ><NIcon><Icon icon="icon-park-outline:refresh" /></NIcon
-            ></template>
+            <template #icon>
+              <NIcon><Icon icon="icon-park-outline:refresh" /></NIcon>
+            </template>
           </NButton>
           <NButton
             v-if="hasPermission('biz:cgtestactivity:delete')"
@@ -243,9 +243,9 @@ async function deleteRows(ids: string[]) {
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >
-            <template #icon
-              ><NIcon><Icon icon="icon-park-outline:delete" /></NIcon
-            ></template>
+            <template #icon>
+              <NIcon><Icon icon="icon-park-outline:delete" /></NIcon>
+            </template>
           </NButton>
         </NFlex>
       </template>

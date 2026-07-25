@@ -126,7 +126,11 @@ function resetDiff() {
               </div>
               <NGrid cols="1 l:2" responsive="screen" :x-gap="16" :y-gap="16">
                 <NGridItem>
-                  <MdEditor v-model:value="state.markdown" height="520px" @uploaded="appendUploadLog" />
+                  <MdEditor
+                    v-model:value="state.markdown"
+                    height="520px"
+                    @uploaded="appendUploadLog"
+                  />
                 </NGridItem>
                 <NGridItem>
                   <div class="preview-panel">
@@ -147,7 +151,11 @@ function resetDiff() {
               </div>
               <NGrid cols="1 l:2" responsive="screen" :x-gap="16" :y-gap="16">
                 <NGridItem>
-                  <RichTextEditor v-model:value="state.richText" height="460px" @uploaded="appendUploadLog" />
+                  <RichTextEditor
+                    v-model:value="state.richText"
+                    height="460px"
+                    @uploaded="appendUploadLog"
+                  />
                 </NGridItem>
                 <NGridItem>
                   <div class="preview-panel">

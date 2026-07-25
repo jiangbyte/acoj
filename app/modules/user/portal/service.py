@@ -66,8 +66,6 @@ class PortalUserProfileService:
             nickname=profile.nickname if profile else None,
             avatar=resolve_file_url(profile.avatar if profile else None),
             signature=profile.signature if profile else None,
-            bio=profile.bio if profile else None,
-            level=profile.level if profile else None,
         )
 
     async def update_current_profile(
@@ -86,8 +84,6 @@ class PortalUserProfileService:
                     signature=payload.signature,
                     phone=profile.phone if profile else None,
                     email=profile.email if profile else None,
-                    bio=payload.bio,
-                    level=profile.level if profile else None,
                 )
             )
 
@@ -160,8 +156,6 @@ class PortalUserProfileService:
                     signature=profile.signature if profile else None,
                     phone=payload.phone,
                     email=profile.email if profile else None,
-                    bio=profile.bio if profile else None,
-                    level=profile.level if profile else None,
                 )
             )
 
@@ -191,8 +185,6 @@ class PortalUserProfileService:
                     signature=profile.signature if profile else None,
                     phone=profile.phone if profile else None,
                     email=payload.email,
-                    bio=profile.bio if profile else None,
-                    level=profile.level if profile else None,
                 )
             )
 

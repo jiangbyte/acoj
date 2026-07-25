@@ -56,7 +56,9 @@ const filteredIcons = computed(() => {
     return name.includes(keyword) || fullName.includes(keyword)
   })
 })
-const pageCount = computed(() => Math.max(1, Math.ceil(filteredIcons.value.length / normalizedPageSize.value)))
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil(filteredIcons.value.length / normalizedPageSize.value)),
+)
 const pagedIcons = computed(() => {
   const currentPage = Math.min(page.value, pageCount.value)
   const start = (currentPage - 1) * normalizedPageSize.value
@@ -180,14 +182,11 @@ onBeforeUnmount(() => {
   >
     <div class="icon-select-panel">
       <div class="icon-select-panel__header">
-        <NInput
-          v-model:value="searchKey"
-          size="small"
-          placeholder="搜索图标名称"
-          clearable
-        />
+        <NInput v-model:value="searchKey" size="small" placeholder="搜索图标名称" clearable />
         <div class="icon-select-panel__meta">
-          <NText depth="3">{{ resultText }}</NText>
+          <NText depth="3">
+            {{ resultText }}
+          </NText>
           <NPagination
             v-if="pageCount > 1"
             :page="page"

@@ -10,9 +10,7 @@ const state = reactive({
   account: {} as any,
 })
 
-const avatarAlt = computed(
-  () => state.account?.nickname || '账号 avatar',
-)
+const avatarAlt = computed(() => state.account?.nickname || '账号 avatar')
 const avatarUrl = computed(() => resolveFileUrl(state.account?.avatar))
 const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 
@@ -126,11 +124,7 @@ defineExpose({
                 {{ state.account.email_login_enabled ? '是' : '否' }}
               </NDescriptionsItem>
               <NDescriptionsItem :label="'邮箱已验证'">
-                {{
-                  state.account.email_identity_verified
-                    ? '是'
-                    : '否'
-                }}
+                {{ state.account.email_identity_verified ? '是' : '否' }}
               </NDescriptionsItem>
               <NDescriptionsItem :label="'邮箱绑定状态'">
                 {{
@@ -147,11 +141,7 @@ defineExpose({
                 {{ state.account.phone_login_enabled ? '是' : '否' }}
               </NDescriptionsItem>
               <NDescriptionsItem :label="'手机号已验证'">
-                {{
-                  state.account.phone_identity_verified
-                    ? '是'
-                    : '否'
-                }}
+                {{ state.account.phone_identity_verified ? '是' : '否' }}
               </NDescriptionsItem>
               <NDescriptionsItem :label="'手机号绑定状态'">
                 {{

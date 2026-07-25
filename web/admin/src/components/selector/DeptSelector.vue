@@ -1,7 +1,7 @@
 <script setup lang="tsx">
 import { deptApi } from '@/api'
 import { NTree } from 'naive-ui'
-import { computed, reactive, watch } from 'vue'
+import { reactive, watch } from 'vue'
 
 interface DeptNode {
   id: string
@@ -22,9 +22,9 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   'update:visible': [value: boolean]
-  'select': [value: { id: string; name: string }]
+  select: [value: { id: string; name: string }]
   'update:selected': [value: string[]]
-  'confirm': [value: string[]]
+  confirm: [value: string[]]
 }>()
 
 const state = reactive({
@@ -100,7 +100,13 @@ function close() {
 </script>
 
 <template>
-  <NDrawer :show="visible" placement="right" :width="440" :mask-closable="false" @update:show="(v) => emit('update:visible', v)">
+  <NDrawer
+    :show="visible"
+    placement="right"
+    :width="440"
+    :mask-closable="false"
+    @update:show="(v) => emit('update:visible', v)"
+  >
     <NDrawerContent :title="title" closable>
       <NSpin :show="state.loading">
         <NTree
@@ -116,8 +122,8 @@ function close() {
       </NSpin>
       <template v-if="mode === 'multiple'" #footer>
         <NSpace justify="end">
-          <NButton @click="close">关闭</NButton>
-          <NButton type="primary" @click="handleConfirm">确认</NButton>
+          <NButton @click="close"> 关闭 </NButton>
+          <NButton type="primary" @click="handleConfirm"> 确认 </NButton>
         </NSpace>
       </template>
     </NDrawerContent>

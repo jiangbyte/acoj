@@ -83,15 +83,15 @@ defineExpose({
           <NDescriptionsItem :label="'创建时间'">
             {{ formatDateTime(state.dept.created_at) }}
           </NDescriptionsItem>
-         <NDescriptionsItem :label="'创建人'">
+          <NDescriptionsItem :label="'创建人'">
             {{ displayValue(state.dept.created_name) }}
-         </NDescriptionsItem>
-         <NDescriptionsItem :label="'更新时间'">
-           {{ formatDateTime(state.dept.updated_at) }}
-         </NDescriptionsItem>
-         <NDescriptionsItem :label="'更新人'">
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'更新时间'">
+            {{ formatDateTime(state.dept.updated_at) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'更新人'">
             {{ displayValue(state.dept.updated_name) }}
-         </NDescriptionsItem>
+          </NDescriptionsItem>
         </NDescriptions>
       </NSpin>
     </NScrollbar>

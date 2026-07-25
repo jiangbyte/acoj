@@ -97,8 +97,8 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     type: 'selection',
     fixed: 'left',
-   },
-   {
+  },
+  {
     title: '预览',
     key: 'preview',
     width: 120,
@@ -232,13 +232,7 @@ function renderPreview(row: any) {
     return <NTag bordered={false}>{row.content_type || '-'}</NTag>
   }
   return (
-    <NImage
-      src={src}
-      alt={row.original_name || '预览'}
-      width={72}
-      height={48}
-      objectFit="cover"
-    />
+    <NImage src={src} alt={row.original_name || '预览'} width={72} height={48} objectFit="cover" />
   )
 }
 
@@ -286,9 +280,7 @@ function confirmDelete(value: string | string[]) {
     title: isBatch ? '批量删除' : '删除',
     draggable: true,
     maskClosable: false,
-    content: isBatch
-      ? `删除 ${ids.length} 个文件?`
-      : '删除该文件?',
+    content: isBatch ? `删除 ${ids.length} 个文件?` : '删除该文件?',
     positiveText: '确认',
     negativeText: '取消',
     onPositiveClick: () => deleteData(ids),
@@ -317,9 +309,7 @@ async function deleteData(ids: string[]) {
         :reset-button-props="{ content: '重置' }"
         :search-button-props="{ content: '搜索' }"
         :collapse-button-props="{
-          content: searchForm.collapsed.value
-            ? '展开'
-            : '收起',
+          content: searchForm.collapsed.value ? '展开' : '收起',
         }"
       />
     </ProCard>
@@ -352,7 +342,13 @@ async function deleteData(ids: string[]) {
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchPage">
+          <NButton
+            text
+            :title="'刷新'"
+            :aria-label="'刷新'"
+            :loading="state.loading"
+            @click="fetchPage"
+          >
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />

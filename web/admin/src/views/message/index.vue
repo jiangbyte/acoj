@@ -4,8 +4,22 @@ import { useThemeVars } from 'naive-ui'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore, useAuthStore } from '@/stores'
 import { messageApi } from '@/api'
-import { type Message, type Conversation, type Friend, type Group, type Notification, type FriendRequest, type GroupJoinRequest } from './types'
-import { MESSAGE_ACTIONS_KEY, MESSAGE_UI_STATE_KEY, MESSAGE_DATA_KEY, type MessageActions, type MessageUIState } from './provide-keys'
+import {
+  type Message,
+  type Conversation,
+  type Friend,
+  type Group,
+  type Notification,
+  type FriendRequest,
+  type GroupJoinRequest,
+} from './types'
+import {
+  MESSAGE_ACTIONS_KEY,
+  MESSAGE_UI_STATE_KEY,
+  MESSAGE_DATA_KEY,
+  type MessageActions,
+  type MessageUIState,
+} from './provide-keys'
 import { useWebSocket } from './use-websocket'
 
 import Sidebar from './components/Sidebar.vue'
@@ -64,33 +78,56 @@ const contactActionHint = ref('')
 const isMobile = computed(() => appStore.isMobile)
 const hasSearchKeyword = computed(() => searchText.value.trim().length > 0)
 
-const selectedConversation = computed(() =>
-  data.conversations.find((c) => c.id === selectedConversationId.value) ?? null,
+const selectedConversation = computed(
+  () => data.conversations.find((c) => c.id === selectedConversationId.value) ?? null,
 )
 
-const selectedNotice = computed(() =>
-  data.notices.find((n) => n.id === selectedNoticeId.value) ?? null,
+const selectedNotice = computed(
+  () => data.notices.find((n) => n.id === selectedNoticeId.value) ?? null,
 )
 
-const selectedPendingRequest = computed(() =>
-  [...data.friendRequests, ...data.groupJoinRequests, ...data.pendingGroupJoinRequests]
-    .find((r) => r.id === selectedPendingRequestId.value) ?? null,
+const selectedPendingRequest = computed(
+  () =>
+    [...data.friendRequests, ...data.groupJoinRequests, ...data.pendingGroupJoinRequests].find(
+      (r) => r.id === selectedPendingRequestId.value,
+    ) ?? null,
 )
 
-const showPendingDetail = computed(() =>
-  (activeSection.value === 'notice' && selectedNoticeId.value !== null) ||
-  selectedPendingRequestId.value !== null,
+const showPendingDetail = computed(
+  () =>
+    (activeSection.value === 'notice' && selectedNoticeId.value !== null) ||
+    selectedPendingRequestId.value !== null,
 )
 
-const showListPane = computed(() => activeSection.value !== 'profile' && (!isMobile.value || mobileView.value === 'list'))
-const showChatPane = computed(() => activeSection.value === 'chat' && (!isMobile.value || mobileView.value === 'chat') && selectedConversation.value)
-const showNoticeDetailPane = computed(() => showPendingDetail.value && activeSection.value === 'notice')
-const showContactDetailPane = computed(() => activeSection.value === 'contacts' && (!isMobile.value || mobileView.value === 'detail') && selectedContact.value)
+const showListPane = computed(
+  () => activeSection.value !== 'profile' && (!isMobile.value || mobileView.value === 'list'),
+)
+const showChatPane = computed(
+  () =>
+    activeSection.value === 'chat' &&
+    (!isMobile.value || mobileView.value === 'chat') &&
+    selectedConversation.value,
+)
+const showNoticeDetailPane = computed(
+  () => showPendingDetail.value && activeSection.value === 'notice',
+)
+const showContactDetailPane = computed(
+  () =>
+    activeSection.value === 'contacts' &&
+    (!isMobile.value || mobileView.value === 'detail') &&
+    selectedContact.value,
+)
 const showProfilePane = computed(() => isMobile.value && activeSection.value === 'profile')
 
 const selectedFriendContact = computed(() => {
   if (selectedContact.value?.kind !== 'friend') return null
-  return data.friends.find((f) => f.friendship_id === selectedContact.value?.id || f.friend_account_id === selectedContact.value?.id) ?? null
+  return (
+    data.friends.find(
+      (f) =>
+        f.friendship_id === selectedContact.value?.id ||
+        f.friend_account_id === selectedContact.value?.id,
+    ) ?? null
+  )
 })
 const selectedGroupContact = computed(() => {
   if (selectedContact.value?.kind !== 'group') return null
@@ -119,9 +156,10 @@ function applyFromRoute() {
   const q = route.query
   activeSection.value = (q.section as string) || 'chat'
   selectedConversationId.value = (q.conversation as string) || ''
-  selectedContact.value = q.contactKind && q.contactId
-    ? { kind: q.contactKind as string, id: q.contactId as string }
-    : null
+  selectedContact.value =
+    q.contactKind && q.contactId
+      ? { kind: q.contactKind as string, id: q.contactId as string }
+      : null
   selectedNoticeId.value = (q.notice as string) || null
   selectedPendingRequestId.value = (q.pending as string) || null
   contactTab.value = (q.ctab as string) || 'friends'
@@ -138,14 +176,25 @@ function applyFromRoute() {
 }
 
 watch(
-  [activeSection, selectedConversationId, selectedContact, selectedNoticeId, selectedPendingRequestId, mobileView, contactTab, noticeTab],
+  [
+    activeSection,
+    selectedConversationId,
+    selectedContact,
+    selectedNoticeId,
+    selectedPendingRequestId,
+    mobileView,
+    contactTab,
+    noticeTab,
+  ],
   syncStateToUrl,
   { flush: 'post' },
 )
 
 watch(
   () => route.query,
-  () => { applyFromRoute() },
+  () => {
+    applyFromRoute()
+  },
 )
 
 /* ---- WebSocket ---- */
@@ -231,36 +280,63 @@ const ws = useWebSocket({
       req.status = result.status
     } else {
       // 可能还没加载到本地，重新加载
-      messageApi.myJoinRequests().then((res: any) => {
-        if (res?.data) data.groupJoinRequests = res.data
-      }).catch(() => {})
+      messageApi
+        .myJoinRequests()
+        .then((res: any) => {
+          if (res?.data) data.groupJoinRequests = res.data
+        })
+        .catch(() => {})
     }
   },
 })
 
 /* ---- Actions ---- */
 
-function goHome() { router.push(homePath) }
-function openProfileModal() { showProfileModal.value = true }
-function goProfileCenter() { showProfileModal.value = false; router.push('/usercenter') }
-function handleLogout() { authStore.logout() }
+function goHome() {
+  router.push(homePath)
+}
+function openProfileModal() {
+  showProfileModal.value = true
+}
+function goProfileCenter() {
+  showProfileModal.value = false
+  router.push('/usercenter')
+}
+function handleLogout() {
+  authStore.logout()
+}
 
-function openChatSection() { activeSection.value = 'chat'; selectedConversationId.value = ''; if (isMobile.value) mobileView.value = 'list' }
-function openContactsSection() { activeSection.value = 'contacts'; if (isMobile.value) mobileView.value = 'list' }
-function openNoticeSection() { activeSection.value = 'notice'; if (isMobile.value) mobileView.value = 'list' }
-function openProfileSection() { activeSection.value = 'profile'; if (isMobile.value) mobileView.value = 'list' }
+function openChatSection() {
+  activeSection.value = 'chat'
+  selectedConversationId.value = ''
+  if (isMobile.value) mobileView.value = 'list'
+}
+function openContactsSection() {
+  activeSection.value = 'contacts'
+  if (isMobile.value) mobileView.value = 'list'
+}
+function openNoticeSection() {
+  activeSection.value = 'notice'
+  if (isMobile.value) mobileView.value = 'list'
+}
+function openProfileSection() {
+  activeSection.value = 'profile'
+  if (isMobile.value) mobileView.value = 'list'
+}
 
 function openFriend(friend: Friend) {
   contactActionHint.value = ''
   selectedContact.value = { kind: 'friend', id: friend.friendship_id }
-  selectedNoticeId.value = null; selectedPendingRequestId.value = null
+  selectedNoticeId.value = null
+  selectedPendingRequestId.value = null
   activeSection.value = 'contacts'
   if (isMobile.value) mobileView.value = 'detail'
 }
 function openGroup(group: Group) {
   contactActionHint.value = ''
   selectedContact.value = { kind: 'group', id: group.id }
-  selectedNoticeId.value = null; selectedPendingRequestId.value = null
+  selectedNoticeId.value = null
+  selectedPendingRequestId.value = null
   activeSection.value = 'contacts'
   if (isMobile.value) mobileView.value = 'detail'
 }
@@ -269,30 +345,35 @@ function openConversation(conversationId: string) {
   const conv = data.conversations.find((c) => c.id === conversationId)
   if (!conv) {
     // 会话不在本地列表中 — 从服务端重新加载
-    messageApi.conversationList().then((res) => {
-      const list = res?.data?.records
-      if (list) {
-        data.conversations = list
-        const found = list.find((c: any) => c.id === conversationId)
-        if (found) {
-          selectedConversationId.value = conversationId
-          selectedContact.value = null
-          selectedNoticeId.value = null; selectedPendingRequestId.value = null
-          activeSection.value = 'chat'
-          if (isMobile.value) mobileView.value = 'chat'
-          found.unread_count = 0
+    messageApi
+      .conversationList()
+      .then((res) => {
+        const list = res?.data?.records
+        if (list) {
+          data.conversations = list
+          const found = list.find((c: any) => c.id === conversationId)
+          if (found) {
+            selectedConversationId.value = conversationId
+            selectedContact.value = null
+            selectedNoticeId.value = null
+            selectedPendingRequestId.value = null
+            activeSection.value = 'chat'
+            if (isMobile.value) mobileView.value = 'chat'
+            found.unread_count = 0
+          }
         }
-      }
-    }).catch(() => {
-      window.$message?.error?.('加载会话失败')
-    })
+      })
+      .catch(() => {
+        window.$message?.error?.('加载会话失败')
+      })
     // 即使是新会话也尝试标记已读
     messageApi.markConversationRead({ id: conversationId }).catch(() => {})
     return
   }
   selectedConversationId.value = conversationId
   selectedContact.value = null
-  selectedNoticeId.value = null; selectedPendingRequestId.value = null
+  selectedNoticeId.value = null
+  selectedPendingRequestId.value = null
   activeSection.value = 'chat'
   if (isMobile.value) mobileView.value = 'chat'
   conv.unread_count = 0
@@ -309,8 +390,13 @@ function closeCurrentConversation() {
   if (isMobile.value) mobileView.value = 'list'
 }
 
-function backToListPane() { if (isMobile.value) mobileView.value = 'list' }
-function openAddModal(mode?: 'friend' | 'group') { addModalMode.value = mode || 'friend'; showAddModal.value = true }
+function backToListPane() {
+  if (isMobile.value) mobileView.value = 'list'
+}
+function openAddModal(mode?: 'friend' | 'group') {
+  addModalMode.value = mode || 'friend'
+  showAddModal.value = true
+}
 
 function openNoticeDetail(notice: Notification) {
   messageApi.readNotification({ ids: [notice.id] }).catch(() => {})
@@ -326,15 +412,10 @@ function openPendingDetail(request: FriendRequest | GroupJoinRequest) {
   if (isMobile.value) mobileView.value = 'detail'
 }
 function closePendingDetail() {
-  selectedNoticeId.value = null; selectedPendingRequestId.value = null
+  selectedNoticeId.value = null
+  selectedPendingRequestId.value = null
   if (isMobile.value) mobileView.value = 'list'
 }
-
-/* ---- Computed for request handling ---- */
-
-const selectedRequestIsFriendRequest = computed(() =>
-  selectedPendingRequest.value && !('group_id' in selectedPendingRequest.value)
-)
 
 const canHandleSelectedRequest = computed(() => {
   const req = selectedPendingRequest.value
@@ -345,8 +426,8 @@ const canHandleSelectedRequest = computed(() => {
   }
   // 好友申请：只有接收人才能处理
   return (
-    req.recipient_type === data.profile?.account_type
-    && req.recipient_id === data.profile?.account_id
+    req.recipient_type === data.profile?.account_type &&
+    req.recipient_id === data.profile?.account_id
   )
 })
 
@@ -399,11 +480,18 @@ async function continueChatFromContact() {
   if (selectedFriendContact.value) {
     const friend = selectedFriendContact.value
     let friendConv = data.conversations.find(
-      (c) => c.conversation_type === 'DIRECT' && c.members?.some(
-        (m) => m.account_id === friend.friend_account_id && m.account_type === friend.friend_account_type
-      )
+      (c) =>
+        c.conversation_type === 'DIRECT' &&
+        c.members?.some(
+          (m) =>
+            m.account_id === friend.friend_account_id &&
+            m.account_type === friend.friend_account_type,
+        ),
     )
-    if (friendConv) { openConversation(friendConv.id); return }
+    if (friendConv) {
+      openConversation(friendConv.id)
+      return
+    }
 
     // Create direct conversation on demand
     try {
@@ -421,11 +509,18 @@ async function continueChatFromContact() {
       if (convRes?.data?.records) {
         data.conversations = convRes.data.records
         friendConv = data.conversations.find(
-          (c) => c.conversation_type === 'DIRECT' && c.members?.some(
-            (m) => m.account_id === friend.friend_account_id && m.account_type === friend.friend_account_type
-          )
+          (c) =>
+            c.conversation_type === 'DIRECT' &&
+            c.members?.some(
+              (m) =>
+                m.account_id === friend.friend_account_id &&
+                m.account_type === friend.friend_account_type,
+            ),
         )
-        if (friendConv) { openConversation(friendConv.id); return }
+        if (friendConv) {
+          openConversation(friendConv.id)
+          return
+        }
       }
       window.$message?.error?.('创建会话失败')
     } catch {
@@ -435,10 +530,11 @@ async function continueChatFromContact() {
   }
   if (selectedGroupContact.value) {
     const group = selectedGroupContact.value
-    let groupConv = data.conversations.find(
-      (c) => c.group_id === group.id
-    )
-    if (groupConv) { openConversation(groupConv.id); return }
+    let groupConv = data.conversations.find((c) => c.group_id === group.id)
+    if (groupConv) {
+      openConversation(groupConv.id)
+      return
+    }
 
     // Reload conversations and try again
     try {
@@ -446,7 +542,10 @@ async function continueChatFromContact() {
       if (convRes?.data?.records) {
         data.conversations = convRes.data.records
         groupConv = data.conversations.find((c) => c.group_id === group.id)
-        if (groupConv) { openConversation(groupConv.id); return }
+        if (groupConv) {
+          openConversation(groupConv.id)
+          return
+        }
       }
       window.$message?.error?.('未找到群聊会话')
     } catch {
@@ -486,17 +585,39 @@ async function handleLeaveGroup() {
 }
 
 const messageActions: MessageActions = {
-  goHome, openProfileModal, goProfileCenter, handleLogout,
-  openConversation, closeCurrentConversation,
-  openChatSection, openContactsSection, openNoticeSection, openProfileSection,
-  backToListPane, openFriend, openGroup,
-  openNoticeDetail, openPendingDetail, closePendingDetail,
-  openAddModal, acceptPendingRequest, rejectPendingRequest,
-  continueChatFromContact, handleRemoveFriend, handleLeaveGroup,
+  goHome,
+  openProfileModal,
+  goProfileCenter,
+  handleLogout,
+  openConversation,
+  closeCurrentConversation,
+  openChatSection,
+  openContactsSection,
+  openNoticeSection,
+  openProfileSection,
+  backToListPane,
+  openFriend,
+  openGroup,
+  openNoticeDetail,
+  openPendingDetail,
+  closePendingDetail,
+  openAddModal,
+  acceptPendingRequest,
+  rejectPendingRequest,
+  continueChatFromContact,
+  handleRemoveFriend,
+  handleLeaveGroup,
 }
 const messageUIState: MessageUIState = {
-  activeSection, isMobile, mobileView, showProfileModal, searchText,
-  hasSearchKeyword, searchScope, contactTab, noticeTab,
+  activeSection,
+  isMobile,
+  mobileView,
+  showProfileModal,
+  searchText,
+  hasSearchKeyword,
+  searchScope,
+  contactTab,
+  noticeTab,
 }
 
 provide(MESSAGE_ACTIONS_KEY, messageActions)
@@ -506,8 +627,14 @@ provide(MESSAGE_DATA_KEY, data)
 onMounted(async () => {
   try {
     const [
-      meRes, convRes, friendRes, groupRes,
-      noticeRes, reqRes, joinReqRes, pendingGroupJoinRes,
+      meRes,
+      convRes,
+      friendRes,
+      groupRes,
+      noticeRes,
+      reqRes,
+      joinReqRes,
+      pendingGroupJoinRes,
     ] = await Promise.all([
       import('@/api/auth').then((m) => m.me()).catch(() => null),
       messageApi.conversationList().catch(() => null),
@@ -579,7 +706,13 @@ const pageStyle = computed(() => ({
 
       <ListPane v-show="showListPane" />
 
-      <ChatPane v-if="showChatPane" :conversation="selectedConversation!" :draft="conversationDrafts[selectedConversationId] || { text: '', attachments: [] }" @update:draft="saveDraft($event)" @close="closeCurrentConversation" />
+      <ChatPane
+        v-if="showChatPane"
+        :conversation="selectedConversation!"
+        :draft="conversationDrafts[selectedConversationId] || { text: '', attachments: [] }"
+        @update:draft="saveDraft($event)"
+        @close="closeCurrentConversation"
+      />
 
       <NoticeDetail
         v-show="showNoticeDetailPane"

@@ -17,5 +17,3 @@ class PortalUserProfile(Base, TimestampMixin):
     signature: Mapped[str | None] = mapped_column(Text, comment="个性签名")
     phone: Mapped[str | None] = mapped_column(String(32), comment="手机号")
     email: Mapped[str | None] = mapped_column(String(128), comment="邮箱")
-    bio: Mapped[str | None] = mapped_column(String(255), comment="个人简介")
-    level: Mapped[str | None] = mapped_column(String(32), comment="门户等级")

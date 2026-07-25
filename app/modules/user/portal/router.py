@@ -75,8 +75,6 @@ async def get_me(
                 email=profile.email if profile else None,
                 phone_login_enabled=_identity_login_enabled(phone_identity),
                 email_login_enabled=_identity_login_enabled(email_identity),
-                bio=profile.bio if profile else None,
-                level=profile.level if profile else None,
                 created_at=profile.created_at if profile else None,
                 updated_at=profile.updated_at if profile else None,
             ),

@@ -21,9 +21,9 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   'update:visible': [value: boolean]
-  'select': [account: { id: string; name: string; account: string }]
+  select: [account: { id: string; name: string; account: string }]
   'update:selected': [value: any[]]
-  'confirm': [accounts: any[]]
+  confirm: [accounts: any[]]
 }>()
 
 const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
@@ -50,7 +50,11 @@ const singleColumns = computed<DataTableColumns<any>>(() => [
       if (url) {
         return <NAvatar round size={36} src={url} imgProps={avatarImgProps} />
       }
-      return <NAvatar round size={36}>{row.name?.[0] || '?'}</NAvatar>
+      return (
+        <NAvatar round size={36}>
+          {row.name?.[0] || '?'}
+        </NAvatar>
+      )
     },
   },
   {
@@ -296,12 +300,12 @@ function resetSearch() {
                   @keyup.enter="doSearch"
                   @clear="resetSearch"
                 />
-                <NButton type="primary" @click="doSearch">搜索</NButton>
-                <NButton @click="resetSearch">重置</NButton>
+                <NButton type="primary" @click="doSearch"> 搜索 </NButton>
+                <NButton @click="resetSearch"> 重置 </NButton>
               </NInputGroup>
               <NFlex justify="space-between" align="center">
                 <NText>{{ `待处理列表: ${state.total}` }}</NText>
-                <NButton dashed size="small" @click="addAllPage">新增当前页</NButton>
+                <NButton dashed size="small" @click="addAllPage"> 新增当前页 </NButton>
               </NFlex>
               <NDataTable
                 :row-key="(row) => row.id"
@@ -325,7 +329,7 @@ function resetSearch() {
             <NSpace vertical>
               <NFlex justify="space-between" align="center">
                 <NText>已选择：{{ state.selectedData.length }}</NText>
-                <NButton dashed type="error" size="small" @click="delAll">全部移除</NButton>
+                <NButton dashed type="error" size="small" @click="delAll"> 全部移除 </NButton>
               </NFlex>
               <NDataTable
                 :row-key="(row) => row.id"
@@ -342,8 +346,8 @@ function resetSearch() {
 
       <template #footer>
         <NSpace justify="end" align="center">
-          <NButton @click="close">关闭</NButton>
-          <NButton v-if="mode === 'multiple'" type="primary" @click="handleConfirm">确认</NButton>
+          <NButton @click="close"> 关闭 </NButton>
+          <NButton v-if="mode === 'multiple'" type="primary" @click="handleConfirm"> 确认 </NButton>
         </NSpace>
       </template>
     </NDrawerContent>

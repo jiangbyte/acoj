@@ -4,7 +4,14 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { NButton, NFlex, NIcon, NImage, NTag } from 'naive-ui'
 import { bannerApi } from '@/api'
-import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon, resolveFileUrl } from '@/utils'
+import {
+  createTagColor,
+  formatDateTime,
+  hasPermission,
+  normalizeSearchValues,
+  renderButtonIcon,
+  resolveFileUrl,
+} from '@/utils'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
@@ -251,15 +258,7 @@ function renderImage(row: any) {
   if (!src) {
     return <span>-</span>
   }
-  return (
-    <NImage
-      src={src}
-      alt={row.title || '图片'}
-      width={72}
-      height={48}
-      objectFit="cover"
-    />
-  )
+  return <NImage src={src} alt={row.title || '图片'} width={72} height={48} objectFit="cover" />
 }
 
 function openDetailModal(id: string) {
@@ -289,9 +288,7 @@ function confirmDelete(value: string | string[]) {
     title: isBatch ? '批量删除' : '删除',
     draggable: true,
     maskClosable: false,
-    content: isBatch
-      ? `删除 ${ids.length} 张展示图?`
-      : '删除该展示图?',
+    content: isBatch ? `删除 ${ids.length} 张展示图?` : '删除该展示图?',
     positiveText: '确认',
     negativeText: '取消',
     onPositiveClick: () => deleteData(ids),
@@ -320,9 +317,7 @@ async function deleteData(ids: string[]) {
         :reset-button-props="{ content: '重置' }"
         :search-button-props="{ content: '搜索' }"
         :collapse-button-props="{
-          content: searchForm.collapsed.value
-            ? '展开'
-            : '收起',
+          content: searchForm.collapsed.value ? '展开' : '收起',
         }"
       />
     </ProCard>
@@ -342,14 +337,27 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('sys:banner:create')" type="primary" text :title="'新增'" :aria-label="'新增'" @click="openCreateModal">
+          <NButton
+            v-if="hasPermission('sys:banner:create')"
+            type="primary"
+            text
+            :title="'新增'"
+            :aria-label="'新增'"
+            @click="openCreateModal"
+          >
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchPage">
+          <NButton
+            text
+            :title="'刷新'"
+            :aria-label="'刷新'"
+            :loading="state.loading"
+            @click="fetchPage"
+          >
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />

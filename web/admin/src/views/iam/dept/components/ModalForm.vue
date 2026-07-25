@@ -31,9 +31,7 @@ const state = reactive({
   deptTree: [] as any[],
 })
 
-const modalTitle = computed(() =>
-  state.dataId ? '编辑 部门' : '新增 部门',
-)
+const modalTitle = computed(() => (state.dataId ? '编辑 部门' : '新增 部门'))
 
 const rules = computed<FormRules>(() => ({
   name: createRequiredRule('部门名称', 'input'),
@@ -168,10 +166,7 @@ function flattenIds(nodes: any[]): string[] {
   return ids
 }
 
-function buildParentTreeOptions(
-  nodes: any[],
-  excludedIds: Set<string>,
-): any[] {
+function buildParentTreeOptions(nodes: any[], excludedIds: Set<string>): any[] {
   return nodes
     .filter((node) => !excludedIds.has(node.id))
     .map((node) => ({
@@ -208,7 +203,11 @@ defineExpose({ openModal })
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
           <NFormItem :label="'部门分类'" path="category">
-            <DictSelect v-model="state.formModel.category" dict-code="DEPT_CATEGORY" :placeholder="'请选择部门分类'" />
+            <DictSelect
+              v-model="state.formModel.category"
+              dict-code="DEPT_CATEGORY"
+              :placeholder="'请选择部门分类'"
+            />
           </NFormItem>
           <NFormItem :label="'父级部门'" path="parent_id">
             <NTreeSelect
@@ -234,7 +233,13 @@ defineExpose({ openModal })
                   <NovaIcon icon="icon-park-outline:search" :size="16" />
                 </template>
               </NButton>
-              <NButton v-if="state.formModel.master_id" @click="state.formModel.master_id = null; state.formModel.master_name = ''">
+              <NButton
+                v-if="state.formModel.master_id"
+                @click="
+                  state.formModel.master_id = null
+                  state.formModel.master_name = ''
+                "
+              >
                 <template #icon>
                   <NovaIcon icon="icon-park-outline:close" :size="16" />
                 </template>
@@ -253,7 +258,13 @@ defineExpose({ openModal })
                   <NovaIcon icon="icon-park-outline:search" :size="16" />
                 </template>
               </NButton>
-              <NButton v-if="state.formModel.deputy_master_id" @click="state.formModel.deputy_master_id = null; state.formModel.deputy_master_name = ''">
+              <NButton
+                v-if="state.formModel.deputy_master_id"
+                @click="
+                  state.formModel.deputy_master_id = null
+                  state.formModel.deputy_master_name = ''
+                "
+              >
                 <template #icon>
                   <NovaIcon icon="icon-park-outline:close" :size="16" />
                 </template>
@@ -275,8 +286,8 @@ defineExpose({ openModal })
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton @click="closeModal">取消</NButton>
-        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">确认</NButton>
+        <NButton @click="closeModal"> 取消 </NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm"> 确认 </NButton>
       </NSpace>
     </template>
   </NModal>

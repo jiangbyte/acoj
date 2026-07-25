@@ -56,7 +56,7 @@ function updateValue(value: string) {
 }
 
 const handleUploadImg: UploadImgEvent = async (files, callback) => {
-  const images: Array<{ url: string, alt: string, title: string }> = []
+  const images: Array<{ url: string; alt: string; title: string }> = []
 
   for (const file of files) {
     try {
@@ -97,7 +97,7 @@ const handleUploadImg: UploadImgEvent = async (files, callback) => {
       :code-theme="codeTheme"
       :show-code-row-number="showCodeRowNumber"
       :no-upload-img="noUploadImg"
-      @onUploadImg="handleUploadImg"
+      @on-upload-img="handleUploadImg"
       @update:model-value="updateValue"
     />
   </div>

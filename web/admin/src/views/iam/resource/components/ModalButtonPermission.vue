@@ -17,9 +17,7 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.parent?.name
-    ? `${'按钮权限'} - ${state.parent.name}`
-    : '按钮权限',
+  state.parent?.name ? `${'按钮权限'} - ${state.parent.name}` : '按钮权限',
 )
 
 const columns = computed<DataTableColumns<any>>(() => [
@@ -175,7 +173,13 @@ defineExpose({
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading" @click="fetchButtons">
+          <NButton
+            text
+            :title="'刷新'"
+            :aria-label="'刷新'"
+            :loading="state.loading"
+            @click="fetchButtons"
+          >
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -200,9 +204,7 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton @click="closeModal">
-          关闭
-        </NButton>
+        <NButton @click="closeModal"> 关闭 </NButton>
       </NSpace>
     </template>
   </NModal>

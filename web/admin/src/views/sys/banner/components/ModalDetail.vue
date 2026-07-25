@@ -78,7 +78,9 @@ defineExpose({
           </NDescriptionsItem>
           <NDescriptionsItem :label="'展示范围'">
             <NTag
-              :color="createTagColor(dictTypeColor('BANNER_DISPLAY_SCOPE', state.banner.display_scope))"
+              :color="
+                createTagColor(dictTypeColor('BANNER_DISPLAY_SCOPE', state.banner.display_scope))
+              "
               :bordered="false"
             >
               {{ dictTypeData('BANNER_DISPLAY_SCOPE', state.banner.display_scope) }}

@@ -71,34 +71,49 @@ onMounted(async () => {
   })
 })
 
-watch(() => props.original, value => {
-  setModelValue(originalModelRef.value, value ?? '')
-})
+watch(
+  () => props.original,
+  (value) => {
+    setModelValue(originalModelRef.value, value ?? '')
+  },
+)
 
-watch(() => props.modified, value => {
-  setModelValue(modifiedModelRef.value, value ?? '')
-})
+watch(
+  () => props.modified,
+  (value) => {
+    setModelValue(modifiedModelRef.value, value ?? '')
+  },
+)
 
-watch(() => props.language, language => {
-  const monacoInstance = monacoRef.value
-  if (!monacoInstance) {
-    return
-  }
-  if (originalModelRef.value) {
-    monacoInstance.editor.setModelLanguage(originalModelRef.value, language)
-  }
-  if (modifiedModelRef.value) {
-    monacoInstance.editor.setModelLanguage(modifiedModelRef.value, language)
-  }
-})
+watch(
+  () => props.language,
+  (language) => {
+    const monacoInstance = monacoRef.value
+    if (!monacoInstance) {
+      return
+    }
+    if (originalModelRef.value) {
+      monacoInstance.editor.setModelLanguage(originalModelRef.value, language)
+    }
+    if (modifiedModelRef.value) {
+      monacoInstance.editor.setModelLanguage(modifiedModelRef.value, language)
+    }
+  },
+)
 
-watch(() => props.theme, theme => {
-  monacoRef.value?.editor.setTheme(theme)
-})
+watch(
+  () => props.theme,
+  (theme) => {
+    monacoRef.value?.editor.setTheme(theme)
+  },
+)
 
-watch(() => props.options, options => {
-  diffEditorRef.value?.updateOptions(options)
-})
+watch(
+  () => props.options,
+  (options) => {
+    diffEditorRef.value?.updateOptions(options)
+  },
+)
 
 onBeforeUnmount(() => {
   disposed = true

@@ -3,7 +3,13 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { dictApi } from '@/api'
-import { createTagColor, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import {
+  createTagColor,
+  formatDateTime,
+  hasPermission,
+  normalizeSearchValues,
+  renderButtonIcon,
+} from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -88,13 +94,13 @@ const pagination = computed<PaginationProps>(() => ({
 }))
 
 const tableColumns = computed<ProDataTableColumns<any>>(() => [
-   {
-     type: 'selection',
-     fixed: 'left',
-   },
-   {
-     title: '编码',
-     path: 'code',
+  {
+    type: 'selection',
+    fixed: 'left',
+  },
+  {
+    title: '编码',
+    path: 'code',
     width: 190,
     ellipsis: {
       tooltip: true,
@@ -301,9 +307,7 @@ function confirmDelete(value: string | string[]) {
     title: isBatch ? '批量删除' : '删除',
     draggable: true,
     maskClosable: false,
-    content: isBatch
-      ? `删除 ${deleteIds.length} 个字典?`
-      : '删除该字典及其子级?',
+    content: isBatch ? `删除 ${deleteIds.length} 个字典?` : '删除该字典及其子级?',
     positiveText: '确认',
     negativeText: '取消',
     onPositiveClick: () => deleteData(deleteIds),
@@ -371,7 +375,7 @@ function sortAndFilterTree(nodes: any[], keyword: string): any[] {
         String(raw.label ?? '')
           .toLowerCase()
           .includes(keyword) ||
-                node.children.length > 0
+        node.children.length > 0
       )
     })
     .map((node) => ({
@@ -404,11 +408,7 @@ function flattenDictTree(items: any[]) {
   <div class="dict-page">
     <ProCard class="dict-tree-card" content-class="h-full min-h-0 overflow-hidden">
       <NFlex class="dict-tree-layout" vertical :size="12">
-        <NInput
-          v-model:value="state.treeSearchKey"
-          clearable
-          :placeholder="'搜索 dict'"
-        >
+        <NInput v-model:value="state.treeSearchKey" clearable :placeholder="'搜索 dict'">
           <template #prefix>
             <NIcon>
               <Icon icon="icon-park-outline:search" />
@@ -457,9 +457,7 @@ function flattenDictTree(items: any[]) {
           :reset-button-props="{ content: '重置' }"
           :search-button-props="{ content: '搜索' }"
           :collapse-button-props="{
-            content: searchForm.collapsed.value
-              ? '展开'
-              : '收起',
+            content: searchForm.collapsed.value ? '展开' : '收起',
           }"
         />
       </ProCard>
@@ -469,7 +467,7 @@ function flattenDictTree(items: any[]) {
         remote
         :title="'字典管理'"
         row-key="id"
-       :scroll-x="1510"
+        :scroll-x="1510"
         :columns="tableColumns"
         :data="state.dicts"
         :loading="state.loading"
@@ -479,14 +477,27 @@ function flattenDictTree(items: any[]) {
       >
         <template #toolbar>
           <NFlex>
-            <NButton v-if="hasPermission('sys:dict:create')" type="primary" text :title="'新增'" :aria-label="'新增'" @click="openCreateModal">
+            <NButton
+              v-if="hasPermission('sys:dict:create')"
+              type="primary"
+              text
+              :title="'新增'"
+              :aria-label="'新增'"
+              @click="openCreateModal"
+            >
               <template #icon>
                 <NIcon>
                   <Icon icon="icon-park-outline:plus" />
                 </NIcon>
               </template>
             </NButton>
-            <NButton text :title="'刷新'" :aria-label="'刷新'" :loading="state.loading || state.treeLoading" @click="refreshData">
+            <NButton
+              text
+              :title="'刷新'"
+              :aria-label="'刷新'"
+              :loading="state.loading || state.treeLoading"
+              @click="refreshData"
+            >
               <template #icon>
                 <NIcon>
                   <Icon icon="icon-park-outline:reload" />

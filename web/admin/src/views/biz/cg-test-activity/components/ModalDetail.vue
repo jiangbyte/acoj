@@ -118,18 +118,18 @@ defineExpose({
           <NDescriptionsItem label="扩展信息">
             <NCode :code="formatJsonValue(state.detail.extra)" language="json" word-wrap />
           </NDescriptionsItem>
-          <NDescriptionsItem label="创建时间">{{
-            formatDateTime(state.detail.created_at)
-          }}</NDescriptionsItem>
-          <NDescriptionsItem label="创建人">{{
-            displayValue(state.detail.created_by)
-          }}</NDescriptionsItem>
-          <NDescriptionsItem label="更新时间">{{
-            formatDateTime(state.detail.updated_at)
-          }}</NDescriptionsItem>
-          <NDescriptionsItem label="更新人">{{
-            displayValue(state.detail.updated_by)
-          }}</NDescriptionsItem>
+          <NDescriptionsItem label="创建时间">
+            {{ formatDateTime(state.detail.created_at) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem label="创建人">
+            {{ displayValue(state.detail.created_by) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem label="更新时间">
+            {{ formatDateTime(state.detail.updated_at) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem label="更新人">
+            {{ displayValue(state.detail.updated_by) }}
+          </NDescriptionsItem>
         </NDescriptions>
       </NSpin>
     </NScrollbar>

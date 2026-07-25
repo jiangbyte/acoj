@@ -39,36 +39,28 @@ const state = reactive({
   formModel: normalizeFormData(),
 })
 
-const modalTitle = computed(() => state.dataId ? '编辑CgTestOrder' : '新增CgTestOrder')
+const modalTitle = computed(() => (state.dataId ? '编辑CgTestOrder' : '新增CgTestOrder'))
 const rules = computed<FormRules>(() => ({
-  order_no: [
-    createRequiredRule('订单号', 'input'),
-  ],
-  name: [
-    createRequiredRule('订单名称', 'input'),
-  ],
-  customer_name: [
-    createRequiredRule('客户名称', 'input'),
-  ],
-  status: [
-    createRequiredRule('状态', 'change'),
-  ],
-  type: [
-    createRequiredRule('订单类型', 'input'),
-  ],
-  ordered_at: [
-    createRequiredRule('下单时间', 'change'),
-  ],
+  order_no: [createRequiredRule('订单号', 'input')],
+  name: [createRequiredRule('订单名称', 'input')],
+  customer_name: [createRequiredRule('客户名称', 'input')],
+  status: [createRequiredRule('状态', 'change')],
+  type: [createRequiredRule('订单类型', 'input')],
+  ordered_at: [createRequiredRule('下单时间', 'change')],
   total_amount: [
     {
-      validator: () => typeof state.formModel.total_amount === 'number' && Number.isFinite(state.formModel.total_amount),
+      validator: () =>
+        typeof state.formModel.total_amount === 'number' &&
+        Number.isFinite(state.formModel.total_amount),
       message: '请输入订单金额',
       trigger: ['input', 'blur'],
     },
   ],
   item_count: [
     {
-      validator: () => typeof state.formModel.item_count === 'number' && Number.isFinite(state.formModel.item_count),
+      validator: () =>
+        typeof state.formModel.item_count === 'number' &&
+        Number.isFinite(state.formModel.item_count),
       message: '请输入商品数量',
       trigger: ['input', 'blur'],
     },
@@ -226,7 +218,14 @@ defineExpose({
   >
     <NSpin :show="state.loading">
       <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
-        <NForm ref="formRef" :model="state.formModel" :rules="rules" label-placement="left" label-width="110" :disabled="state.loading || state.submitLoading">
+        <NForm
+          ref="formRef"
+          :model="state.formModel"
+          :rules="rules"
+          label-placement="left"
+          label-width="110"
+          :disabled="state.loading || state.submitLoading"
+        >
           <NFormItem label="订单号" path="order_no">
             <NInput v-model:value="state.formModel.order_no" />
           </NFormItem>
@@ -246,10 +245,22 @@ defineExpose({
             <NInput v-model:value="state.formModel.type" />
           </NFormItem>
           <NFormItem label="下单时间" path="ordered_at">
-            <NDatePicker v-model:formatted-value="state.formModel.ordered_at" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" class="w-full" clearable />
+            <NDatePicker
+              v-model:formatted-value="state.formModel.ordered_at"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
+              class="w-full"
+              clearable
+            />
           </NFormItem>
           <NFormItem label="支付时间" path="paid_at">
-            <NDatePicker v-model:formatted-value="state.formModel.paid_at" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" class="w-full" clearable />
+            <NDatePicker
+              v-model:formatted-value="state.formModel.paid_at"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
+              class="w-full"
+              clearable
+            />
           </NFormItem>
           <NFormItem label="订单金额" path="total_amount">
             <NInputNumber v-model:value="state.formModel.total_amount" class="w-full" />
@@ -261,13 +272,25 @@ defineExpose({
             <NSwitch v-model:value="state.formModel.need_invoice" />
           </NFormItem>
           <NFormItem label="发票配置" path="invoice_config">
-            <NInput v-model:value="state.formModel.invoice_config" type="textarea" :autosize="{ minRows: 4, maxRows: 12 }" />
+            <NInput
+              v-model:value="state.formModel.invoice_config"
+              type="textarea"
+              :autosize="{ minRows: 4, maxRows: 12 }"
+            />
           </NFormItem>
           <NFormItem label="备注" path="remark">
-            <NInput v-model:value="state.formModel.remark" type="textarea" :autosize="{ minRows: 3, maxRows: 8 }" />
+            <NInput
+              v-model:value="state.formModel.remark"
+              type="textarea"
+              :autosize="{ minRows: 3, maxRows: 8 }"
+            />
           </NFormItem>
           <NFormItem label="扩展信息" path="extra">
-            <NInput v-model:value="state.formModel.extra" type="textarea" :autosize="{ minRows: 4, maxRows: 12 }" />
+            <NInput
+              v-model:value="state.formModel.extra"
+              type="textarea"
+              :autosize="{ minRows: 4, maxRows: 12 }"
+            />
           </NFormItem>
         </NForm>
       </NScrollbar>
@@ -275,8 +298,8 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end">
-        <NButton @click="closeModal">取消</NButton>
-        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">确认</NButton>
+        <NButton @click="closeModal"> 取消 </NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm"> 确认 </NButton>
       </NSpace>
     </template>
   </NModal>

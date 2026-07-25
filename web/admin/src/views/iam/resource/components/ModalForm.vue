@@ -43,9 +43,7 @@ const state = reactive({
   moduleOptions: [] as any[],
 })
 
-const modalTitle = computed(() =>
-  state.dataId ? '编辑资源' : '新增资源',
-)
+const modalTitle = computed(() => (state.dataId ? '编辑资源' : '新增资源'))
 
 const rules = computed<FormRules>(() => ({
   code: createRequiredRule('资源编码', 'input'),
@@ -253,18 +251,35 @@ function findResourceNode(items: any[], id: string): any | null {
             </NGi>
             <NGi>
               <NFormItem :label="'资源类型'" path="resource_type">
-                <DictSelect v-model="state.formModel.resource_type" dict-code="RESOURCE_TYPE" :placeholder="'请选择资源类型'" />
+                <DictSelect
+                  v-model="state.formModel.resource_type"
+                  dict-code="RESOURCE_TYPE"
+                  :placeholder="'请选择资源类型'"
+                />
               </NFormItem>
             </NGi>
             <NGi>
               <NFormItem :label="'资源模块'" path="module_id">
-                <NSelect v-model:value="state.formModel.module_id" filterable clearable :options="state.moduleOptions" />
+                <NSelect
+                  v-model:value="state.formModel.module_id"
+                  filterable
+                  clearable
+                  :options="state.moduleOptions"
+                />
               </NFormItem>
             </NGi>
             <NGi>
               <NFormItem :label="'父级资源ID'" path="parent_id">
-                <NTreeSelect v-model:value="state.formModel.parent_id" clearable filterable :options="parentTreeOptions"
-                  :placeholder="'父级资源ID'" key-field="id" label-field="name" children-field="children" />
+                <NTreeSelect
+                  v-model:value="state.formModel.parent_id"
+                  clearable
+                  filterable
+                  :options="parentTreeOptions"
+                  :placeholder="'父级资源ID'"
+                  key-field="id"
+                  label-field="name"
+                  children-field="children"
+                />
               </NFormItem>
             </NGi>
             <NGi>
@@ -322,12 +337,20 @@ function findResourceNode(items: any[], id: string): any | null {
             </NGi>
             <NGi :span="2">
               <NFormItem :label="'状态'" path="status">
-                <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
+                <DictSelect
+                  v-model="state.formModel.status"
+                  dict-code="COMMON_STATUS"
+                  type="radio"
+                />
               </NFormItem>
             </NGi>
           </NGrid>
           <NFormItem :label="'描述'" path="description">
-            <NInput v-model:value="state.formModel.description" type="textarea" :autosize="{ minRows: 3, maxRows: 5 }" />
+            <NInput
+              v-model:value="state.formModel.description"
+              type="textarea"
+              :autosize="{ minRows: 3, maxRows: 5 }"
+            />
           </NFormItem>
         </NForm>
       </NScrollbar>
@@ -335,12 +358,8 @@ function findResourceNode(items: any[], id: string): any | null {
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton @click="closeModal">
-          取消
-        </NButton>
-        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          确认
-        </NButton>
+        <NButton @click="closeModal"> 取消 </NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm"> 确认 </NButton>
       </NSpace>
     </template>
   </NModal>

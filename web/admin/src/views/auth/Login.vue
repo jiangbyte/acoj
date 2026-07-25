@@ -120,18 +120,9 @@ async function handleSubmit() {
   <AuthLayout :title="'登录管理端控制台'" :subtitle="'请选择管理员登录身份。'">
     <n-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="handleSubmit">
       <n-tabs v-model:value="activeType" type="segment" animated class="auth-login-tabs">
-        <n-tab-pane
-          v-for="item in loginTypes"
-          :key="item.key"
-          :name="item.key"
-          :tab="item.label"
-        >
+        <n-tab-pane v-for="item in loginTypes" :key="item.key" :name="item.key" :tab="item.label">
           <n-form-item :path="activeField" :label="item.label">
-            <n-input
-              v-model:value="form[activeField]"
-              :placeholder="item.placeholder"
-              clearable
-            >
+            <n-input v-model:value="form[activeField]" :placeholder="item.placeholder" clearable>
               <template #prefix>
                 <NovaIcon :icon="item.icon" />
               </template>
@@ -162,10 +153,8 @@ async function handleSubmit() {
       </n-form-item>
 
       <div class="auth-form-row">
-        <n-checkbox v-model:checked="form.remember">
-          记住我
-        </n-checkbox>
-        <RouterLink to="/auth/forgot-password">忘记密码？</RouterLink>
+        <n-checkbox v-model:checked="form.remember"> 记住我 </n-checkbox>
+        <RouterLink to="/auth/forgot-password"> 忘记密码？ </RouterLink>
       </div>
 
       <n-button

@@ -39,33 +39,28 @@ const state = reactive({
   formModel: normalizeFormData(),
 })
 
-const modalTitle = computed(() => state.dataId ? '编辑CgTestKnowledgeDoc' : '新增CgTestKnowledgeDoc')
+const modalTitle = computed(() =>
+  state.dataId ? '编辑CgTestKnowledgeDoc' : '新增CgTestKnowledgeDoc',
+)
 const rules = computed<FormRules>(() => ({
-  category_id: [
-    createRequiredRule('分类ID', 'input'),
-  ],
-  code: [
-    createRequiredRule('文档编码', 'input'),
-  ],
-  title: [
-    createRequiredRule('文档标题', 'input'),
-  ],
-  type: [
-    createRequiredRule('文档类型', 'input'),
-  ],
-  status: [
-    createRequiredRule('状态', 'change'),
-  ],
+  category_id: [createRequiredRule('分类ID', 'input')],
+  code: [createRequiredRule('文档编码', 'input')],
+  title: [createRequiredRule('文档标题', 'input')],
+  type: [createRequiredRule('文档类型', 'input')],
+  status: [createRequiredRule('状态', 'change')],
   view_count: [
     {
-      validator: () => typeof state.formModel.view_count === 'number' && Number.isFinite(state.formModel.view_count),
+      validator: () =>
+        typeof state.formModel.view_count === 'number' &&
+        Number.isFinite(state.formModel.view_count),
       message: '请输入浏览次数',
       trigger: ['input', 'blur'],
     },
   ],
   sort: [
     {
-      validator: () => typeof state.formModel.sort === 'number' && Number.isFinite(state.formModel.sort),
+      validator: () =>
+        typeof state.formModel.sort === 'number' && Number.isFinite(state.formModel.sort),
       message: '请输入排序',
       trigger: ['input', 'blur'],
     },
@@ -221,7 +216,14 @@ defineExpose({
   >
     <NSpin :show="state.loading">
       <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
-        <NForm ref="formRef" :model="state.formModel" :rules="rules" label-placement="left" label-width="110" :disabled="state.loading || state.submitLoading">
+        <NForm
+          ref="formRef"
+          :model="state.formModel"
+          :rules="rules"
+          label-placement="left"
+          label-width="110"
+          :disabled="state.loading || state.submitLoading"
+        >
           <NFormItem label="分类ID" path="category_id">
             <NInput v-model:value="state.formModel.category_id" />
           </NFormItem>
@@ -241,13 +243,23 @@ defineExpose({
             <NInput v-model:value="state.formModel.summary" />
           </NFormItem>
           <NFormItem label="正文内容" path="content">
-            <NInput v-model:value="state.formModel.content" type="textarea" :autosize="{ minRows: 3, maxRows: 8 }" />
+            <NInput
+              v-model:value="state.formModel.content"
+              type="textarea"
+              :autosize="{ minRows: 3, maxRows: 8 }"
+            />
           </NFormItem>
           <NFormItem label="作者" path="author">
             <NInput v-model:value="state.formModel.author" />
           </NFormItem>
           <NFormItem label="发布时间" path="published_at">
-            <NDatePicker v-model:formatted-value="state.formModel.published_at" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" class="w-full" clearable />
+            <NDatePicker
+              v-model:formatted-value="state.formModel.published_at"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
+              class="w-full"
+              clearable
+            />
           </NFormItem>
           <NFormItem label="浏览次数" path="view_count">
             <NInputNumber v-model:value="state.formModel.view_count" class="w-full" />
@@ -259,10 +271,18 @@ defineExpose({
             <NSwitch v-model:value="state.formModel.is_top" />
           </NFormItem>
           <NFormItem label="展示设置" path="settings">
-            <NInput v-model:value="state.formModel.settings" type="textarea" :autosize="{ minRows: 4, maxRows: 12 }" />
+            <NInput
+              v-model:value="state.formModel.settings"
+              type="textarea"
+              :autosize="{ minRows: 4, maxRows: 12 }"
+            />
           </NFormItem>
           <NFormItem label="扩展信息" path="extra">
-            <NInput v-model:value="state.formModel.extra" type="textarea" :autosize="{ minRows: 4, maxRows: 12 }" />
+            <NInput
+              v-model:value="state.formModel.extra"
+              type="textarea"
+              :autosize="{ minRows: 4, maxRows: 12 }"
+            />
           </NFormItem>
         </NForm>
       </NScrollbar>
@@ -270,8 +290,8 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end">
-        <NButton @click="closeModal">取消</NButton>
-        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">确认</NButton>
+        <NButton @click="closeModal"> 取消 </NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm"> 确认 </NButton>
       </NSpace>
     </template>
   </NModal>

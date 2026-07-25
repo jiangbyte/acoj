@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { resolveFileUrl } from '@/utils'
 const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
-import { computed, inject, reactive, ref, watch } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import { useThemeVars } from 'naive-ui'
 import { messageApi } from '@/api'
 import { MESSAGE_DATA_KEY } from '../provide-keys'
@@ -18,15 +18,24 @@ const addSearchText = ref('')
 const addSearchResults = ref<any[]>([])
 const addSearchLoading = ref(false)
 
-const addSearchLabel = computed(() => addMode.value === 'friend' ? '搜索用户' : '搜索群组')
-const addSearchPlaceholder = computed(() => addMode.value === 'friend' ? '搜索用户' : '搜索群组名称')
+const addSearchPlaceholder = computed(() =>
+  addMode.value === 'friend' ? '搜索用户' : '搜索群组名称',
+)
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
-watch(() => show.value, (v) => { if (v) addMode.value = props.initialMode })
+watch(
+  () => show.value,
+  (v) => {
+    if (v) addMode.value = props.initialMode
+  },
+)
 watch([addSearchText, addMode], () => {
   if (searchTimer) clearTimeout(searchTimer)
   const keyword = addSearchText.value.trim()
-  if (!keyword) { addSearchResults.value = []; return }
+  if (!keyword) {
+    addSearchResults.value = []
+    return
+  }
   addSearchLoading.value = true
   searchTimer = setTimeout(async () => {
     try {
@@ -37,8 +46,11 @@ watch([addSearchText, addMode], () => {
         const res = await messageApi.searchGroups(keyword)
         addSearchResults.value = res?.data ?? []
       }
-    } catch { addSearchResults.value = [] }
-    finally { addSearchLoading.value = false }
+    } catch {
+      addSearchResults.value = []
+    } finally {
+      addSearchLoading.value = false
+    }
   }, 300)
 })
 
@@ -73,9 +85,14 @@ function closeModal() {
 </script>
 
 <template>
-  <NModal v-model:show="show" preset="card" :bordered="false" draggable
-    title="添加好友 / 群聊" :mask-closable="false"
-    style="width: min(700px, calc(100vw - 24px)); height: 75vh;"
+  <NModal
+    v-model:show="show"
+    preset="card"
+    :bordered="false"
+    draggable
+    title="添加好友 / 群聊"
+    :mask-closable="false"
+    style="width: min(700px, calc(100vw - 24px)); height: 75vh"
     content-style="display: flex; flex-direction: column; height: 65vh; padding: 0 20px 20px"
     @update:show="closeModal"
   >
@@ -90,40 +107,92 @@ function closeModal() {
         </NInputGroupLabel>
         <NInput v-model:value="addSearchText" clearable :placeholder="addSearchPlaceholder" />
       </NInputGroup>
-      <NScrollbar class="flex-1" style="max-height: calc(70vh - 140px);">
+      <NScrollbar class="flex-1" style="max-height: calc(70vh - 140px)">
         <div v-if="addMode === 'friend'" class="pr-1">
           <NList v-if="addSearchText.trim() ? addSearchResults.length : false" hoverable>
-            <NListItem v-for="user in addSearchResults" :key="`${user.account_type}-${user.account_id}`" class="message-list-item">
+            <NListItem
+              v-for="user in addSearchResults"
+              :key="`${user.account_type}-${user.account_id}`"
+              class="message-list-item"
+            >
               <div class="flex items-center gap-3 px-4 py-3">
-                <NAvatar v-if="user.avatar" round :size="40" class="shrink-0" :src="resolveFileUrl(user.avatar)" :img-props="avatarImgProps" />
-                <NAvatar v-else round :size="40" class="shrink-0">{{ (user.name || user.nickname || user.account || '?').charAt(0) }}</NAvatar>
+                <NAvatar
+                  v-if="user.avatar"
+                  round
+                  :size="40"
+                  class="shrink-0"
+                  :src="resolveFileUrl(user.avatar)"
+                  :img-props="avatarImgProps"
+                />
+                <NAvatar v-else round :size="40" class="shrink-0">
+                  {{ (user.name || user.nickname || user.account || '?').charAt(0) }}
+                </NAvatar>
                 <div class="min-w-0 flex-1">
-                  <div class="message-ellipsis text-sm font-600">{{ user.name || user.nickname || user.account }}</div>
-                  <div class="message-ellipsis mt-1 text-xs" :style="{ color: themeVars.textColor3 }">{{ user.account ? '@' + user.account : user.signature || '-' }}</div>
+                  <div class="message-ellipsis text-sm font-600">
+                    {{ user.name || user.nickname || user.account }}
+                  </div>
+                  <div
+                    class="message-ellipsis mt-1 text-xs"
+                    :style="{ color: themeVars.textColor3 }"
+                  >
+                    {{ user.account ? '@' + user.account : user.signature || '-' }}
+                  </div>
                 </div>
-                <NTag v-if="user.is_friend" :bordered="false" size="small" type="success">已添加</NTag>
-                <NButton v-else size="small" tertiary @click="applyForUser(user)">申请好友</NButton>
+                <NTag v-if="user.is_friend" :bordered="false" size="small" type="success">
+                  已添加
+                </NTag>
+                <NButton v-else size="small" tertiary @click="applyForUser(user)">
+                  申请好友
+                </NButton>
               </div>
             </NListItem>
           </NList>
-          <div v-else-if="addSearchLoading" class="py-8 text-center text-sm" :style="{ color: themeVars.textColor3 }">搜索中...</div>
+          <div
+            v-else-if="addSearchLoading"
+            class="py-8 text-center text-sm"
+            :style="{ color: themeVars.textColor3 }"
+          >
+            搜索中...
+          </div>
           <NEmpty v-else class="py-8" description="请输入关键词搜索用户" />
         </div>
         <div v-else-if="addMode === 'group'" class="pr-1">
           <NList v-if="addSearchText.trim() ? addSearchResults.length : false" hoverable>
             <NListItem v-for="group in addSearchResults" :key="group.id" class="message-list-item">
               <div class="flex items-center gap-3 px-4 py-3">
-                <NAvatar v-if="group.avatar" round :size="40" class="shrink-0" :src="resolveFileUrl(group.avatar)" :img-props="avatarImgProps" />
-                <NAvatar v-else round :size="40" class="shrink-0">{{ (group.name || '?').charAt(0) }}</NAvatar>
+                <NAvatar
+                  v-if="group.avatar"
+                  round
+                  :size="40"
+                  class="shrink-0"
+                  :src="resolveFileUrl(group.avatar)"
+                  :img-props="avatarImgProps"
+                />
+                <NAvatar v-else round :size="40" class="shrink-0">
+                  {{ (group.name || '?').charAt(0) }}
+                </NAvatar>
                 <div class="min-w-0 flex-1">
-                  <div class="message-ellipsis text-sm font-600">{{ group.name }}</div>
-                  <div class="message-ellipsis mt-1 text-xs" :style="{ color: themeVars.textColor3 }">{{ group.member_count || 0 }} 人 · {{ group.description || '-' }}</div>
+                  <div class="message-ellipsis text-sm font-600">
+                    {{ group.name }}
+                  </div>
+                  <div
+                    class="message-ellipsis mt-1 text-xs"
+                    :style="{ color: themeVars.textColor3 }"
+                  >
+                    {{ group.member_count || 0 }} 人 · {{ group.description || '-' }}
+                  </div>
                 </div>
-                <NButton size="small" tertiary @click="applyJoinGroup(group)">加入群聊</NButton>
+                <NButton size="small" tertiary @click="applyJoinGroup(group)"> 加入群聊 </NButton>
               </div>
             </NListItem>
           </NList>
-          <div v-else-if="addSearchLoading" class="py-8 text-center text-sm" :style="{ color: themeVars.textColor3 }">搜索中...</div>
+          <div
+            v-else-if="addSearchLoading"
+            class="py-8 text-center text-sm"
+            :style="{ color: themeVars.textColor3 }"
+          >
+            搜索中...
+          </div>
           <NEmpty v-else class="py-8" description="请输入关键词搜索群组" />
         </div>
       </NScrollbar>

@@ -30,9 +30,7 @@ const state = reactive({
   deptTree: [] as any[],
 })
 
-const modalTitle = computed(() =>
-  state.dataId ? '编辑角色' : '新增角色',
-)
+const modalTitle = computed(() => (state.dataId ? '编辑角色' : '新增角色'))
 
 const rules = computed<FormRules>(() => ({
   code: createRequiredRule('角色编码', 'input'),
@@ -81,7 +79,9 @@ async function fetchDeptTree() {
   try {
     const resp = await deptApi.tree()
     state.deptTree = resp.data ?? []
-  } catch { state.deptTree = [] }
+  } catch {
+    state.deptTree = []
+  }
 }
 
 function closeModal() {
@@ -193,12 +193,8 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton @click="closeModal">
-          取消
-        </NButton>
-        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          确认
-        </NButton>
+        <NButton @click="closeModal"> 取消 </NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm"> 确认 </NButton>
       </NSpace>
     </template>
   </NModal>

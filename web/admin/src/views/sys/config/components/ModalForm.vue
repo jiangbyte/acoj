@@ -26,9 +26,7 @@ const state = reactive({
   formModel: { ...defaultFormData },
 })
 
-const modalTitle = computed(() =>
-  state.dataId ? '编辑系统配置' : '新增系统配置',
-)
+const modalTitle = computed(() => (state.dataId ? '编辑系统配置' : '新增系统配置'))
 
 const rules = computed<FormRules>(() => ({
   config_key: createRequiredRule('配置键', 'input'),
@@ -188,12 +186,8 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton @click="closeModal">
-          取消
-        </NButton>
-        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          确认
-        </NButton>
+        <NButton @click="closeModal"> 取消 </NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm"> 确认 </NButton>
       </NSpace>
     </template>
   </NModal>

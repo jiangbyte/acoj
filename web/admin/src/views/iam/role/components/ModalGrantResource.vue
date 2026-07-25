@@ -252,9 +252,7 @@ defineExpose({
 
       <template #footer>
         <NSpace justify="end" align="center">
-          <NButton @click="closeModal">
-            关闭
-          </NButton>
+          <NButton @click="closeModal"> 关闭 </NButton>
           <NButton type="primary" :loading="state.submitLoading" @click="submitGrant">
             保存
           </NButton>

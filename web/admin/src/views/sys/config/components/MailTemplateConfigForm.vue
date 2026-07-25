@@ -34,7 +34,7 @@ const tabs: TabState[] = reactive([
 
 const activeTab = reactive({ value: 'forgot_password' as string })
 
-const currentTab = computed(() => tabs.find(t => t.type === activeTab.value) ?? tabs[0])
+const currentTab = computed(() => tabs.find((t) => t.type === activeTab.value) ?? tabs[0])
 
 onMounted(async () => {
   loading.value = true
@@ -45,20 +45,26 @@ onMounted(async () => {
       const subjectRow = all.find((r: any) => r.config_key === tab.subject.config_key)
       const bodyRow = all.find((r: any) => r.config_key === tab.body.config_key)
       if (subjectRow) {
-        tab.subject = { ...tab.subject, id: subjectRow.id, value: subjectRow.config_value ?? '', remark: subjectRow.remark ?? '' }
+        tab.subject = {
+          ...tab.subject,
+          id: subjectRow.id,
+          value: subjectRow.config_value ?? '',
+          remark: subjectRow.remark ?? '',
+        }
       }
       if (bodyRow) {
-        tab.body = { ...tab.body, id: bodyRow.id, value: bodyRow.config_value ?? '', remark: bodyRow.remark ?? '' }
+        tab.body = {
+          ...tab.body,
+          id: bodyRow.id,
+          value: bodyRow.config_value ?? '',
+          remark: bodyRow.remark ?? '',
+        }
       }
     }
   } finally {
     loading.value = false
   }
 })
-
-function emptyValue(key: string): TemplateItem {
-  return { id: '', config_key: key, value: '', remark: '' }
-}
 
 async function saveCurrent() {
   const tab = currentTab.value
@@ -83,8 +89,20 @@ async function refreshTab() {
   for (const tab of tabs) {
     const subjectRow = all.find((r: any) => r.config_key === tab.subject.config_key)
     const bodyRow = all.find((r: any) => r.config_key === tab.body.config_key)
-    if (subjectRow) tab.subject = { ...tab.subject, id: subjectRow.id, value: subjectRow.config_value ?? '', remark: subjectRow.remark ?? '' }
-    if (bodyRow) tab.body = { ...tab.body, id: bodyRow.id, value: bodyRow.config_value ?? '', remark: bodyRow.remark ?? '' }
+    if (subjectRow)
+      tab.subject = {
+        ...tab.subject,
+        id: subjectRow.id,
+        value: subjectRow.config_value ?? '',
+        remark: subjectRow.remark ?? '',
+      }
+    if (bodyRow)
+      tab.body = {
+        ...tab.body,
+        id: bodyRow.id,
+        value: bodyRow.config_value ?? '',
+        remark: bodyRow.remark ?? '',
+      }
   }
 }
 </script>
@@ -99,12 +117,7 @@ async function refreshTab() {
         animated
         :style="{ minHeight: '420px' }"
       >
-        <NTabPane
-          v-for="tab in tabs"
-          :key="tab.type"
-          :name="tab.type"
-          :tab="tab.label"
-        >
+        <NTabPane v-for="tab in tabs" :key="tab.type" :name="tab.type" :tab="tab.label">
           <div class="form-area">
             <div class="form-actions">
               <NButton type="primary" size="small" :loading="tab.saving" @click="saveCurrent">
@@ -127,14 +140,20 @@ async function refreshTab() {
             </NForm>
 
             <NAlert type="info" :bordered="false" class="mt-16px">
-              <template #header>
-                可用变量
-              </template>
+              <template #header> 可用变量 </template>
               <ul class="var-list">
-                <li><code v-pre>{{app_name}}</code> — 应用名称</li>
-                <li><code v-pre>{{reset_link}}</code> — 重置密码链接</li>
-                <li><code v-pre>{{email}}</code> — 用户邮箱</li>
-                <li><code v-pre>{{expire_minutes}}</code> — 链接有效分钟数</li>
+                <li>
+                  <code v-pre>{{ app_name }}</code> — 应用名称
+                </li>
+                <li>
+                  <code v-pre>{{ reset_link }}</code> — 重置密码链接
+                </li>
+                <li>
+                  <code v-pre>{{ email }}</code> — 用户邮箱
+                </li>
+                <li>
+                  <code v-pre>{{ expire_minutes }}</code> — 链接有效分钟数
+                </li>
               </ul>
             </NAlert>
           </div>
@@ -156,7 +175,9 @@ async function refreshTab() {
 :deep(.n-tabs-tab) {
   min-width: 120px;
 }
-.mt-16px { margin-top: 16px; }
+.mt-16px {
+  margin-top: 16px;
+}
 .var-list {
   margin: 4px 0 0;
   padding-left: 20px;

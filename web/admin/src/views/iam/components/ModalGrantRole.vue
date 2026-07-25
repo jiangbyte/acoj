@@ -24,9 +24,7 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.account?.name
-    ? `分配角色 - ${state.account.name}`
-    : '分配角色',
+  state.account?.name ? `分配角色 - ${state.account.name}` : '分配角色',
 )
 
 const filteredItems = computed(() => {
@@ -34,7 +32,9 @@ const filteredItems = computed(() => {
   if (!keyword) return state.items
   return state.items.filter((item) =>
     ['code', 'name'].some((field) =>
-      String(item[field] || '').toLowerCase().includes(keyword),
+      String(item[field] || '')
+        .toLowerCase()
+        .includes(keyword),
     ),
   )
 })
@@ -199,12 +199,12 @@ defineExpose({ openModal })
                 @keyup.enter="state.page = 1"
                 @clear="resetSearch"
               />
-              <NButton type="primary" @click="state.page = 1">搜索</NButton>
-              <NButton @click="resetSearch">重置</NButton>
+              <NButton type="primary" @click="state.page = 1"> 搜索 </NButton>
+              <NButton @click="resetSearch"> 重置 </NButton>
             </NInputGroup>
             <NFlex justify="space-between" align="center">
               <NText>{{ `待处理: ${filteredItems.length}` }}</NText>
-              <NButton dashed size="small" @click="addAllPageRecord">新增当前页</NButton>
+              <NButton dashed size="small" @click="addAllPageRecord"> 新增当前页 </NButton>
             </NFlex>
             <NDataTable
               size="small"
@@ -230,7 +230,7 @@ defineExpose({ openModal })
           <NSpace vertical>
             <NFlex justify="space-between" align="center">
               <NText>{{ `已选择: ${state.selectedData.length}` }}</NText>
-              <NButton dashed type="error" size="small" @click="delAllRecord">全部移除</NButton>
+              <NButton dashed type="error" size="small" @click="delAllRecord"> 全部移除 </NButton>
             </NFlex>
             <NDataTable
               size="small"
@@ -246,8 +246,10 @@ defineExpose({ openModal })
       </NGrid>
       <template #footer>
         <NSpace justify="end" align="center">
-          <NButton @click="closeModal">关闭</NButton>
-          <NButton type="primary" :loading="state.submitLoading" @click="submitGrant">保存</NButton>
+          <NButton @click="closeModal"> 关闭 </NButton>
+          <NButton type="primary" :loading="state.submitLoading" @click="submitGrant">
+            保存
+          </NButton>
         </NSpace>
       </template>
     </NDrawerContent>

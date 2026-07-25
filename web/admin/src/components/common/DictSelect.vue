@@ -40,7 +40,7 @@ function handleUpdateValue(value: any) {
 <template>
   <NSelect
     v-if="type === 'select'"
-    :value="modelValue as string | number | null"
+    :value="modelValue"
     :options="options"
     :placeholder="placeholder"
     :clearable="clearable"
@@ -52,7 +52,7 @@ function handleUpdateValue(value: any) {
   <NRadioGroup
     v-else-if="type === 'radio'"
     class="flex flex-wrap gap-x-16px gap-y-8px"
-    :value="modelValue as string | number | null"
+    :value="modelValue"
     :disabled="disabled"
     :size="size"
     @update:value="handleUpdateValue"

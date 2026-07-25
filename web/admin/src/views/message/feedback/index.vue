@@ -6,7 +6,16 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { msgFeedbackApi } from '@/api'
-import { createTagColor, dictTypeColor, dictTypeData, dictList, formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import {
+  createTagColor,
+  dictTypeColor,
+  dictTypeData,
+  dictList,
+  formatDateTime,
+  hasPermission,
+  normalizeSearchValues,
+  renderButtonIcon,
+} from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -43,8 +52,18 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   { title: '反馈内容', path: 'content', field: 'input' },
-  { title: '反馈分类', path: 'category', field: 'select', fieldProps: { options: dictList('FEEDBACK_CATEGORY') } },
-  { title: '状态', path: 'status', field: 'select', fieldProps: { options: dictList('FEEDBACK_STATUS') } },
+  {
+    title: '反馈分类',
+    path: 'category',
+    field: 'select',
+    fieldProps: { options: dictList('FEEDBACK_CATEGORY') },
+  },
+  {
+    title: '状态',
+    path: 'status',
+    field: 'select',
+    fieldProps: { options: dictList('FEEDBACK_STATUS') },
+  },
 ])
 
 const pagination = computed<PaginationProps>(() => ({
@@ -68,24 +87,47 @@ const pagination = computed<PaginationProps>(() => ({
 const tableColumns = computed<ProDataTableColumns<any>>(() => [
   { type: 'selection', fixed: 'left' },
   { title: '反馈内容', path: 'content', width: 300, ellipsis: { tooltip: true } },
-  { title: '分类', path: 'category', width: 90, render: row => {
-    const color = createTagColor(dictTypeColor('FEEDBACK_CATEGORY', row.category))
-    const label = dictTypeData('FEEDBACK_CATEGORY', row.category)
-    return <NTag color={color} bordered={false}>{label || row.category}</NTag>
-  }},
+  {
+    title: '分类',
+    path: 'category',
+    width: 90,
+    render: (row) => {
+      const color = createTagColor(dictTypeColor('FEEDBACK_CATEGORY', row.category))
+      const label = dictTypeData('FEEDBACK_CATEGORY', row.category)
+      return (
+        <NTag color={color} bordered={false}>
+          {label || row.category}
+        </NTag>
+      )
+    },
+  },
   { title: '联系方式', path: 'contact', width: 140, ellipsis: { tooltip: true } },
-  { title: '状态', path: 'status', width: 80, render: row => {
-    const color = createTagColor(dictTypeColor('FEEDBACK_STATUS', row.status))
-    const label = dictTypeData('FEEDBACK_STATUS', row.status)
-    return <NTag color={color} bordered={false}>{label || row.status}</NTag>
-  }},
-  { title: '提交时间', path: 'created_at', width: 170, render: row => formatDateTime(row.created_at) },
+  {
+    title: '状态',
+    path: 'status',
+    width: 80,
+    render: (row) => {
+      const color = createTagColor(dictTypeColor('FEEDBACK_STATUS', row.status))
+      const label = dictTypeData('FEEDBACK_STATUS', row.status)
+      return (
+        <NTag color={color} bordered={false}>
+          {label || row.status}
+        </NTag>
+      )
+    },
+  },
+  {
+    title: '提交时间',
+    path: 'created_at',
+    width: 170,
+    render: (row) => formatDateTime(row.created_at),
+  },
   {
     title: '操作',
     key: 'actions',
     width: 130,
     fixed: 'right',
-    render: row => (
+    render: (row) => (
       <NFlex size={12}>
         {hasPermission('message:feedback:detail') ? (
           <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
@@ -114,13 +156,19 @@ onMounted(() => {
 async function fetchPage() {
   state.loading = true
   try {
-    const response = await msgFeedbackApi.page({ current: state.page, size: state.pageSize, ...state.searchValues })
+    const response = await msgFeedbackApi.page({
+      current: state.page,
+      size: state.pageSize,
+      ...state.searchValues,
+    })
     const data = response.data ?? {}
     state.rows = data.records ?? []
     state.total = data.total ?? 0
     state.page = data.current ?? state.page
     state.pageSize = data.size ?? state.pageSize
-    state.checkedRowKeys = state.checkedRowKeys.filter(key => state.rows.some(item => item.id === key))
+    state.checkedRowKeys = state.checkedRowKeys.filter((key) =>
+      state.rows.some((item) => item.id === key),
+    )
   } finally {
     state.loading = false
   }
@@ -154,7 +202,7 @@ function confirmDelete(value: string | string[]) {
 
 async function deleteRows(ids: string[]) {
   await msgFeedbackApi.remove({ ids })
-  state.checkedRowKeys = state.checkedRowKeys.filter(key => !ids.includes(key))
+  state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
   window.$message.success('删除成功')
   await fetchPage()
 }
@@ -187,10 +235,20 @@ async function deleteRows(ids: string[]) {
       <template #toolbar>
         <NFlex>
           <NButton text :loading="state.loading" @click="fetchPage">
-            <template #icon><NIcon><Icon icon="icon-park-outline:refresh" /></NIcon></template>
+            <template #icon>
+              <NIcon><Icon icon="icon-park-outline:refresh" /></NIcon>
+            </template>
           </NButton>
-          <NButton v-if="hasPermission('message:feedback:delete')" type="error" text :disabled="!hasCheckedRows" @click="confirmDelete(state.checkedRowKeys)">
-            <template #icon><NIcon><Icon icon="icon-park-outline:delete" /></NIcon></template>
+          <NButton
+            v-if="hasPermission('message:feedback:delete')"
+            type="error"
+            text
+            :disabled="!hasCheckedRows"
+            @click="confirmDelete(state.checkedRowKeys)"
+          >
+            <template #icon>
+              <NIcon><Icon icon="icon-park-outline:delete" /></NIcon>
+            </template>
           </NButton>
         </NFlex>
       </template>

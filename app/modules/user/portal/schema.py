@@ -18,8 +18,6 @@ class PortalProfileResponse(ApiSchema):
     email: str | None = None
     phone_login_enabled: bool = False
     email_login_enabled: bool = False
-    bio: str | None = None
-    level: str | None = None
     created_at: datetime | None = Field(default=None, examples=["2026-06-17T12:00:00Z"])
     updated_at: datetime | None = Field(default=None, examples=["2026-06-17T12:00:00Z"])
 
@@ -32,8 +30,6 @@ class PortalPublicProfileResponse(ApiSchema):
     nickname: str | None = None
     avatar: str | None = None
     signature: str | None = None
-    bio: str | None = None
-    level: str | None = None
 
 
 class PortalProfileUpsertPayload(ApiSchema):
@@ -46,8 +42,6 @@ class PortalProfileUpsertPayload(ApiSchema):
     signature: str | None = None
     phone: str | None = None
     email: str | None = None
-    bio: str | None = None
-    level: str | None = None
 
 
 class PortalUserCenterProfileUpdateRequest(ApiSchema):
@@ -57,7 +51,6 @@ class PortalUserCenterProfileUpdateRequest(ApiSchema):
     nickname: str | None = Field(default=None, max_length=64)
     avatar: str | None = None
     signature: str | None = None
-    bio: str | None = Field(default=None, max_length=255)
 
 
 class PortalUserCenterPasswordUpdateRequest(PasswordKeyMixin):

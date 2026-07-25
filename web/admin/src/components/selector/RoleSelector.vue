@@ -16,9 +16,9 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   'update:visible': [value: boolean]
-  'select': [value: { id: string; name: string }]
+  select: [value: { id: string; name: string }]
   'update:selected': [value: string[]]
-  'confirm': [value: string[]]
+  confirm: [value: string[]]
 }>()
 
 const state = reactive({
@@ -31,8 +31,6 @@ const state = reactive({
   pageSize: 10,
 })
 
-const selectedSet = computed(() => new Set(state.checkedRowKeys))
-
 const columns = computed<DataTableColumns<any>>(() => {
   const base: DataTableColumns<any> = [
     { title: '名称', key: 'name', minWidth: 120, ellipsis: { tooltip: true } },
@@ -40,9 +38,14 @@ const columns = computed<DataTableColumns<any>>(() => {
   ]
   if (props.mode === 'single') {
     base.push({
-      title: '操作', key: 'action', width: 60, align: 'center',
+      title: '操作',
+      key: 'action',
+      width: 60,
+      align: 'center',
       render: (row) => (
-        <NButton text type="primary" size="small" onClick={() => doSelect(row)}>选择</NButton>
+        <NButton text type="primary" size="small" onClick={() => doSelect(row)}>
+          选择
+        </NButton>
       ),
     })
   }
@@ -104,10 +107,22 @@ function close() {
 </script>
 
 <template>
-  <NDrawer :show="visible" placement="right" :width="500" :mask-closable="false" @update:show="(v) => emit('update:visible', v)">
+  <NDrawer
+    :show="visible"
+    placement="right"
+    :width="500"
+    :mask-closable="false"
+    @update:show="(v) => emit('update:visible', v)"
+  >
     <NDrawerContent :title="title" closable>
       <NSpace vertical>
-        <NInput v-model:value="state.searchKey" clearable placeholder="搜索角色名称" @keyup.enter="doSearch" @clear="doSearch" />
+        <NInput
+          v-model:value="state.searchKey"
+          clearable
+          placeholder="搜索角色名称"
+          @keyup.enter="doSearch"
+          @clear="doSearch"
+        />
         <NDataTable
           :row-key="(row) => row.id"
           :columns="columns"
@@ -127,8 +142,8 @@ function close() {
       </NSpace>
       <template v-if="mode === 'multiple'" #footer>
         <NSpace justify="end">
-          <NButton @click="close">关闭</NButton>
-          <NButton type="primary" @click="handleConfirm">确认</NButton>
+          <NButton @click="close"> 关闭 </NButton>
+          <NButton type="primary" @click="handleConfirm"> 确认 </NButton>
         </NSpace>
       </template>
     </NDrawerContent>

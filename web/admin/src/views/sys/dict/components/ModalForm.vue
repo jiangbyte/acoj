@@ -32,9 +32,7 @@ const state = reactive({
   formModel: { ...defaultFormData },
 })
 
-const modalTitle = computed(() =>
-  state.dataId ? '编辑字典' : '新增字典',
-)
+const modalTitle = computed(() => (state.dataId ? '编辑字典' : '新增字典'))
 const parentTreeOptions = computed(() =>
   buildTreeOptions(
     props.dicts.filter((item) => item.category === state.formModel.category),
@@ -64,9 +62,12 @@ const rules = computed<FormRules>(() => ({
 }))
 
 // 切换分类时重置父级字典
-watch(() => state.formModel.category, () => {
-  state.formModel.parent_id = null
-})
+watch(
+  () => state.formModel.category,
+  () => {
+    state.formModel.parent_id = null
+  },
+)
 async function openModal(id?: string, options?: { category?: string; parentId?: string | null }) {
   state.dataId = id ?? null
   state.formModel = {
@@ -139,7 +140,6 @@ async function submitForm() {
 function updateCode(value: string) {
   state.formModel.code = value.toUpperCase()
 }
-
 
 function buildTreeOptions(items: any[], excludeId?: string | null) {
   const excludeIds = excludeId ? collectChildIds(items, excludeId) : new Set<string>()
@@ -226,11 +226,11 @@ defineExpose({
         :disabled="state.loading || state.submitLoading"
       >
         <NFormItem :label="'分类'" path="category">
-         <DictSelect
-           v-model="state.formModel.category"
-           dict-code="SYS_BIZ_CATEGORY"
-           type="radio"
-         />
+          <DictSelect
+            v-model="state.formModel.category"
+            dict-code="SYS_BIZ_CATEGORY"
+            type="radio"
+          />
         </NFormItem>
         <NFormItem :label="'父级字典'" path="parent_id">
           <NTreeSelect
@@ -269,12 +269,8 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton @click="closeModal">
-          取消
-        </NButton>
-        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          确认
-        </NButton>
+        <NButton @click="closeModal"> 取消 </NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm"> 确认 </NButton>
       </NSpace>
     </template>
   </NModal>

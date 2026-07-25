@@ -51,7 +51,14 @@ defineExpose({
 </script>
 
 <template>
-  <NModal v-model:show="state.showModal" preset="card" draggable :mask-closable="false" title="CgTestOrderItem详情" style="width: 680px">
+  <NModal
+    v-model:show="state.showModal"
+    preset="card"
+    draggable
+    :mask-closable="false"
+    title="CgTestOrderItem详情"
+    style="width: 680px"
+  >
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
@@ -71,8 +78,14 @@ defineExpose({
             {{ displayValue(state.detail.category) }}
           </NDescriptionsItem>
           <NDescriptionsItem label="状态">
-            <NTag :color="createTagColor(dictTypeColor('COMMON_STATUS', state.detail.status))" :bordered="false">
-              {{ dictTypeData('COMMON_STATUS', state.detail.status) || displayValue(state.detail.status) }}
+            <NTag
+              :color="createTagColor(dictTypeColor('COMMON_STATUS', state.detail.status))"
+              :bordered="false"
+            >
+              {{
+                dictTypeData('COMMON_STATUS', state.detail.status) ||
+                displayValue(state.detail.status)
+              }}
             </NTag>
           </NDescriptionsItem>
           <NDescriptionsItem label="数量">
@@ -96,10 +109,18 @@ defineExpose({
           <NDescriptionsItem label="扩展信息">
             <NCode :code="formatJsonValue(state.detail.extra)" language="json" word-wrap />
           </NDescriptionsItem>
-          <NDescriptionsItem label="创建时间">{{ formatDateTime(state.detail.created_at) }}</NDescriptionsItem>
-          <NDescriptionsItem label="创建人">{{ displayValue(state.detail.created_by) }}</NDescriptionsItem>
-          <NDescriptionsItem label="更新时间">{{ formatDateTime(state.detail.updated_at) }}</NDescriptionsItem>
-          <NDescriptionsItem label="更新人">{{ displayValue(state.detail.updated_by) }}</NDescriptionsItem>
+          <NDescriptionsItem label="创建时间">
+            {{ formatDateTime(state.detail.created_at) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem label="创建人">
+            {{ displayValue(state.detail.created_by) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem label="更新时间">
+            {{ formatDateTime(state.detail.updated_at) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem label="更新人">
+            {{ displayValue(state.detail.updated_by) }}
+          </NDescriptionsItem>
         </NDescriptions>
       </NSpin>
     </NScrollbar>

@@ -10,7 +10,6 @@ const routeResourceTypes: AppRoute.ResourceType[] = ['CATALOG', 'MENU', 'PAGE']
 // 能点击跳转的资源类型。目录只承担分组作用，不直接渲染 RouterLink。
 const clickableResourceTypes: AppRoute.ResourceType[] = ['MENU', 'PAGE']
 
-
 const innerAppRoutes: RouteRecordRaw[] = [
   {
     path: '/usercenter',
@@ -59,12 +58,14 @@ export function createRoutes(resources: AppRoute.RowRoute[]): RouteRecordRaw {
  * 这些路由不挂载到后台 Layout 下，适合 IM、登录页之外的独立工作区页面。
  */
 export function createFullscreenRoutes(resources: AppRoute.RowRoute[]): RouteRecordRaw[] {
-  return buildRoutes(resources.filter((resource) => isFullscreenResource(resource))).map((item) => ({
-    path: item.path,
-    name: item.name,
-    component: item.component,
-    meta: item.meta,
-  }))
+  return buildRoutes(resources.filter((resource) => isFullscreenResource(resource))).map(
+    (item) => ({
+      path: item.path,
+      name: item.name,
+      component: item.component,
+      meta: item.meta,
+    }),
+  )
 }
 
 /**
@@ -84,7 +85,10 @@ export function createMenus(resources: AppRoute.RowRoute[]): AppRoute.MenuOption
  */
 export function generateCacheRoutes(resources: AppRoute.RowRoute[]) {
   return resources
-    .filter((resource) => isRouteResource(resource) && resource.is_cache && !isFullscreenResource(resource))
+    .filter(
+      (resource) =>
+        isRouteResource(resource) && resource.is_cache && !isFullscreenResource(resource),
+    )
     .map(createRouteName)
 }
 
@@ -305,16 +309,19 @@ function arrayToTree<T extends { id?: string; parent_id?: string | null; childre
  * icon、color、sort 使用默认值。后续可以从独立模块接口补充。
  */
 export function groupResourcesByModule(resources: AppRoute.RowRoute[]): AppRoute.ResourceModule[] {
-  const moduleMap = new Map<string, {
-    id: string
-    name: string
-    code: string
-    client: 'ADMIN' | 'PORTAL'
-    icon: string | null
-    color: string | null
-    sort: number
-    resources: AppRoute.RowRoute[]
-  }>()
+  const moduleMap = new Map<
+    string,
+    {
+      id: string
+      name: string
+      code: string
+      client: 'ADMIN' | 'PORTAL'
+      icon: string | null
+      color: string | null
+      sort: number
+      resources: AppRoute.RowRoute[]
+    }
+  >()
 
   for (const resource of resources) {
     if (!resource.module_id) continue

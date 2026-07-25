@@ -59,11 +59,7 @@ defineExpose({
             }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="'图标'">
-            <span
-              v-if="state.module.icon"
-              class="icon-detail-preview"
-              :title="state.module.icon"
-            >
+            <span v-if="state.module.icon" class="icon-detail-preview" :title="state.module.icon">
               <NovaIcon :icon="state.module.icon" :size="22" />
             </span>
             <template v-else> - </template>

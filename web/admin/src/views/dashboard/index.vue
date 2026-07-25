@@ -165,9 +165,7 @@ async function renderFileChart() {
     encode: { y: 'value', color: 'name' },
     transform: [{ type: 'stackY' }],
     legend: { color: { position: 'bottom' } },
-    labels: [
-      { text: 'name', position: 'outside', style: { fontSize: 12 } },
-    ],
+    labels: [{ text: 'name', position: 'outside', style: { fontSize: 12 } }],
   })
   charts.push(chart)
   await chart.render()
@@ -202,32 +200,28 @@ async function renderFileChart() {
                 <NovaIcon :icon="item.icon" :size="22" />
               </span>
             </div>
-            <div class="metric-card__title">{{ item.title }}</div>
+            <div class="metric-card__title">
+              {{ item.title }}
+            </div>
             <div class="metric-card__value">
               <span class="metric-card__number">{{ item.value }}</span>
               <span class="metric-card__unit">{{ item.unitText }}</span>
             </div>
-            <div class="metric-card__helper">{{ item.helper }}</div>
+            <div class="metric-card__helper">
+              {{ item.helper }}
+            </div>
           </NCard>
         </NGridItem>
       </NGrid>
 
       <NGrid class="mt-4" cols="1 xl:24" responsive="screen" :x-gap="16" :y-gap="16">
         <NGridItem span="1 xl:16">
-          <NCard
-            class="dashboard-card"
-            title="最近 7 天"
-            :bordered="false"
-          >
+          <NCard class="dashboard-card" title="最近 7 天" :bordered="false">
             <div ref="trendChartRef" class="chart-box" />
           </NCard>
         </NGridItem>
         <NGridItem span="1 xl:8">
-          <NCard
-            class="dashboard-card"
-            title="文件类型"
-            :bordered="false"
-          >
+          <NCard class="dashboard-card" title="文件类型" :bordered="false">
             <div ref="fileChartRef" class="chart-box chart-box--small" />
           </NCard>
         </NGridItem>

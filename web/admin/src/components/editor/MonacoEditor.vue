@@ -80,29 +80,44 @@ onMounted(async () => {
   })
 })
 
-watch(() => props.value, value => {
-  syncValue(value ?? '')
-})
+watch(
+  () => props.value,
+  (value) => {
+    syncValue(value ?? '')
+  },
+)
 
-watch(() => props.language, language => {
-  const monacoInstance = monacoRef.value
-  const model = editorRef.value?.getModel()
-  if (monacoInstance && model) {
-    monacoInstance.editor.setModelLanguage(model, language)
-  }
-})
+watch(
+  () => props.language,
+  (language) => {
+    const monacoInstance = monacoRef.value
+    const model = editorRef.value?.getModel()
+    if (monacoInstance && model) {
+      monacoInstance.editor.setModelLanguage(model, language)
+    }
+  },
+)
 
-watch(() => props.theme, theme => {
-  monacoRef.value?.editor.setTheme(theme)
-})
+watch(
+  () => props.theme,
+  (theme) => {
+    monacoRef.value?.editor.setTheme(theme)
+  },
+)
 
-watch(() => props.readOnly, readOnly => {
-  editorRef.value?.updateOptions({ readOnly })
-})
+watch(
+  () => props.readOnly,
+  (readOnly) => {
+    editorRef.value?.updateOptions({ readOnly })
+  },
+)
 
-watch(() => props.options, options => {
-  editorRef.value?.updateOptions(options)
-})
+watch(
+  () => props.options,
+  (options) => {
+    editorRef.value?.updateOptions(options)
+  },
+)
 
 onBeforeUnmount(() => {
   disposed = true

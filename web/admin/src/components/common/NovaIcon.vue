@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue/offline'
 
-interface Props {
-  icon?: string
-  color?: string
-  size?: number
-  depth?: 1 | 2 | 3 | 4 | 5
-}
-
-const { size = 18 } = defineProps<Props>()
+withDefaults(
+  defineProps<{
+    icon?: string
+    color?: string
+    size?: number
+    depth?: 1 | 2 | 3 | 4 | 5
+  }>(),
+  {
+    icon: '',
+    color: '',
+    size: 18,
+    depth: undefined,
+  },
+)
 </script>
 
 <template>

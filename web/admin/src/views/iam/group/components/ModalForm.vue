@@ -23,9 +23,7 @@ const state = reactive({
   formModel: { ...defaultFormData },
 })
 
-const modalTitle = computed(() =>
-  state.dataId ? '编辑用户组' : '新增用户组',
-)
+const modalTitle = computed(() => (state.dataId ? '编辑用户组' : '新增用户组'))
 
 const rules = computed<FormRules>(() => ({
   name: createRequiredRule('用户组名称', 'input'),
@@ -133,12 +131,8 @@ defineExpose({
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton @click="closeModal">
-          取消
-        </NButton>
-        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          确认
-        </NButton>
+        <NButton @click="closeModal"> 取消 </NButton>
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm"> 确认 </NButton>
       </NSpace>
     </template>
   </NModal>

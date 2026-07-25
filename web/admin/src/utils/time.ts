@@ -55,18 +55,15 @@ function formatLocalMatch(match: RegExpMatchArray) {
 
 function formatChinaDate(timestamp: number) {
   const date = new Date(timestamp + CHINA_OFFSET_MS)
-  return [
-    date.getUTCFullYear(),
-    pad(date.getUTCMonth() + 1),
-    pad(date.getUTCDate()),
-  ].join('-')
-    + ` ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`
+  return (
+    [date.getUTCFullYear(), pad(date.getUTCMonth() + 1), pad(date.getUTCDate())].join('-') +
+    ` ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`
+  )
 }
 
 function pad(value: string | number, length = 2) {
   return String(value).padStart(length, '0')
 }
-
 
 /** 将表单 datetime 字符串转为 API 兼容的带时区格式 */
 export function toApiDateTime(value: unknown): string | null {

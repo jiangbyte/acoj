@@ -85,7 +85,9 @@ export function messagePage(params: { conversation_id: string; current?: number;
 }
 
 export function unreadCount(conversationId: string) {
-  return http.get<any>(`${prefix}/messages/unread-count`, { params: { conversation_id: conversationId } })
+  return http.get<any>(`${prefix}/messages/unread-count`, {
+    params: { conversation_id: conversationId },
+  })
 }
 
 // ── Group ────────────────────────────────────────────────────────────
@@ -135,15 +137,27 @@ export function searchGroups(keyword: string) {
   return http.get<any[]>(`${prefix}/groups/search`, { params: { keyword } })
 }
 
-export function addGroupMembers(data: { group_id: string; members: Array<{ account_type: string; account_id: string }> }) {
+export function addGroupMembers(data: {
+  group_id: string
+  members: Array<{ account_type: string; account_id: string }>
+}) {
   return http.post<any>(`${prefix}/groups/members/add`, data)
 }
 
-export function removeGroupMember(data: { group_id: string; account_type: string; account_id: string }) {
+export function removeGroupMember(data: {
+  group_id: string
+  account_type: string
+  account_id: string
+}) {
   return http.post<any>(`${prefix}/groups/members/remove`, data)
 }
 
-export function setGroupMemberRole(data: { group_id: string; account_type: string; account_id: string; role: string }) {
+export function setGroupMemberRole(data: {
+  group_id: string
+  account_type: string
+  account_id: string
+  role: string
+}) {
   return http.post<any>(`${prefix}/groups/members/set-role`, data)
 }
 
@@ -177,7 +191,13 @@ export function searchUsers(keyword: string) {
   return http.get<any[]>(`${prefix}/friends/search`, { params: { keyword } })
 }
 
-export function applyFriend(data: { applicant_type: string; applicant_id: string; recipient_type: string; recipient_id: string; message?: string }) {
+export function applyFriend(data: {
+  applicant_type: string
+  applicant_id: string
+  recipient_type: string
+  recipient_id: string
+  message?: string
+}) {
   return http.post<any>(`${prefix}/friends/apply`, data)
 }
 
@@ -203,7 +223,11 @@ export function myFriendRequestCount() {
 
 // ── Notification ────────────────────────────────────────────────────
 
-export function notificationMyPage(params?: { current?: number; size?: number; category?: string }) {
+export function notificationMyPage(params?: {
+  current?: number
+  size?: number
+  category?: string
+}) {
   return http.get<any>(`${prefix}/notifications/my-page`, { params })
 }
 

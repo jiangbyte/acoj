@@ -1,5 +1,12 @@
 import type { InjectionKey, Ref } from 'vue'
-import type { Friend, Group, FriendRequest, GroupJoinRequest, Notification, Conversation } from './types'
+import type {
+  Friend,
+  Group,
+  FriendRequest,
+  GroupJoinRequest,
+  Notification,
+  Conversation,
+} from './types'
 
 export interface MessageActions {
   goHome: () => void
