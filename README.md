@@ -166,7 +166,7 @@ python scripts/seed_super_admin.py
 ./entrypoint.sh
 ```
 
-默认后端地址 `http://127.0.0.1:8000`，接口文档 `/docs`。轻量本地开发可将 `STORAGE__PROVIDER` 设为 `local`。
+默认后端地址 `http://127.0.0.1:8000`，接口文档 `/docs`。存储连接配置（provider、access_key 等）通过 `sys_storage_config` 表管理，数据库迁移会自动创建默认本地存储预设，开箱即用。
 
 ### Web 管理端
 
@@ -208,9 +208,8 @@ pnpm dev:h5
 - `DB__URL` — 数据库连接地址
 - `REDIS__URL` — Redis 地址
 - `CELERY__BROKER_URL` — RabbitMQ broker 地址
-- `STORAGE__PROVIDER` — 文件存储方式（local / minio / s3 / oss）
 
-部分配置（Auth、Storage）支持通过系统配置表在运行态覆盖。
+存储连接配置（provider / access_key / secret_key / endpoint 等）通过 `sys_storage_config` 表管理，在管理后台 系统配置 → 存储配置 中设置并设为默认后生效。upload 相关配置仍通过 `sys_config` 表运行态覆盖。
 
 ---
 
