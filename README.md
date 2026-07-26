@@ -3,18 +3,19 @@
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.116%2B-009688?logo=fastapi&logoColor=white)
 ![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)
+![Nuxt](https://img.shields.io/badge/Nuxt-4-00DC82?logo=nuxt&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)
 ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?logo=rabbitmq&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-HEI FastAPI 是一个面向中后台、门户和通用业务系统的全栈脚手架。
+HEI FastAPI 是一个面向中后台和通用业务系统的全栈脚手架，基于 FastAPI 异步后端 + Vue 3 / Nuxt 4 前端。
 
-仓库包含 **FastAPI 异步后端**、**Vue 3 管理端 SPA**、**Vue 3 门户端 SPA** 以及对应的 **uni-app 多端应用**。后端内置完善的 IAM/RBAC、资源菜单、文件存储、消息通知、代码生成、定时任务、数据库迁移和可观测性能力。
+仓库包含 **FastAPI 异步后端**、**Vue 3 管理端 SPA**、**Nuxt 4 门户端**以及 **uni-app 管理端多端应用**。后端内置完善的 IAM/RBAC、文件存储、消息通知、代码生成、定时任务、数据库迁移和可观测性能力。
 
-> 目前前端路由为静态资源（方便快速开发），sql 需要捣鼓一下（ai 处理生成），个人开发，有 bug 欢迎提，邮箱 jiangbytebiz@163.com
-> 
+> 个人开发，有 bug 欢迎提，邮箱 jiangbytebiz@163.com
+
 ---
 
 ## 功能亮点
@@ -31,11 +32,11 @@ HEI FastAPI 是一个面向中后台、门户和通用业务系统的全栈脚�
 - 统一多态关系模型 `sys_iam_relation`，支持 allow/deny/数据范围/过期
 - 会话管理：Redis Token、IP 绑定、并发限制、空闲超时
 - 密码策略：复杂度、过期、历史检查、常见密码检测
-- 登录安全：短信/邮箱验证码、RSA 加密、暴力破解防护、审计告警
+- 登录安全：RSA 加密、暴力破解防护、审计告警
 
 **系统能力**
 - 字典管理、系统配置（DB 运行时覆盖）、Banner 管理
-- 文件管理：本地存储 / S3 / MinIO / OSS 多后端适配
+- 文件管理：Local / S3 / MinIO / OSS 多后端适配，配置通过 `sys_storage_config` 表管理
 - 操作审计：有界异步队列写库 + Celery 定时告警分析
 - 代码生成：支持普通表、树表、左树右表、主子表，生成后端 + 前端 + 菜单 SQL
 - 等保安全加固：安全头、速率限制、审计告警、密码策略
@@ -50,10 +51,10 @@ HEI FastAPI 是一个面向中后台、门户和通用业务系统的全栈脚�
 - Celery 任务和数据库操作的可观测性
 
 **前端**
-- 管理端：Vue 3 / Naive UI / Pro Naive UI / Monaco Editor / @antv/g2
-- 门户端：Vue 3 / Naive UI / UnoCSS
-- 移动端：uni-app（H5 + 微信小程序等平台）
-- 支持多种富文本和代码编辑器集成
+- 管理端：Vue 3 / Naive UI / Pro Naive UI / Monaco Editor / @antv/g2 / Vite 8
+- 门户端：Nuxt 4 / @nuxt/ui / VueUse / Nuxt Charts
+- 移动端：uni-app 管理端（H5 + 微信小程序等平台）
+- 多种富文本和代码编辑器集成
 
 ---
 
@@ -71,29 +72,6 @@ HEI FastAPI 是一个面向中后台、门户和通用业务系统的全栈脚�
 
 ---
 
-## 项目结构
-
-```text
-app/
-  api/          API 版本装配入口
-  core/         配置、安全、日志、异常、统一响应
-  deps/         FastAPI 依赖注入
-  middleware/   中间件（Trace、安全头、审计、限速、CORS）
-  modules/      业务模块（自动发现，声明式装配）
-  platform/     DB、Redis、Cache、Storage、MQ、Celery、可观测性等基础设施
-  worker/       Celery app 入口
-migrations/     Alembic 数据库迁移
-scripts/        开发、测试、迁移和 seed 辅助脚本
-tests/          单元测试和 API 测试
-web/
-  admin/            管理端 Vue 3 SPA
-  portal/           门户端 Vue 3 SPA
-  admin-uniapp/     uni-app 管理端（H5 / 小程序）
-  portal-uniapp/    uni-app 门户端（H5 / 小程序）
-```
-
----
-
 ## 技术栈
 
 | 类别 | 技术 |
@@ -106,11 +84,40 @@ web/
 | **存储** | Local / S3 (boto3) / MinIO / OSS (oss2) |
 | **可观测性** | OpenTelemetry / Prometheus / 结构化日志 |
 | **ID 生成** | 雪花算法 (snowflake-id) |
-| **管理端** | Vue 3 / Naive UI / Pro Naive UI / UnoCSS / Monaco Editor |
-| **门户端** | Vue 3 / Naive UI / UnoCSS |
+| **管理端** | Vue 3 / Naive UI / Pro Naive UI / @antv/g2 / Monaco Editor / Vite 8 / TS 6 |
+| **门户端** | Nuxt 4 / @nuxt/ui / Nuxt Charts / VueUse / motion-v |
 | **移动端** | uni-app 3 / uView Pro（H5 + 小程序） |
-| **构建工具** | Vite 8 / pnpm / TypeScript |
+| **构建工具** | Vite / pnpm / TypeScript |
 | **容器化** | Docker（tini init、非 root 用户） |
+
+---
+
+## 项目结构
+
+```text
+app/
+  core/         配置、安全、日志、异常、统一响应
+  deps/         FastAPI 依赖注入
+  middleware/   中间件（Trace、安全头、审计、限速、CORS）
+  modules/      业务模块（自动发现，声明式装配）
+    auth/             登录 / 注册 / 找回密码 / 会话
+    dashboard/        管理端首页统计
+    iam/              RBAC 全套（账号/角色/部门/组/岗位/资源/权限）
+    user/             用户中心（双端资料、头像、改密）
+    sys/              系统模块（文件/字典/配置/Banner/审计/代码生成）
+    message/          消息通讯（消息/通知/公告/反馈/好友/群组/会话/WebSocket）
+    biz/              业务示例（代码生成产物）
+    internal/         内部接口（健康检查）
+  platform/     DB、Redis、Cache、Storage、MQ、Celery、可观测性等基础设施
+  worker/       Celery app 入口
+migrations/     Alembic 数据库迁移
+scripts/        开发、测试、迁移和 seed 辅助脚本
+tests/          单元测试和 API 测试
+web/
+  admin/            管理端 Vue 3 SPA（Vite 8 / Naive UI / TS 6）
+  portal/           门户端 Nuxt 4（@nuxt/ui / Nuxt Charts）
+  admin-uniapp/     uni-app 管理端（H5 / 小程序）
+```
 
 ---
 
@@ -135,6 +142,7 @@ web/
 | `sys.file` | 文件管理与公开访问 |
 | `sys.dict` | 字典管理 |
 | `sys.config` | 系统配置（DB 运行时覆盖） |
+| `sys.storage-config` | 存储配置管理（sys_storage_config 表 CRUD） |
 | `sys.banner` | Banner 管理、交互量定时落库 |
 | `sys.audit` | 操作审计查询与告警分析 |
 | `sys.codegen` | 代码生成器 |
@@ -166,7 +174,7 @@ python scripts/seed_super_admin.py
 ./entrypoint.sh
 ```
 
-默认后端地址 `http://127.0.0.1:8000`，接口文档 `/docs`。存储连接配置（provider、access_key 等）通过 `sys_storage_config` 表管理，数据库迁移会自动创建默认本地存储预设，开箱即用。
+默认后端地址 `http://127.0.0.1:8000`，接口文档 `/docs`。存储连接配置通过 `sys_storage_config` 表管理，数据库迁移会自动 seed 默认本地存储预设，开箱即用。
 
 ### Web 管理端
 
@@ -187,7 +195,7 @@ pnpm dev
 ### uni-app 移动端
 
 ```bash
-cd web/admin-uniapp  # 或 portal-uniapp
+cd web/admin-uniapp
 pnpm install
 pnpm dev:h5
 ```
@@ -199,17 +207,19 @@ pnpm dev:h5
 后端使用 `pydantic-settings`，支持嵌套环境变量（分隔符 `__`）。加载优先级：
 
 ```
-真实环境变量 > .env / .env.local > settings.py 默认值
+环境变量 > .env / .env.local > settings.py 默认值
 ```
 
-核心配置项见 `.env.example`（带完整注释），常用项：
+核心配置项见 `.env.example`（带完整注释），常用环境变量：
 
 - `APP__HOST` / `APP__PORT` — 监听地址和端口
 - `DB__URL` — 数据库连接地址
 - `REDIS__URL` — Redis 地址
 - `CELERY__BROKER_URL` — RabbitMQ broker 地址
 
-存储连接配置（provider / access_key / secret_key / endpoint 等）通过 `sys_storage_config` 表管理，在管理后台 系统配置 → 存储配置 中设置并设为默认后生效。upload 相关配置仍通过 `sys_config` 表运行态覆盖。
+存储连接配置（provider / access_key / secret_key / endpoint 等）通过 `sys_storage_config` 表管理，在管理后台 **系统管理 → 存储配置** 中设置并设为默认后生效。upload 相关配置（如 `upload_max_bytes`）仍通过 `sys_config` 表运行态覆盖。
+
+其他系统配置（Auth Token TTL、邮件、审计告警等）也通过 `sys_config` 表在运行态覆盖，无需重启。
 
 ---
 
@@ -279,9 +289,7 @@ docker run -d -e BACKEND_URL="http://host.docker.internal:8000" -p 8082:80 hei-f
 
 ## 数据库迁移
 
-项目使用 Alembic 管理数据库结构迁移。迁移只负责结构变更，不写入业务种子数据。
-
-**基本流程：**
+项目使用 Alembic 管理数据库结构迁移。
 
 ```bash
 python scripts/makemigration.py "describe schema change"
@@ -322,19 +330,6 @@ module = ModuleSpec(
 - [web/admin/README.md](web/admin/README.md) — 管理端前端说明
 - [web/portal/README.md](web/portal/README.md) — 门户端前端说明
 - [web/admin-uniapp/README.md](web/admin-uniapp/README.md) — uni-app 管理端说明
-- [web/portal-uniapp/README.md](web/portal-uniapp/README.md) — uni-app 门户端说明
-
----
-
-## 贡献指南
-
-欢迎提交 Issue、完善文档、修复 Bug、新增功能。
-
-1. Fork 本仓库
-2. 创建功能分支 `git checkout -b feat/your-feature-name`
-3. 开发并自测（`ruff check app tests`、`pytest tests -q`）
-4. 提交代码（推荐 Conventional Commits 风格）
-5. 推送并创建 Pull Request（目标分支 `main`）
 
 ---
 
