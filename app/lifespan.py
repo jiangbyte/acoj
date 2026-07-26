@@ -59,33 +59,26 @@ async def apply_db_config_overrides():
     settings.audit_alert.brute_force_threshold = config_reader.get_int("audit_alert.brute_force_threshold", settings.audit_alert.brute_force_threshold)
     settings.audit_alert.bulk_delete_threshold = config_reader.get_int("audit_alert.bulk_delete_threshold", settings.audit_alert.bulk_delete_threshold)
     settings.audit_alert.ip_anomaly_threshold = config_reader.get_int("audit_alert.ip_anomaly_threshold", settings.audit_alert.ip_anomaly_threshold)
-    # STORAGE — 优先从 sys_storage_config 加载
+    # STORAGE — 从 sys_storage_config 加载（唯一数据源）
     active_storage = config_reader.get_active_storage()
     if active_storage:
         from app.core.config.enums import StorageProvider
 
-        settings.storage.provider = StorageProvider(active_storage.get("provider", settings.storage.provider.value))  # type: ignore[assignment]
-        settings.storage.bucket = active_storage.get("bucket", settings.storage.bucket)
-        settings.storage.endpoint = active_storage.get("endpoint", settings.storage.endpoint)
-        settings.storage.access_key = active_storage.get("access_key", settings.storage.access_key)
-        settings.storage.secret_key = active_storage.get("secret_key", settings.storage.secret_key)
-        settings.storage.region = active_storage.get("region", settings.storage.region)
-        settings.storage.use_ssl = active_storage.get("use_ssl", settings.storage.use_ssl)
-        settings.storage.base_url = active_storage.get("base_url", settings.storage.base_url)
-        settings.storage.public_path = active_storage.get("public_path", settings.storage.public_path)
-        settings.storage.local_root = active_storage.get("local_root", settings.storage.local_root)
+        settings.storage.provider = StorageProvider(active_storage.get("provider", "local"))
+        settings.storage.bucket = active_storage.get("bucket") or ""
+        settings.storage.endpoint = active_storage.get("endpoint") or ""
+        settings.storage.access_key = active_storage.get("access_key") or ""
+        settings.storage.secret_key = active_storage.get("secret_key") or ""
+        settings.storage.region = active_storage.get("region") or ""
+        settings.storage.use_ssl = active_storage.get("use_ssl", False)
+        settings.storage.base_url = active_storage.get("base_url") or ""
+        settings.storage.public_path = active_storage.get("public_path") or "/api/v1/files"
+        settings.storage.local_root = active_storage.get("local_root") or "storage"
     else:
-        # fallback: 从 sys_config 读取
-        settings.storage.provider = config_reader.get("storage.provider", settings.storage.provider)  # type: ignore[assignment]
-        settings.storage.bucket = config_reader.get("storage.bucket", settings.storage.bucket)
-        settings.storage.endpoint = config_reader.get("storage.endpoint", settings.storage.endpoint)
-        settings.storage.access_key = config_reader.get("storage.access_key", settings.storage.access_key)
-        settings.storage.secret_key = config_reader.get("storage.secret_key", settings.storage.secret_key)
-        settings.storage.region = config_reader.get("storage.region", settings.storage.region)
-        settings.storage.use_ssl = config_reader.get_bool("storage.use_ssl", settings.storage.use_ssl)
-        settings.storage.base_url = config_reader.get("storage.base_url", settings.storage.base_url)
-        settings.storage.public_path = config_reader.get("storage.public_path", settings.storage.public_path)
-        settings.storage.local_root = config_reader.get("storage.local_root", settings.storage.local_root)
+        raise RuntimeError(
+            "No active storage configuration found in sys_storage_config table. "
+            "Set a default storage config via admin panel before starting the application."
+        )
 
     # UPLOAD
     settings.storage.upload_max_bytes = config_reader.get_int("storage.upload_max_bytes", settings.storage.upload_max_bytes)

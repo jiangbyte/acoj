@@ -128,12 +128,12 @@ class MQSettings(BaseSettings):
 
 
 class StorageSettings(BaseSettings):
-    provider: StorageProvider = StorageProvider.S3
-    bucket: str = "hei-fastapi"
-    endpoint: str = "http://127.0.0.1:9000"
-    access_key: str = "minioadmin"
-    secret_key: str = "minioadmin"
-    region: str = "us-east-1"
+    provider: StorageProvider = StorageProvider.LOCAL  # 启动时由 sys_storage_config 覆盖
+    bucket: str = ""
+    endpoint: str = ""
+    access_key: str = ""
+    secret_key: str = ""
+    region: str = ""
     use_ssl: bool = False
     presign_expire_seconds: int = 3600
     base_url: str = ""
