@@ -1,0 +1,110 @@
+from pathlib import Path
+
+import pytest
+from pydantic_settings import BaseSettings
+
+from app.core.config.enums import StorageProvider
+from app.platform.module import config_loader
+from app.platform.storage import manager as storage_manager
+from app.platform.storage.config import StorageConfig
+
+
+@pytest.fixture(autouse=True)
+def clear_storage_manager_cache():
+    storage_manager.clear_storage_cache()
+    yield
+    storage_manager.clear_storage_cache()
+
+
+def _local_config(config_id: str, root: Path, *, is_default: bool = False) -> StorageConfig:
+    return StorageConfig(
+        id=config_id,
+        name=config_id,
+        provider=StorageProvider.LOCAL,
+        local_root=str(root),
+        public_path=f"/files/{config_id}",
+        is_default=is_default,
+    )
+
+
+def test_resolve_storage_config_uses_snapshot_config_id_and_provider(monkeypatch, tmp_path):
+    default_config = _local_config("local-default", tmp_path / "default", is_default=True)
+    archive_config = _local_config("local-archive", tmp_path / "archive")
+    monkeypatch.setattr(
+        storage_manager.config_reader,
+        "_storage_configs",
+        {
+            default_config.id: default_config,
+            archive_config.id: archive_config,
+        },
+    )
+    monkeypatch.setattr(storage_manager.config_reader, "_default_storage_id", default_config.id)
+    monkeypatch.setattr(storage_manager.config_reader, "_version", 100)
+
+    assert storage_manager.resolve_storage_config("local-archive") == archive_config
+    assert storage_manager.resolve_storage_config(provider=StorageProvider.LOCAL) == default_config
+
+    storage = storage_manager.get_storage("local-archive", allow_settings_fallback=False)
+    assert storage.root == (tmp_path / "archive").resolve()
+    assert storage.get_object_url("a/b.txt") == "/files/local-archive/a/b.txt"
+
+
+def test_storage_cache_is_versioned_by_config_snapshot(monkeypatch, tmp_path):
+    first_config = _local_config("local-default", tmp_path / "v1", is_default=True)
+    monkeypatch.setattr(
+        storage_manager.config_reader,
+        "_storage_configs",
+        {first_config.id: first_config},
+    )
+    monkeypatch.setattr(storage_manager.config_reader, "_default_storage_id", first_config.id)
+    monkeypatch.setattr(storage_manager.config_reader, "_version", 1)
+
+    first_storage = storage_manager.get_storage(allow_settings_fallback=False)
+
+    second_config = _local_config("local-default", tmp_path / "v2", is_default=True)
+    monkeypatch.setattr(
+        storage_manager.config_reader,
+        "_storage_configs",
+        {second_config.id: second_config},
+    )
+    monkeypatch.setattr(storage_manager.config_reader, "_version", 2)
+
+    second_storage = storage_manager.get_storage(allow_settings_fallback=False)
+    assert second_storage is not first_storage
+    assert second_storage.root == (tmp_path / "v2").resolve()
+
+
+def test_explicit_unknown_storage_config_id_does_not_fallback(monkeypatch):
+    monkeypatch.setattr(storage_manager.config_reader, "_storage_configs", {})
+    monkeypatch.setattr(storage_manager.config_reader, "_default_storage_id", None)
+
+    with pytest.raises(RuntimeError, match="Storage config is not available"):
+        storage_manager.resolve_storage_config("missing-storage")
+
+
+def test_module_config_db_overrides_are_type_coerced(monkeypatch):
+    class DemoSettings(BaseSettings):
+        enabled: bool = True
+        max_count: int = 1
+        timeout_seconds: float = 1.0
+        names: list[str] = []
+
+    instance = DemoSettings()
+    monkeypatch.setattr(
+        config_loader.config_reader,
+        "raw_items",
+        lambda: {
+            "demo.enabled": "false",
+            "demo.max_count": "42",
+            "demo.timeout_seconds": "2.5",
+            "demo.names": '["a", "b"]',
+            "other.enabled": "true",
+        },
+    )
+
+    config_loader._apply_db_overrides(instance, "demo")
+
+    assert instance.enabled is False
+    assert instance.max_count == 42
+    assert instance.timeout_seconds == 2.5
+    assert instance.names == ["a", "b"]

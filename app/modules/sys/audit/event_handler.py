@@ -1,0 +1,35 @@
+"""订阅 on_audit_event 事件，将审计事件持久化到 sys_operation_audit 表。"""
+import logging
+
+from app.platform.audit.queue import OperationAuditEvent
+from app.platform.db.session import get_session_factory
+from app.platform.events import subscribe
+
+logger = logging.getLogger(__name__)
+
+
+def _build_module(resource_type: str) -> str:
+    return "iam" if resource_type != "resources" else "resource"
+
+
+async def _persist_audit_event(event: OperationAuditEvent) -> None:
+    from app.modules.sys.audit.service import OperationAuditService
+
+    async with get_session_factory()() as session:
+        await OperationAuditService(session).record(
+            module=_build_module(event.resource_type),
+            resource_type=event.resource_type,
+            action=event.action,
+            summary=f"{event.method} {event.path}",
+            success=event.status_code < 400,
+            error_message=None if event.status_code < 400 else str(event.status_code),
+            account_id=event.account_id,
+            account_type=event.account_type,
+            request_id=event.request_id,
+            ip=event.ip,
+            user_agent=event.user_agent,
+        )
+
+
+def register() -> None:
+    subscribe("on_audit_event", _persist_audit_event)

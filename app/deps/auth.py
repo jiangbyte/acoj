@@ -12,7 +12,8 @@ from app.core.security.session import SessionPayload, session_store
 from app.core.security.account_type import assert_account_type_allowed
 from app.deps.context import account_id_ctx, account_type_ctx
 from app.deps.db import get_db_session
-from app.modules.iam.account.repository import AccountRepository
+from app.platform.interfaces import resolve
+from app.platform.interfaces.account_lookup import AccountLookupProtocol
 
 
 async def get_current_session(
@@ -47,7 +48,11 @@ async def get_current_account(
 ):
     account_id_ctx.set(session.account_id)
     account_type_ctx.set(session.account_type)
-    account = await AccountRepository(db).get_account_by_id(session.account_id)
+    from typing import cast
+
+    account = await cast(AccountLookupProtocol, resolve("account_lookup")).get_active_account_by_id(
+        db, session.account_id
+    )
     if (
         not account
         or account.cancelled_at is not None

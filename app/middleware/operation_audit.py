@@ -11,7 +11,7 @@ from app.deps.context import (
     request_id_ctx,
     user_agent_ctx,
 )
-from app.modules.sys.audit.queue import OperationAuditEvent, operation_audit_queue
+from app.platform.audit.queue import OperationAuditEvent, operation_audit_queue
 
 AUDIT_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 

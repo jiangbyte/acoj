@@ -27,7 +27,7 @@ from app.modules.iam.account.password_helper import (
 )
 from app.modules.iam.account.schema import AccountCancelPayload, AccountCreateRequest
 from app.modules.iam.enums import AccountIdentityType
-from app.modules.sys.config.config_reader import config_reader
+from app.platform.config.reader import config_reader
 from app.modules.sys.audit.service import OperationAuditService
 from app.modules.user.portal.repository import PortalUserProfileRepository
 from app.modules.user.portal.schema import PortalProfileUpsertPayload

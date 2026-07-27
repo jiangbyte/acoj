@@ -5,8 +5,7 @@ import logging
 from dataclasses import dataclass
 
 from app.core.config.settings import settings
-from app.modules.sys.audit.service import OperationAuditService
-from app.platform.db.session import get_session_factory
+from app.platform.events import emit_sync
 
 logger = logging.getLogger(__name__)
 
@@ -88,20 +87,8 @@ class OperationAuditQueue:
 
 
 async def _record_operation_audit(event: OperationAuditEvent) -> None:
-    async with get_session_factory()() as session:
-        await OperationAuditService(session).record(
-            module="iam" if event.resource_type != "resources" else "resource",
-            resource_type=event.resource_type,
-            action=event.action,
-            summary=f"{event.method} {event.path}",
-            success=event.status_code < 400,
-            error_message=None if event.status_code < 400 else str(event.status_code),
-            account_id=event.account_id,
-            account_type=event.account_type,
-            request_id=event.request_id,
-            ip=event.ip,
-            user_agent=event.user_agent,
-        )
+    """持久化审计事件 — 通过事件总线分发，模块自行订阅处理。"""
+    emit_sync("on_audit_event", event=event)
 
 
 operation_audit_queue = OperationAuditQueue()

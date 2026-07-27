@@ -1,5 +1,6 @@
-from fastapi import FastAPI
 import logging
+
+from fastapi import FastAPI
 
 from app.core.config.settings import settings
 from app.core.exceptions.handlers import (
@@ -17,6 +18,8 @@ from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.trace import TraceMiddleware
 from app.platform.db.session import engine
+from app.platform.module import load_module_specs
+from app.platform.module.services import register_services
 from app.platform.observability.manager import setup_observability
 
 logger = logging.getLogger(__name__)
@@ -27,6 +30,10 @@ def create_app() -> FastAPI:
 
     # 延迟导入：确保 setup_logging() 先配置好，模块发现的日志才能正常输出
     from app.api.router import router as api_router
+
+    # Some test clients and embedding surfaces do not run ASGI lifespan.
+    # Register service interfaces at construction time as well; startup re-registers them.
+    register_services(load_module_specs())
 
     app = FastAPI(
         title=settings.app.name,

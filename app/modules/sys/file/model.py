@@ -12,11 +12,30 @@ class SysFile(Base, TimestampMixin):
 
     __tablename__ = "sys_file"
 
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
-    object_name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, comment="对象存储路径")
+    id: Mapped[str] = mapped_column(
+        String(64),
+        primary_key=True,
+        default=generate_snowflake_id,
+        comment="主键",
+    )
+    object_name: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        nullable=False,
+        comment="对象存储路径",
+    )
     original_name: Mapped[str] = mapped_column(String(255), nullable=False, comment="原始文件名")
-    storage_provider: Mapped[StorageProvider] = mapped_column(String(32), nullable=False, comment="存储服务商")
-    bucket: Mapped[str | None] = mapped_column(String(128), comment="存储桶")
+    storage_config_id: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        comment="存储配置 ID",
+    )
+    storage_provider: Mapped[StorageProvider] = mapped_column(
+        String(32),
+        nullable=False,
+        comment="存储服务商",
+    )
+    bucket: Mapped[str | None] = mapped_column(String(255), comment="存储桶")
     content_type: Mapped[str] = mapped_column(String(128), nullable=False, comment="文件类型")
     size: Mapped[int] = mapped_column(BigInteger, nullable=False, comment="文件大小")
     url: Mapped[str] = mapped_column(String(1024), nullable=False, comment="访问地址")

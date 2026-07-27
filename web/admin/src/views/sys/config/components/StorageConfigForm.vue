@@ -125,7 +125,7 @@ async function saveCurrent() {
   tab.saving = true
   try {
     if (tab.config?.id) {
-      await storageConfigApi.update({ id: tab.config.id, ...tab.config })
+      await storageConfigApi.update(tab.config)
     } else if (tab.config) {
       await storageConfigApi.create(tab.config)
     }

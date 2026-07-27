@@ -8,7 +8,8 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from app.core.config.enums import DataScope
 from app.core.security.session import PermissionGrantPayload, SessionPayload
-from app.modules.iam.dept.model import SysDept
+from app.platform.interfaces import resolve
+from app.platform.interfaces.data_scope_resolver import DataScopeResolverProtocol
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,25 +80,11 @@ async def build_data_scope_filter(
 
 
 async def list_dept_and_child_ids(db: AsyncSession, dept_ids: Iterable[str]) -> list[str]:
-    root_ids = sorted({str(dept_id) for dept_id in dept_ids if dept_id})
-    if not root_ids:
-        return []
+    from typing import cast
 
-    rows = (await db.execute(select(SysDept.id, SysDept.parent_id))).all()
-    children_by_parent: dict[str, list[str]] = defaultdict(list)
-    for dept_id, parent_id in rows:
-        if parent_id:
-            children_by_parent[str(parent_id)].append(str(dept_id))
-
-    result: set[str] = set()
-    stack = list(root_ids)
-    while stack:
-        dept_id = stack.pop()
-        if dept_id in result:
-            continue
-        result.add(dept_id)
-        stack.extend(children_by_parent.get(dept_id, []))
-    return sorted(result)
+    return await cast(DataScopeResolverProtocol, resolve("data_scope_resolver")).list_dept_and_child_ids(
+        db, dept_ids
+    )
 
 
 def _in_or_false(column, values: Iterable[str]) -> ColumnElement[bool]:

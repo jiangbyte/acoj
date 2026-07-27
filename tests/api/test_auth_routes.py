@@ -4,13 +4,13 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.constants import SUPER_ADMIN_ROLE_CODE
 from app.core.config.enums import AccountStatusEnum, AccountType
 from app.core.security.password import hash_password
 from app.core.security.session import SessionPayload, session_store
 from app.deps.db import get_db_session
 from app.modules.iam.account.model import SysAccount, SysAccountIdentity
 from app.modules.iam.enums import AccountIdentityBindStatus, AccountIdentityType, RoleScopeType
+from app.modules.iam.role.constants import SUPER_ADMIN_ROLE_CODE
 from app.modules.iam.role.model import SysRole
 from tests.iam_relation_helpers import account_role
 

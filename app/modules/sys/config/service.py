@@ -2,8 +2,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
-from app.modules.sys.config.config_reader import config_reader
-from app.modules.sys.config.crypto import decrypt_config_value, encrypt_config_value, is_sensitive
+from app.platform.config.crypto import decrypt_config_value, encrypt_config_value, is_sensitive
+from app.platform.config.reader import config_reader
 from app.modules.sys.config.repository import ConfigRepository
 from app.modules.sys.config.schema import (
     ConfigAdminPageQuery,

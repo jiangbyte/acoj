@@ -1,6 +1,5 @@
 import pytest
 
-from app.core.config.constants import SUPER_ADMIN_ROLE_CODE
 from app.core.config.enums import (
     AccountStatusEnum,
     AccountType,
@@ -10,16 +9,17 @@ from app.core.exceptions.business import AuthenticationError
 from app.core.security.password import hash_password
 from app.modules.auth.schema import LoginPayload
 from app.modules.auth.service import AuthService
+from app.modules.iam.account.model import SysAccount, SysAccountIdentity
 from app.modules.iam.enums import (
     AccountIdentityType,
     GrantSubjectType,
     ResourceType,
     RoleScopeType,
 )
-from app.modules.iam.account.model import SysAccount, SysAccountIdentity
 from app.modules.iam.group.model import SysGroup
 from app.modules.iam.relation.repository import IamRelationRepository
 from app.modules.iam.resource.model import SysResource
+from app.modules.iam.role.constants import SUPER_ADMIN_ROLE_CODE
 from app.modules.iam.role.model import SysRole
 from tests.iam_relation_helpers import (
     account_group,

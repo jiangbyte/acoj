@@ -22,4 +22,5 @@ module = ModuleSpec(
             schedule=300.0,
         ),
     ),
+    event_handlers=("app.modules.sys.audit.event_handler:register",),
 )

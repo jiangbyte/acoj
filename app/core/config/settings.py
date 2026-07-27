@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -38,17 +39,15 @@ class AuditSettings(BaseSettings):
 
 
 class RedisSettings(BaseSettings):
-    """Redis 配置，支持通过标准 URL 传递账号、密码、库编号等连接信息。"""
-
     url: str = "redis://localhost:6379/0"
-
     max_connections: int = 1000
+
 
 class AuthSettings(BaseSettings):
     token_name: str = "Authorization"
-    token_ttl_seconds: int = 60 * 60 * 4  # 4 小时
-    refresh_ttl_seconds: int = 60 * 60 * 4  # 4 小时
-    token_ttl_short_seconds: int = 60 * 60 * 2  # 不勾选"记住我"时 2 小时
+    token_ttl_seconds: int = 60 * 60 * 4
+    refresh_ttl_seconds: int = 60 * 60 * 4
+    token_ttl_short_seconds: int = 60 * 60 * 2
     admin_register_enabled: bool = False
     portal_register_enabled: bool = True
     login_failure_window_seconds: int = 15 * 60
@@ -59,7 +58,7 @@ class AuthSettings(BaseSettings):
     default_password: str = ""
     captcha_ttl_seconds: int = 5 * 60
     password_crypto_key_ttl_seconds: int = 10 * 60
-    session_idle_timeout_seconds: int = 0  # 0 表示不启用空闲超时
+    session_idle_timeout_seconds: int = 0
     session_bind_ip: bool = True
     session_bind_user_agent: bool = False
     max_concurrent_sessions: int = 5
@@ -128,7 +127,7 @@ class MQSettings(BaseSettings):
 
 
 class StorageSettings(BaseSettings):
-    provider: StorageProvider = StorageProvider.LOCAL  # 启动时由 sys_storage_config 覆盖
+    provider: StorageProvider = StorageProvider.LOCAL
     bucket: str = ""
     endpoint: str = ""
     access_key: str = ""
@@ -206,22 +205,17 @@ class ObservabilitySettings(BaseSettings):
     http_client_observability_enabled: bool = False
 
 
-
 class AuditAlertSettings(BaseSettings):
-    """审计告警配置。"""
-
     enabled: bool = False
     webhook_url: str = ""
     webhook_secret: str = ""
     analysis_interval_seconds: int = 300
     alert_cooldown_seconds: int = 1800
-
     rule_brute_force: bool = True
     rule_unusual_hours: bool = True
     rule_sensitive_ops: bool = True
     rule_bulk_delete: bool = True
     rule_ip_anomaly: bool = True
-
     brute_force_threshold: int = 10
     bulk_delete_threshold: int = 20
     ip_anomaly_threshold: int = 3
@@ -237,6 +231,7 @@ class PasswordPolicySettings(BaseSettings):
     expire_days: int = 90
     history_check_count: int = 5
     common_password_check: bool = True
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -260,6 +255,8 @@ class Settings(BaseSettings):
     id_generator: IdGeneratorSettings = Field(default_factory=IdGeneratorSettings)
     swagger: SwaggerSettings = Field(default_factory=SwaggerSettings)
     observability: ObservabilitySettings = Field(default_factory=ObservabilitySettings)
+
+    module_configs: dict[str, Any] = Field(default_factory=dict, exclude=True)
 
 
 @lru_cache(maxsize=1)

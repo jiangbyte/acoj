@@ -6,7 +6,10 @@ _sensitive_keys = {
     "auth.default_password",
 }
 
-_storage_sensitive_columns: set[str] = set()
+_storage_sensitive_columns = {
+    "access_key",
+    "secret_key",
+}
 
 
 def _get_fernet() -> Fernet | None:
@@ -30,7 +33,6 @@ def encrypt_config_value(config_key: str, value: str | None) -> str | None:
 def decrypt_config_value(config_key: str, value: str | None) -> str | None:
     if not value:
         return value
-    # Always try to decrypt (handles existing encrypted data after keys removed from _sensitive_keys)
     f = _get_fernet()
     if f:
         try:

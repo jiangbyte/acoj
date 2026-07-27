@@ -1,4 +1,4 @@
-from app.platform.module import BeatScheduleSpec, ModuleSpec, RouteSpec
+from app.platform.module import BeatScheduleSpec, ModuleSpec, RouteSpec, ServiceRegistration
 
 module = ModuleSpec(
     name="iam.account",
@@ -20,6 +20,12 @@ module = ModuleSpec(
             name="purge-cancelled-accounts-daily",
             task="account.purge_cancelled_accounts",
             schedule=86400.0,
+        ),
+    ),
+    services=(
+        ServiceRegistration(
+            interface="account_lookup",
+            implementation="app.modules.iam.account.lookup:account_lookup",
         ),
     ),
 )

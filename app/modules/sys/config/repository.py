@@ -2,7 +2,7 @@ from sqlalchemy import Select, case, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import NotFoundError
-from app.modules.sys.config.model import SysConfig
+from app.platform.db.models.sys_config import SysConfig
 from app.modules.sys.config.schema import (
     ConfigAdminPageQuery,
     ConfigBatchItem,

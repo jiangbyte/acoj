@@ -8,6 +8,7 @@ from app.platform.module import ModuleSpec, RouteSpec
 
 module = ModuleSpec(
     name="biz.cg_test_activity",
+    enabled=False,
     routes=(
         RouteSpec(
             version="v1",

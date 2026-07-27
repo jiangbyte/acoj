@@ -6,6 +6,7 @@ export interface SysFileItem {
   id: string
   object_name: string
   original_name: string
+  storage_config_id: string
   storage_provider: string
   bucket?: string | null
   content_type: string
@@ -23,6 +24,7 @@ export interface FileUrlResponse {
 }
 
 export interface FileUploadOptions {
+  storage_config_id?: string | null
   storage_provider?: string | null
 }
 
@@ -65,6 +67,9 @@ export function remove(data: any) {
 export function upload(file: File, options: FileUploadOptions = {}) {
   const data = new FormData()
   data.append('file', file)
+  if (options.storage_config_id) {
+    data.append('storage_config_id', options.storage_config_id)
+  }
   if (options.storage_provider) {
     data.append('storage_provider', options.storage_provider)
   }

@@ -2,9 +2,6 @@ from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.schema.base import IdsRequest, to_schema, to_schema_list
-from app.modules.sys.config.config_reader import config_reader
-from app.modules.sys.config.crypto import decrypt_storage_value, encrypt_storage_value
-from app.modules.sys.config.storage_model import SysStorageConfig
 from app.modules.sys.config.storage_repository import StorageConfigRepository
 from app.modules.sys.config.storage_schema import (
     StorageConfigCreateRequest,
@@ -12,6 +9,9 @@ from app.modules.sys.config.storage_schema import (
     StorageConfigUpdateRequest,
     SysStorageConfigSchema,
 )
+from app.platform.config.crypto import decrypt_storage_value, encrypt_storage_value
+from app.platform.config.reader import config_reader
+from app.platform.db.models.sys_storage_config import SysStorageConfig
 from app.platform.db.transaction import transactional
 
 
@@ -41,8 +41,16 @@ class StorageConfigService:
 
     async def update(self, payload: StorageConfigUpdateRequest) -> None:
         # 空字符串表示前端未填写（脱敏回显），跳过更新，保持 DB 加密值不变
-        payload.access_key = encrypt_storage_value("access_key", payload.access_key) if payload.access_key else None
-        payload.secret_key = encrypt_storage_value("secret_key", payload.secret_key) if payload.secret_key else None
+        payload.access_key = (
+            encrypt_storage_value("access_key", payload.access_key)
+            if payload.access_key
+            else None
+        )
+        payload.secret_key = (
+            encrypt_storage_value("secret_key", payload.secret_key)
+            if payload.secret_key
+            else None
+        )
         async with transactional(self.db):
             if payload.is_default is True:
                 await self.db.execute(

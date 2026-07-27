@@ -11,6 +11,7 @@ class SysFileSchema(ApiSchema):
     id: str
     object_name: str
     original_name: str
+    storage_config_id: str
     storage_provider: StorageProvider
     bucket: str | None = None
     content_type: str
@@ -30,6 +31,7 @@ class FileUploadRequest(ApiSchema):
     filename: str
     content: bytes
     content_type: str
+    storage_config_id: str | None = None
     storage_provider: StorageProvider | None = None
     category: str = ""
     object_name: str | None = None
@@ -40,6 +42,7 @@ class FileRecordCreate(ApiSchema):
 
     object_name: str
     original_name: str
+    storage_config_id: str
     storage_provider: StorageProvider
     bucket: str | None = None
     content_type: str
@@ -56,6 +59,7 @@ class FileAdminPageQuery(ApiSchema):
     pagination: PageQuery
     original_name: str | None = Field(default=None, max_length=255)
     object_name: str | None = Field(default=None, max_length=255)
+    storage_config_id: str | None = Field(default=None, max_length=64)
     storage_provider: StorageProvider | None = None
     content_type: str | None = Field(default=None, max_length=128)
 

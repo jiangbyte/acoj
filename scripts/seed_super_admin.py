@@ -19,7 +19,7 @@ def bootstrap_project() -> Path:
 
 bootstrap_project()
 
-from app.core.config.constants import SUPER_ADMIN_ROLE_CODE  # noqa: E402
+from app.modules.iam.role.constants import SUPER_ADMIN_ROLE_CODE  # noqa: E402
 from app.core.config.enums import (  # noqa: E402
     AccountStatusEnum,
     AccountType,

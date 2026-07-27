@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.constants import SUPER_ADMIN_ROLE_CODE
+from app.modules.iam.role.constants import SUPER_ADMIN_ROLE_CODE
 from app.core.config.settings import settings
 from app.core.security.session import SessionPayload, session_store
 from app.modules.iam.account.model import SysAccount

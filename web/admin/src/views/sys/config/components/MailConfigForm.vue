@@ -4,8 +4,7 @@ import { onMounted, reactive } from 'vue'
 
 interface Item {
   id: string
-  config_key: string
-  config_value: string
+  value: string
   remark: string
 }
 
@@ -30,7 +29,6 @@ onMounted(async () => {
       case 'mail.host':
         fields.host = {
           id: row.id,
-          config_key: row.config_key,
           value: row.config_value ?? '',
           remark: row.remark ?? '',
         }
@@ -41,7 +39,6 @@ onMounted(async () => {
       case 'mail.username':
         fields.username = {
           id: row.id,
-          config_key: row.config_key,
           value: row.config_value ?? '',
           remark: row.remark ?? '',
         }
@@ -49,7 +46,6 @@ onMounted(async () => {
       case 'mail.password':
         fields.password = {
           id: row.id,
-          config_key: row.config_key,
           value: row.config_value ?? '',
           remark: row.remark ?? '',
         }
@@ -57,7 +53,6 @@ onMounted(async () => {
       case 'mail.from_email':
         fields.fromEmail = {
           id: row.id,
-          config_key: row.config_key,
           value: row.config_value ?? '',
           remark: row.remark ?? '',
         }
@@ -65,7 +60,6 @@ onMounted(async () => {
       case 'mail.from_name':
         fields.fromName = {
           id: row.id,
-          config_key: row.config_key,
           value: row.config_value ?? '',
           remark: row.remark ?? '',
         }

@@ -62,6 +62,8 @@ class FileRepository:
             filters.append(SysFile.original_name.ilike(f"%{query.original_name}%"))
         if query.object_name:
             filters.append(SysFile.object_name.ilike(f"%{query.object_name}%"))
+        if query.storage_config_id:
+            filters.append(SysFile.storage_config_id == query.storage_config_id)
         if query.storage_provider:
             filters.append(SysFile.storage_provider == query.storage_provider)
         if query.content_type:

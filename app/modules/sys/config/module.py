@@ -17,7 +17,7 @@ module = ModuleSpec(
         ),
     ),
     models=(
-        "app.modules.sys.config.model",
-        "app.modules.sys.config.storage_model",
+        "app.platform.db.models.sys_config",
+        "app.platform.db.models.sys_storage_config",
     ),
 )
