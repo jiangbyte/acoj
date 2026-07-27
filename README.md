@@ -90,14 +90,16 @@ pip install -e ".[dev,postgres]"
 cp .env.example .env
 # 编辑 .env：DB__URL、REDIS__URL、CELERY__BROKER_URL、APP__CONFIG_CRYPTO_KEY
 
-python scripts/migrate.py
-python scripts/seed_super_admin.py
+python scripts/db/migrate.py
+python scripts/seed/seed_super_admin.py
 ./entrypoint.sh
 ```
 
 默认地址：`http://127.0.0.1:8000`
 
 接口文档：`http://127.0.0.1:8000/docs`
+
+`./entrypoint.sh` 默认按 `all` 模式启动 API、Celery worker 和 beat。也可以显式传参切换：`./entrypoint.sh api|worker|beat|migrate|seed`。
 
 ### 管理端
 
@@ -136,6 +138,8 @@ pnpm dev:h5
 
 存储配置由管理后台维护并设置默认配置。上传接口可以只传 `storage_provider`，后端会解析到对应配置；需要精确指定时也支持 `storage_config_id`。
 
+多实例部署依赖 Redis 广播配置变更。管理后台保存 `sys_config` 或 `sys_storage_config` 后，当前进程会立即重载配置，其它 API/worker 会通过 Redis 订阅事件刷新本地缓存。
+
 ---
 
 ## 模块扩展
@@ -161,10 +165,41 @@ HEI_ENABLED_MODULES=some.module
 
 ## Docker
 
+单机单 Docker：一个项目容器内运行 API、worker、beat，PostgreSQL、Redis、RabbitMQ 由外部基础设施提供。
+
+```bash
+docker compose run --rm hei migrate
+docker compose up -d --build
+```
+
+等价 Docker 命令：
+
 ```bash
 docker build -t hei-fastapi-backend .
-docker run -d --name hei-fastapi-server --env-file .env -p 8000:8000 hei-fastapi-backend
+docker run --rm --env-file .env hei-fastapi-backend migrate
+docker run -d --name hei-fastapi-single --env-file .env -p 8000:8000 hei-fastapi-backend all
+```
 
+单机多 Docker 多实例：复制同一个项目镜像的 `api` / `worker` 角色，基础设施仍由外部提供。
+
+```bash
+docker compose -f docker-compose.multi.yml up -d --build --scale api=2 --scale worker=2
+docker compose -f docker-compose.multi.yml --profile seed run --rm seed
+```
+
+多机多节点：面向 Swarm/外部编排，基础设施地址通过环境变量注入。
+
+```bash
+docker build -t hei-fastapi-backend:latest .
+docker build -t hei-fastapi-admin:latest web/admin
+docker network create --driver overlay --attachable hei_overlay
+docker node update --label-add hei.beat=true <beat-node>
+docker compose -f docker-compose.distributed.yml config | docker stack deploy -c - hei-fastapi
+```
+
+管理端单独镜像：
+
+```bash
 docker build -t hei-fastapi-admin web/admin
 docker run -d -e BACKEND_URL="http://host.docker.internal:8000" -p 8081:81 hei-fastapi-admin
 ```
@@ -174,9 +209,9 @@ docker run -d -e BACKEND_URL="http://host.docker.internal:8000" -p 8081:81 hei-f
 ## 常用命令
 
 ```bash
-python scripts/makemigration.py "describe schema change"
-python scripts/check_migration.py
-python scripts/migrate.py
+python scripts/db/makemigration.py "describe schema change"
+python scripts/db/check_migration.py
+python scripts/db/migrate.py
 
 python -m ruff check app tests
 python -m pytest
@@ -187,12 +222,19 @@ cd web/admin
 pnpm build
 ```
 
+压测基线：
+
+```bash
+python scripts/ops/loadtest_http.py --base-url http://127.0.0.1:8000 --path / --requests 1000 --concurrency 50
+```
+
 ---
 
 ## 相关文档
 
 - [docs/iam.md](docs/iam.md)
 - [docs/migration.md](docs/migration.md)
+- [docs/production.md](docs/production.md)
 - [migrations/README.md](migrations/README.md)
 - [web/admin/README.md](web/admin/README.md)
 - [web/portal/README.md](web/portal/README.md)

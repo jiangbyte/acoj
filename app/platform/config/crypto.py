@@ -4,6 +4,8 @@ from app.core.config.settings import settings
 
 _sensitive_keys = {
     "auth.default_password",
+    "audit_alert.webhook_secret",
+    "mail.password",
 }
 
 _storage_sensitive_columns = {

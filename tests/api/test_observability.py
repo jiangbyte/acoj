@@ -22,6 +22,7 @@ async def test_ready_endpoint_shape(client):
     assert data["status"] in {"ready", "not_ready"}
     assert "database" in data["checks"]
     assert "redis" in data["checks"]
+    assert "config_sync" in data["checks"]
     assert "celery_broker" in data["checks"]
     assert "storage" in data["checks"]
     assert "enabled" in data["checks"]["database"]

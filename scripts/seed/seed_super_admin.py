@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def bootstrap_project() -> Path:
-    project_root = Path(__file__).resolve().parents[1]
+    project_root = Path(__file__).resolve().parents[2]
     os.chdir(project_root)
     sys.path.insert(0, str(project_root))
     return project_root
@@ -19,7 +19,6 @@ def bootstrap_project() -> Path:
 
 bootstrap_project()
 
-from app.modules.iam.role.constants import SUPER_ADMIN_ROLE_CODE  # noqa: E402
 from app.core.config.enums import (  # noqa: E402
     AccountStatusEnum,
     AccountType,
@@ -40,6 +39,7 @@ from app.modules.iam.enums import (  # noqa: E402
     RoleScopeType,
 )
 from app.modules.iam.relation.model import SysIamRelation  # noqa: E402
+from app.modules.iam.role.constants import SUPER_ADMIN_ROLE_CODE  # noqa: E402
 from app.modules.iam.role.model import SysRole  # noqa: E402
 from app.modules.user.admin.model import AdminUserProfile  # noqa: E402
 from app.platform.db.session import close_engine, get_session_factory  # noqa: E402

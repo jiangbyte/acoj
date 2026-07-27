@@ -10,7 +10,7 @@ from app.modules.sys.config.storage_schema import (
     SysStorageConfigSchema,
 )
 from app.platform.config.crypto import decrypt_storage_value, encrypt_storage_value
-from app.platform.config.reader import config_reader
+from app.platform.config.sync import reload_and_publish
 from app.platform.db.models.sys_storage_config import SysStorageConfig
 from app.platform.db.transaction import transactional
 
@@ -37,7 +37,7 @@ class StorageConfigService:
                     .where(SysStorageConfig.id == entity.id)
                     .values(is_default=True)
                 )
-        await config_reader.reload()
+        await reload_and_publish("sys_storage_config.create")
 
     async def update(self, payload: StorageConfigUpdateRequest) -> None:
         # 空字符串表示前端未填写（脱敏回显），跳过更新，保持 DB 加密值不变
@@ -63,12 +63,12 @@ class StorageConfigService:
                     .where(SysStorageConfig.id == payload.id)
                     .values(is_default=True)
                 )
-        await config_reader.reload()
+        await reload_and_publish("sys_storage_config.update")
 
     async def delete(self, payload: IdsRequest) -> None:
         async with transactional(self.db):
             await self.repo.delete_many(payload.ids)
-        await config_reader.reload()
+        await reload_and_publish("sys_storage_config.delete")
 
     async def detail(self, config_id: str) -> SysStorageConfigSchema:
         schema = to_schema(
@@ -90,4 +90,4 @@ class StorageConfigService:
     async def set_default(self, payload: StorageConfigSetDefaultRequest) -> None:
         async with transactional(self.db):
             await self.repo.set_default(payload.id)
-        await config_reader.reload()
+        await reload_and_publish("sys_storage_config.set_default")

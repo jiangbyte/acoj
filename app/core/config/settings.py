@@ -19,8 +19,10 @@ class AppSettings(BaseSettings):
     debug: bool = True
     workers: int = 1
     worker_max: int = 4
+    process_role: str = "all"
     config_crypto_key: str = ""
     timezone: str = "Asia/Shanghai"
+    trusted_proxy_ips: list[str] = []
 
 
 class DatabaseSettings(BaseSettings):

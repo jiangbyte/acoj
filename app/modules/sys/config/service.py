@@ -2,8 +2,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
-from app.platform.config.crypto import decrypt_config_value, encrypt_config_value, is_sensitive
-from app.platform.config.reader import config_reader
 from app.modules.sys.config.repository import ConfigRepository
 from app.modules.sys.config.schema import (
     ConfigAdminPageQuery,
@@ -12,6 +10,8 @@ from app.modules.sys.config.schema import (
     ConfigUpdateRequest,
     SysConfigSchema,
 )
+from app.platform.config.crypto import decrypt_config_value, encrypt_config_value, is_sensitive
+from app.platform.config.sync import reload_and_publish
 from app.platform.db.transaction import transactional
 
 
@@ -26,18 +26,18 @@ class ConfigService:
         payload.config_value = encrypt_config_value(payload.config_key, payload.config_value)
         async with transactional(self.db):
             await self.repo.create(payload)
-        await config_reader.reload()
+        await reload_and_publish("sys_config.create")
 
     async def update(self, payload: ConfigUpdateRequest) -> None:
         payload.config_value = encrypt_config_value(payload.config_key, payload.config_value)
         async with transactional(self.db):
             await self.repo.update(payload)
-        await config_reader.reload()
+        await reload_and_publish("sys_config.update")
 
     async def delete(self, payload: IdsRequest) -> None:
         async with transactional(self.db):
             await self.repo.delete_many(payload.ids)
-        await config_reader.reload()
+        await reload_and_publish("sys_config.delete")
 
     async def detail(self, query: IdQuery) -> SysConfigSchema:
         schema = to_schema(SysConfigSchema, await self.repo.get_required(query.id))
@@ -63,7 +63,7 @@ class ConfigService:
             return
         async with transactional(self.db):
             await self.repo.batch_save(items_to_save)
-        await config_reader.reload()
+        await reload_and_publish("sys_config.batch_save")
 
     async def page_admin(self, query: ConfigAdminPageQuery) -> PageData[SysConfigSchema]:
         items, total = await self.repo.page_admin(query)

@@ -27,6 +27,7 @@ class ReadyChecksResponse(ApiSchema):
 
     database: HealthCheckItem
     redis: HealthCheckItem
+    config_sync: HealthCheckItem
     celery_broker: HealthCheckItem
     storage: HealthCheckItem
 

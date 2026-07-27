@@ -1,0 +1,54 @@
+name: hei-fastapi-single
+
+x-backend-env: &backend-env
+  APP__HOST: 0.0.0.0
+  APP__PORT: 8000
+  APP__DEBUG: "false"
+  APP__CONFIG_CRYPTO_KEY: ${APP__CONFIG_CRYPTO_KEY:?APP__CONFIG_CRYPTO_KEY is required}
+  APP__TRUSTED_PROXY_IPS: ${DOCKER_TRUSTED_PROXY_IPS:-["172.16.0.0/12","127.0.0.1"]}
+  DB__URL: ${DB__URL:?DB__URL is required}
+  REDIS__URL: ${REDIS__URL:?REDIS__URL is required}
+  CELERY__BROKER_URL: ${CELERY__BROKER_URL:?CELERY__BROKER_URL is required}
+  CORS__ALLOW_ORIGINS: ${CORS__ALLOW_ORIGINS:-["http://localhost:8081","http://127.0.0.1:8081"]}
+  DB__POOL_SIZE: ${DB__POOL_SIZE:-5}
+  DB__MAX_OVERFLOW: ${DB__MAX_OVERFLOW:-5}
+  REDIS__MAX_CONNECTIONS: ${REDIS__MAX_CONNECTIONS:-100}
+
+services:
+  hei:
+    build:
+      context: .
+    environment:
+      <<: *backend-env
+    command: ["all"]
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - backend_storage:/app/storage
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/internal/health/live', timeout=3)\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  admin:
+    profiles: ["admin"]
+    build:
+      context: ./web/admin
+    environment:
+      BACKEND_URL: http://hei:8000
+      CLIENT_MAX_BODY_SIZE: ${CLIENT_MAX_BODY_SIZE:-10m}
+    ports:
+      - "${ADMIN_PORT:-8081}:81"
+    depends_on:
+      hei:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  backend_storage:

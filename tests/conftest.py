@@ -12,6 +12,7 @@ from app.core.config.settings import settings
 from app.deps.db import get_db_session
 from app.factory import create_app
 from app.platform.db.base import Base
+from app.platform.db.session import close_engine
 
 
 class FakeRedis:
@@ -19,6 +20,8 @@ class FakeRedis:
         self.values: dict[str, object] = {}
         self.sets: dict[str, set[object]] = {}
         self.hashes: dict[str, dict[object, str]] = {}
+        self.published: list[tuple[str, object]] = []
+        self._pubsubs: list[FakePubSub] = []
 
     async def setex(self, key: object, ttl: int, value: object) -> None:
         self.values[str(key)] = value
@@ -70,6 +73,52 @@ class FakeRedis:
     async def aclose(self) -> None:
         return None
 
+    def pubsub(self) -> FakePubSub:
+        pubsub = FakePubSub(self)
+        self._pubsubs.append(pubsub)
+        return pubsub
+
+    async def publish(self, channel: str, message: object) -> int:
+        self.published.append((channel, message))
+        delivered = 0
+        for pubsub in list(self._pubsubs):
+            if channel in pubsub.channels:
+                await pubsub.queue.put(
+                    {"type": "message", "channel": channel, "data": message}
+                )
+                delivered += 1
+        return delivered
+
+
+class FakePubSub:
+    def __init__(self, redis: FakeRedis) -> None:
+        self.redis = redis
+        self.channels: set[str] = set()
+        self.queue: asyncio.Queue[dict[str, object]] = asyncio.Queue()
+
+    async def subscribe(self, channel: str) -> None:
+        self.channels.add(channel)
+
+    async def unsubscribe(self, channel: str) -> None:
+        self.channels.discard(channel)
+
+    async def get_message(
+        self,
+        *,
+        ignore_subscribe_messages: bool = True,
+        timeout: float | None = None,
+    ) -> dict[str, object] | None:
+        try:
+            if timeout is None:
+                return await self.queue.get()
+            return await asyncio.wait_for(self.queue.get(), timeout=timeout)
+        except TimeoutError:
+            return None
+
+    async def aclose(self) -> None:
+        if self in self.redis._pubsubs:
+            self.redis._pubsubs.remove(self)
+
 
 @pytest.fixture(autouse=True)
 def fake_redis(monkeypatch) -> FakeRedis:
@@ -99,7 +148,7 @@ async def db_session() -> AsyncIterator[AsyncSession]:
 
 
 @pytest.fixture
-async def client() -> AsyncIterator[AsyncClient]:
+async def client(monkeypatch) -> AsyncIterator[AsyncClient]:
     app = create_app()
     test_router = APIRouter()
 
@@ -113,6 +162,9 @@ async def client() -> AsyncIterator[AsyncClient]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
+    from app.modules.internal.health import router as health_router
+
+    monkeypatch.setattr(health_router, "get_session_factory", lambda: session_factory)
 
     async def override_get_db_session() -> AsyncIterator[AsyncSession]:
         async with session_factory() as session:
@@ -127,6 +179,7 @@ async def client() -> AsyncIterator[AsyncClient]:
             yield ac
         finally:
             app.dependency_overrides.clear()
+            await close_engine()
             await engine.dispose()
 
 

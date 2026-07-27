@@ -6,7 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config.enums import AccountType
 from app.core.config.settings import settings
 from app.core.exceptions.business import BusinessError
+from app.core.network.client_ip import get_client_ip
 from app.core.response.schema import success
+from app.core.security.session import SessionPayload
 from app.core.security.transport import (
     CaptchaApiResponse,
     PasswordKeyApiResponse,
@@ -15,7 +17,6 @@ from app.core.security.transport import (
     decrypt_passwords,
     verify_captcha,
 )
-from app.core.security.session import SessionPayload
 from app.deps.auth import get_current_session, require_account_type
 from app.deps.db import get_db_session
 from app.modules.auth.schema import (
@@ -69,7 +70,7 @@ async def admin_login(
             account_type=AccountType.ADMIN,
             identity_type=payload.identity_type,
             remember_me=payload.remember_me,
-            client_ip=_client_ip(request),
+            client_ip=get_client_ip(request),
             user_agent=request.headers.get("user-agent"),
             device_label=_device_label(request.headers.get("user-agent")),
         )
@@ -100,7 +101,7 @@ async def portal_login(
             account_type=AccountType.PORTAL,
             identity_type=payload.identity_type,
             remember_me=payload.remember_me,
-            client_ip=_client_ip(request),
+            client_ip=get_client_ip(request),
             user_agent=request.headers.get("user-agent"),
             device_label=_device_label(request.headers.get("user-agent")),
         )
@@ -142,7 +143,7 @@ async def admin_forgot_password(
     await AuthService(db).forgot_password(
         payload,
         AccountType.ADMIN,
-        client_ip=_client_ip(request),
+        client_ip=get_client_ip(request),
         user_agent=request.headers.get("user-agent"),
     )
     return success()
@@ -159,7 +160,7 @@ async def admin_reset_password(
     await AuthService(db).reset_password(
         payload.model_copy(update={"password": password or ""}),
         AccountType.ADMIN,
-        client_ip=_client_ip(request),
+        client_ip=get_client_ip(request),
         user_agent=request.headers.get("user-agent"),
     )
     return success()
@@ -175,7 +176,7 @@ async def portal_forgot_password(
     await AuthService(db).forgot_password(
         payload,
         AccountType.PORTAL,
-        client_ip=_client_ip(request),
+        client_ip=get_client_ip(request),
         user_agent=request.headers.get("user-agent"),
     )
     return success()
@@ -192,7 +193,7 @@ async def portal_reset_password(
     await AuthService(db).reset_password(
         payload.model_copy(update={"password": password or ""}),
         AccountType.PORTAL,
-        client_ip=_client_ip(request),
+        client_ip=get_client_ip(request),
         user_agent=request.headers.get("user-agent"),
     )
     return success()
@@ -217,13 +218,6 @@ async def logout(
     token = authorization or session.token
     await AuthService(db).logout(token)
     return success(LogoutResponse(success=True))
-
-
-def _client_ip(request: Request) -> str | None:
-    forwarded_for = request.headers.get("x-forwarded-for")
-    if forwarded_for:
-        return forwarded_for.split(",", 1)[0].strip()
-    return request.client.host if request.client else None
 
 
 def _device_label(user_agent: str | None) -> str | None:

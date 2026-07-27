@@ -5,11 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountStatusEnum, AccountType
 from app.core.config.settings import settings
-from app.core.exceptions.business import AuthenticationError, AuthorizationError, BusinessError
+from app.core.exceptions.business import AuthenticationError, AuthorizationError
+from app.core.network.client_ip import get_client_ip
+from app.core.security.account_type import assert_account_type_allowed
 from app.core.security.permission import PermissionChecker
 from app.core.security.permission_registry import ACCOUNT_TYPE_META_ATTR, PERMISSION_META_ATTR
 from app.core.security.session import SessionPayload, session_store
-from app.core.security.account_type import assert_account_type_allowed
 from app.deps.context import account_id_ctx, account_type_ctx
 from app.deps.db import get_db_session
 from app.platform.interfaces import resolve
@@ -93,14 +94,6 @@ def require_permission(permission_code: str):
     return dependency
 
 
-def _client_ip(request: Request) -> str | None:
-    """从请求中提取客户端真实 IP。"""
-    forwarded_for = request.headers.get("x-forwarded-for")
-    if forwarded_for:
-        return forwarded_for.split(",", 1)[0].strip()
-    return request.client.host if request.client else None
-
-
 def _validate_session_ip(request: Request, session: SessionPayload) -> None:
     """如果启用了 IP 绑定且会话有 IP 记录，校验请求来源 IP 是否匹配。"""
     if not settings.auth.session_bind_ip:
@@ -108,7 +101,7 @@ def _validate_session_ip(request: Request, session: SessionPayload) -> None:
     session_ip = session.client_ip
     if not session_ip:
         return
-    current_ip = _client_ip(request)
+    current_ip = get_client_ip(request)
     if current_ip and current_ip != session_ip:
         raise AuthenticationError("Session IP mismatch — token may have been stolen")
 

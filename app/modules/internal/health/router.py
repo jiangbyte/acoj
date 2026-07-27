@@ -9,6 +9,7 @@ from app.core.schema.health import (
     ReadyHealthResponse,
 )
 from app.platform.cache.redis import get_redis
+from app.platform.config.sync import get_config_sync_state
 from app.platform.db.session import get_session_factory
 from app.platform.storage.manager import get_storage
 from app.platform.tasks.celery_app import celery_app
@@ -28,6 +29,7 @@ async def ready() -> ReadyHealthResponse:
     checks = ReadyChecksResponse(
         database=HealthCheckItem(enabled=True, ok=False, detail=None),
         redis=HealthCheckItem(enabled=True, ok=False, detail=None),
+        config_sync=HealthCheckItem(enabled=False, ok=False, detail=None),
         celery_broker=HealthCheckItem(
             enabled=bool(settings.celery.broker_url),
             ok=False,
@@ -52,6 +54,14 @@ async def ready() -> ReadyHealthResponse:
             checks.redis.detail = "connection ok"
         except Exception as exc:
             checks.redis.detail = _safe_detail(exc)
+    sync_state = get_config_sync_state()
+    checks.config_sync.enabled = sync_state.enabled
+    checks.config_sync.ok = not sync_state.enabled or sync_state.running
+    checks.config_sync.detail = (
+        f"channel={sync_state.channel}, last_event_at={sync_state.last_event_at}"
+        if sync_state.running
+        else sync_state.last_error or "listener not running"
+    )
     if not checks.celery_broker.enabled:
         checks.celery_broker.detail = "celery broker not configured"
     else:
@@ -74,6 +84,7 @@ async def ready() -> ReadyHealthResponse:
         for component in [
             checks.database,
             checks.redis,
+            checks.config_sync,
             checks.celery_broker,
             checks.storage,
         ]
