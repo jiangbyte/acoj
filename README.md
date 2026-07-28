@@ -1,18 +1,20 @@
-# HEI FastAPI
+# ACOJ
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.116%2B-009688?logo=fastapi&logoColor=white)
 ![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)
-![Nuxt](https://img.shields.io/badge/Nuxt-4-00DC82?logo=nuxt&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)
 ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?logo=rabbitmq&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-HEI FastAPI 是一个面向中后台和通用业务系统的全栈脚手架，包含 FastAPI 异步后端、Vue 3 管理端、Nuxt 4 门户端和 uni-app 管理端。
+ACOJ 是一个基于 FastAPI 构建的现代在线判题（Online Judge）平台，支持题目管理、代码提交与判题、竞赛举办以及用户/团队管理。
 
-项目核心目标是提供一套可直接二次开发的基础工程：IAM/RBAC、系统配置、文件存储、消息通知、代码生成、任务调度、数据库迁移和可观测性都已经内置，业务模块通过 `ModuleSpec` 插件式装配，尽量减少对框架主体的侵入。
+> ACOJ 由三个子项目组成：
+> - **acoj**（本仓库） — Web 主项目（API + 前端 + 数据库）
+> - **[acoj-worker](../acoj-worker/)** — 判题 worker 服务（RabbitMQ/Celery 消费判题任务）
+> - **[acoj-sandbox](../acoj-sandbox/)** — 判题沙箱执行器（C++ 执行引擎 + Python 封装）
 
 > 个人开发，有 bug 欢迎提，邮箱 jiangbytebiz@163.com
 
@@ -20,13 +22,11 @@ HEI FastAPI 是一个面向中后台和通用业务系统的全栈脚手架，�
 
 ## 功能概览
 
-- 异步后端：FastAPI / SQLAlchemy 2.0 Async / Pydantic v2
-- 权限体系：账号、角色、部门、用户组、资源菜单、数据范围
-- 系统能力：字典、配置、文件、Banner、审计、代码生成
-- 消息能力：站内消息、通知、公告、反馈、WebSocket
-- 文件存储：Local / MinIO / S3 / OSS
-- 前端应用：Vue 3 管理端、Nuxt 4 门户端、uni-app 管理端
-- 工程能力：Alembic、Celery、RedBeat、Docker、Prometheus、OpenTelemetry
+- **判题核心**：多语言代码提交与判题运行，题目与测试用例管理，判题结果异步消费与状态回调
+- **权限管理**：统一账号体系，角色/部门/用户组/岗位/资源菜单完整 RBAC 分层
+- **系统能力**：文件管理（Local / S3 / MinIO / OSS）、字典管理、系统配置、代码生成
+- **消息通讯**：站内消息、通知、公告、反馈、即时通讯、WebSocket 实时推送
+- **可观测性**：结构化日志、Prometheus metrics、OpenTelemetry tracing
 
 ---
 
@@ -81,7 +81,6 @@ web/
 ## 快速开始
 
 ### 后端
-
 ```bash
 python -m venv .venv
 source .venv/bin/activate
