@@ -108,6 +108,8 @@ class CorsSettings(BaseSettings):
 
 class CelerySettings(BaseSettings):
     broker_url: str = "amqp://guest:guest@127.0.0.1:5672//"
+    # Empty → Redis result backend (settings.redis.url) for cross-process AsyncResult.
+    result_backend: str = ""
     worker_log_level: str = "INFO"
     log_dir: str = "logs"
     log_file_max_mb: int = 100

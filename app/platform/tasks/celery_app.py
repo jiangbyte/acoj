@@ -1,4 +1,3 @@
-import asyncio
 import logging
 
 from celery import Celery
@@ -11,7 +10,7 @@ logger = logging.getLogger(__name__)
 celery_app = Celery(
     "hei-fastapi",
     broker=settings.celery.broker_url,
-    backend=settings.redis.url,
+    backend=settings.celery.result_backend or settings.redis.url,
     include=["app.worker.tasks"],
 )
 celery_app.conf.task_default_queue = "default"
@@ -29,8 +28,12 @@ sync_to_redbeat(celery_app)
 
 @worker_process_init.connect
 def _worker_process_init(**_: object) -> None:
+    # Must share WorkerAsyncRunner's loop: asyncio.run() would bind Redis/DB
+    # connections to a temporary loop that is closed before tasks run.
     try:
-        asyncio.run(_startup_worker_infra())
+        from app.platform.tasks.async_runner import worker_async_runner
+
+        worker_async_runner.run(_startup_worker_infra())
     except Exception:
         logger.exception("Failed to initialize worker infrastructure")
         raise
@@ -39,7 +42,10 @@ def _worker_process_init(**_: object) -> None:
 @worker_process_shutdown.connect
 def _worker_process_shutdown(**_: object) -> None:
     try:
-        asyncio.run(_shutdown_worker_infra())
+        from app.platform.tasks.async_runner import worker_async_runner
+
+        worker_async_runner.run(_shutdown_worker_infra())
+        worker_async_runner.close()
     except Exception:
         logger.warning("Failed to shutdown worker infrastructure", exc_info=True)
 
