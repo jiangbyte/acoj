@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Button, Checkbox, Form, Input, Tabs, message } from 'antd'
+import { Button, Checkbox, ConfigProvider, Form, Input, Tabs, message } from 'antd'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { CaptchaInput, type CaptchaInputHandle } from '@/components/common/CaptchaInput'
 import { useAuthStore } from '@/stores/auth'
@@ -85,71 +85,74 @@ export function LoginPage() {
 
   return (
     <AuthSplit title="登录" subtitle="请选择登录身份。">
+      <ConfigProvider componentSize="large">
         <Form
-        form={form}
-        layout="vertical"
-        initialValues={{ remember: true, captcha_id: '', captcha_value: '' }}
-        onFinish={onFinish}
-      >
-        <Tabs
-          activeKey={activeType}
-          items={tabItems.map((item) => ({ key: item.key, label: item.label }))}
-          onChange={(key) => setActiveType(key as LoginType)}
-          style={{ marginBottom: 8 }}
-        />
-
-        <Form.Item
-          name={activeField}
-          label={tabItems.find((t) => t.key === activeType)?.label}
-          rules={[{ required: true, message: '请填写登录身份' }]}
+          form={form}
+          layout="vertical"
+          initialValues={{ remember: true, captcha_id: '', captcha_value: '' }}
+          onFinish={onFinish}
         >
-          <Input
-            placeholder={tabItems.find((t) => t.key === activeType)?.placeholder}
-            allowClear
+          <Tabs
+            activeKey={activeType}
+            items={tabItems.map((item) => ({ key: item.key, label: item.label }))}
+            onChange={(key) => setActiveType(key as LoginType)}
+            style={{ marginBottom: 8 }}
           />
-        </Form.Item>
 
-        <Form.Item name="password" label="密码" rules={[{ required: true, message: '请输入密码' }]}>
-          <Input.Password placeholder="请输入密码" />
-        </Form.Item>
+          <Form.Item
+            name={activeField}
+            label={tabItems.find((t) => t.key === activeType)?.label}
+            rules={[{ required: true, message: '请填写登录身份' }]}
+          >
+            <Input
+              placeholder={tabItems.find((t) => t.key === activeType)?.placeholder}
+              allowClear
+            />
+          </Form.Item>
 
-        <Form.Item name="captcha_id" hidden>
-          <Input />
-        </Form.Item>
+          <Form.Item name="password" label="密码" rules={[{ required: true, message: '请输入密码' }]}>
+            <Input.Password placeholder="请输入密码" />
+          </Form.Item>
 
-        <Form.Item
-          name="captcha_value"
-          label="验证码"
-          rules={[{ required: true, message: '请输入验证码' }]}
-        >
-          <CaptchaInput
-            ref={captchaRef}
-            captchaId={captchaId}
-            captchaValue={captchaValue}
-            onCaptchaIdChange={(v) => form.setFieldValue('captcha_id', v)}
-            onCaptchaValueChange={(v) => form.setFieldValue('captcha_value', v)}
-          />
-        </Form.Item>
+          <Form.Item name="captcha_id" hidden>
+            <Input />
+          </Form.Item>
 
-        <Form.Item>
-          <div className="flex items-center justify-between">
-            <Form.Item name="remember" valuePropName="checked" noStyle>
-              <Checkbox>记住我</Checkbox>
-            </Form.Item>
-            <Link to="/auth/forgot-password">忘记密码？</Link>
-          </div>
-        </Form.Item>
+          <Form.Item
+            name="captcha_value"
+            label="验证码"
+            rules={[{ required: true, message: '请输入验证码' }]}
+          >
+            <CaptchaInput
+              ref={captchaRef}
+              size="large"
+              captchaId={captchaId}
+              captchaValue={captchaValue}
+              onCaptchaIdChange={(v) => form.setFieldValue('captcha_id', v)}
+              onCaptchaValueChange={(v) => form.setFieldValue('captcha_value', v)}
+            />
+          </Form.Item>
 
-        <Form.Item>
-          <Button type="primary" htmlType="submit" block loading={loading}>
-            登录
-          </Button>
-        </Form.Item>
-      </Form>
+          <Form.Item>
+            <div className="flex items-center justify-between">
+              <Form.Item name="remember" valuePropName="checked" noStyle>
+                <Checkbox>记住我</Checkbox>
+              </Form.Item>
+              <Link to="/auth/forgot-password">忘记密码？</Link>
+            </div>
+          </Form.Item>
 
-      <div className="text-center text-gray-500">
-        还没有账号？ <Link to="/auth/register">立即注册</Link>
-      </div>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block loading={loading}>
+              登录
+            </Button>
+          </Form.Item>
+        </Form>
+
+        <div className="text-center text-gray-500">
+          还没有账号？ <Link to="/auth/register">立即注册</Link>
+        </div>
+      </ConfigProvider>
     </AuthSplit>
   )
 }

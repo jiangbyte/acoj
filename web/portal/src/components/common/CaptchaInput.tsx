@@ -11,10 +11,11 @@ type Props = {
   captchaValue: string
   onCaptchaIdChange: (value: string) => void
   onCaptchaValueChange: (value: string) => void
+  size?: 'middle' | 'large'
 }
 
 export const CaptchaInput = forwardRef<CaptchaInputHandle, Props>(function CaptchaInput(
-  { captchaValue, onCaptchaIdChange, onCaptchaValueChange },
+  { captchaValue, onCaptchaIdChange, onCaptchaValueChange, size = 'middle' },
   ref,
 ) {
   const [loading, setLoading] = useState(false)
@@ -43,10 +44,12 @@ export const CaptchaInput = forwardRef<CaptchaInputHandle, Props>(function Captc
   }, [])
 
   const imageSrc = imageBase64 ? `data:image/svg+xml;base64,${imageBase64}` : ''
+  const imageHeight = size === 'large' ? 'h-10' : 'h-8'
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_140px] gap-2.5 items-center">
       <Input
+        size={size}
         value={captchaValue}
         placeholder="请输入验证码"
         allowClear
@@ -54,12 +57,12 @@ export const CaptchaInput = forwardRef<CaptchaInputHandle, Props>(function Captc
       />
       <button
         type="button"
-        className="h-11 w-140px overflow-hidden rounded-md border border-gray-200 bg-gray-50 p-0 cursor-pointer disabled:cursor-wait"
+        className={`${imageHeight} w-140px overflow-hidden rounded-md bg-gray-50 p-0 cursor-pointer disabled:cursor-wait`}
         disabled={loading}
         onClick={() => void refresh()}
       >
         <Spin spinning={loading} size="small">
-          {imageSrc ? <img src={imageSrc} alt="验证码" className="block h-11 w-140px" /> : null}
+          {imageSrc ? <img src={imageSrc} alt="验证码" className={`block ${imageHeight} w-140px`} /> : null}
         </Spin>
       </button>
     </div>

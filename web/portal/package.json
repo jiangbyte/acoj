@@ -17,10 +17,14 @@
     "antd": "^6.5.3",
     "axios": "^1.19.0",
     "dayjs": "^1.11.21",
+    "monaco-editor": "^0.55.1",
     "radash": "^12.1.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-easy-crop": "^6.2.3",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.18.2",
+    "remark-gfm": "^4.0.1",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

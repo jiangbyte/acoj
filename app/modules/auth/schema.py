@@ -38,7 +38,7 @@ class RegisterRequest(CaptchaMixin, PasswordKeyMixin):
     account: str = Field(min_length=3, max_length=64)
     password: str = Field(min_length=1, max_length=512)
     name: str | None = Field(default=None, max_length=64)
-    nickname: str = Field(min_length=1, max_length=64)
+    nickname: str | None = Field(default=None, max_length=64)
     email: str = Field(min_length=3, max_length=128)
 
 

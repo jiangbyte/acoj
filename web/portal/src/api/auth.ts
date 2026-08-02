@@ -58,7 +58,7 @@ export function register(data: {
   password_key_id: string
   captcha_id: string
   captcha_value: string
-  nickname: string
+  nickname?: string
   email: string
   name?: string
 }) {

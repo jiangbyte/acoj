@@ -7,6 +7,13 @@ import { ForgotPasswordPage } from '@/pages/auth/forgot-password'
 import { NotFoundPage } from '@/pages/error/not-found'
 import { PlaceholderPage } from '@/pages/placeholder'
 import { UserCenterPage } from '@/pages/usercenter'
+import { ProblemListPage } from '@/pages/problems'
+import { ProblemDetailPage } from '@/pages/problems/detail'
+import { ContestListPage } from '@/pages/contests'
+import { ContestDetailPage } from '@/pages/contests/detail'
+import { ContestProblemPage } from '@/pages/contests/problem'
+import { SubmissionListPage } from '@/pages/submissions'
+import { SubmissionDetailPage } from '@/pages/submissions/detail'
 import { guestOnly, requireAuth } from './guard'
 
 export const routes: RouteObject[] = [
@@ -15,9 +22,13 @@ export const routes: RouteObject[] = [
     element: <MainLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'problems', element: <PlaceholderPage title="题库" /> },
-      { path: 'contests', element: <PlaceholderPage title="竞赛" /> },
-      { path: 'submissions', element: <PlaceholderPage title="提交" /> },
+      { path: 'problems', element: <ProblemListPage /> },
+      { path: 'problems/:id', element: <ProblemDetailPage /> },
+      { path: 'contests', element: <ContestListPage /> },
+      { path: 'contests/:id', element: <ContestDetailPage /> },
+      { path: 'contests/:id/problems/:problemId', element: <ContestProblemPage /> },
+      { path: 'submissions', element: <SubmissionListPage /> },
+      { path: 'submissions/:id', element: <SubmissionDetailPage /> },
       { path: 'rank', element: <PlaceholderPage title="排名" /> },
       {
         path: 'usercenter',

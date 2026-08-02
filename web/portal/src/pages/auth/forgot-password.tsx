@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react'
-import { Alert, Button, Form, Input, message } from 'antd'
+import { Alert, Button, ConfigProvider, Form, Input, message } from 'antd'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import * as authApi from '@/api/auth'
 import { CaptchaInput, type CaptchaInputHandle } from '@/components/common/CaptchaInput'
+import { PasswordStrength } from '@/components/common/PasswordStrength'
 import { encryptPasswords } from '@/utils/security'
 import { isValidEmail } from '@/utils/validate'
 import { AuthSplit } from './AuthSplit'
@@ -25,6 +26,7 @@ export function ForgotPasswordPage() {
   const isResetMode = Boolean(token)
   const captchaId = Form.useWatch('captcha_id', form) || ''
   const captchaValue = Form.useWatch('captcha_value', form) || ''
+  const password = Form.useWatch('password', form) || ''
 
   async function sendLink() {
     try {
@@ -92,101 +94,102 @@ export function ForgotPasswordPage() {
         isResetMode ? '使用邮件重置链接设置新密码。' : '向已启用登录的邮箱发送密码重置链接。'
       }
     >
-      <Alert
-        type="info"
-        showIcon
-        className="mb-4"
-        message={
-          isResetMode
-            ? '该重置链接在过期前仅可使用一次。'
-            : '仅当该邮箱已启用门户登录时，系统才会发送重置链接。'
-        }
-      />
+      <ConfigProvider componentSize="large">
+        <Alert
+          type="info"
+          showIcon
+          className="mb-4"
+          message={
+            isResetMode
+              ? '该重置链接在过期前仅可使用一次。'
+              : '仅当该邮箱已启用门户登录时，系统才会发送重置链接。'
+          }
+        />
 
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={{ captcha_id: '', captcha_value: '' }}
-        onFinish={() => {
-          void (isResetMode ? resetPassword() : sendLink())
-        }}
-      >
-        <Form.Item
-          name="email"
-          label="登录邮箱"
-          rules={[{ required: true, message: '请输入登录邮箱' }]}
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{ captcha_id: '', captcha_value: '' }}
+          onFinish={() => {
+            void (isResetMode ? resetPassword() : sendLink())
+          }}
         >
-          <Input placeholder="请输入登录邮箱" allowClear />
-        </Form.Item>
+          <Form.Item
+            name="email"
+            label="登录邮箱"
+            rules={[{ required: true, message: '请输入登录邮箱' }]}
+          >
+            <Input placeholder="请输入登录邮箱" allowClear />
+          </Form.Item>
 
-        {isResetMode ? (
-          <>
-            <Form.Item
-              name="password"
-              label="新密码"
-              rules={[
-                { required: true, message: '请输入新密码' },
-                { min: 8, message: '密码至少 8 个字符' },
-              ]}
-            >
-              <Input.Password placeholder="请输入新密码" />
-            </Form.Item>
-            <Form.Item
-              name="confirmPassword"
-              label="确认密码"
-              dependencies={['password']}
-              rules={[
-                { required: true, message: '请确认密码' },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (!value || getFieldValue('password') === value) {
-                      return Promise.resolve()
-                    }
-                    return Promise.reject(new Error('两次输入的密码不一致'))
-                  },
-                }),
-              ]}
-            >
-              <Input.Password placeholder="请再次输入新密码" />
-            </Form.Item>
-          </>
-        ) : null}
-
-        <Form.Item name="captcha_id" hidden>
-          <Input />
-        </Form.Item>
-
-        <Form.Item
-          name="captcha_value"
-          label="验证码"
-          rules={[{ required: true, message: '请输入验证码' }]}
-        >
-          <CaptchaInput
-            ref={captchaRef}
-            captchaId={captchaId}
-            captchaValue={captchaValue}
-            onCaptchaIdChange={(v) => form.setFieldValue('captcha_id', v)}
-            onCaptchaValueChange={(v) => form.setFieldValue('captcha_value', v)}
-          />
-        </Form.Item>
-
-        <Form.Item>
-          <Button type="primary" htmlType="submit" block loading={loading}>
-            {isResetMode ? '重置密码' : '发送重置链接'}
-          </Button>
-        </Form.Item>
-
-        <div className="flex items-center justify-between">
-          <Link to="/auth/login">返回登录</Link>
           {isResetMode ? (
-            <Button type="link" className="!px-0" onClick={() => void sendLink()}>
-              发送新链接
+            <>
+              <Form.Item
+                name="password"
+                label="新密码"
+                rules={[{ required: true, message: '请输入新密码' }]}
+              >
+                <Input.Password placeholder="至少 8 个字符，含大小写、数字与特殊字符" />
+              </Form.Item>
+              <PasswordStrength password={password} />
+              <Form.Item
+                name="confirmPassword"
+                label="确认密码"
+                dependencies={['password']}
+                rules={[
+                  { required: true, message: '请确认密码' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value || getFieldValue('password') === value) {
+                        return Promise.resolve()
+                      }
+                      return Promise.reject(new Error('两次输入的密码不一致'))
+                    },
+                  }),
+                ]}
+              >
+                <Input.Password placeholder="请再次输入新密码" />
+              </Form.Item>
+            </>
+          ) : null}
+
+          <Form.Item name="captcha_id" hidden>
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="captcha_value"
+            label="验证码"
+            rules={[{ required: true, message: '请输入验证码' }]}
+          >
+            <CaptchaInput
+              ref={captchaRef}
+              size="large"
+              captchaId={captchaId}
+              captchaValue={captchaValue}
+              onCaptchaIdChange={(v) => form.setFieldValue('captcha_id', v)}
+              onCaptchaValueChange={(v) => form.setFieldValue('captcha_value', v)}
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block loading={loading}>
+              {isResetMode ? '重置密码' : '发送重置链接'}
             </Button>
-          ) : (
-            <Link to="/auth/register">去注册</Link>
-          )}
-        </div>
-      </Form>
+          </Form.Item>
+
+          <div className="flex items-center justify-between">
+            <Link to="/auth/login">返回登录</Link>
+            {isResetMode ? (
+              <Button type="link" className="!px-0" onClick={() => void sendLink()}>
+                发送新链接
+              </Button>
+            ) : (
+              <Link to="/auth/register">去注册</Link>
+            )}
+          </div>
+        </Form>
+      </ConfigProvider>
     </AuthSplit>
   )
 }

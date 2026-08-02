@@ -6,6 +6,7 @@ import {
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { resolveFileUrl } from '@/utils/file'
 import { useAuthStore } from '@/stores/auth'
 
 export function UserCenter() {
@@ -17,14 +18,17 @@ export function UserCenter() {
 
   if (!token) {
     return (
-      <Button type="primary" onClick={() => navigate('/auth/login')}>
-        登录
-      </Button>
+      <Space size={8}>
+        <Button onClick={() => navigate('/auth/register')}>注册</Button>
+        <Button type="primary" onClick={() => navigate('/auth/login')}>
+          登录
+        </Button>
+      </Space>
     )
   }
 
   const displayName = userInfo?.nickname || userInfo?.account || '用户'
-  const avatarSrc = userInfo?.avatar || undefined
+  const avatarSrc = resolveFileUrl(userInfo?.avatar)
 
   const items: MenuProps['items'] = [
     {

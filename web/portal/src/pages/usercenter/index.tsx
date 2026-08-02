@@ -21,8 +21,11 @@ import * as authApi from '@/api/auth'
 import type { PortalMeResponse, PortalProfileData } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import { encryptPasswords } from '@/utils/security'
+import { resolveFileUrl } from '@/utils/file'
 import { isValidEmail } from '@/utils/validate'
+import { PasswordStrength } from '@/components/common/PasswordStrength'
 import { AvatarUploadModal } from './components/AvatarUploadModal'
+import './usercenter.css'
 
 const mapNames = (items?: { id: string; name: string }[]) =>
   (items ?? []).map((item) => item.name).filter(Boolean).join(' / ')
@@ -51,6 +54,8 @@ export function UserCenterPage() {
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
   const [savingBind, setSavingBind] = useState(false)
+
+  const newPassword = Form.useWatch('new_password', passwordForm) || ''
 
   const [bindConfirm, setBindConfirm] = useState<BindConfirmState>({
     show: false,
@@ -191,7 +196,7 @@ export function UserCenterPage() {
 
   const profile = (me?.profile ?? {}) as PortalProfileData
   const displayName = me?.nickname || me?.name || '-'
-  const avatarUrl = me?.avatar || profile.avatar || undefined
+  const avatarUrl = resolveFileUrl(me?.avatar || profile.avatar)
   const roleNames = mapNames(me?.role_id_names)
   const contactParts = [profile.phone, profile.email].filter(Boolean)
   const contactText = contactParts.length ? contactParts.join(' / ') : '未设置'
@@ -245,13 +250,11 @@ export function UserCenterPage() {
           <Form.Item
             name="new_password"
             label="新密码"
-            rules={[
-              { required: true, message: '请输入新密码' },
-              { min: 6, message: '密码至少 6 个字符' },
-            ]}
+            rules={[{ required: true, message: '请输入新密码' }]}
           >
-            <Input.Password placeholder="至少 6 个字符" />
+            <Input.Password placeholder="至少 8 个字符，含大小写、数字与特殊字符" />
           </Form.Item>
+          <PasswordStrength password={newPassword} />
           <Form.Item
             name="confirm_password"
             label="确认密码"

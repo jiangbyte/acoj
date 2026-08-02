@@ -6,6 +6,7 @@ import './auth-page.css'
 type Props = {
   title: string
   subtitle: string
+  wide?: boolean
   children: ReactNode
 }
 
@@ -27,7 +28,7 @@ const highlights = [
   },
 ]
 
-export function AuthSplit({ title, subtitle, children }: Props) {
+export function AuthSplit({ title, subtitle, wide = false, children }: Props) {
   return (
     <section className="auth-split">
       <aside className="auth-split__visual" aria-hidden>
@@ -62,7 +63,7 @@ export function AuthSplit({ title, subtitle, children }: Props) {
       </aside>
 
       <div className="auth-split__panel">
-        <Card className="auth-split__card">
+        <Card className={wide ? 'auth-split__card auth-split__card--wide' : 'auth-split__card'}>
           <Typography.Title level={3} className="!mt-0 !mb-1">
             {title}
           </Typography.Title>

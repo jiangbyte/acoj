@@ -32,6 +32,10 @@
   width: min(100%, 480px);
 }
 
+.auth-split__card--wide {
+  width: min(100%, 720px);
+}
+
 @media (max-width: 920px) {
   .auth-split {
     grid-template-columns: 1fr;
