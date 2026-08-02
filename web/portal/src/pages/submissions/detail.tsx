@@ -6,7 +6,7 @@ import { submissionDetail } from '@/api/submission'
 import type { OjSubmissionCase, OjSubmissionDetail } from '@/api/submission'
 import type { SubmissionSnapshot } from '@/api/problem'
 import { isTerminalStatus, pollSubmissionUntilDone, watchSubmissionEvents } from '@/api/submissionWatch'
-import { CodeEditor } from '@/components/editor/CodeEditor'
+import { MonacoEditor } from '@/components/editor/MonacoEditor'
 import { VerdictBadge } from '@/components/oj/VerdictBadge'
 import { languageLabel, monacoLanguage } from '@/utils/monacoLanguage'
 import { useAuthStore } from '@/stores/auth'
@@ -241,7 +241,7 @@ export function SubmissionDetailPage() {
 
       <Card size="small" title="源码">
         {hasSource ? (
-          <CodeEditor
+          <MonacoEditor
             value={detail.source ?? ''}
             language={monacoLanguage(detail.language_key)}
             readOnly

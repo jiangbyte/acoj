@@ -1,6 +1,6 @@
 import type { AxiosError, AxiosResponse } from 'axios'
 import { message } from 'antd'
-import type { ApiResponse } from '@/types/api'
+import type { ApiResponse } from '@/typing/api'
 
 const loginPath = '/auth/login'
 let isHandlingUnauthorized = false

@@ -1,6 +1,19 @@
 import { defineConfig, presetUno } from 'unocss'
 
 export default defineConfig({
+  preflights: [
+    {
+      getCSS: () => `
+        *,
+        *::before,
+        *::after {
+          border-width: 0;
+          border-style: solid;
+          border-color: #e5e7eb;
+        }
+      `,
+    },
+  ],
   presets: [presetUno()],
   shortcuts: {
     'wh-full': 'w-full h-full',

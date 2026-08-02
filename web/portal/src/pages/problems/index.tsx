@@ -4,7 +4,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { Link, useSearchParams } from 'react-router-dom'
 import { problemPage } from '@/api/problem'
 import type { PortalProblemListItem } from '@/api/problem'
-import type { PageData } from '@/types/api'
+import type { PageData } from '@/typing/api'
 
 const formatRate = (rate: number) => `${rate.toFixed(1)}%`
 

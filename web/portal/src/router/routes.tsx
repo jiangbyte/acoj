@@ -1,5 +1,5 @@
 import { Navigate, type RouteObject } from 'react-router-dom'
-import { MainLayout } from '@/layouts'
+import { MainLayout, SolveLayout } from '@/layouts'
 import { HomePage } from '@/pages/home'
 import { LoginPage } from '@/pages/auth/login'
 import { RegisterPage } from '@/pages/auth/register'
@@ -18,15 +18,20 @@ import { guestOnly, requireAuth } from './guard'
 
 export const routes: RouteObject[] = [
   {
+    element: <SolveLayout />,
+    children: [
+      { path: '/problems/:id', element: <ProblemDetailPage /> },
+      { path: '/contests/:id/problems/:problemId', element: <ContestProblemPage /> },
+    ],
+  },
+  {
     path: '/',
     element: <MainLayout />,
     children: [
       { index: true, element: <HomePage /> },
       { path: 'problems', element: <ProblemListPage /> },
-      { path: 'problems/:id', element: <ProblemDetailPage /> },
       { path: 'contests', element: <ContestListPage /> },
       { path: 'contests/:id', element: <ContestDetailPage /> },
-      { path: 'contests/:id/problems/:problemId', element: <ContestProblemPage /> },
       { path: 'submissions', element: <SubmissionListPage /> },
       { path: 'submissions/:id', element: <SubmissionDetailPage /> },
       { path: 'rank', element: <PlaceholderPage title="排名" /> },

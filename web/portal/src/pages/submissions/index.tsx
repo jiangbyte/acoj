@@ -6,7 +6,7 @@ import { submissionPage } from '@/api/submission'
 import type { OjSubmissionListItem } from '@/api/submission'
 import { VerdictBadge } from '@/components/oj/VerdictBadge'
 import { languageLabel } from '@/utils/monacoLanguage'
-import type { PageData } from '@/types/api'
+import type { PageData } from '@/typing/api'
 
 const resultOptions = [
   { value: 'AC', label: '通过' },

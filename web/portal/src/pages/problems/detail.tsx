@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Descriptions, Empty, Table, Tabs, Tag, Typography } from 'antd'
+import { Button, Descriptions, Empty, Grid, Skeleton, Splitter, Table, Tag, Typography } from 'antd'
+import { FileTextOutlined, HistoryOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { Link, useParams } from 'react-router-dom'
 import { problemDetail, problemLanguages, problemSubmit } from '@/api/problem'
 import type { PortalProblemDetail, PortalProblemLanguage } from '@/api/problem'
 import { submissionPage } from '@/api/submission'
 import type { OjSubmissionListItem } from '@/api/submission'
+import { CustomTabs } from '@/components/common/CustomTabs'
 import { Markdown } from '@/components/common/Markdown'
+import { SolveSidebar } from '@/components/oj/SolveSidebar'
 import { SubmitPanel } from '@/components/oj/SubmitPanel'
 import { VerdictBadge } from '@/components/oj/VerdictBadge'
 import { useAuthStore } from '@/stores/auth'
@@ -18,6 +21,8 @@ export function ProblemDetailPage() {
   const { id = '' } = useParams()
   const userInfo = useAuthStore((s) => s.userInfo)
   const isLogin = useAuthStore((s) => s.isLogin)
+  const screens = Grid.useBreakpoint()
+  const isDesktop = screens.lg ?? false
 
   const [detail, setDetail] = useState<PortalProblemDetail | null>(null)
   const [languages, setLanguages] = useState<PortalProblemLanguage[]>([])
@@ -114,7 +119,10 @@ export function ProblemDetailPage() {
     {
       key: 'statement',
       label: '描述',
-      children: detail ? (
+      icon: <FileTextOutlined />,
+      children: loading ? (
+        <Skeleton active paragraph={{ rows: 8 }} />
+      ) : detail ? (
         <div>
           <div className="mb-4 flex flex-wrap items-baseline gap-3">
             <Typography.Title level={4} className="!mb-0">
@@ -138,13 +146,12 @@ export function ProblemDetailPage() {
           />
           <Markdown content={detail.description} />
         </div>
-      ) : (
-        <Typography.Text type="secondary">加载中…</Typography.Text>
-      ),
+      ) : null,
     },
     {
       key: 'submissions',
       label: '提交记录',
+      icon: <HistoryOutlined />,
       children: isLogin() ? (
         <Table
           rowKey="id"
@@ -164,18 +171,57 @@ export function ProblemDetailPage() {
     },
   ]
 
+  const statementPane = (
+    <div className="flex h-full min-w-0 flex-col bg-white">
+      <CustomTabs items={tabItems} contentClassName="p-4" />
+    </div>
+  )
+
+  const solvePane = (
+    <div className="h-full min-w-0 overflow-hidden bg-white p-4">
+      <SubmitPanel
+        languages={languages}
+        defaultLanguage={languages[0]?.language_key}
+        onSubmit={handleSubmit}
+        fillHeight
+      />
+    </div>
+  )
+
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_520px]">
-      <Card className="min-w-0" loading={loading}>
-        <Tabs items={tabItems} />
-      </Card>
-      <Card className="min-w-0 lg:sticky lg:top-2" styles={{ body: { paddingTop: 16 } }}>
-        <SubmitPanel
-          languages={languages}
-          defaultLanguage={languages[0]?.language_key}
-          onSubmit={handleSubmit}
-        />
-      </Card>
+    <div className="flex h-full">
+      <SolveSidebar />
+      <div className="min-w-0 flex-1">
+        {isDesktop ? (
+          <Splitter style={{ height: '100%' }}>
+            <Splitter.Panel
+              defaultSize="55%"
+              min={320}
+              className="min-w-0"
+              collapsible={{ start: true, end: true, showCollapsibleIcon: 'auto' }}
+            >
+              {statementPane}
+            </Splitter.Panel>
+            <Splitter.Panel min={360} className="min-w-0" collapsible={{ start: true, end: true, showCollapsibleIcon: 'auto' }}>
+              {solvePane}
+            </Splitter.Panel>
+          </Splitter>
+        ) : (
+          <Splitter orientation="vertical" style={{ height: '100%' }}>
+            <Splitter.Panel
+              defaultSize="50%"
+              min={280}
+              className="min-w-0"
+              collapsible={{ start: true, end: true, showCollapsibleIcon: 'auto' }}
+            >
+              {statementPane}
+            </Splitter.Panel>
+            <Splitter.Panel min={280} className="min-w-0" collapsible={{ start: true, end: true, showCollapsibleIcon: 'auto' }}>
+              {solvePane}
+            </Splitter.Panel>
+          </Splitter>
+        )}
+      </div>
     </div>
   )
 }

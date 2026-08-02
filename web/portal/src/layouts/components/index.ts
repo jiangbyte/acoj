@@ -1,4 +1,5 @@
 export { AppHeader, HEADER_HEIGHT } from './header/AppHeader'
+export { SolveHeader } from './header/SolveHeader'
 export { Logo } from './header/Logo'
 export { NavMenu } from './header/NavMenu'
 export { UserCenter } from './header/UserCenter'

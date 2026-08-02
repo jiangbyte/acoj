@@ -1,19 +1,31 @@
 import { useEffect, useRef } from 'react'
 import type { editor as MonacoEditor } from 'monaco-editor'
+import { toCssSize } from './shared'
 import { setupMonacoWorkers } from './monacoWorkers'
 
 type MonacoModule = typeof import('monaco-editor')
 
 type Props = {
-  value: string
+  value?: string | null
   language?: string
-  onChange?: (value: string) => void
+  theme?: string
+  height?: string | number
   readOnly?: boolean
-  height?: number | string
+  options?: MonacoEditor.IStandaloneEditorConstructionOptions
+  onChange?: (value: string) => void
   className?: string
 }
 
-export function CodeEditor({ value, language = 'plaintext', onChange, readOnly = false, height = 420, className }: Props) {
+export function MonacoEditor({
+  value = '',
+  language = 'typescript',
+  theme = 'vs',
+  height = 360,
+  readOnly = false,
+  options,
+  onChange,
+  className,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null)
   const monacoRef = useRef<MonacoModule | null>(null)
@@ -35,9 +47,10 @@ export function CodeEditor({ value, language = 'plaintext', onChange, readOnly =
       }
       monacoRef.current = monaco
       instance = monaco.editor.create(containerRef.current, {
-        value,
+        ...options,
+        value: value ?? '',
         language,
-        theme: 'vs',
+        theme,
         readOnly,
         automaticLayout: true,
         minimap: { enabled: false },
@@ -65,10 +78,10 @@ export function CodeEditor({ value, language = 'plaintext', onChange, readOnly =
 
   useEffect(() => {
     const instance = editorRef.current
-    if (!instance || instance.getValue() === value) {
+    if (!instance || instance.getValue() === (value ?? '')) {
       return
     }
-    instance.setValue(value)
+    instance.setValue(value ?? '')
   }, [value])
 
   useEffect(() => {
@@ -82,8 +95,29 @@ export function CodeEditor({ value, language = 'plaintext', onChange, readOnly =
   }, [language])
 
   useEffect(() => {
+    const instance = editorRef.current
+    const monaco = monacoRef.current
+    if (!instance || !monaco) {
+      return
+    }
+    monaco.editor.setTheme(theme)
+  }, [theme])
+
+  useEffect(() => {
+    if (options) {
+      editorRef.current?.updateOptions(options)
+    }
+  }, [options])
+
+  useEffect(() => {
     editorRef.current?.updateOptions({ readOnly })
   }, [readOnly])
 
-  return <div ref={containerRef} className={className} style={{ height }} />
+  return (
+    <div
+      ref={containerRef}
+      className={className}
+      style={{ height: toCssSize(height), width: '100%', minWidth: 0 }}
+    />
+  )
 }

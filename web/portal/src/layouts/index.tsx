@@ -3,6 +3,8 @@ import { ensureDict } from '@/utils/dict'
 import { AppFooter, AppHeader, HEADER_HEIGHT } from './components'
 import { Content } from './Content'
 
+export { SolveLayout } from './SolveLayout'
+
 export function MainLayout() {
   useEffect(() => {
     void ensureDict()

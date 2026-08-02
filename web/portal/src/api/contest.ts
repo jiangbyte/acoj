@@ -1,5 +1,5 @@
 import { http } from '@/utils'
-import type { PageData } from '@/types/api'
+import type { PageData } from '@/typing/api'
 import type { SubmissionSnapshot } from './problem'
 
 const prefix = '/api/v1/portal'
