@@ -13,10 +13,10 @@ from app.core.config.enums import AccountType
 from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
 from app.core.schema.base import Id, IdQuery, IdsRequest
-from app.deps.auth import require_account_type, require_permission
+from app.core.security.session import SessionPayload
+from app.deps.auth import get_current_session, require_account_type, require_permission
 from app.deps.db import get_db_session
 from app.modules.biz.problem.enums import ProblemStatus
-from app.modules.biz.problem.judge_bridge import build_admin_trial_payload
 from app.modules.biz.problem.problem.schema import (
     OjProblemAdminPageQuery,
     OjProblemCreateRequest,
@@ -29,7 +29,6 @@ from app.modules.biz.problem.problem.schema import (
 from app.modules.biz.problem.problem.service import (
     OjProblemService,
 )
-from app.platform.tasks.celery_app import celery_app
 
 router = APIRouter()
 
@@ -129,6 +128,7 @@ async def page(
     group_id: str | None = Query(default=None),
     type_id: str | None = Query(default=None),
     status: ProblemStatus | None = Query(default=None),
+    is_public: bool | None = Query(default=None),
 ) -> ApiResponse[PageData[OjProblemSchema]]:
     query = OjProblemAdminPageQuery(
         pagination=PageQuery(current=current, size=size),
@@ -137,6 +137,7 @@ async def page(
         group_id=group_id,
         type_id=type_id,
         status=status,
+        is_public=is_public,
     )
     return success(await OjProblemService(db).page_admin(query))
 
@@ -153,29 +154,10 @@ async def trial_judge(
     problem_id: Annotated[Id, Query()],
     payload: OjProblemTrialJudgeRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[OjProblemTrialJudgeResult]:
-    from celery.exceptions import TimeoutError as CeleryTimeoutError
-
-    from app.core.exceptions.business import BusinessError
-
-    judge_payload = await build_admin_trial_payload(
-        db,
-        problem_id=problem_id,
-        language_key=payload.language_key,
-        source=payload.source,
-        case_ids=payload.case_ids,
+    return success(
+        await OjProblemService(db).trial_judge(
+            problem_id, payload, user_id=session.account_id
+        )
     )
-    async_result = celery_app.send_task(
-        "judge.execute",
-        args=[judge_payload],
-        queue="judge",
-    )
-    try:
-        raw = async_result.get(timeout=payload.wait_timeout_sec)
-    except CeleryTimeoutError as exc:
-        raise BusinessError("Trial judge timed out waiting for worker") from exc
-    except Exception as exc:  # noqa: BLE001
-        raise BusinessError(f"Trial judge failed: {exc}") from exc
-    if not isinstance(raw, dict):
-        raise BusinessError("Unexpected trial judge response")
-    return success(OjProblemTrialJudgeResult.model_validate(raw))

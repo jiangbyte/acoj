@@ -1,13 +1,14 @@
 <script setup lang="tsx">
 import type { DataTableColumns } from 'naive-ui'
 import { ojProblemApi } from '@/api'
-import { NButton } from 'naive-ui'
+import { NButton, NTag } from 'naive-ui'
 import { computed, reactive, watch } from 'vue'
 
 export interface ProblemOption {
   id: string
   code: string
   name: string
+  is_public?: boolean
 }
 
 const props = withDefaults(
@@ -36,8 +37,18 @@ const state = reactive({
 })
 
 const columns = computed<DataTableColumns<ProblemOption>>(() => [
-  { title: '编码', key: 'code', width: 140, ellipsis: { tooltip: true } },
-  { title: '标题', key: 'name', minWidth: 180, ellipsis: { tooltip: true } },
+  { title: '编码', key: 'code', width: 120, ellipsis: { tooltip: true } },
+  { title: '标题', key: 'name', minWidth: 160, ellipsis: { tooltip: true } },
+  {
+    title: '公开题库',
+    key: 'is_public',
+    width: 100,
+    render: (row) => (
+      <NTag size="small" type={row.is_public ? 'success' : 'warning'}>
+        {row.is_public ? '公开' : '竞赛专用'}
+      </NTag>
+    ),
+  },
   {
     title: '操作',
     key: 'action',
@@ -94,6 +105,7 @@ async function loadOptions() {
       id: String(item.id),
       code: item.code || '',
       name: item.name || '',
+      is_public: Boolean(item.is_public),
     }))
     state.total = res?.data?.total ?? 0
   } catch {

@@ -33,6 +33,7 @@ class OjContestProblemAdminPageQuery(ApiSchema):
     pagination: PageQuery
     contest_id: str | None = None
     problem_id: str | None = None
+    problem_code: str | None = None
 
 
 class OjContestProblemSchema(ApiSchema):
@@ -41,6 +42,8 @@ class OjContestProblemSchema(ApiSchema):
     problem_id: str
     problem_code: str | None = None
     problem_name: str | None = None
+    problem_status: str | None = None
+    problem_is_public: bool | None = None
     points: int
     partial: bool
     is_pretested: bool

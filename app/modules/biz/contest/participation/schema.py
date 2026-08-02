@@ -22,6 +22,7 @@ class OjContestParticipationCreateRequest(ApiSchema):
     tiebreaker: float
     is_disqualified: bool
     virtual: int
+    rate_exclude: bool = False
     format_data: dict[str, Any] | None = Field(default_factory=dict)
 
 
@@ -45,6 +46,7 @@ class OjContestParticipationSchema(ApiSchema):
     tiebreaker: float
     is_disqualified: bool
     virtual: int
+    rate_exclude: bool = False
     format_data: dict[str, Any] | None = Field(default_factory=dict)
     created_at: datetime
     created_by: str | None = None

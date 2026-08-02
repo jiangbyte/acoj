@@ -4,7 +4,7 @@ Author: Charlie
 Generated at: 2026-07-28 20:51:12
 """
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,13 +17,21 @@ from app.deps.auth import require_account_type, require_permission
 from app.deps.db import get_db_session
 from app.modules.biz.contest.contest.schema import (
     OjContestAdminPageQuery,
+    OjContestAdminSubmitRequest,
+    OjContestCloneRequest,
     OjContestCreateRequest,
+    OjContestLockRequest,
+    OjContestRateRequest,
+    OjContestRescoreRequest,
     OjContestSchema,
+    OjContestScoreboardQuery,
+    OjContestUnlockRequest,
     OjContestUpdateRequest,
 )
 from app.modules.biz.contest.contest.service import (
     OjContestService,
 )
+from app.modules.biz.contest.enums import ContestParticipationVirtual
 
 router = APIRouter()
 
@@ -113,3 +121,122 @@ async def page(
         tag_id=tag_id,
     )
     return success(await OjContestService(db).page_admin(query))
+
+
+@router.post(
+    "/biz/contest/contest/lock",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("biz:contest:contest:update")),
+    ],
+    response_model=ApiResponse[OjContestSchema],
+)
+async def lock(
+    payload: OjContestLockRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[OjContestSchema]:
+    return success(await OjContestService(db).lock(payload))
+
+
+@router.post(
+    "/biz/contest/contest/unlock",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("biz:contest:contest:update")),
+    ],
+    response_model=ApiResponse[OjContestSchema],
+)
+async def unlock(
+    payload: OjContestUnlockRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[OjContestSchema]:
+    return success(await OjContestService(db).unlock(payload))
+
+
+@router.post(
+    "/biz/contest/contest/clone",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("biz:contest:contest:create")),
+    ],
+    response_model=ApiResponse[str],
+)
+async def clone(
+    payload: OjContestCloneRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[str]:
+    return success(await OjContestService(db).clone(payload))
+
+
+@router.post(
+    "/biz/contest/contest/rescore",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("biz:contest:contest:update")),
+    ],
+    response_model=ApiResponse[dict[str, Any]],
+)
+async def rescore(
+    payload: OjContestRescoreRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[dict[str, Any]]:
+    return success(await OjContestService(db).rescore(payload))
+
+
+@router.post(
+    "/biz/contest/contest/rate",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("biz:contest:contest:update")),
+    ],
+    response_model=ApiResponse[dict[str, Any]],
+)
+async def rate(
+    payload: OjContestRateRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[dict[str, Any]]:
+    return success(await OjContestService(db).rate(payload))
+
+
+@router.get(
+    "/biz/contest/contest/scoreboard",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("biz:contest:contest:detail")),
+    ],
+    response_model=ApiResponse[dict[str, Any]],
+)
+async def scoreboard(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    contest_id: Annotated[Id, Query()],
+    virtual: int = Query(default=int(ContestParticipationVirtual.LIVE)),
+) -> ApiResponse[dict[str, Any]]:
+    query = OjContestScoreboardQuery(contest_id=contest_id, virtual=virtual)
+    return success(await OjContestService(db).scoreboard(query))
+
+
+@router.post(
+    "/biz/contest/contest/submit",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("biz:contest:contest:update")),
+    ],
+    response_model=ApiResponse[dict[str, Any]],
+)
+async def admin_submit(
+    payload: OjContestAdminSubmitRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[dict[str, Any]]:
+    return success(await OjContestService(db).admin_submit(payload))
+
+
+@router.get(
+    "/biz/contest/contest/formats",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("biz:contest:contest:page")),
+    ],
+    response_model=ApiResponse[list[dict[str, Any]]],
+)
+async def formats() -> ApiResponse[list[dict[str, Any]]]:
+    return success(OjContestService.formats())

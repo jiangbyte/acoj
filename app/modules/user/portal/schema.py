@@ -32,6 +32,16 @@ class PortalPublicProfileResponse(ApiSchema):
     signature: str | None = None
 
 
+class PortalRatingRankItem(ApiSchema):
+    """门户 Rating 排行项。"""
+
+    rank: int
+    account_id: str
+    nickname: str | None = None
+    avatar: str | None = None
+    rating: int
+
+
 class PortalProfileUpsertPayload(ApiSchema):
     """门户账户资料写入载荷。"""
 

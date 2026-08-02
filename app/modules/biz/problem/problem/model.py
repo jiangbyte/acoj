@@ -20,6 +20,7 @@ class OjProblem(Base, TimestampMixin):
     __table_args__ = (
         UniqueConstraint("code", name="uq_oj_problem_code"),
         Index("ix_oj_problem_status", "status"),
+        Index("ix_oj_problem_is_public", "is_public"),
         Index("ix_oj_problem_group_id", "group_id"),
         Index("ix_oj_problem_published_at", "published_at"),
     )
@@ -34,8 +35,10 @@ class OjProblem(Base, TimestampMixin):
     memory_limit_kb: Mapped[int] = mapped_column(Integer, nullable=False, comment="内存限制（KB）")
     points: Mapped[float] = mapped_column(Float, nullable=False, comment="题目分值")
     partial: Mapped[bool] = mapped_column(Boolean, nullable=False, comment="是否允许部分分")
-    short_circuit: Mapped[bool] = mapped_column(Boolean, nullable=False, comment="遇错是否短路判题")
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft", comment="发布状态 draft|ready|published")
+    is_public: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, comment="是否公开题库可见"
+    )
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="发布时间")
     submission_source_visibility: Mapped[str] = mapped_column(String(32), nullable=False, comment="提交源码可见性")
     user_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="通过人数")

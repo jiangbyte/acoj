@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ojProblemDataApi } from '@/api'
+import type { SelectOption } from 'naive-ui'
+import { ojProblemDataApi, ojProblemLanguageApi } from '@/api'
 import JudgeSourceEditor from '@/components/editor/JudgeSourceEditor.vue'
 import FileUpload from '@/components/upload/FileUpload.vue'
 import { createRequiredRule } from '@/utils'
+import { monacoLanguageFromExtension } from '../shared/monacoLanguage'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -26,10 +28,14 @@ const judgeModeOptions = [
   { label: '交互题 (INTERACTIVE)', value: 'INTERACTIVE' },
 ]
 
+const workerLanguageOptions = ref<SelectOption[]>([])
+const extByKey = ref<Record<string, string>>({})
+
 const defaultFormData = {
   judge_mode: 'STANDARD',
   spj_source: '',
   interactor_source: '',
+  interactor_language_key: 'cpp17',
 }
 
 const state = reactive({
@@ -43,6 +49,10 @@ const state = reactive({
   lastImportCount: null as number | null,
 })
 
+const interactorMonacoLanguage = computed(() =>
+  monacoLanguageFromExtension(extByKey.value[state.formModel.interactor_language_key]),
+)
+
 const rules = computed(() => {
   const base: Record<string, any> = {
     judge_mode: [createRequiredRule('判题模式', 'select')],
@@ -51,6 +61,7 @@ const rules = computed(() => {
     base.spj_source = [{ required: true, message: '请输入 SPJ 源码', trigger: ['input', 'blur'] }]
   }
   if (state.formModel.judge_mode === 'INTERACTIVE') {
+    base.interactor_language_key = [createRequiredRule('交互器语言', 'select')]
     base.interactor_source = [{ required: true, message: '请输入交互器源码', trigger: ['input', 'blur'] }]
   }
   return base
@@ -61,8 +72,23 @@ watch(problemId, () => {
 })
 
 onMounted(async () => {
-  await loadConfig()
+  await Promise.all([loadWorkerLanguages(), loadConfig()])
 })
+
+async function loadWorkerLanguages() {
+  try {
+    const response = await ojProblemLanguageApi.options()
+    const items = response.data ?? []
+    extByKey.value = Object.fromEntries(items.map((item: any) => [item.key, item.extension]))
+    workerLanguageOptions.value = items.map((item: any) => ({
+      label: `${item.label} (${item.key})`,
+      value: item.key,
+    }))
+  }
+  catch {
+    workerLanguageOptions.value = []
+  }
+}
 
 async function loadConfig() {
   if (!problemId.value) {
@@ -78,6 +104,7 @@ async function loadConfig() {
         judge_mode: record.judge_mode || 'STANDARD',
         spj_source: record.spj_source ?? '',
         interactor_source: record.interactor_source ?? '',
+        interactor_language_key: record.interactor_language_key || 'cpp17',
       }
     }
     else {
@@ -111,6 +138,7 @@ async function saveConfig() {
       judge_mode: state.formModel.judge_mode,
       spj_source: isSpj ? state.formModel.spj_source : null,
       interactor_source: isInteractive ? state.formModel.interactor_source : null,
+      interactor_language_key: isInteractive ? state.formModel.interactor_language_key : null,
     }
 
     if (state.dataId) {
@@ -179,33 +207,41 @@ async function importZip() {
             </template>
 
             <template v-else-if="state.formModel.judge_mode === 'SPECIAL_JUDGE'">
-              <NFormItemGi label="SPJ 源码" path="spj_source" :span="2">
+              <NFormItemGi label="SPJ 源码（C++17 / testlib）" path="spj_source" :span="2">
                 <JudgeSourceEditor
                   v-model:value="state.formModel.spj_source"
                   language="cpp"
                   height="360px"
-                  load-button-text="从本地文件载入 SPJ"
+                  load-button-text="从本地文件载入 SPJ（.cpp）"
                 />
               </NFormItemGi>
               <NFormItemGi :span="2">
-                <NAlert type="info" :bordered="false">
-                  Worker SPECIAL_JUDGE：编译用户程序与 SPJ。源码存数据库，判题时以字符串发给 worker。
+                <NAlert type="warning" :bordered="false">
+                  以 worker 为准：SPECIAL_JUDGE 固定用 testlib_checker_language（g++ -std=c++17），不支持多语言；payload 中的 spj.language 会被忽略。请按 testlib 约定编写 checker（参数：input / user_out / answer）。
                 </NAlert>
               </NFormItemGi>
             </template>
 
             <template v-else-if="state.formModel.judge_mode === 'INTERACTIVE'">
+              <NFormItemGi label="交互器语言" path="interactor_language_key">
+                <NSelect
+                  v-model:value="state.formModel.interactor_language_key"
+                  :options="workerLanguageOptions"
+                  filterable
+                  placeholder="选择 worker 支持的语言"
+                />
+              </NFormItemGi>
               <NFormItemGi label="交互器源码" path="interactor_source" :span="2">
                 <JudgeSourceEditor
                   v-model:value="state.formModel.interactor_source"
-                  language="cpp"
+                  :language="interactorMonacoLanguage"
                   height="360px"
                   load-button-text="从本地文件载入交互器"
                 />
               </NFormItemGi>
               <NFormItemGi :span="2">
                 <NAlert type="info" :bordered="false">
-                  Worker INTERACTIVE：用户程序与交互器 FIFO 通信。源码存数据库，判题时以字符串发给 worker。
+                  以 worker 为准：INTERACTIVE 使用 payload.interactor.language 编译运行（与用户题解语言相互独立）。可选语言与题目语言相同，均来自 /language/options（worker 镜像显式启用）；用户程序与交互器经 FIFO 通信。
                 </NAlert>
               </NFormItemGi>
             </template>

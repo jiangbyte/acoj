@@ -107,27 +107,23 @@ class CorsSettings(BaseSettings):
 
 
 class CelerySettings(BaseSettings):
-    broker_url: str = "amqp://guest:guest@127.0.0.1:5672//"
-    # Empty → Redis result backend (settings.redis.url) for cross-process AsyncResult.
+    # Prefer Redis broker (dedicated DB). AMQP still works if set explicitly.
+    broker_url: str = "redis://127.0.0.1:6379/1"
+    # Empty → Redis result backend (settings.redis.url). Apply path uses Celery link, not AsyncResult.
     result_backend: str = ""
+    # Must exceed longest judge.execute (worker task_time_limit). Redis broker un-acks after this.
+    broker_visibility_timeout: int = 3600
     worker_log_level: str = "INFO"
     log_dir: str = "logs"
     log_file_max_mb: int = 100
     beat_log_level: str = "INFO"
-    worker_pool: str = "solo"
-    worker_concurrency: int = 1
+    # threads: short apply/DB tasks can overlap on shared async runner loop.
+    worker_pool: str = "threads"
+    worker_concurrency: int = 16
     worker_without_mingle: bool = True
     worker_without_gossip: bool = True
     worker_remote_control_enabled: bool = False
     worker_cancel_long_running_tasks_on_connection_loss: bool = True
-
-
-class MQSettings(BaseSettings):
-    enabled: bool = False
-    url: str = ""
-    reconnect_interval_seconds: float = 5.0
-    publish_exchange: str = ""
-    publish_exchange_type: str = "topic"
 
 
 class StorageSettings(BaseSettings):
@@ -252,7 +248,6 @@ class Settings(BaseSettings):
     mail: MailSettings = Field(default_factory=MailSettings)
     cors: CorsSettings = Field(default_factory=CorsSettings)
     celery: CelerySettings = Field(default_factory=CelerySettings)
-    mq: MQSettings = Field(default_factory=MQSettings)
     storage: StorageSettings = Field(default_factory=StorageSettings)
     password_policy: PasswordPolicySettings = Field(default_factory=PasswordPolicySettings)
     audit_alert: AuditAlertSettings = Field(default_factory=AuditAlertSettings)

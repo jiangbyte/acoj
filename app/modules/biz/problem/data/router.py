@@ -114,12 +114,10 @@ async def page(
     current: Current = 1,
     size: Size = 20,
     zip_object_name: str | None = Query(default=None),
-    generator_file_id: str | None = Query(default=None),
 ) -> ApiResponse[PageData[OjProblemDataSchema]]:
     query = OjProblemDataAdminPageQuery(
         pagination=PageQuery(current=current, size=size),
         zip_object_name=zip_object_name,
-        generator_file_id=generator_file_id,
     )
     return success(await OjProblemDataService(db).page_admin(problem_id, query))
 

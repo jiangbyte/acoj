@@ -161,6 +161,9 @@ function goEdit() {
                 <NDescriptionsItem label="状态">
                   {{ statusLabel[state.detail.status] || displayValue(state.detail.status) }}
                 </NDescriptionsItem>
+                <NDescriptionsItem label="公开题库">
+                  {{ state.detail.is_public ? '是' : '否（竞赛专用）' }}
+                </NDescriptionsItem>
                 <NDescriptionsItem label="发布时间">
                   {{ formatDateTime(state.detail.published_at) }}
                 </NDescriptionsItem>

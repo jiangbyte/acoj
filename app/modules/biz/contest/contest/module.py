@@ -18,5 +18,9 @@ module = ModuleSpec(
     ),
     order=310,
     depends_on=(),
-    models=("app.modules.biz.contest.contest.model",),
+    models=(
+        "app.modules.biz.contest.contest.model",
+        "app.modules.biz.contest.rating.model",
+        "app.modules.biz.contest.clarification.model",
+    ),
 )

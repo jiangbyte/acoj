@@ -6,8 +6,9 @@ Generated at: 2026-07-28 20:51:10
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config.enums import StatusEnum
 from app.core.exceptions.business import NotFoundError
-from app.modules.biz.oj_scope import delete_owned_by_parent
+from app.modules.biz.oj_scope import delete_owned_by_parent, ensure_belongs_to_parent
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.platform.db.transaction import transactional
@@ -21,7 +22,7 @@ from app.modules.biz.problem.language.schema import (
     OjProblemLanguageSchema,
     OjProblemLanguageUpdateRequest,
 )
-from app.modules.biz.problem.sandbox_languages import ensure_sandbox_language_key
+from app.modules.biz.problem.worker_languages import ensure_worker_language_key
 
 
 class OjProblemLanguageService:
@@ -30,24 +31,37 @@ class OjProblemLanguageService:
         self.repo = OjProblemLanguageRepository(db)
 
     @staticmethod
-    def _ensure_belongs_to_problem(entity: object, problem_id: str) -> None:
-        if getattr(entity, "problem_id") != problem_id:
-            raise NotFoundError("OjProblemLanguage not found")
+    def _normalize_status(status: StatusEnum | str | None) -> str:
+        if status is None:
+            return StatusEnum.ENABLED.value
+        return StatusEnum(str(status)).value
 
     async def create(self, problem_id: str, payload: OjProblemLanguageCreateRequest) -> None:
-        language_key = ensure_sandbox_language_key(payload.language_key)
+        language_key = ensure_worker_language_key(payload.language_key)
         async with transactional(self.db):
             await self.repo.create(
-                payload.model_copy(update={"problem_id": problem_id, "language_key": language_key})
+                payload.model_copy(
+                    update={
+                        "problem_id": problem_id,
+                        "language_key": language_key,
+                        "status": self._normalize_status(payload.status),
+                    }
+                )
             )
 
     async def update(self, problem_id: str, payload: OjProblemLanguageUpdateRequest) -> None:
-        language_key = ensure_sandbox_language_key(payload.language_key)
+        language_key = ensure_worker_language_key(payload.language_key)
         async with transactional(self.db):
             entity = await self.repo.get_required(payload.id)
-            self._ensure_belongs_to_problem(entity, problem_id)
+            ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=problem_id, not_found_message="OjProblemLanguage not found")
             await self.repo.update(
-                payload.model_copy(update={"problem_id": problem_id, "language_key": language_key})
+                payload.model_copy(
+                    update={
+                        "problem_id": problem_id,
+                        "language_key": language_key,
+                        "status": self._normalize_status(payload.status),
+                    }
+                )
             )
 
     async def delete(self, problem_id: str, payload: IdsRequest) -> None:
@@ -63,7 +77,7 @@ class OjProblemLanguageService:
 
     async def detail(self, problem_id: str, query: IdQuery) -> OjProblemLanguageSchema:
         entity = await self.repo.get_required(query.id)
-        self._ensure_belongs_to_problem(entity, problem_id)
+        ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=problem_id, not_found_message="OjProblemLanguage not found")
         return to_schema(OjProblemLanguageSchema, entity)
 
     async def page_admin(

@@ -7,7 +7,7 @@ Generated at: 2026-07-28 20:51:11
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import NotFoundError
-from app.modules.biz.oj_scope import delete_owned_by_parent
+from app.modules.biz.oj_scope import delete_owned_by_parent, ensure_belongs_to_parent
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.platform.db.transaction import transactional
@@ -28,11 +28,6 @@ class OjProblemSolutionService:
         self.db = db
         self.repo = OjProblemSolutionRepository(db)
 
-    @staticmethod
-    def _ensure_belongs_to_problem(entity: object, problem_id: str) -> None:
-        if getattr(entity, "problem_id") != problem_id:
-            raise NotFoundError("OjProblemSolution not found")
-
     async def create(self, problem_id: str, payload: OjProblemSolutionCreateRequest) -> None:
         async with transactional(self.db):
             await self.repo.create(payload.model_copy(update={"problem_id": problem_id}))
@@ -40,7 +35,7 @@ class OjProblemSolutionService:
     async def update(self, problem_id: str, payload: OjProblemSolutionUpdateRequest) -> None:
         async with transactional(self.db):
             entity = await self.repo.get_required(payload.id)
-            self._ensure_belongs_to_problem(entity, problem_id)
+            ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=problem_id, not_found_message="OjProblemSolution not found")
             await self.repo.update(payload.model_copy(update={"problem_id": problem_id}))
 
     async def delete(self, problem_id: str, payload: IdsRequest) -> None:
@@ -56,7 +51,7 @@ class OjProblemSolutionService:
 
     async def detail(self, problem_id: str, query: IdQuery) -> OjProblemSolutionSchema:
         entity = await self.repo.get_required(query.id)
-        self._ensure_belongs_to_problem(entity, problem_id)
+        ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=problem_id, not_found_message="OjProblemSolution not found")
         return to_schema(OjProblemSolutionSchema, entity)
 
     async def page_admin(

@@ -20,10 +20,16 @@ const emit = defineEmits<{
 }>()
 
 const formRef = ref<FormInst | null>(null)
+const roleOptions = [
+  { label: 'AUTHOR', value: 'AUTHOR' },
+  { label: 'CURATOR', value: 'CURATOR' },
+  { label: 'TESTER', value: 'TESTER' },
+  { label: 'SPECTATOR', value: 'SPECTATOR' },
+]
 const defaultFormData: Record<string, any> = {
   contest_id: '',
   account_id: '',
-  role: '',
+  role: 'AUTHOR',
 }
 const state = reactive({
   showModal: false,
@@ -39,7 +45,7 @@ const rules = computed<FormRules>(() => ({
     createRequiredRule('账户ID', 'input'),
   ],
   role: [
-    createRequiredRule('角色', 'input'),
+    createRequiredRule('角色', 'change'),
   ],
 }))
 
@@ -112,7 +118,7 @@ defineExpose({
             <NInput v-model:value="state.formModel.account_id" />
           </NFormItem>
           <NFormItem label="角色" path="role">
-            <NInput v-model:value="state.formModel.role" />
+            <NSelect v-model:value="state.formModel.role" :options="roleOptions" class="w-full" />
           </NFormItem>
         </NForm>
       </NScrollbar>

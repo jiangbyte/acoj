@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.user.portal.model import PortalUserProfile
@@ -55,3 +55,18 @@ class PortalUserProfileRepository:
             return []
         stmt = select(PortalUserProfile).where(PortalUserProfile.account_id.in_(unique_ids))
         return list((await self.db.execute(stmt)).scalars().all())
+
+    async def page_by_rating(self, *, offset: int, size: int) -> tuple[list[PortalUserProfile], int]:
+        """Rating 降序分页（null 靠后）。"""
+        filters = [PortalUserProfile.rating.is_not(None)]
+        count_stmt = select(func.count(PortalUserProfile.account_id)).where(*filters)
+        stmt = (
+            select(PortalUserProfile)
+            .where(*filters)
+            .order_by(PortalUserProfile.rating.desc(), PortalUserProfile.account_id.asc())
+            .offset(offset)
+            .limit(size)
+        )
+        items = list((await self.db.execute(stmt)).scalars().all())
+        total = (await self.db.execute(count_stmt)).scalar_one()
+        return items, total

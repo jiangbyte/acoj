@@ -1,12 +1,17 @@
 <script setup lang="tsx">
 import type { DataTableColumns, SelectOption } from 'naive-ui'
-import { ojProblemApi, ojProblemLanguageApi } from '@/api'
+import { ojProblemApi, ojProblemLanguageApi, ojSubmissionApi } from '@/api'
 import MonacoEditor from '@/components/editor/MonacoEditor.vue'
+import { monacoLanguageFromExtension } from '../../shared/monacoLanguage'
 import { NTag } from 'naive-ui'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 
 const props = defineProps<{
   problemId: string
+  /** When set, only these oj_problem_test_case ids are judged. */
+  caseIds?: string[]
+  /** Display hint, e.g. case_no for single-case trial. */
+  caseLabel?: string | number | null
 }>()
 
 const statusColor: Record<string, 'success' | 'error' | 'warning' | 'info' | 'default'> = {
@@ -27,21 +32,16 @@ const statusColor: Record<string, 'success' | 'error' | 'warning' | 'info' | 'de
   SystemError: 'error',
   Pending: 'info',
   Judging: 'info',
+  JUDGING: 'info',
+  QUEUED: 'info',
+  COMPLETED: 'info',
+  FAILED: 'error',
   Compiling: 'info',
-}
-
-const extensionToMonaco: Record<string, string> = {
-  '.cpp': 'cpp',
-  '.c': 'c',
-  '.py': 'python',
-  '.java': 'java',
-  '.go': 'go',
-  '.js': 'javascript',
-  '.rs': 'rust',
 }
 
 const languageOptions = ref<SelectOption[]>([])
 const extByKey = ref<Record<string, string>>({})
+const abortRef = ref<AbortController | null>(null)
 
 const state = reactive({
   submitLoading: false,
@@ -51,10 +51,9 @@ const state = reactive({
   result: null as any,
 })
 
-const monacoLanguage = computed(() => {
-  const ext = extByKey.value[state.language_key] || '.cpp'
-  return extensionToMonaco[ext] || 'cpp'
-})
+const monacoLanguage = computed(() =>
+  monacoLanguageFromExtension(extByKey.value[state.language_key]),
+)
 
 onMounted(() => {
   void loadLanguages()
@@ -66,36 +65,47 @@ async function loadLanguages() {
       ojProblemLanguageApi.options(),
       ojProblemLanguageApi.page(props.problemId, { current: 1, size: 100 }),
     ])
-    const all = optRes.data ?? []
-    extByKey.value = Object.fromEntries(all.map((item: any) => [item.key, item.extension]))
+    // 唯一来源：GET /language/options（worker 镜像显式启用）；优先展示题目已绑定语言
+    const workerLangs = optRes.data ?? []
+    extByKey.value = Object.fromEntries(workerLangs.map((item: any) => [item.key, item.extension]))
 
-    const problemKeys = new Set(
-      (pageRes.data?.records ?? []).map((row: any) => String(row.language_key)),
+    const enabledProblemKeys = new Set(
+      (pageRes.data?.records ?? [])
+        .filter((row: any) => row.status !== 'DISABLED')
+        .map((row: any) => String(row.language_key)),
     )
-    const preferred = problemKeys.size
-      ? all.filter((item: any) => problemKeys.has(item.key))
-      : all.filter((item: any) => ['cpp17', 'python3', 'c11', 'java17', 'go'].includes(item.key))
+    const source = enabledProblemKeys.size
+      ? workerLangs.filter((item: any) => enabledProblemKeys.has(item.key))
+      : workerLangs
+    const finalSource = source.length ? source : workerLangs
 
-    const source = preferred.length ? preferred : all
-    languageOptions.value = source.map((item: any) => ({
+    languageOptions.value = finalSource.map((item: any) => ({
       label: `${item.label} (${item.key})`,
       value: item.key,
     }))
-    if (!source.some((item: any) => item.key === state.language_key) && source[0]) {
-      state.language_key = source[0].key
+    if (!finalSource.some((item: any) => item.key === state.language_key) && finalSource[0]) {
+      state.language_key = finalSource[0].key
     }
   }
   catch {
-    languageOptions.value = [
-      { label: 'C++17 (cpp17)', value: 'cpp17' },
-      { label: 'Python 3 (python3)', value: 'python3' },
-      { label: 'C11 (c11)', value: 'c11' },
-    ]
+    languageOptions.value = []
   }
 }
 
 const overallStatus = computed(() => String(state.result?.status ?? state.result?.result ?? ''))
 const overallType = computed(() => statusColor[overallStatus.value] ?? 'default')
+const scopeLabel = computed(() => {
+  if (props.caseLabel != null && props.caseLabel !== '') {
+    return `测例 #${props.caseLabel}`
+  }
+  if (props.caseIds?.length === 1) {
+    return '单条测例'
+  }
+  if (props.caseIds?.length) {
+    return `${props.caseIds.length} 条测例`
+  }
+  return '全部测例'
+})
 
 const caseRows = computed(() => {
   const cases = state.result?.cases
@@ -144,6 +154,10 @@ const caseColumns = computed<DataTableColumns<any>>(() => [
   },
 ])
 
+onBeforeUnmount(() => {
+  abortRef.value?.abort()
+})
+
 async function submitTrial() {
   if (!props.problemId) {
     window.$message.error('缺少题目 ID')
@@ -153,6 +167,9 @@ async function submitTrial() {
     window.$message.warning('请输入源代码')
     return
   }
+  abortRef.value?.abort()
+  const controller = new AbortController()
+  abortRef.value = controller
   state.submitLoading = true
   state.result = null
   try {
@@ -160,11 +177,56 @@ async function submitTrial() {
       language_key: state.language_key,
       source: state.source,
       wait_timeout_sec: state.wait_timeout_sec,
+      wait: false,
+      ...(props.caseIds?.length ? { case_ids: props.caseIds } : {}),
     })
-    state.result = response.data ?? {}
-    window.$message.success('试判完成')
+    const initial = response.data ?? {}
+    state.result = initial
+    const submissionId = initial.submission_id
+    if (!submissionId) {
+      window.$message.error('未返回 submission_id')
+      return
+    }
+    window.$message.info('已入队，等待判题…')
+
+    let finalSnap = null as any
+    try {
+      finalSnap = await ojSubmissionApi.watchSubmissionEvents(submissionId, {
+        maxWaitSec: state.wait_timeout_sec,
+        signal: controller.signal,
+        onUpdate: (snap) => {
+          state.result = snap
+        },
+      })
+    }
+    catch {
+      finalSnap = await ojSubmissionApi.pollSubmissionUntilDone(submissionId, {
+        maxWaitSec: state.wait_timeout_sec,
+        signal: controller.signal,
+        fetchDetail: async (id) => {
+          const res = await ojSubmissionApi.detail({ id })
+          return res.data ?? {}
+        },
+        onUpdate: (snap) => {
+          state.result = snap
+        },
+      })
+    }
+
+    const status = String(finalSnap?.status ?? state.result?.status ?? '')
+    if (status === 'COMPLETED') {
+      window.$message.success('试判完成')
+    }
+    else if (status === 'FAILED') {
+      window.$message.error(finalSnap?.error || '试判失败')
+    }
+    else {
+      window.$message.warning('试判超时，请稍后在提交列表查看')
+    }
   }
   catch (error: any) {
+    if (error?.name === 'AbortError')
+      return
     state.result = { error: error?.message ?? '试判失败', status: 'SE' }
   }
   finally {
@@ -173,6 +235,7 @@ async function submitTrial() {
 }
 
 function resetSource() {
+  abortRef.value?.abort()
   state.source = ''
   state.result = null
 }
@@ -217,7 +280,7 @@ function resetSource() {
           <MonacoEditor
             v-model:value="state.source"
             :language="monacoLanguage"
-            height="520px"
+            height="320px"
             theme="vs"
           />
         </NCard>
@@ -229,6 +292,9 @@ function resetSource() {
           <NSpace v-else vertical :size="12">
             <NAlert v-if="state.result.error" type="error" :title="String(state.result.error)" :bordered="false" />
             <NDescriptions v-else label-placement="left" :column="1" size="small" bordered>
+              <NDescriptionsItem label="范围">
+                {{ scopeLabel }}
+              </NDescriptionsItem>
               <NDescriptionsItem label="状态">
                 <NTag :type="overallType" size="small">
                   {{ overallStatus || '-' }}
@@ -272,7 +338,7 @@ function resetSource() {
                 :columns="caseColumns"
                 :data="caseRows"
                 :pagination="false"
-                :max-height="280"
+                :max-height="180"
               />
             </template>
           </NSpace>
@@ -283,8 +349,9 @@ function resetSource() {
 </template>
 
 <style scoped>
-.trial-judge-panel {
-  min-height: 560px;
+.trial-result-card {
+  max-height: 400px;
+  overflow: auto;
 }
 .trial-code-card :deep(.monaco-editor) {
   border: 1px solid var(--n-border-color);

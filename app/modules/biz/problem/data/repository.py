@@ -59,8 +59,6 @@ class OjProblemDataRepository:
             filters.append(OjProblemData.problem_id == query.problem_id)
         if query.zip_object_name is not None:
             filters.append(OjProblemData.zip_object_name == query.zip_object_name)
-        if query.generator_file_id is not None:
-            filters.append(OjProblemData.generator_file_id == query.generator_file_id)
         if filters:
             stmt = stmt.where(*filters)
             count_stmt = count_stmt.where(*filters)

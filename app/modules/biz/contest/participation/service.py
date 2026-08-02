@@ -4,13 +4,13 @@ Author: Charlie
 Generated at: 2026-07-28 20:51:13
 """
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import NotFoundError
-from app.modules.biz.oj_scope import delete_owned_by_parent
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
-from app.platform.db.transaction import transactional
+from app.modules.biz.contest.banned_user.model import OjContestBannedUser
 from app.modules.biz.contest.participation.model import OjContestParticipation
 from app.modules.biz.contest.participation.repository import (
     OjContestParticipationRepository,
@@ -21,6 +21,10 @@ from app.modules.biz.contest.participation.schema import (
     OjContestParticipationSchema,
     OjContestParticipationUpdateRequest,
 )
+from app.modules.biz.contest.scoring import recompute_participation
+from app.modules.biz.oj_scope import delete_owned_by_parent
+from app.platform.db.transaction import transactional
+from app.platform.id_generator.snowflake import generate_snowflake_id
 
 
 class OjContestParticipationService:
@@ -41,7 +45,54 @@ class OjContestParticipationService:
         async with transactional(self.db):
             entity = await self.repo.get_required(payload.id)
             self._ensure_belongs_to_contest(entity, contest_id)
+            was_dq = bool(entity.is_disqualified)
             await self.repo.update(payload.model_copy(update={"contest_id": contest_id}))
+            entity = await self.repo.get_required(payload.id)
+            if entity.is_disqualified and not was_dq:
+                from sqlalchemy import select
+
+                from app.modules.biz.contest.banned_user.model import OjContestBannedUser
+                from app.modules.biz.contest.scoring import recompute_participation
+                from app.platform.id_generator.snowflake import generate_snowflake_id
+
+                exists = (
+                    await self.db.execute(
+                        select(OjContestBannedUser.id).where(
+                            OjContestBannedUser.contest_id == contest_id,
+                            OjContestBannedUser.account_id == entity.account_id,
+                        )
+                    )
+                ).scalar_one_or_none()
+                if not exists:
+                    self.db.add(
+                        OjContestBannedUser(
+                            id=generate_snowflake_id(),
+                            contest_id=contest_id,
+                            account_id=entity.account_id,
+                            reason="disqualified",
+                        )
+                    )
+                await recompute_participation(self.db, entity.id)
+            if payload.is_disqualified:
+                existing_ban = (
+                    await self.db.execute(
+                        select(OjContestBannedUser.id).where(
+                            OjContestBannedUser.contest_id == contest_id,
+                            OjContestBannedUser.account_id == payload.account_id,
+                        )
+                    )
+                ).scalar_one_or_none()
+                if existing_ban is None:
+                    self.db.add(
+                        OjContestBannedUser(
+                            id=generate_snowflake_id(),
+                            contest_id=contest_id,
+                            account_id=payload.account_id,
+                            reason="disqualified",
+                        )
+                    )
+                    await self.db.flush()
+                await recompute_participation(self.db, payload.id)
 
     async def delete(self, contest_id: str, payload: IdsRequest) -> None:
         async with transactional(self.db):

@@ -8,6 +8,7 @@ from datetime import datetime
 
 from pydantic import Field
 
+from app.core.config.enums import StatusEnum
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
 
@@ -15,6 +16,7 @@ from app.core.schema.base import ApiSchema
 class OjProblemLanguageCreateRequest(ApiSchema):
     problem_id: str
     language_key: str
+    status: StatusEnum = StatusEnum.ENABLED
     time_limit_ms: int | None = None
     memory_limit_kb: int | None = None
 
@@ -32,6 +34,7 @@ class OjProblemLanguageSchema(ApiSchema):
     id: str
     problem_id: str
     language_key: str
+    status: StatusEnum = StatusEnum.ENABLED
     time_limit_ms: int | None = None
     memory_limit_kb: int | None = None
     created_at: datetime
@@ -40,7 +43,9 @@ class OjProblemLanguageSchema(ApiSchema):
     updated_by: str | None = None
 
 
-class SandboxLanguageOption(ApiSchema):
+class WorkerLanguageOption(ApiSchema):
+    """Worker image allowlist item — not the full sandbox LanguageId catalog."""
+
     key: str
     label: str
     extension: str

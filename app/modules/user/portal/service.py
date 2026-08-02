@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
 from app.core.exceptions.business import AuthenticationError, BusinessError, NotFoundError
+from app.core.response.pagination import PageData, PageQuery, build_page
 from app.core.security.password import hash_password, verify_password
 from app.core.security.session import SessionPayload
 from app.modules.auth.session_service import AccountSessionService
@@ -17,6 +18,7 @@ from app.modules.user.portal.repository import PortalUserProfileRepository
 from app.modules.user.portal.schema import (
     PortalProfileUpsertPayload,
     PortalPublicProfileResponse,
+    PortalRatingRankItem,
     PortalUserCenterAvatarUpdateResponse,
     PortalUserCenterEmailUpdateRequest,
     PortalUserCenterPasswordUpdateRequest,
@@ -202,6 +204,22 @@ class PortalUserProfileService:
             raise BusinessError("Avatar file must be 2MB or smaller")
         if content_type not in AVATAR_CONTENT_TYPES:
             raise BusinessError("Avatar file must be a JPEG, PNG, or WebP image")
+
+    async def page_rating_rank(self, pagination: PageQuery) -> PageData[PortalRatingRankItem]:
+        items, total = await self.repo.page_by_rating(offset=pagination.offset, size=pagination.size)
+        schemas: list[PortalRatingRankItem] = []
+        base_rank = pagination.offset
+        for index, profile in enumerate(items):
+            schemas.append(
+                PortalRatingRankItem(
+                    rank=base_rank + index + 1,
+                    account_id=profile.account_id,
+                    nickname=profile.nickname or profile.name,
+                    avatar=resolve_file_url(profile.avatar),
+                    rating=int(profile.rating or 0),
+                )
+            )
+        return build_page(pagination, total, schemas)
 
     def _build_avatar_object_name(self, content_type: str) -> str:
         now = datetime.now(UTC)

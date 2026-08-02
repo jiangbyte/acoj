@@ -25,6 +25,12 @@ from app.modules.biz.problem.solution.model import OjProblemSolution
 from app.modules.biz.problem.staff.model import OjProblemStaff
 from app.modules.biz.problem.test_case.model import OjProblemTestCase
 from app.modules.biz.problem.type.model import OjProblemType, OjProblemTypeRel
+from app.modules.biz.submission.submission.model import (
+    OjContestSubmission,
+    OjSubmission,
+    OjSubmissionCase,
+    OjSubmissionSource,
+)
 
 
 class OjProblemRepository:
@@ -70,6 +76,16 @@ class OjProblemRepository:
         await self.db.execute(delete(OjProblemTestCase).where(OjProblemTestCase.problem_id.in_(unique_ids)))
         await self.db.execute(delete(OjProblemSolution).where(OjProblemSolution.problem_id.in_(unique_ids)))
         await self.db.execute(delete(OjContestProblem).where(OjContestProblem.problem_id.in_(unique_ids)))
+        sub_ids = list(
+            (await self.db.execute(select(OjSubmission.id).where(OjSubmission.problem_id.in_(unique_ids))))
+            .scalars()
+            .all()
+        )
+        if sub_ids:
+            await self.db.execute(delete(OjContestSubmission).where(OjContestSubmission.submission_id.in_(sub_ids)))
+            await self.db.execute(delete(OjSubmissionCase).where(OjSubmissionCase.submission_id.in_(sub_ids)))
+            await self.db.execute(delete(OjSubmissionSource).where(OjSubmissionSource.submission_id.in_(sub_ids)))
+            await self.db.execute(delete(OjSubmission).where(OjSubmission.id.in_(sub_ids)))
         await self.db.execute(delete(OjProblem).where(OjProblem.id.in_(unique_ids)))
 
     async def list_type_ids(self, problem_id: str) -> list[str]:
@@ -134,6 +150,8 @@ class OjProblemRepository:
             )
         if query.status is not None:
             filters.append(OjProblem.status == query.status)
+        if query.is_public is not None:
+            filters.append(OjProblem.is_public.is_(query.is_public))
         if filters:
             stmt = stmt.where(*filters)
             count_stmt = count_stmt.where(*filters)

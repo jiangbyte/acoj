@@ -20,6 +20,11 @@ const emit = defineEmits<{
 }>()
 
 const formRef = ref<FormInst | null>(null)
+const virtualOptions = [
+  { label: '正式赛 (LIVE)', value: 0 },
+  { label: '观赛 (SPECTATE)', value: -1 },
+]
+
 const defaultFormData: Record<string, any> = {
   contest_id: '',
   account_id: '',
@@ -29,6 +34,7 @@ const defaultFormData: Record<string, any> = {
   tiebreaker: 0,
   is_disqualified: false,
   virtual: 0,
+  rate_exclude: false,
   format_data: '{}',
 }
 const state = reactive({
@@ -78,8 +84,15 @@ const rules = computed<FormRules>(() => ({
   virtual: [
     {
       validator: () => typeof state.formModel.virtual === 'number' && Number.isFinite(state.formModel.virtual),
-      message: '请输入虚拟状态',
-      trigger: ['input', 'blur'],
+      message: '请选择虚拟状态',
+      trigger: 'change',
+    },
+  ],
+  rate_exclude: [
+    {
+      validator: () => typeof state.formModel.rate_exclude === 'boolean',
+      message: '请选择是否排除 Rating',
+      trigger: 'change',
     },
   ],
   format_data: [
@@ -240,7 +253,10 @@ defineExpose({
             <NSwitch v-model:value="state.formModel.is_disqualified" />
           </NFormItem>
           <NFormItem label="虚拟状态" path="virtual">
-            <NInputNumber v-model:value="state.formModel.virtual" class="w-full" />
+            <NSelect v-model:value="state.formModel.virtual" :options="virtualOptions" class="w-full" />
+          </NFormItem>
+          <NFormItem label="排除 Rating" path="rate_exclude">
+            <NSwitch v-model:value="state.formModel.rate_exclude" />
           </NFormItem>
           <NFormItem label="赛制私有数据" path="format_data">
             <NInput v-model:value="state.formModel.format_data" type="textarea" :autosize="{ minRows: 3, maxRows: 8 }" />

@@ -4,10 +4,9 @@ Author: Charlie
 Generated at: 2026-07-28 20:51:11
 """
 
-from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.platform.db.base import Base
@@ -31,14 +30,11 @@ class OjProblemData(Base, TimestampMixin):
         String(512),
         comment="导入用 zip 归档 storage key（仅 admin 重导入；不参与 MQ 判题）",
     )
-    generator_file_id: Mapped[str | None] = mapped_column(String(512), comment="数据生成器 storage key")
-    checker: Mapped[str] = mapped_column(String(32), nullable=False, comment="Checker 类型")
-    checker_args: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict, comment="Checker 参数")
-    spj_source: Mapped[str | None] = mapped_column(Text, comment="SPJ 源码（C++17）")
-    interactor_source: Mapped[str | None] = mapped_column(Text, comment="交互器源码（C++17）")
-    output_prefix: Mapped[int | None] = mapped_column(Integer, comment="输出前缀比对长度")
-    output_limit: Mapped[int | None] = mapped_column(Integer, comment="输出长度上限")
-    enable_unicode: Mapped[bool | None] = mapped_column(Boolean, comment="是否启用 Unicode")
-    disable_big_math: Mapped[bool | None] = mapped_column(Boolean, comment="是否禁用大整数")
-    feedback: Mapped[str | None] = mapped_column(Text, comment="数据校验反馈")
+    spj_source: Mapped[str | None] = mapped_column(
+        Text, comment="SPJ/testlib checker 源码（worker 固定 C++17 testlib_checker）"
+    )
+    interactor_source: Mapped[str | None] = mapped_column(Text, comment="交互器源码")
+    interactor_language_key: Mapped[str | None] = mapped_column(
+        String(32), comment="交互器语言 ID（worker LanguageConfig.key，如 cpp17）"
+    )
     extra: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict, comment="扩展信息")

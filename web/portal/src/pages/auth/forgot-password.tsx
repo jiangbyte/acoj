@@ -1,0 +1,192 @@
+import { useRef, useState } from 'react'
+import { Alert, Button, Form, Input, message } from 'antd'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import * as authApi from '@/api/auth'
+import { CaptchaInput, type CaptchaInputHandle } from '@/components/common/CaptchaInput'
+import { encryptPasswords } from '@/utils/security'
+import { isValidEmail } from '@/utils/validate'
+import { AuthSplit } from './AuthSplit'
+
+type FormValues = {
+  email: string
+  password?: string
+  confirmPassword?: string
+  captcha_id: string
+  captcha_value: string
+}
+
+export function ForgotPasswordPage() {
+  const [form] = Form.useForm<FormValues>()
+  const [loading, setLoading] = useState(false)
+  const captchaRef = useRef<CaptchaInputHandle>(null)
+  const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const token = params.get('token') || ''
+  const isResetMode = Boolean(token)
+  const captchaId = Form.useWatch('captcha_id', form) || ''
+  const captchaValue = Form.useWatch('captcha_value', form) || ''
+
+  async function sendLink() {
+    try {
+      await form.validateFields(['email', 'captcha_value'])
+    } catch {
+      return
+    }
+    const values = form.getFieldsValue()
+    if (!isValidEmail(values.email || '')) {
+      message.warning('请输入有效邮箱')
+      return
+    }
+    setLoading(true)
+    try {
+      await authApi.forgotPassword({
+        email: values.email.trim(),
+        captcha_id: values.captcha_id,
+        captcha_value: values.captcha_value,
+      })
+      message.success('密码重置链接已发送')
+      await captchaRef.current?.refresh()
+    } catch {
+      await captchaRef.current?.refresh()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function resetPassword() {
+    try {
+      await form.validateFields()
+    } catch {
+      return
+    }
+    const values = form.getFieldsValue()
+    if (!isValidEmail(values.email || '')) {
+      message.warning('请输入有效邮箱')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const encrypted = await encryptPasswords({ password: values.password || '' })
+      await authApi.resetPassword({
+        email: values.email.trim(),
+        token,
+        password: encrypted.values.password || '',
+        password_key_id: encrypted.password_key_id,
+        captcha_id: values.captcha_id,
+        captcha_value: values.captcha_value,
+      })
+      message.success('密码已重置，请重新登录')
+      navigate('/auth/login')
+    } catch {
+      await captchaRef.current?.refresh()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <AuthSplit
+      title={isResetMode ? '重置密码' : '找回密码'}
+      subtitle={
+        isResetMode ? '使用邮件重置链接设置新密码。' : '向已启用登录的邮箱发送密码重置链接。'
+      }
+    >
+      <Alert
+        type="info"
+        showIcon
+        className="mb-4"
+        message={
+          isResetMode
+            ? '该重置链接在过期前仅可使用一次。'
+            : '仅当该邮箱已启用门户登录时，系统才会发送重置链接。'
+        }
+      />
+
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{ captcha_id: '', captcha_value: '' }}
+        onFinish={() => {
+          void (isResetMode ? resetPassword() : sendLink())
+        }}
+      >
+        <Form.Item
+          name="email"
+          label="登录邮箱"
+          rules={[{ required: true, message: '请输入登录邮箱' }]}
+        >
+          <Input placeholder="请输入登录邮箱" allowClear />
+        </Form.Item>
+
+        {isResetMode ? (
+          <>
+            <Form.Item
+              name="password"
+              label="新密码"
+              rules={[
+                { required: true, message: '请输入新密码' },
+                { min: 8, message: '密码至少 8 个字符' },
+              ]}
+            >
+              <Input.Password placeholder="请输入新密码" />
+            </Form.Item>
+            <Form.Item
+              name="confirmPassword"
+              label="确认密码"
+              dependencies={['password']}
+              rules={[
+                { required: true, message: '请确认密码' },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (!value || getFieldValue('password') === value) {
+                      return Promise.resolve()
+                    }
+                    return Promise.reject(new Error('两次输入的密码不一致'))
+                  },
+                }),
+              ]}
+            >
+              <Input.Password placeholder="请再次输入新密码" />
+            </Form.Item>
+          </>
+        ) : null}
+
+        <Form.Item name="captcha_id" hidden>
+          <Input />
+        </Form.Item>
+
+        <Form.Item
+          name="captcha_value"
+          label="验证码"
+          rules={[{ required: true, message: '请输入验证码' }]}
+        >
+          <CaptchaInput
+            ref={captchaRef}
+            captchaId={captchaId}
+            captchaValue={captchaValue}
+            onCaptchaIdChange={(v) => form.setFieldValue('captcha_id', v)}
+            onCaptchaValueChange={(v) => form.setFieldValue('captcha_value', v)}
+          />
+        </Form.Item>
+
+        <Form.Item>
+          <Button type="primary" htmlType="submit" block loading={loading}>
+            {isResetMode ? '重置密码' : '发送重置链接'}
+          </Button>
+        </Form.Item>
+
+        <div className="flex items-center justify-between">
+          <Link to="/auth/login">返回登录</Link>
+          {isResetMode ? (
+            <Button type="link" className="!px-0" onClick={() => void sendLink()}>
+              发送新链接
+            </Button>
+          ) : (
+            <Link to="/auth/register">去注册</Link>
+          )}
+        </div>
+      </Form>
+    </AuthSplit>
+  )
+}

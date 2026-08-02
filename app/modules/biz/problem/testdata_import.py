@@ -25,7 +25,7 @@ from app.core.config.enums import StorageProvider
 from app.core.exceptions.business import BusinessError, NotFoundError
 from app.core.schema.base import ApiSchema
 from app.modules.biz.problem.data.model import OjProblemData
-from app.modules.biz.problem.enums import ProblemChecker, TestCaseDataMode, TestCaseType
+from app.modules.biz.problem.enums import TestCaseDataMode, TestCaseType
 from app.modules.biz.problem.judge_bridge import read_storage_bytes, sha256_hex
 from app.modules.biz.problem.problem.model import OjProblem
 from app.modules.biz.problem.test_case.model import OjProblemTestCase
@@ -289,8 +289,6 @@ class TestdataImportService:
                     problem_id=problem_id,
                     judge_mode="STANDARD",
                     zip_object_name=zip_key,
-                    checker=ProblemChecker.STANDARD,
-                    checker_args={},
                     extra={},
                 )
             )

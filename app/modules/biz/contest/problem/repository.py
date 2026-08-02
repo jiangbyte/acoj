@@ -16,6 +16,7 @@ from app.modules.biz.contest.problem.schema import (
     OjContestProblemCreateRequest,
     OjContestProblemUpdateRequest,
 )
+from app.modules.biz.problem.problem.model import OjProblem
 
 
 class OjContestProblemRepository:
@@ -59,6 +60,12 @@ class OjContestProblemRepository:
             filters.append(OjContestProblem.contest_id == query.contest_id)
         if query.problem_id is not None:
             filters.append(OjContestProblem.problem_id == query.problem_id)
+        if query.problem_code:
+            filters.append(
+                OjContestProblem.problem_id.in_(
+                    select(OjProblem.id).where(OjProblem.code.ilike(f"%{query.problem_code}%"))
+                )
+            )
         if filters:
             stmt = stmt.where(*filters)
             count_stmt = count_stmt.where(*filters)

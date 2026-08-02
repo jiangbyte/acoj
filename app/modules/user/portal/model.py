@@ -1,4 +1,4 @@
-from sqlalchemy import String, Text
+from sqlalchemy import Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.platform.db.base import Base
@@ -17,3 +17,4 @@ class PortalUserProfile(Base, TimestampMixin):
     signature: Mapped[str | None] = mapped_column(Text, comment="个性签名")
     phone: Mapped[str | None] = mapped_column(String(32), comment="手机号")
     email: Mapped[str | None] = mapped_column(String(128), comment="邮箱")
+    rating: Mapped[int | None] = mapped_column(Integer, comment="当前 Rating")

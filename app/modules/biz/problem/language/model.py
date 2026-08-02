@@ -25,5 +25,8 @@ class OjProblemLanguage(Base, TimestampMixin):
     id: Mapped[str] = mapped_column(String(64), primary_key=True, nullable=False, default=generate_snowflake_id, comment="主键")
     problem_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="题目ID")
     language_key: Mapped[str] = mapped_column(String(32), nullable=False, comment="语言标识")
+    status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="ENABLED", comment="状态 ENABLED|DISABLED"
+    )
     time_limit_ms: Mapped[int | None] = mapped_column(Integer, comment="覆盖时间限制（毫秒），空则用题目默认")
     memory_limit_kb: Mapped[int | None] = mapped_column(Integer, comment="覆盖内存限制（KB），空则用题目默认")

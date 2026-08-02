@@ -57,3 +57,15 @@ async def ensure_parent_exists(
     entity = await db.get(model, parent_id)
     if entity is None:
         raise NotFoundError(not_found_message)
+
+
+def ensure_belongs_to_parent(
+    entity: object,
+    *,
+    parent_attr: str,
+    parent_id: str,
+    not_found_message: str,
+) -> None:
+    """Raise NotFound when a loaded child row does not belong to parent_id."""
+    if getattr(entity, parent_attr, None) != parent_id:
+        raise NotFoundError(not_found_message)

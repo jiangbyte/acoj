@@ -30,7 +30,25 @@ class ContestFormat(StrEnum):
     """竞赛赛制。"""
 
     DEFAULT = "default"
+    ACM = "acm"
     ICPC = "icpc"
+    ATCODER = "atcoder"
+    OI = "oi"
     IOI = "ioi"
-    ATOCCODER = "atcoder"
-    ECOLE = "ecole"
+
+
+class ContestLifecycleStatus(StrEnum):
+    """竞赛生命周期（计算得出，不落库）。"""
+
+    SCHEDULED = "SCHEDULED"
+    RUNNING = "RUNNING"
+    ENDED = "ENDED"
+    LOCKED = "LOCKED"
+
+
+class ClarificationThreadStatus(StrEnum):
+    """答疑提问线程状态。"""
+
+    OPEN = "OPEN"
+    ANSWERED = "ANSWERED"
+    CLOSED = "CLOSED"

@@ -31,11 +31,15 @@ def _worker_command() -> list[str]:
     command.extend(
         [
             "--pool",
-            _env("CELERY__WORKER_POOL", "solo"),
+            # threads: apply_judge_* are short IO; overlap without prefork memory cost
+            _env("CELERY__WORKER_POOL", "threads"),
             "--concurrency",
-            _env("CELERY__WORKER_CONCURRENCY", "1"),
+            _env("CELERY__WORKER_CONCURRENCY", "16"),
             "--loglevel",
             _env("CELERY__WORKER_LOG_LEVEL", "INFO"),
+            # acoj_api: link callbacks from judge.execute (worker must not consume this)
+            "-Q",
+            _env("CELERY__WORKER_QUEUES", "default,acoj_api"),
         ]
     )
     return command

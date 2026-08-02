@@ -18,7 +18,17 @@ celery_app.conf.worker_enable_remote_control = settings.celery.worker_remote_con
 celery_app.conf.worker_cancel_long_running_tasks_on_connection_loss = (
     settings.celery.worker_cancel_long_running_tasks_on_connection_loss
 )
+# Redis broker: visibility_timeout must exceed max judge wall time or tasks redeliver mid-run.
+# Do NOT put these into redbeat_redis_options — redis-py rejects visibility_timeout.
+celery_app.conf.broker_transport_options = {
+    "visibility_timeout": settings.celery.broker_visibility_timeout,
+}
+celery_app.conf.broker_connection_retry_on_startup = True
+celery_app.conf.task_compression = "gzip"
+celery_app.conf.result_expires = settings.celery.broker_visibility_timeout
 celery_app.conf.redbeat_redis_url = settings.redis.url
+# Explicit options so RedBeat does not inherit broker_transport_options.
+celery_app.conf.redbeat_redis_options = {"decode_responses": True}
 celery_app.conf.redbeat_lock_key = "redbeat:lock"
 
 from app.platform.tasks.redbeat_scheduler import sync_to_redbeat  # noqa: E402

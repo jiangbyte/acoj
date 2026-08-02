@@ -32,11 +32,6 @@ class OjProblemTestCaseCreateRequest(ApiSchema):
     memory_limit_kb: int | None = None
     batch_no: int | None = None
     batch_depends: list = Field(default_factory=list)
-    checker: str | None = None
-    checker_args: dict[str, Any] | None = Field(default_factory=dict)
-    generator_args: str | None = None
-    output_prefix: int | None = None
-    output_limit: int | None = None
     extra: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
@@ -79,11 +74,6 @@ class OjProblemTestCaseSchema(ApiSchema):
     memory_limit_kb: int | None = None
     batch_no: int | None = None
     batch_depends: list
-    checker: str | None = None
-    checker_args: dict[str, Any] | None = Field(default_factory=dict)
-    generator_args: str | None = None
-    output_prefix: int | None = None
-    output_limit: int | None = None
     extra: dict[str, Any]
     created_at: datetime
     created_by: str | None = None

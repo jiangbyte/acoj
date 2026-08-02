@@ -4,14 +4,12 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { ojContestApi } from '@/api'
 import { formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
-import { NButton, NDropdown, NFlex, NIcon } from 'naive-ui'
+import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import ModalDetail from './components/ModalDetail.vue'
 
 const router = useRouter()
-const detailModalRef = ref<any>(null)
 const state = reactive({
   rows: [] as any[],
   total: 0,
@@ -24,13 +22,28 @@ const state = reactive({
 
 const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
 
-const childMenuOptions = [
-  { label: '竞赛人员', key: 'staff', permission: 'biz:contest:staff:page' },
-  { label: '私有选手', key: 'private-contestant', permission: 'biz:contest:privatecontestant:page' },
-  { label: '禁赛用户', key: 'banned-user', permission: 'biz:contest:banneduser:page' },
-  { label: '竞赛题目', key: 'problem', permission: 'biz:contest:problem:page' },
-  { label: '参赛记录', key: 'participation', permission: 'biz:contest:participation:page' },
-]
+const lifecycleTagType: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
+  SCHEDULED: 'info',
+  RUNNING: 'success',
+  ENDED: 'warning',
+  LOCKED: 'error',
+}
+
+const lifecycleLabel: Record<string, string> = {
+  SCHEDULED: '未开始',
+  RUNNING: '进行中',
+  ENDED: '已结束',
+  LOCKED: '已锁定',
+}
+
+const formatLabel: Record<string, string> = {
+  default: 'Default',
+  acm: 'ACM',
+  icpc: 'ICPC',
+  atcoder: 'AtCoder',
+  oi: 'OI',
+  ioi: 'IOI',
+}
 
 const searchForm = createProSearchForm<any>({
   defaultCollapsed: true,
@@ -77,50 +90,90 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   { title: '标识', path: 'key', width: 120, ellipsis: { tooltip: true } },
   { title: '名称', path: 'name', width: 180, ellipsis: { tooltip: true } },
   {
+    title: '状态',
+    path: 'lifecycle_status',
+    width: 90,
+    render: (row) => (
+      <NTag size="small" type={lifecycleTagType[row.lifecycle_status] || 'default'}>
+        {lifecycleLabel[row.lifecycle_status] || row.lifecycle_status || '-'}
+      </NTag>
+    ),
+  },
+  {
+    title: '赛制',
+    path: 'format_name',
+    width: 90,
+    render: row => formatLabel[row.format_name] || row.format_name || '-',
+  },
+  {
+    title: 'Rated',
+    path: 'is_rated',
+    width: 70,
+    render: (row) => (
+      <NTag size="small" type={row.is_rated ? 'success' : 'default'} bordered={false}>
+        {row.is_rated ? '是' : '否'}
+      </NTag>
+    ),
+  },
+  {
     title: '标签',
     path: 'tag_names',
-    width: 160,
+    width: 140,
     ellipsis: { tooltip: true },
     render: row => (Array.isArray(row.tag_names) && row.tag_names.length ? row.tag_names.join(', ') : '-'),
   },
   { title: '开始时间', path: 'start_time', width: 170, render: row => formatDateTime(row.start_time) },
   { title: '结束时间', path: 'end_time', width: 170, render: row => formatDateTime(row.end_time) },
-  { title: '公开', path: 'is_visible', width: 70, render: row => (row.is_visible ? '是' : '否') },
-  { title: '更新时间', path: 'updated_at', width: 170, render: row => formatDateTime(row.updated_at) },
+  {
+    title: '公开',
+    path: 'is_visible',
+    width: 70,
+    render: (row) => (
+      <NTag size="small" type={row.is_visible ? 'success' : 'default'} bordered={false}>
+        {row.is_visible ? '是' : '否'}
+      </NTag>
+    ),
+  },
   {
     title: '操作',
     key: 'actions',
-    width: 200,
+    width: 180,
     fixed: 'right',
     render: row => (
       <NFlex size={8} align="center">
         {hasPermission('biz:contest:contest:detail') ? (
-          <NButton type="info" size="small" text onClick={() => openDetailModal(row.id)}>
+          <NButton type="info" size="small" text title="详情" onClick={() => goDetail(row.id)}>
             {renderButtonIcon('icon-park-outline:preview-open')}
           </NButton>
         ) : null}
         {hasPermission('biz:contest:contest:update') ? (
-          <NButton type="primary" size="small" text onClick={() => goEdit(row.id)}>
+          <NButton type="primary" size="small" text title="编辑" onClick={() => goEdit(row.id)}>
             {renderButtonIcon('icon-park-outline:edit')}
           </NButton>
         ) : null}
+        {hasPermission('biz:contest:contest:create') ? (
+          <NButton size="small" text title="克隆" onClick={() => handleClone(row.id)}>
+            {renderButtonIcon('icon-park-outline:copy')}
+          </NButton>
+        ) : null}
+        {hasPermission('biz:contest:contest:update') ? (
+          row.lifecycle_status === 'LOCKED'
+            ? (
+                <NButton size="small" text title="解锁" onClick={() => handleUnlock(row.id)}>
+                  {renderButtonIcon('icon-park-outline:unlock')}
+                </NButton>
+              )
+            : (
+                <NButton size="small" text title="锁定" onClick={() => handleLock(row.id)}>
+                  {renderButtonIcon('icon-park-outline:lock')}
+                </NButton>
+              )
+        ) : null}
         {hasPermission('biz:contest:contest:delete') ? (
-          <NButton type="error" size="small" text onClick={() => confirmDelete(row.id)}>
+          <NButton type="error" size="small" text title="删除" onClick={() => confirmDelete(row.id)}>
             {renderButtonIcon('icon-park-outline:delete')}
           </NButton>
         ) : null}
-        <NDropdown
-          trigger="click"
-          options={childMenuOptions.filter(item => hasPermission(item.permission)).map(item => ({
-            label: item.label,
-            key: item.key,
-          }))}
-          onSelect={(key: string) => goChildPage(row.id, key)}
-        >
-          <NButton size="small" text>
-            {renderButtonIcon('icon-park-outline:more-app')}
-          </NButton>
-        </NDropdown>
       </NFlex>
     ),
   },
@@ -145,34 +198,51 @@ async function fetchPage() {
   }
 }
 
-function openDetailModal(id: string) {
-  detailModalRef.value?.openModal(id)
-}
-
 function goCreate() {
   router.push('/biz/contest/contest/create')
+}
+
+function goDetail(id: string) {
+  router.push({ path: '/biz/contest/contest/detail', query: { id } })
 }
 
 function goEdit(id: string) {
   router.push({ path: '/biz/contest/contest/edit', query: { id, tab: 'basic' } })
 }
 
-function goChildPage(contestId: string, page: string) {
-  const tabMap: Record<string, string> = {
-    staff: 'staff',
-    'private-contestant': 'private',
-    'banned-user': 'banned',
-    problem: 'problems',
-    participation: 'participation',
-  }
-  router.push({
-    path: '/biz/contest/contest/edit',
-    query: { id: contestId, tab: tabMap[page] || page },
+function handleCheckedRowKeys(keys: Array<string | number>) {
+  state.checkedRowKeys = keys.map(String)
+}
+
+async function handleClone(id: string) {
+  window.$dialog.warning({
+    title: '克隆竞赛',
+    content: '将复制该竞赛配置与题目，是否继续？',
+    positiveText: '确认',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      const response = await ojContestApi.clone({ contest_id: id, copy_staff: false })
+      window.$message.success('克隆成功')
+      const newId = response.data
+      if (newId) {
+        goEdit(String(newId))
+      } else {
+        await fetchPage()
+      }
+    },
   })
 }
 
-function handleCheckedRowKeys(keys: Array<string | number>) {
-  state.checkedRowKeys = keys.map(String)
+async function handleLock(id: string) {
+  await ojContestApi.lock({ contest_id: id })
+  window.$message.success('已锁定')
+  await fetchPage()
+}
+
+async function handleUnlock(id: string) {
+  await ojContestApi.unlock({ contest_id: id })
+  window.$message.success('已解锁')
+  await fetchPage()
 }
 
 function confirmDelete(value: string | string[]) {
@@ -213,7 +283,7 @@ async function deleteRows(ids: string[]) {
       remote
       title="竞赛"
       row-key="id"
-      :scroll-x="960"
+      :scroll-x="1200"
       :columns="tableColumns"
       :data="state.rows"
       :loading="state.loading"
@@ -224,18 +294,22 @@ async function deleteRows(ids: string[]) {
       <template #toolbar>
         <NFlex>
           <NButton v-if="hasPermission('biz:contest:contest:create')" type="primary" text @click="goCreate">
-            <template #icon><NIcon><Icon icon="icon-park-outline:plus" /></NIcon></template>
+            <template #icon>
+              <NIcon><Icon icon="icon-park-outline:plus" /></NIcon>
+            </template>
           </NButton>
           <NButton text :loading="state.loading" @click="fetchPage">
-            <template #icon><NIcon><Icon icon="icon-park-outline:refresh" /></NIcon></template>
+            <template #icon>
+              <NIcon><Icon icon="icon-park-outline:refresh" /></NIcon>
+            </template>
           </NButton>
           <NButton v-if="hasPermission('biz:contest:contest:delete')" type="error" text :disabled="!hasCheckedRows" @click="confirmDelete(state.checkedRowKeys)">
-            <template #icon><NIcon><Icon icon="icon-park-outline:delete" /></NIcon></template>
+            <template #icon>
+              <NIcon><Icon icon="icon-park-outline:delete" /></NIcon>
+            </template>
           </NButton>
         </NFlex>
       </template>
     </ProDataTable>
-
-    <ModalDetail ref="detailModalRef" />
   </NFlex>
 </template>

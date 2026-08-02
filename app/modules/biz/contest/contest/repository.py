@@ -9,20 +9,29 @@ from collections import defaultdict
 from sqlalchemy import Select, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions.business import NotFoundError
+from app.core.exceptions.business import BusinessError, NotFoundError
 from app.modules.biz.contest.banned_user.model import OjContestBannedUser
+from app.modules.biz.contest.clarification.model import (
+    OjContestClarification,
+    OjContestClarificationMessage,
+    OjContestClarificationThread,
+)
 from app.modules.biz.contest.contest.model import OjContest
 from app.modules.biz.contest.contest.schema import (
     OjContestAdminPageQuery,
     OjContestCreateRequest,
     OjContestUpdateRequest,
 )
+from app.modules.biz.contest.lifecycle import utcnow
 from app.modules.biz.contest.participation.model import OjContestParticipation
 from app.modules.biz.contest.private_contestant.model import OjContestPrivateContestant
 from app.modules.biz.contest.problem.model import OjContestProblem
+from app.modules.biz.contest.rating.model import OjContestRating
 from app.modules.biz.contest.staff.model import OjContestStaff
 from app.modules.biz.contest.tag.model import OjContestTag, OjContestTagRel
 from app.modules.biz.oj_scope import assert_ids_exist
+from app.modules.biz.submission.submission.model import OjContestSubmission
+from app.platform.id_generator.snowflake import generate_snowflake_id
 
 
 class OjContestRepository:
@@ -30,7 +39,12 @@ class OjContestRepository:
         self.db = db
 
     async def create(self, payload: OjContestCreateRequest) -> OjContest:
-        data = payload.model_dump(mode="json", exclude={"tag_ids"})
+        # Keep Python datetimes for asyncpg (mode=json would stringify them).
+        data = payload.model_dump(exclude={"tag_ids"})
+        if isinstance(data.get("format_name"), str) is False and data.get("format_name") is not None:
+            data["format_name"] = str(data["format_name"].value)
+        if data.get("scoreboard_visibility") is not None and not isinstance(data["scoreboard_visibility"], str):
+            data["scoreboard_visibility"] = str(data["scoreboard_visibility"].value)
         data["user_count"] = 0
         entity = OjContest(**data)
         self.db.add(entity)
@@ -47,12 +61,124 @@ class OjContestRepository:
             raise NotFoundError("OjContest not found")
         return entity
 
+    async def get_by_key(self, key: str) -> OjContest | None:
+        stmt = select(OjContest).where(OjContest.key == key)
+        return (await self.db.execute(stmt)).scalar_one_or_none()
+
     async def update(self, payload: OjContestUpdateRequest) -> None:
         entity = await self.get_required(payload.id)
-        for key, value in payload.model_dump(mode="json", exclude={"id", "tag_ids"}).items():
+        data = payload.model_dump(exclude={"id", "tag_ids"})
+        if data.get("format_name") is not None and not isinstance(data["format_name"], str):
+            data["format_name"] = str(data["format_name"].value)
+        if data.get("scoreboard_visibility") is not None and not isinstance(data["scoreboard_visibility"], str):
+            data["scoreboard_visibility"] = str(data["scoreboard_visibility"].value)
+        for key, value in data.items():
             setattr(entity, key, value)
         await self.replace_tag_ids(entity.id, payload.tag_ids)
         await self.db.flush()
+
+    async def lock(self, contest_id: str) -> OjContest:
+        entity = await self.get_required(contest_id)
+        entity.locked_after = utcnow()
+        await self.db.flush()
+        return entity
+
+    async def unlock(self, contest_id: str) -> OjContest:
+        entity = await self.get_required(contest_id)
+        entity.locked_after = None
+        await self.db.flush()
+        return entity
+
+    async def clone(self, contest_id: str, *, new_key: str | None = None, copy_staff: bool = False) -> OjContest:
+        source = await self.get_required(contest_id)
+        key = (new_key or "").strip() or f"{source.key}-clone-{generate_snowflake_id()[-6:]}"
+        if len(key) > 32:
+            key = key[:32]
+        if await self.get_by_key(key) is not None:
+            raise BusinessError(f"竞赛标识已存在: {key}")
+
+        data = {
+            "key": key,
+            "name": source.name,
+            "description": source.description,
+            "summary": source.summary,
+            "start_time": source.start_time,
+            "end_time": source.end_time,
+            "time_limit_seconds": source.time_limit_seconds,
+            "freeze_seconds": source.freeze_seconds,
+            "is_visible": False,
+            "is_private": source.is_private,
+            "access_code": source.access_code,
+            "is_rated": source.is_rated,
+            "rating_floor": source.rating_floor,
+            "rating_ceiling": source.rating_ceiling,
+            "rate_all": source.rate_all,
+            "scoreboard_visibility": source.scoreboard_visibility,
+            "format_name": source.format_name,
+            "format_config": dict(source.format_config or {}),
+            "points_precision": source.points_precision,
+            "hide_problem_tags": source.hide_problem_tags,
+            "hide_problem_authors": source.hide_problem_authors,
+            "run_pretests_only": source.run_pretests_only,
+            "use_clarifications": source.use_clarifications,
+            "tester_see_scoreboard": source.tester_see_scoreboard,
+            "tester_see_submissions": source.tester_see_submissions,
+            "locked_after": None,
+            "user_count": 0,
+            "extra": dict(source.extra or {}),
+        }
+        entity = OjContest(**data)
+        self.db.add(entity)
+        await self.db.flush()
+
+        tag_ids = await self.list_tag_ids(source.id)
+        await self.replace_tag_ids(entity.id, tag_ids)
+
+        problems = list(
+            (
+                await self.db.execute(
+                    select(OjContestProblem)
+                    .where(OjContestProblem.contest_id == source.id)
+                    .order_by(OjContestProblem.sort.asc())
+                )
+            )
+            .scalars()
+            .all()
+        )
+        for p in problems:
+            self.db.add(
+                OjContestProblem(
+                    contest_id=entity.id,
+                    problem_id=p.problem_id,
+                    points=p.points,
+                    partial=p.partial,
+                    is_pretested=p.is_pretested,
+                    sort=p.sort,
+                    label=p.label,
+                    max_submissions=p.max_submissions,
+                    output_prefix_override=p.output_prefix_override,
+                )
+            )
+
+        if copy_staff:
+            staff_rows = list(
+                (
+                    await self.db.execute(select(OjContestStaff).where(OjContestStaff.contest_id == source.id))
+                )
+                .scalars()
+                .all()
+            )
+            for s in staff_rows:
+                self.db.add(
+                    OjContestStaff(
+                        contest_id=entity.id,
+                        account_id=s.account_id,
+                        role=s.role,
+                    )
+                )
+
+        await self.db.flush()
+        return entity
 
     async def delete_many(self, entity_ids: list[str]) -> None:
         unique_ids = list(dict.fromkeys(entity_ids))
@@ -60,6 +186,45 @@ class OjContestRepository:
         existing_ids = set((await self.db.execute(stmt)).scalars().all())
         if len(existing_ids) != len(unique_ids):
             raise NotFoundError("OjContest not found")
+
+        problem_ids = list(
+            (
+                await self.db.execute(
+                    select(OjContestProblem.id).where(OjContestProblem.contest_id.in_(unique_ids))
+                )
+            )
+            .scalars()
+            .all()
+        )
+        if problem_ids:
+            await self.db.execute(
+                delete(OjContestSubmission).where(OjContestSubmission.contest_problem_id.in_(problem_ids))
+            )
+
+        thread_ids = list(
+            (
+                await self.db.execute(
+                    select(OjContestClarificationThread.id).where(
+                        OjContestClarificationThread.contest_id.in_(unique_ids)
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        if thread_ids:
+            await self.db.execute(
+                delete(OjContestClarificationMessage).where(
+                    OjContestClarificationMessage.thread_id.in_(thread_ids)
+                )
+            )
+        await self.db.execute(
+            delete(OjContestClarificationThread).where(OjContestClarificationThread.contest_id.in_(unique_ids))
+        )
+        await self.db.execute(
+            delete(OjContestClarification).where(OjContestClarification.contest_id.in_(unique_ids))
+        )
+        await self.db.execute(delete(OjContestRating).where(OjContestRating.contest_id.in_(unique_ids)))
         await self.db.execute(delete(OjContestTagRel).where(OjContestTagRel.contest_id.in_(unique_ids)))
         await self.db.execute(delete(OjContestStaff).where(OjContestStaff.contest_id.in_(unique_ids)))
         await self.db.execute(

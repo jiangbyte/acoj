@@ -32,4 +32,5 @@ class OjContestParticipation(Base, TimestampMixin):
     tiebreaker: Mapped[float] = mapped_column(Float, nullable=False, comment="平分决胜值")
     is_disqualified: Mapped[bool] = mapped_column(Boolean, nullable=False, comment="是否取消资格")
     virtual: Mapped[int] = mapped_column(Integer, nullable=False, comment="虚拟状态")
+    rate_exclude: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, comment="排除 Rating")
     format_data: Mapped[dict[str, Any] | None] = mapped_column(JSON, comment="赛制私有数据")

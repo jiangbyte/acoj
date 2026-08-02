@@ -11,7 +11,7 @@ from pydantic import Field
 
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
-from app.modules.biz.contest.enums import ContestFormat, ScoreboardVisibility
+from app.modules.biz.contest.enums import ContestFormat, ContestLifecycleStatus, ScoreboardVisibility
 
 
 class OjContestCreateRequest(ApiSchema):
@@ -22,6 +22,7 @@ class OjContestCreateRequest(ApiSchema):
     start_time: datetime
     end_time: datetime
     time_limit_seconds: int | None = None
+    freeze_seconds: int | None = None
     is_visible: bool
     is_private: bool
     access_code: str | None = None
@@ -30,7 +31,7 @@ class OjContestCreateRequest(ApiSchema):
     rating_ceiling: int | None = None
     rate_all: bool
     scoreboard_visibility: ScoreboardVisibility
-    format_name: ContestFormat
+    format_name: ContestFormat = ContestFormat.DEFAULT
     format_config: dict[str, Any] | None = Field(default_factory=dict)
     points_precision: int
     hide_problem_tags: bool
@@ -39,11 +40,7 @@ class OjContestCreateRequest(ApiSchema):
     use_clarifications: bool
     tester_see_scoreboard: bool
     tester_see_submissions: bool
-    show_short_display: bool
-    problem_label_script: str | None = None
     locked_after: datetime | None = None
-    og_image: str | None = None
-    logo_override_image: str | None = None
     tag_ids: list[str] = Field(default_factory=list)
     extra: dict[str, Any] | None = Field(default_factory=dict)
 
@@ -68,6 +65,7 @@ class OjContestSchema(ApiSchema):
     start_time: datetime
     end_time: datetime
     time_limit_seconds: int | None = None
+    freeze_seconds: int | None = None
     is_visible: bool
     is_private: bool
     access_code: str | None = None
@@ -85,11 +83,8 @@ class OjContestSchema(ApiSchema):
     use_clarifications: bool
     tester_see_scoreboard: bool
     tester_see_submissions: bool
-    show_short_display: bool
-    problem_label_script: str | None = None
     locked_after: datetime | None = None
-    og_image: str | None = None
-    logo_override_image: str | None = None
+    lifecycle_status: ContestLifecycleStatus
     user_count: int
     tag_ids: list[str] = Field(default_factory=list)
     tag_names: list[str] = Field(default_factory=list)
@@ -98,3 +93,40 @@ class OjContestSchema(ApiSchema):
     created_by: str | None = None
     updated_at: datetime
     updated_by: str | None = None
+
+
+class OjContestLockRequest(ApiSchema):
+    contest_id: str = Field(min_length=1, max_length=64)
+
+
+class OjContestUnlockRequest(ApiSchema):
+    contest_id: str = Field(min_length=1, max_length=64)
+
+
+class OjContestCloneRequest(ApiSchema):
+    contest_id: str = Field(min_length=1, max_length=64)
+    new_key: str | None = None
+    copy_staff: bool = False
+
+
+class OjContestRescoreRequest(ApiSchema):
+    contest_id: str = Field(min_length=1, max_length=64)
+
+
+class OjContestRateRequest(ApiSchema):
+    contest_id: str = Field(min_length=1, max_length=64)
+
+
+class OjContestAdminSubmitRequest(ApiSchema):
+    contest_id: str = Field(min_length=1, max_length=64)
+    participation_id: str = Field(min_length=1, max_length=64)
+    problem_id: str = Field(min_length=1, max_length=64)
+    language_key: str
+    source: str
+    wait: bool = False
+    wait_timeout_sec: int = Field(default=60, ge=5, le=300)
+
+
+class OjContestScoreboardQuery(ApiSchema):
+    contest_id: str = Field(min_length=1, max_length=64)
+    virtual: int = 0

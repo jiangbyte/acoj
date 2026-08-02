@@ -16,102 +16,19 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config.enums import StatusEnum
 from app.core.exceptions.business import BusinessError, NotFoundError
 from app.modules.biz.problem.data.model import OjProblemData
 from app.modules.biz.problem.enums import JudgeMode, TestCaseDataMode
+from app.modules.biz.problem.language.model import OjProblemLanguage
 from app.modules.biz.problem.problem.model import OjProblem
 from app.modules.biz.problem.test_case.model import OjProblemTestCase
-from app.modules.biz.problem.sandbox_languages import ensure_sandbox_language_key
+from app.modules.biz.problem.worker_languages import (
+    ensure_worker_language_key,
+    get_worker_language_payload,
+)
 from app.platform.id_generator.snowflake import generate_snowflake_id
 from app.platform.storage.manager import get_storage
-
-# Admin trial languages — keys aligned with acoj-sandbox LanguageId.
-TRIAL_LANGUAGES: dict[str, dict[str, Any]] = {
-    "c99": {
-        "key": "c99",
-        "name": "C99",
-        "extension": ".c",
-        "compile_command": "gcc -O2 -std=c99 {src} -o {exe}",
-        "run_command": "{exe}",
-    },
-    "c11": {
-        "key": "c11",
-        "name": "C11",
-        "extension": ".c",
-        "compile_command": "gcc -O2 -std=c11 {src} -o {exe}",
-        "run_command": "{exe}",
-    },
-    "c17": {
-        "key": "c17",
-        "name": "C17",
-        "extension": ".c",
-        "compile_command": "gcc -O2 -std=c17 {src} -o {exe}",
-        "run_command": "{exe}",
-    },
-    "cpp11": {
-        "key": "cpp11",
-        "name": "C++11",
-        "extension": ".cpp",
-        "compile_command": "g++ -O2 -std=c++11 {src} -o {exe}",
-        "run_command": "{exe}",
-    },
-    "cpp14": {
-        "key": "cpp14",
-        "name": "C++14",
-        "extension": ".cpp",
-        "compile_command": "g++ -O2 -std=c++14 {src} -o {exe}",
-        "run_command": "{exe}",
-    },
-    "cpp17": {
-        "key": "cpp17",
-        "name": "C++17",
-        "extension": ".cpp",
-        "compile_command": "g++ -O2 -std=c++17 {src} -o {exe}",
-        "run_command": "{exe}",
-    },
-    "cpp20": {
-        "key": "cpp20",
-        "name": "C++20",
-        "extension": ".cpp",
-        "compile_command": "g++ -O2 -std=c++20 {src} -o {exe}",
-        "run_command": "{exe}",
-    },
-    "python3": {
-        "key": "python3",
-        "name": "Python 3",
-        "extension": ".py",
-        "compile_command": None,
-        "run_command": "python3 {src}",
-    },
-    "java17": {
-        "key": "java17",
-        "name": "Java 17",
-        "extension": ".java",
-        "compile_command": "javac {src}",
-        "run_command": "java -Xss256m Main",
-    },
-    "go": {
-        "key": "go",
-        "name": "Go",
-        "extension": ".go",
-        "compile_command": "go build -o {exe} {src}",
-        "run_command": "{exe}",
-    },
-    "nodejs": {
-        "key": "nodejs",
-        "name": "Node.js",
-        "extension": ".js",
-        "compile_command": None,
-        "run_command": "node {src}",
-    },
-    "rust": {
-        "key": "rust",
-        "name": "Rust",
-        "extension": ".rs",
-        "compile_command": "rustc -O -o {exe} {src}",
-        "run_command": "{exe}",
-    },
-}
 
 
 def read_storage_bytes(object_name: str) -> bytes:
@@ -150,6 +67,10 @@ def test_case_to_worker_dict(case: OjProblemTestCase, *, require_output: bool = 
         "input_sha256": "",
         "output_sha256": "",
     }
+    # Optional per-case overrides for sandbox limits (e.g. OLE tests).
+    extra = case.extra or {}
+    if extra.get("output_limit_bytes") is not None:
+        base["output_limit_bytes"] = int(extra["output_limit_bytes"])
     mode = (case.data_mode or TestCaseDataMode.FILE).lower()
     if mode == TestCaseDataMode.INLINE:
         base["input_inline"] = case.input_inline or ""
@@ -192,10 +113,33 @@ async def build_worker_test_cases(
     return [test_case_to_worker_dict(row, require_output=require_output) for row in rows]
 
 
-async def load_text_by_key(object_name: str | None) -> str | None:
-    if not object_name:
+async def resolve_enabled_problem_language(
+    db: AsyncSession,
+    *,
+    problem_id: str,
+    language_key: str,
+) -> OjProblemLanguage | None:
+    """Validate language against problem allowlist and return the ENABLED row if any.
+
+    Rules (aligned with admin trial UI):
+    - language_key must be a worker-image language
+    - if the problem has any ENABLED languages, language_key must be one of them
+    - if none are ENABLED, any worker-image language is allowed (no per-lang overrides)
+    """
+    language_key = ensure_worker_language_key(language_key)
+    enabled_stmt = select(OjProblemLanguage).where(
+        OjProblemLanguage.problem_id == problem_id,
+        OjProblemLanguage.status == StatusEnum.ENABLED.value,
+    )
+    enabled_rows = list((await db.execute(enabled_stmt)).scalars().all())
+    if not enabled_rows:
         return None
-    return read_storage_bytes(object_name).decode("utf-8", errors="replace")
+    for row in enabled_rows:
+        if row.language_key == language_key:
+            return row
+    raise BusinessError(
+        f"语言未对题目开放或已禁用: {language_key}（请在「题目语言」中开启）"
+    )
 
 
 async def build_admin_trial_payload(
@@ -205,8 +149,9 @@ async def build_admin_trial_payload(
     language_key: str,
     source: str,
     case_ids: list[str] | None = None,
+    submission_id: str | None = None,
 ) -> dict[str, Any]:
-    """Build JudgePayload for admin trial.
+    """Build JudgePayload for admin trial / rejudge.
 
     test_cases comes only from oj_problem_test_case rows (file or inline),
     never from oj_problem_data.zip_object_name.
@@ -214,14 +159,25 @@ async def build_admin_trial_payload(
     problem = await db.get(OjProblem, problem_id)
     if problem is None:
         raise NotFoundError("OjProblem not found")
-    language_key = ensure_sandbox_language_key(language_key)
-    language = TRIAL_LANGUAGES.get(language_key)
-    if language is None:
-        raise BusinessError(
-            f"Trial judge 暂未配置该语言的编译/运行命令: {language_key}（language_key 已与 sandbox 对齐，但试测白名单未覆盖）"
-        )
     if not source.strip():
         raise BusinessError("source is required")
+
+    lang_row = await resolve_enabled_problem_language(
+        db, problem_id=problem_id, language_key=language_key
+    )
+    language_key = ensure_worker_language_key(language_key)
+    language = get_worker_language_payload(language_key)
+
+    time_limit_ms = (
+        lang_row.time_limit_ms
+        if lang_row is not None and lang_row.time_limit_ms is not None
+        else problem.time_limit_ms
+    )
+    memory_limit_kb = (
+        lang_row.memory_limit_kb
+        if lang_row is not None and lang_row.memory_limit_kb is not None
+        else problem.memory_limit_kb
+    )
 
     data_stmt = select(OjProblemData).where(OjProblemData.problem_id == problem_id)
     data = (await db.execute(data_stmt)).scalar_one_or_none()
@@ -240,12 +196,12 @@ async def build_admin_trial_payload(
         require_output=judge_mode != JudgeMode.INTERACTIVE,
     )
     payload: dict[str, Any] = {
-        "submission_id": f"trial-{problem_id}-{generate_snowflake_id()}",
+        "submission_id": submission_id or f"trial-{problem_id}-{generate_snowflake_id()}",
         "judge_mode": judge_mode,
         "problem": {
             "code": problem.code,
-            "time_limit_ms": problem.time_limit_ms,
-            "memory_limit_kb": problem.memory_limit_kb,
+            "time_limit_ms": time_limit_ms,
+            "memory_limit_kb": memory_limit_kb,
             "points": float(problem.points),
             "partial": bool(problem.partial),
         },
@@ -258,16 +214,22 @@ async def build_admin_trial_payload(
         spj_source = (data.spj_source or "").strip()
         if not spj_source:
             raise BusinessError("SPECIAL_JUDGE mode requires spj_source")
+        # Worker SpecialJudgeMode ignores spj.language and always compiles with
+        # acoj_sandbox.testlib_checker_language() (C++17 + testlib run_argv).
         payload["spj"] = {
-            "language": TRIAL_LANGUAGES["cpp17"],
+            "language": get_worker_language_payload("cpp17"),
             "source": spj_source,
         }
     elif data and judge_mode == JudgeMode.INTERACTIVE:
         interactor_source = (data.interactor_source or "").strip()
         if not interactor_source:
             raise BusinessError("INTERACTIVE mode requires interactor_source")
+        # Worker InteractiveMode uses interactor.language via build_languages_config.
+        interactor_key = ensure_worker_language_key(
+            getattr(data, "interactor_language_key", None) or "cpp17"
+        )
         payload["interactor"] = {
-            "language": TRIAL_LANGUAGES["cpp17"],
+            "language": get_worker_language_payload(interactor_key),
             "source": interactor_source,
         }
     return payload

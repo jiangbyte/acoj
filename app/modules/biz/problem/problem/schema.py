@@ -19,6 +19,8 @@ class OjProblemTrialJudgeRequest(ApiSchema):
     source: str = Field(min_length=1)
     case_ids: list[str] | None = None
     wait_timeout_sec: int = Field(default=60, ge=5, le=300)
+    # False: enqueue and return immediately (SSE/poll for result). True: poll DB until terminal.
+    wait: bool = False
 
 
 class OjProblemTrialJudgeResult(ApiSchema):
@@ -45,8 +47,8 @@ class OjProblemCreateRequest(ApiSchema):
     memory_limit_kb: int
     points: float
     partial: bool
-    short_circuit: bool
     status: ProblemStatus = ProblemStatus.DRAFT
+    is_public: bool = False
     published_at: datetime | None = None
     submission_source_visibility: SubmissionSourceVisibility
     type_ids: list[str] = Field(default_factory=list)
@@ -69,6 +71,7 @@ class OjProblemAdminPageQuery(ApiSchema):
     group_id: str | None = None
     type_id: str | None = None
     status: ProblemStatus | None = None
+    is_public: bool | None = None
 
 
 class OjProblemSchema(ApiSchema):
@@ -83,8 +86,8 @@ class OjProblemSchema(ApiSchema):
     memory_limit_kb: int
     points: float
     partial: bool
-    short_circuit: bool
     status: ProblemStatus
+    is_public: bool = False
     published_at: datetime | None = None
     submission_source_visibility: SubmissionSourceVisibility
     user_count: int

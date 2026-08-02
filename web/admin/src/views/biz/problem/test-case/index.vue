@@ -91,12 +91,24 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   { title: '分值', path: 'points', width: 80 },
+  {
+    title: '时间',
+    path: 'time_limit_ms',
+    width: 90,
+    render: row => (row.time_limit_ms == null ? '默认' : `${row.time_limit_ms}ms`),
+  },
+  {
+    title: '内存',
+    path: 'memory_limit_kb',
+    width: 100,
+    render: row => (row.memory_limit_kb == null ? '默认' : `${row.memory_limit_kb}KB`),
+  },
   { title: 'pretest', path: 'is_pretest', width: 80, render: row => (row.is_pretest ? '是' : '否') },
   { title: '更新时间', path: 'updated_at', width: 170, render: row => formatDateTime(row.updated_at) },
   {
     title: '操作',
     key: 'actions',
-    width: 130,
+    width: 170,
     fixed: 'right',
     render: row => (
       <NFlex size={12}>
@@ -110,6 +122,11 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
             {renderButtonIcon('icon-park-outline:edit')}
           </NButton>
         ) : null}
+        {hasPermission('biz:problem:problem:update') ? (
+          <NButton type="warning" size="small" text onClick={() => openTrialJudgeModal({ caseIds: [row.id], caseLabel: row.case_no })}>
+            {renderButtonIcon('icon-park-outline:play')}
+          </NButton>
+        ) : null}
         {hasPermission('biz:problem:testcase:delete') ? (
           <NButton type="error" size="small" text onClick={() => confirmDelete(row.id)}>
             {renderButtonIcon('icon-park-outline:delete')}
@@ -121,13 +138,17 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
 ])
 
 watch(problemId, () => {
-  void loadProblemTitle()
+  if (!props.embedded) {
+    void loadProblemTitle()
+  }
   state.page = 1
   fetchPage()
 })
 
 onMounted(async () => {
-  await loadProblemTitle()
+  if (!props.embedded) {
+    await loadProblemTitle()
+  }
   await fetchPage()
 })
 
@@ -183,8 +204,8 @@ function openEditModal(id: string) {
   formModalRef.value?.openModal(id)
 }
 
-function openTrialJudgeModal() {
-  trialJudgeModalRef.value?.openModal()
+function openTrialJudgeModal(options?: { caseIds?: string[], caseLabel?: string | number | null }) {
+  trialJudgeModalRef.value?.openModal(options)
 }
 
 function handleCheckedRowKeys(keys: Array<string | number>) {
@@ -214,7 +235,7 @@ async function deleteRows(ids: string[]) {
 </script>
 
 <template>
-  <NFlex class="h-full min-h-0" vertical>
+  <NFlex :class="props.embedded ? 'min-h-0' : 'h-full min-h-0'" vertical>
     <ProCard v-if="!props.embedded">
       <NFlex align="center" justify="space-between">
         <NFlex align="center" :size="12">
@@ -223,8 +244,8 @@ async function deleteRows(ids: string[]) {
           <span v-if="problemTitle" class="text-gray-500">{{ problemTitle }}</span>
           <span class="text-gray-400 text-sm">每行一条；试判按行发给 worker</span>
         </NFlex>
-        <NButton v-if="hasPermission('biz:problem:problem:update')" type="primary" @click="openTrialJudgeModal">
-          试判
+        <NButton v-if="hasPermission('biz:problem:problem:update')" type="primary" @click="openTrialJudgeModal()">
+          试测全部
         </NButton>
       </NFlex>
     </ProCard>
@@ -239,7 +260,8 @@ async function deleteRows(ids: string[]) {
     </ProCard>
 
     <ProDataTable
-      class="min-h-0 flex-1"
+      :class="props.embedded ? undefined : 'min-h-0 flex-1'"
+      :flex-height="!props.embedded"
       remote
       :title="props.embedded ? '测试用例' : '测试用例（oj_problem_test_case）'"
       row-key="id"
@@ -253,6 +275,15 @@ async function deleteRows(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
+          <NButton
+            v-if="hasPermission('biz:problem:problem:update')"
+            type="primary"
+            text
+            @click="openTrialJudgeModal()"
+          >
+            <template #icon><NIcon><Icon icon="icon-park-outline:play" /></NIcon></template>
+            试测全部
+          </NButton>
           <NButton v-if="hasPermission('biz:problem:testcase:create')" type="primary" text @click="openCreateModal">
             <template #icon><NIcon><Icon icon="icon-park-outline:plus" /></NIcon></template>
             {{ props.embedded ? '新增 inline' : '' }}

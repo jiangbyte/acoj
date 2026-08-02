@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
+from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
 from app.core.security.transport import decrypt_passwords
 from app.core.security.session import SessionPayload
@@ -14,6 +15,7 @@ from app.modules.iam.enums import AccountIdentityBindStatus
 from app.modules.user.portal.schema import (
     PortalProfileResponse,
     PortalPublicProfileResponse,
+    PortalRatingRankItem,
     PortalUserCenterAvatarUpdateResponse,
     PortalUserCenterEmailUpdateRequest,
     PortalUserCenterPasswordUpdateRequest,
@@ -188,6 +190,20 @@ async def get_public_space(
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[PortalPublicProfileResponse]:
     return success(await PortalUserProfileService(db).get_public_profile(account_id))
+
+
+@router.get(
+    "/biz/rank/rating",
+    response_model=ApiResponse[PageData[PortalRatingRankItem]],
+)
+async def rating_rank(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current: Current = 1,
+    size: Size = 20,
+) -> ApiResponse[PageData[PortalRatingRankItem]]:
+    return success(
+        await PortalUserProfileService(db).page_rating_rank(PageQuery(current=current, size=size))
+    )
 
 
 def _identity_login_enabled(identity) -> bool:

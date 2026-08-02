@@ -18,16 +18,9 @@ class OjProblemDataCreateRequest(ApiSchema):
     problem_id: str
     judge_mode: JudgeMode = JudgeMode.STANDARD
     zip_object_name: str | None = None
-    generator_file_id: str | None = None
-    checker: str | None = None
-    checker_args: dict[str, Any] | None = None
     spj_source: str | None = None
     interactor_source: str | None = None
-    output_prefix: int | None = None
-    output_limit: int | None = None
-    enable_unicode: bool | None = None
-    disable_big_math: bool | None = None
-    feedback: str | None = None
+    interactor_language_key: str | None = None
     extra: dict[str, Any] | None = None
 
 
@@ -39,7 +32,6 @@ class OjProblemDataAdminPageQuery(ApiSchema):
     pagination: PageQuery
     problem_id: str | None = None
     zip_object_name: str | None = None
-    generator_file_id: str | None = None
 
 
 class OjProblemDataSchema(ApiSchema):
@@ -47,16 +39,9 @@ class OjProblemDataSchema(ApiSchema):
     problem_id: str
     judge_mode: JudgeMode = JudgeMode.STANDARD
     zip_object_name: str | None = None
-    generator_file_id: str | None = None
-    checker: str
-    checker_args: dict[str, Any]
     spj_source: str | None = None
     interactor_source: str | None = None
-    output_prefix: int | None = None
-    output_limit: int | None = None
-    enable_unicode: bool | None = None
-    disable_big_math: bool | None = None
-    feedback: str | None = None
+    interactor_language_key: str | None = None
     extra: dict[str, Any]
     created_at: datetime
     created_by: str | None = None

@@ -52,7 +52,7 @@ const searchForm = createProSearchForm<any>({
 })
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
-  { title: '题目ID', path: 'problem_id', field: 'input' },
+  { title: '题目编码', path: 'problem_code', field: 'input' },
 ])
 
 const pagination = computed<PaginationProps>(() => ({
@@ -78,6 +78,16 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   { title: '标签', path: 'label', width: 80, ellipsis: { tooltip: true }, render: row => row.label || '-' },
   { title: '题目编码', path: 'problem_code', width: 120, ellipsis: { tooltip: true }, render: row => row.problem_code || '-' },
   { title: '题目标题', path: 'problem_name', width: 180, ellipsis: { tooltip: true }, render: row => row.problem_name || '-' },
+  {
+    title: '公开题库',
+    path: 'problem_is_public',
+    width: 100,
+    render: (row) => (
+      <NTag size="small" type={row.problem_is_public ? 'success' : 'warning'} bordered={false}>
+        {row.problem_is_public ? '公开' : '竞赛专用'}
+      </NTag>
+    ),
+  },
   { title: '竞赛内分值', path: 'points', width: 100 },
   {
     title: '部分分',

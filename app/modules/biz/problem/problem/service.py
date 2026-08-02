@@ -18,8 +18,11 @@ from app.modules.biz.problem.problem.schema import (
     OjProblemCreateRequest,
     OjProblemSchema,
     OjProblemStatusRequest,
+    OjProblemTrialJudgeRequest,
+    OjProblemTrialJudgeResult,
     OjProblemUpdateRequest,
 )
+from app.modules.biz.submission.submission.service import OjSubmissionService
 from app.platform.db.transaction import transactional
 
 
@@ -40,6 +43,23 @@ class OjProblemService:
     async def delete(self, payload: IdsRequest) -> None:
         async with transactional(self.db):
             await self.repo.delete_many(payload.ids)
+
+    async def trial_judge(
+        self,
+        problem_id: str,
+        payload: OjProblemTrialJudgeRequest,
+        *,
+        user_id: str,
+    ) -> OjProblemTrialJudgeResult:
+        return await OjSubmissionService(self.db).create_trial_and_judge(
+            problem_id=problem_id,
+            user_id=user_id,
+            language_key=payload.language_key,
+            source=payload.source,
+            case_ids=payload.case_ids,
+            wait_timeout_sec=payload.wait_timeout_sec,
+            wait=payload.wait,
+        )
 
     async def set_status(self, payload: OjProblemStatusRequest) -> None:
         async with transactional(self.db):

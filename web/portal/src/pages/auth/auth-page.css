@@ -1,0 +1,55 @@
+/* 仅保留左右分栏结构；表单控件用 Ant Design 默认样式 */
+.auth-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(400px, 0.95fr);
+  gap: clamp(28px, 5vw, 64px);
+  align-items: center;
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  min-height: calc(100vh - 64px - 120px);
+}
+
+.auth-split__visual-inner {
+  display: grid;
+  gap: 16px;
+  max-width: 560px;
+}
+
+.auth-split__highlights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.auth-split__panel {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.auth-split__card {
+  width: min(100%, 480px);
+}
+
+@media (max-width: 920px) {
+  .auth-split {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    width: min(100%, 520px);
+    min-height: auto;
+  }
+
+  .auth-split__visual-inner {
+    max-width: none;
+    text-align: center;
+  }
+
+  .auth-split__highlights {
+    display: none;
+  }
+
+  .auth-split__card {
+    width: 100%;
+  }
+}

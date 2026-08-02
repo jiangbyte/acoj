@@ -27,7 +27,10 @@ export function remove(problemId: string, data: any) {
   return http.post<any>(`${prefix}/delete`, data, { params: { problem_id: problemId } })
 }
 
-/** Sandbox LanguageId catalog (aligned with worker) */
+/**
+ * 唯一语言选项接口：worker 镜像显式启用语言。
+ * 题目语言 / 试测 / 交互器选择器均应只调用本 API，禁止前端硬编码或全量枚举。
+ */
 export function options() {
   return http.get<Array<{ key: string, label: string, extension: string, source_filename: string }>>(
     `${prefix}/options`,

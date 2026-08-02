@@ -4,17 +4,34 @@ Author: Charlie
 Generated at: 2026-07-28 20:51:12
 """
 
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions.business import BusinessError
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.modules.biz.contest.contest.repository import OjContestRepository
 from app.modules.biz.contest.contest.schema import (
     OjContestAdminPageQuery,
+    OjContestAdminSubmitRequest,
+    OjContestCloneRequest,
     OjContestCreateRequest,
+    OjContestLockRequest,
+    OjContestRateRequest,
+    OjContestRescoreRequest,
     OjContestSchema,
+    OjContestScoreboardQuery,
+    OjContestUnlockRequest,
     OjContestUpdateRequest,
 )
+from app.modules.biz.contest.enums import ContestParticipationVirtual
+from app.modules.biz.contest.formats.registry import list_formats
+from app.modules.biz.contest.lifecycle import lifecycle_status
+from app.modules.biz.contest.participation.model import OjContestParticipation
+from app.modules.biz.contest.rating.service import rate_contest
+from app.modules.biz.contest.scoring import build_scoreboard, rescore_contest
+from app.modules.biz.contest.submit.service import ContestSubmitService
 from app.platform.db.transaction import transactional
 
 
@@ -22,6 +39,9 @@ class OjContestService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.repo = OjContestRepository(db)
+
+    def _enrich(self, entity) -> None:
+        setattr(entity, "lifecycle_status", lifecycle_status(entity))
 
     async def create(self, payload: OjContestCreateRequest) -> str:
         async with transactional(self.db):
@@ -38,10 +58,13 @@ class OjContestService:
 
     async def detail(self, query: IdQuery) -> OjContestSchema:
         entity = await self.repo.get_required(query.id)
+        # Avoid MissingGreenlet when identity-map entity was expired by a prior commit.
+        await self.db.refresh(entity)
         tag_ids = await self.repo.list_tag_ids(entity.id)
         setattr(entity, "tag_ids", tag_ids)
         name_map = await self.repo.map_tag_names(tag_ids)
         setattr(entity, "tag_names", [name_map[tag_id] for tag_id in tag_ids if tag_id in name_map])
+        self._enrich(entity)
         return to_schema(OjContestSchema, entity)
 
     async def page_admin(self, query: OjContestAdminPageQuery) -> PageData[OjContestSchema]:
@@ -53,4 +76,64 @@ class OjContestService:
             tag_ids = tag_map.get(item.id, [])
             setattr(item, "tag_ids", tag_ids)
             setattr(item, "tag_names", [name_map[tag_id] for tag_id in tag_ids if tag_id in name_map])
+            self._enrich(item)
         return build_page(query.pagination, total, to_schema_list(OjContestSchema, items))
+
+    async def lock(self, payload: OjContestLockRequest) -> OjContestSchema:
+        async with transactional(self.db):
+            entity = await self.repo.lock(payload.contest_id)
+            contest_id = entity.id
+        return await self.detail(IdQuery(id=contest_id))
+
+    async def unlock(self, payload: OjContestUnlockRequest) -> OjContestSchema:
+        async with transactional(self.db):
+            entity = await self.repo.unlock(payload.contest_id)
+            contest_id = entity.id
+        return await self.detail(IdQuery(id=contest_id))
+
+    async def clone(self, payload: OjContestCloneRequest) -> str:
+        async with transactional(self.db):
+            entity = await self.repo.clone(
+                payload.contest_id,
+                new_key=payload.new_key,
+                copy_staff=payload.copy_staff,
+            )
+            return entity.id
+
+    async def scoreboard(self, query: OjContestScoreboardQuery) -> dict[str, Any]:
+        await self.repo.get_required(query.contest_id)
+        return await build_scoreboard(
+            self.db,
+            query.contest_id,
+            virtual=int(query.virtual if query.virtual is not None else ContestParticipationVirtual.LIVE),
+            ignore_freeze=True,
+        )
+
+    async def rescore(self, payload: OjContestRescoreRequest) -> dict[str, Any]:
+        async with transactional(self.db):
+            await self.repo.get_required(payload.contest_id)
+            count = await rescore_contest(self.db, payload.contest_id)
+            return {"contest_id": payload.contest_id, "participations": count}
+
+    async def rate(self, payload: OjContestRateRequest) -> dict[str, Any]:
+        # rate_contest manages its own transaction
+        return await rate_contest(self.db, payload.contest_id)
+
+    async def admin_submit(self, payload: OjContestAdminSubmitRequest) -> dict[str, Any]:
+        participation = await self.db.get(OjContestParticipation, payload.participation_id)
+        if participation is None or participation.contest_id != payload.contest_id:
+            raise BusinessError("参赛记录无效")
+        return await ContestSubmitService(self.db).submit(
+            contest_id=payload.contest_id,
+            account_id=participation.account_id,
+            problem_id=payload.problem_id,
+            language_key=payload.language_key,
+            source=payload.source,
+            participation_id=payload.participation_id,
+            wait=payload.wait,
+            wait_timeout_sec=payload.wait_timeout_sec,
+        )
+
+    @staticmethod
+    def formats() -> list[dict[str, Any]]:
+        return list_formats()

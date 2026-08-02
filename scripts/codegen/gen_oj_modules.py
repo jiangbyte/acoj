@@ -226,7 +226,6 @@ class OjProblemTypeRel(Base, TimestampMixin):
             field("memory_limit_kb", comment="内存限制（KB）", db_type="integer", python_type="int", ts_type="number", nullable=False, sort=70),
             field("points", comment="题目分值", db_type="float", python_type="float", ts_type="number", nullable=False, sort=80),
             field("partial", comment="是否允许部分分", db_type="boolean", python_type="bool", ts_type="boolean", nullable=False, sort=90),
-            field("short_circuit", comment="遇错是否短路判题", db_type="boolean", python_type="bool", ts_type="boolean", nullable=False, sort=100),
             field("is_public", comment="是否公开可见", db_type="boolean", python_type="bool", ts_type="boolean", nullable=False, sort=110, query="EQ"),
             field("is_manually_managed", comment="测试数据是否人工托管", db_type="boolean", python_type="bool", ts_type="boolean", nullable=False, sort=120),
             field("published_at", comment="发布时间", db_type="timestamptz", python_type="datetime", nullable=True, sort=130),
@@ -351,17 +350,11 @@ class OjProblemTypeRel(Base, TimestampMixin):
         "fields": [
             pk_field(),
             field("problem_id", comment="题目ID", max_length=64, nullable=False, sort=10, query="EQ"),
-            field("zip_file_id", comment="测试数据 zip 文件ID", max_length=64, nullable=True, sort=20),
-            field("generator_file_id", comment="数据生成器文件ID", max_length=64, nullable=True, sort=30),
-            field("checker", comment="Checker 类型", max_length=32, nullable=False, sort=40),
-            field("checker_args", comment="Checker 参数", db_type="json", python_type="dict", ts_type="Record<string, any>", nullable=False, sort=50),
-            field("spj_source", comment="SPJ 源码（C++17）", db_type="text", python_type="str", ts_type="string", nullable=True, sort=60),
-            field("interactor_source", comment="交互器源码（C++17）", db_type="text", python_type="str", ts_type="string", nullable=True, sort=70),
-            field("output_prefix", comment="输出前缀比对长度", db_type="integer", python_type="int", ts_type="number", nullable=True, sort=80),
-            field("output_limit", comment="输出长度上限", db_type="integer", python_type="int", ts_type="number", nullable=True, sort=90),
-            field("enable_unicode", comment="是否启用 Unicode", db_type="boolean", python_type="bool", ts_type="boolean", nullable=True, sort=100),
-            field("disable_big_math", comment="是否禁用大整数", db_type="boolean", python_type="bool", ts_type="boolean", nullable=True, sort=110),
-            field("feedback", comment="数据校验反馈", db_type="text", python_type="str", nullable=True, sort=120),
+            field("judge_mode", comment="判题模式 STANDARD|SPECIAL_JUDGE|INTERACTIVE", max_length=32, nullable=False, sort=20),
+            field("zip_object_name", comment="导入用 zip 归档 storage key", max_length=512, nullable=True, sort=30),
+            field("spj_source", comment="SPJ/testlib checker 源码（worker 固定 C++17）", db_type="text", python_type="str", ts_type="string", nullable=True, sort=60),
+            field("interactor_source", comment="交互器源码", db_type="text", python_type="str", ts_type="string", nullable=True, sort=70),
+            field("interactor_language_key", comment="交互器语言 ID（worker 镜像显式启用）", max_length=32, nullable=True, sort=75),
             field("extra", comment="扩展信息", db_type="json", python_type="dict", ts_type="Record<string, any>", nullable=False, sort=130),
             *audit_fields(),
         ],
@@ -402,11 +395,6 @@ class OjProblemTypeRel(Base, TimestampMixin):
             field("memory_limit_kb", comment="覆盖内存限制", db_type="integer", python_type="int", ts_type="number", nullable=True, sort=140),
             field("batch_no", comment="batch 编号", db_type="integer", python_type="int", ts_type="number", nullable=True, sort=150),
             field("batch_depends", comment="依赖 batch 列表", db_type="json", python_type="list", ts_type="number[]", nullable=False, sort=160),
-            field("checker", comment="覆盖 Checker", max_length=32, nullable=True, sort=170),
-            field("checker_args", comment="覆盖 Checker 参数", db_type="json", python_type="dict", ts_type="Record<string, any>", nullable=True, sort=180),
-            field("generator_args", comment="生成器参数", db_type="text", python_type="str", nullable=True, sort=190),
-            field("output_prefix", comment="覆盖输出前缀", db_type="integer", python_type="int", ts_type="number", nullable=True, sort=200),
-            field("output_limit", comment="覆盖输出上限", db_type="integer", python_type="int", ts_type="number", nullable=True, sort=210),
             field("extra", comment="扩展信息", db_type="json", python_type="dict", ts_type="Record<string, any>", nullable=False, sort=220),
             *audit_fields(),
         ],
@@ -782,20 +770,6 @@ class SubmissionSourceVisibility(StrEnum):
     ALWAYS = "ALWAYS"
     SOLVED = "SOLVED"
     ONLY_OWN = "ONLY_OWN"
-
-
-class ProblemChecker(StrEnum):
-    """标准 checker 类型。"""
-
-    STANDARD = "standard"
-    FLOATS = "floats"
-    FLOATS_ABS = "floatsabs"
-    FLOATS_REL = "floatsrel"
-    RSTRIPPED = "rstripped"
-    SORTED = "sorted"
-    IDENTICAL = "identical"
-    LINECOUNT = "linecount"
-    CUSTOM = "custom"
 
 
 class TestCaseType(StrEnum):

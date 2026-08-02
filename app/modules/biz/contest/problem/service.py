@@ -7,7 +7,7 @@ Generated at: 2026-07-28 20:51:13
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions.business import NotFoundError
+from app.core.exceptions.business import BusinessError, NotFoundError
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.modules.biz.contest.contest.model import OjContest
@@ -21,7 +21,8 @@ from app.modules.biz.contest.problem.schema import (
     OjContestProblemSchema,
     OjContestProblemUpdateRequest,
 )
-from app.modules.biz.oj_scope import assert_ids_exist, delete_owned_by_parent, ensure_parent_exists
+from app.modules.biz.oj_scope import delete_owned_by_parent, ensure_parent_exists
+from app.modules.biz.problem.enums import ProblemStatus
 from app.modules.biz.problem.problem.model import OjProblem
 from app.platform.db.transaction import transactional
 
@@ -36,21 +37,38 @@ class OjContestProblemService:
         if getattr(entity, "contest_id") != contest_id:
             raise NotFoundError("OjContestProblem not found")
 
-    async def _map_problem_labels(self, problem_ids: list[str]) -> dict[str, tuple[str, str]]:
+    async def _map_problem_meta(
+        self, problem_ids: list[str]
+    ) -> dict[str, tuple[str, str, str, bool]]:
         unique_ids = list(dict.fromkeys(problem_id for problem_id in problem_ids if problem_id))
         if not unique_ids:
             return {}
-        stmt = select(OjProblem.id, OjProblem.code, OjProblem.name).where(OjProblem.id.in_(unique_ids))
-        return {row[0]: (row[1], row[2]) for row in (await self.db.execute(stmt)).all()}
+        stmt = select(
+            OjProblem.id, OjProblem.code, OjProblem.name, OjProblem.status, OjProblem.is_public
+        ).where(OjProblem.id.in_(unique_ids))
+        return {
+            row[0]: (row[1], row[2], row[3], bool(row[4]))
+            for row in (await self.db.execute(stmt)).all()
+        }
 
-    def _attach_problem_labels(
+    def _attach_problem_meta(
         self,
         entity: object,
-        label_map: dict[str, tuple[str, str]],
+        meta_map: dict[str, tuple[str, str, str, bool]],
     ) -> None:
-        labels = label_map.get(getattr(entity, "problem_id"))
-        setattr(entity, "problem_code", labels[0] if labels else None)
-        setattr(entity, "problem_name", labels[1] if labels else None)
+        meta = meta_map.get(getattr(entity, "problem_id"))
+        setattr(entity, "problem_code", meta[0] if meta else None)
+        setattr(entity, "problem_name", meta[1] if meta else None)
+        setattr(entity, "problem_status", meta[2] if meta else None)
+        setattr(entity, "problem_is_public", meta[3] if meta else None)
+
+    async def _ensure_published_problem(self, problem_id: str) -> OjProblem:
+        problem = await self.db.get(OjProblem, problem_id)
+        if problem is None:
+            raise NotFoundError("OjProblem not found")
+        if problem.status != ProblemStatus.PUBLISHED.value:
+            raise BusinessError("仅已发布的题目可以加入竞赛")
+        return problem
 
     async def create(self, contest_id: str, payload: OjContestProblemCreateRequest) -> None:
         async with transactional(self.db):
@@ -60,24 +78,14 @@ class OjContestProblemService:
                 parent_id=contest_id,
                 not_found_message="OjContest not found",
             )
-            await assert_ids_exist(
-                self.db,
-                model=OjProblem,
-                entity_ids=[payload.problem_id],
-                not_found_message="OjProblem not found",
-            )
+            await self._ensure_published_problem(payload.problem_id)
             await self.repo.create(payload.model_copy(update={"contest_id": contest_id}))
 
     async def update(self, contest_id: str, payload: OjContestProblemUpdateRequest) -> None:
         async with transactional(self.db):
             entity = await self.repo.get_required(payload.id)
             self._ensure_belongs_to_contest(entity, contest_id)
-            await assert_ids_exist(
-                self.db,
-                model=OjProblem,
-                entity_ids=[payload.problem_id],
-                not_found_message="OjProblem not found",
-            )
+            await self._ensure_published_problem(payload.problem_id)
             await self.repo.update(payload.model_copy(update={"contest_id": contest_id}))
 
     async def delete(self, contest_id: str, payload: IdsRequest) -> None:
@@ -94,8 +102,8 @@ class OjContestProblemService:
     async def detail(self, contest_id: str, query: IdQuery) -> OjContestProblemSchema:
         entity = await self.repo.get_required(query.id)
         self._ensure_belongs_to_contest(entity, contest_id)
-        label_map = await self._map_problem_labels([entity.problem_id])
-        self._attach_problem_labels(entity, label_map)
+        meta_map = await self._map_problem_meta([entity.problem_id])
+        self._attach_problem_meta(entity, meta_map)
         return to_schema(OjContestProblemSchema, entity)
 
     async def page_admin(
@@ -103,7 +111,7 @@ class OjContestProblemService:
     ) -> PageData[OjContestProblemSchema]:
         scoped_query = query.model_copy(update={"contest_id": contest_id})
         items, total = await self.repo.page_admin(scoped_query)
-        label_map = await self._map_problem_labels([item.problem_id for item in items])
+        meta_map = await self._map_problem_meta([item.problem_id for item in items])
         for item in items:
-            self._attach_problem_labels(item, label_map)
+            self._attach_problem_meta(item, meta_map)
         return build_page(scoped_query.pagination, total, to_schema_list(OjContestProblemSchema, items))

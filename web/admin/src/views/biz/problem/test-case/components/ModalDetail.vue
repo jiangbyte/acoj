@@ -56,7 +56,14 @@ defineExpose({
 </script>
 
 <template>
-  <NModal v-model:show="state.showModal" preset="card" draggable :mask-closable="false" title="测试点详情" style="width: 680px">
+  <NModal
+    v-model:show="state.showModal"
+    preset="card"
+    draggable
+    :mask-closable="false"
+    title="测试点详情"
+    style="width: 680px"
+  >
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">

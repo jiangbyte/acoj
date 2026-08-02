@@ -117,13 +117,17 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
 ])
 
 watch(problemId, () => {
-  void loadParentTitle()
+  if (!props.embedded) {
+    void loadParentTitle()
+  }
   state.page = 1
   fetchPage()
 })
 
 onMounted(async () => {
-  await loadParentTitle()
+  if (!props.embedded) {
+    await loadParentTitle()
+  }
   await fetchPage()
 })
 
@@ -203,7 +207,7 @@ async function deleteRows(ids: string[]) {
 </script>
 
 <template>
-  <NFlex class="h-full min-h-0" vertical>
+  <NFlex :class="props.embedded ? 'min-h-0' : 'h-full min-h-0'" vertical>
     <ProCard v-if="!props.embedded">
       <NFlex align="center" :size="12">
         <NButton text @click="goBack">返回题目列表</NButton>
@@ -212,7 +216,7 @@ async function deleteRows(ids: string[]) {
       </NFlex>
     </ProCard>
 
-    <ProCard content-class="pb-0!">
+    <ProCard v-if="!props.embedded" content-class="pb-0!">
       <ProSearchForm
         :form="searchForm"
         :columns="searchColumns"
@@ -222,7 +226,8 @@ async function deleteRows(ids: string[]) {
     </ProCard>
 
     <ProDataTable
-      class="min-h-0 flex-1"
+      :class="props.embedded ? undefined : 'min-h-0 flex-1'"
+      :flex-height="!props.embedded"
       remote
       title="题解"
       row-key="id"

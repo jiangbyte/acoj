@@ -26,20 +26,6 @@ class SubmissionSourceVisibility(StrEnum):
     ONLY_OWN = "ONLY_OWN"
 
 
-class ProblemChecker(StrEnum):
-    """标准 checker 类型。"""
-
-    STANDARD = "standard"
-    FLOATS = "floats"
-    FLOATS_ABS = "floatsabs"
-    FLOATS_REL = "floatsrel"
-    RSTRIPPED = "rstripped"
-    SORTED = "sorted"
-    IDENTICAL = "identical"
-    LINECOUNT = "linecount"
-    CUSTOM = "custom"
-
-
 class TestCaseType(StrEnum):
     """测试点类型。"""
 

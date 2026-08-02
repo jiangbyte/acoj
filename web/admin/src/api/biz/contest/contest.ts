@@ -26,3 +26,35 @@ export function update(data: any) {
 export function remove(data: any) {
   return http.post<any>(`${prefix}/delete`, data)
 }
+
+export function lock(data: { contest_id: string }) {
+  return http.post<any>(`${prefix}/lock`, data)
+}
+
+export function unlock(data: { contest_id: string }) {
+  return http.post<any>(`${prefix}/unlock`, data)
+}
+
+export function clone(data: { contest_id: string, new_key?: string, copy_staff?: boolean }) {
+  return http.post<any>(`${prefix}/clone`, data)
+}
+
+export function rescore(data: { contest_id: string }) {
+  return http.post<any>(`${prefix}/rescore`, data)
+}
+
+export function rate(data: { contest_id: string }) {
+  return http.post<any>(`${prefix}/rate`, data)
+}
+
+export function scoreboard(params: { contest_id: string, virtual?: number }) {
+  return http.get<any>(`${prefix}/scoreboard`, { params })
+}
+
+export function submit(data: any) {
+  return http.post<any>(`${prefix}/submit`, data)
+}
+
+export function formats() {
+  return http.get<any>(`${prefix}/formats`)
+}

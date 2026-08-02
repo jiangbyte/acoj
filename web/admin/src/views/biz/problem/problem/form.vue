@@ -11,6 +11,7 @@ import SolutionPanel from '../solution/index.vue'
 import StaffPanel from '../staff/index.vue'
 import TestCasePanel from '../test-case/index.vue'
 import TrialJudgePanel from '../test-case/components/TrialJudgePanel.vue'
+import SubmissionPanel from '../../submission/submission/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -43,8 +44,8 @@ const defaultFormData: Record<string, any> = {
   memory_limit_kb: 262144,
   points: 100,
   partial: false,
-  short_circuit: false,
   status: 'draft',
+  is_public: false,
   published_at: null,
   submission_source_visibility: 'FOLLOW',
   type_ids: [],
@@ -62,7 +63,6 @@ const state = reactive({
 })
 
 const pageTitle = computed(() => (state.dataId ? '编辑题目' : '新增题目'))
-const isCreate = computed(() => !state.dataId)
 
 const rules = computed<FormRules>(() => ({
   code: [createRequiredRule('题目编码', 'input')],
@@ -272,14 +272,6 @@ async function changeStatus(next: string) {
           {{ statusOptions.find(item => item.value === state.formModel.status)?.label || state.formModel.status }}
         </NTag>
       </NFlex>
-      <NSpace>
-        <NButton @click="goBack">
-          取消
-        </NButton>
-        <NButton v-if="!isCreate || state.activeTab === 'basic'" type="primary" :loading="state.submitLoading" @click="submitForm">
-          保存
-        </NButton>
-      </NSpace>
     </NFlex>
 
     <NSpin :show="state.loading" class="min-h-0 flex-1">
@@ -294,7 +286,7 @@ async function changeStatus(next: string) {
               label-width="140"
               :disabled="state.loading || state.submitLoading"
             >
-              <NScrollbar class="max-h-[calc(100vh-220px)] pr-8px">
+              <NScrollbar class="max-h-[calc(100vh-260px)] pr-8px">
                 <NGrid :cols="2" :x-gap="16">
                   <NFormItemGi label="题目编码" path="code">
                     <NInput v-model:value="state.formModel.code" />
@@ -323,6 +315,16 @@ async function changeStatus(next: string) {
                   <NFormItemGi label="是否允许部分分" path="partial">
                     <NSwitch v-model:value="state.formModel.partial" />
                   </NFormItemGi>
+                  <NFormItemGi label="公开题库" path="is_public">
+                    <NSwitch v-model:value="state.formModel.is_public">
+                      <template #checked>
+                        公开
+                      </template>
+                      <template #unchecked>
+                        竞赛专用
+                      </template>
+                    </NSwitch>
+                  </NFormItemGi>
                   <NFormItemGi label="摘要" path="summary" :span="2">
                     <NInput v-model:value="state.formModel.summary" type="textarea" :autosize="{ minRows: 2, maxRows: 4 }" />
                   </NFormItemGi>
@@ -331,6 +333,16 @@ async function changeStatus(next: string) {
                   </NFormItemGi>
                 </NGrid>
               </NScrollbar>
+              <NFlex justify="end" class="mt-12px shrink-0 border-t border-[var(--n-border-color)] pt-12px">
+                <NSpace>
+                  <NButton @click="goBack">
+                    取消
+                  </NButton>
+                  <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
+                    保存
+                  </NButton>
+                </NSpace>
+              </NFlex>
             </NForm>
           </NTabPane>
 
@@ -347,9 +359,7 @@ async function changeStatus(next: string) {
                 </NScrollbar>
               </NTabPane>
               <NTabPane name="cases" tab="测例" display-directive="if">
-                <NScrollbar class="max-h-[calc(100vh-280px)] pr-8px">
-                  <TestCasePanel :problem-id="state.dataId" embedded />
-                </NScrollbar>
+                <TestCasePanel :problem-id="state.dataId" embedded />
               </NTabPane>
               <NTabPane name="trial" tab="试测" display-directive="if">
                 <NScrollbar class="max-h-[calc(100vh-280px)] pr-8px">
@@ -374,6 +384,10 @@ async function changeStatus(next: string) {
             <StaffPanel :problem-id="state.dataId" embedded />
           </NTabPane>
 
+          <NTabPane v-if="state.dataId" name="submissions" tab="提交" display-directive="if">
+            <SubmissionPanel :problem-id="state.dataId" embedded />
+          </NTabPane>
+
           <NTabPane v-if="state.dataId" name="publish" tab="发布" display-directive="if">
             <NScrollbar class="max-h-[calc(100vh-220px)] pr-8px">
               <NSpace vertical :size="16">
@@ -384,10 +398,16 @@ async function changeStatus(next: string) {
                   <NDescriptionsItem label="当前状态">
                     {{ statusOptions.find(item => item.value === state.formModel.status)?.label || state.formModel.status }}
                   </NDescriptionsItem>
+                  <NDescriptionsItem label="公开题库">
+                    {{ state.formModel.is_public ? '是（Portal 题库可见）' : '否（竞赛专用）' }}
+                  </NDescriptionsItem>
                   <NDescriptionsItem label="发布时间">
                     {{ state.formModel.published_at || '-' }}
                   </NDescriptionsItem>
                 </NDescriptions>
+                <NAlert type="warning" :bordered="false">
+                  公开题库开关请在「基本信息」中修改并保存：关闭后即使已发布也不进 Portal 题库，仍可组竞赛。
+                </NAlert>
                 <NSpace>
                   <NButton :loading="state.statusLoading" :disabled="state.formModel.status === 'draft'" @click="changeStatus('draft')">
                     撤回为草稿

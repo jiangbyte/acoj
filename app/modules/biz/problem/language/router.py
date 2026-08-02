@@ -20,12 +20,12 @@ from app.modules.biz.problem.language.schema import (
     OjProblemLanguageCreateRequest,
     OjProblemLanguageSchema,
     OjProblemLanguageUpdateRequest,
-    SandboxLanguageOption,
+    WorkerLanguageOption,
 )
 from app.modules.biz.problem.language.service import (
     OjProblemLanguageService,
 )
-from app.modules.biz.problem.sandbox_languages import list_sandbox_languages
+from app.modules.biz.problem.worker_languages import list_worker_languages
 
 router = APIRouter()
 
@@ -36,11 +36,11 @@ router = APIRouter()
         Depends(require_account_type(AccountType.ADMIN)),
         Depends(require_permission("biz:problem:language:page")),
     ],
-    response_model=ApiResponse[list[SandboxLanguageOption]],
+    response_model=ApiResponse[list[WorkerLanguageOption]],
 )
-async def options() -> ApiResponse[list[SandboxLanguageOption]]:
-    """Language keys from acoj-sandbox LanguageId (aligned with worker)."""
-    return success([SandboxLanguageOption.model_validate(item) for item in list_sandbox_languages()])
+async def options() -> ApiResponse[list[WorkerLanguageOption]]:
+    """唯一语言选项 API：worker 镜像显式启用语言（题目语言 / 试测 / 交互器共用）。"""
+    return success([WorkerLanguageOption.model_validate(item) for item in list_worker_languages()])
 
 
 @router.post(

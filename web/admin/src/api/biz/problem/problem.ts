@@ -36,6 +36,7 @@ export function trialJudge(problemId: string, data: {
   source: string
   case_ids?: string[]
   wait_timeout_sec?: number
+  wait?: boolean
 }) {
   return http.post<any>(`${prefix}/trial-judge`, data, { params: { problem_id: problemId } })
 }

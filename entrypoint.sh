@@ -17,9 +17,10 @@ start_worker() {
     exec celery -A app.worker.main:celery_app worker \
         $MINGLE_FLAG \
         $GOSSIP_FLAG \
-        --pool "${CELERY__WORKER_POOL:-solo}" \
-        --concurrency "${CELERY__WORKER_CONCURRENCY:-1}" \
-        --loglevel "${CELERY__WORKER_LOG_LEVEL:-INFO}"
+        --pool "${CELERY__WORKER_POOL:-threads}" \
+        --concurrency "${CELERY__WORKER_CONCURRENCY:-16}" \
+        --loglevel "${CELERY__WORKER_LOG_LEVEL:-INFO}" \
+        -Q "${CELERY__WORKER_QUEUES:-default,acoj_api}"
 }
 
 start_beat() {

@@ -4,7 +4,7 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { ojProblemApi, ojProblemGroupApi } from '@/api'
 import { formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
-import { NButton, NFlex, NIcon } from 'naive-ui'
+import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -66,6 +66,18 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
       clearable: true,
     },
   },
+  {
+    title: '公开题库',
+    path: 'is_public',
+    field: 'select',
+    fieldProps: {
+      options: [
+        { label: '公开', value: true },
+        { label: '竞赛专用', value: false },
+      ],
+      clearable: true,
+    },
+  },
 ])
 
 const pagination = computed<PaginationProps>(() => ({
@@ -109,6 +121,16 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
       const map: Record<string, string> = { draft: '草稿', ready: '就绪', published: '已发布' }
       return map[row.status] || row.status || '-'
     },
+  },
+  {
+    title: '公开题库',
+    path: 'is_public',
+    width: 100,
+    render: (row) => (
+      <NTag size="small" type={row.is_public ? 'success' : 'warning'}>
+        {row.is_public ? '公开' : '竞赛专用'}
+      </NTag>
+    ),
   },
   { title: '更新时间', path: 'updated_at', width: 170, render: row => formatDateTime(row.updated_at) },
   {

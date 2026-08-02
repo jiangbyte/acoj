@@ -109,9 +109,11 @@ async def page(
     current: Current = 1,
     size: Size = 20,
     problem_id: str | None = Query(default=None),
+    problem_code: str | None = Query(default=None),
 ) -> ApiResponse[PageData[OjContestProblemSchema]]:
     query = OjContestProblemAdminPageQuery(
         pagination=PageQuery(current=current, size=size),
         problem_id=problem_id,
+        problem_code=problem_code,
     )
     return success(await OjContestProblemService(db).page_admin(contest_id, query))

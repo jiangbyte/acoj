@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions.business import BusinessError, NotFoundError
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema
-from app.modules.biz.oj_scope import delete_owned_by_parent
+from app.modules.biz.oj_scope import delete_owned_by_parent, ensure_belongs_to_parent
 from app.modules.biz.problem.data.model import OjProblemData
 from app.modules.biz.problem.data.repository import OjProblemDataRepository
 from app.modules.biz.problem.data.schema import (
@@ -29,11 +29,6 @@ class OjProblemDataService:
         self.db = db
         self.repo = OjProblemDataRepository(db)
 
-    @staticmethod
-    def _ensure_belongs_to_problem(entity: object, problem_id: str) -> None:
-        if getattr(entity, "problem_id") != problem_id:
-            raise NotFoundError("OjProblemData not found")
-
     async def create(self, problem_id: str, payload: OjProblemDataCreateRequest) -> None:
         prepared = self._prepare_payload(payload)
         async with transactional(self.db):
@@ -43,7 +38,7 @@ class OjProblemDataService:
         prepared = self._prepare_payload(payload)
         async with transactional(self.db):
             entity = await self.repo.get_required(payload.id)
-            self._ensure_belongs_to_problem(entity, problem_id)
+            ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=problem_id, not_found_message="OjProblemData not found")
             await self.repo.update(prepared.model_copy(update={"problem_id": problem_id}))
 
     async def delete(self, problem_id: str, payload: IdsRequest) -> None:
@@ -59,7 +54,7 @@ class OjProblemDataService:
 
     async def detail(self, problem_id: str, query: IdQuery) -> OjProblemDataSchema:
         entity = await self.repo.get_required(query.id)
-        self._ensure_belongs_to_problem(entity, problem_id)
+        ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=problem_id, not_found_message="OjProblemData not found")
         return to_schema(OjProblemDataSchema, entity)
 
     async def page_admin(
@@ -78,32 +73,32 @@ class OjProblemDataService:
         is_spj = judge_mode == JudgeMode.SPECIAL_JUDGE
         is_interactive = judge_mode == JudgeMode.INTERACTIVE
 
+        from app.modules.biz.problem.worker_languages import ensure_worker_language_key
+
         spj_source = (payload.spj_source or "").strip() or None
         interactor_source = (payload.interactor_source or "").strip() or None
+        interactor_language_key = (payload.interactor_language_key or "").strip() or None
 
         if is_spj and not spj_source:
-            raise BusinessError("SPECIAL_JUDGE 需要 SPJ 源码")
+            raise BusinessError("SPECIAL_JUDGE 需要 SPJ 源码（C++17 testlib checker）")
         if is_interactive and not interactor_source:
             raise BusinessError("INTERACTIVE 需要交互器源码")
+        if is_interactive:
+            interactor_language_key = ensure_worker_language_key(
+                interactor_language_key or "cpp17"
+            )
         if not is_spj:
             spj_source = None
         if not is_interactive:
             interactor_source = None
+            interactor_language_key = None
 
-        checker = "custom" if is_spj else "standard"
         return payload.model_copy(
             update={
                 "judge_mode": judge_mode,
-                "checker": checker,
-                "checker_args": payload.checker_args if payload.checker_args is not None else {},
                 "spj_source": spj_source,
                 "interactor_source": interactor_source,
-                "generator_file_id": payload.generator_file_id,
-                "output_prefix": payload.output_prefix,
-                "output_limit": payload.output_limit,
-                "enable_unicode": payload.enable_unicode,
-                "disable_big_math": payload.disable_big_math,
-                "feedback": payload.feedback,
+                "interactor_language_key": interactor_language_key,
                 "extra": payload.extra if payload.extra is not None else {},
             }
         )

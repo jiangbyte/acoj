@@ -5,7 +5,6 @@
 ![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)
-![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?logo=rabbitmq&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
@@ -13,7 +12,7 @@ ACOJ 是一个基于 FastAPI 构建的现代在线判题（Online Judge）平台
 
 > ACOJ 由三个子项目组成：
 > - **acoj**（本仓库） — Web 主项目（API + 前端 + 数据库）
-> - **[acoj-worker](../acoj-worker/)** — 判题 worker 服务（RabbitMQ/Celery 消费判题任务）
+> - **[acoj-worker](../acoj-worker/)** — 判题 worker 服务（Celery/Redis 消费判题任务）
 > - **[acoj-sandbox](../acoj-sandbox/)** — 判题沙箱执行器（C++ 执行引擎 + Python 封装）
 
 > 个人开发，有 bug 欢迎提，邮箱 jiangbytebiz@163.com
@@ -49,7 +48,7 @@ ACOJ 是一个基于 FastAPI 构建的现代在线判题（Online Judge）平台
 | 后端 | FastAPI / SQLAlchemy Async / Pydantic v2 / Gunicorn / Uvicorn |
 | 数据库 | PostgreSQL / MySQL / SQLite / Alembic |
 | 缓存会话 | Redis |
-| 任务队列 | Celery / celery-redbeat / RabbitMQ |
+| 任务队列 | Celery / celery-redbeat / Redis broker |
 | 存储 | Local / MinIO / S3 / OSS |
 | 管理端 | Vue 3 / Naive UI / Vite / TypeScript |
 | 门户端 | Nuxt 4 / @nuxt/ui |
@@ -65,7 +64,7 @@ app/
   deps/          FastAPI 依赖注入
   middleware/    中间件
   modules/       业务模块，自动发现并装配
-  platform/      DB、Redis、Storage、MQ、Celery、模块加载等基础设施
+  platform/      DB、Redis、Storage、Celery、模块加载等基础设施
   worker/        Celery 入口
 migrations/      Alembic 迁移
 scripts/         开发、迁移、seed 辅助脚本
@@ -128,7 +127,7 @@ pnpm dev:h5
 
 ## 配置边界
 
-`.env` 只放部署和基础设施配置，例如应用监听、数据库、Redis、RabbitMQ、CORS、加密 key。
+`.env` 只放部署和基础设施配置，例如应用监听、数据库、Redis、Celery broker、CORS、加密 key。
 
 运行态业务配置放在数据库中：
 
@@ -164,7 +163,7 @@ HEI_ENABLED_MODULES=some.module
 
 ## Docker
 
-单机单 Docker：一个项目容器内运行 API、worker、beat，PostgreSQL、Redis、RabbitMQ 由外部基础设施提供。
+单机单 Docker：一个项目容器内运行 API、worker、beat，PostgreSQL、Redis 由外部基础设施提供。
 
 ```bash
 docker compose run --rm hei migrate
