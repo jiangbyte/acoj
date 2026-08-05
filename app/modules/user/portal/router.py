@@ -1,10 +1,10 @@
-from typing import Annotated, Literal
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile
+from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
-from app.core.response.pagination import Current, PageData, PageQuery, Size
+from app.core.response.pagination import PageData, PageQuery
 from app.core.response.schema import ApiResponse, success
 from app.core.security.transport import decrypt_passwords
 from app.core.security.session import SessionPayload
@@ -16,6 +16,8 @@ from app.modules.user.portal.rank_service import PortalRankService
 from app.modules.user.portal.schema import (
     PortalProfileResponse,
     PortalPublicProfileResponse,
+    PortalPublicSpaceQuery,
+    PortalRankBoardQuery,
     PortalRankMeResponse,
     PortalRankSummaryResponse,
     PortalRatingRankItem,
@@ -186,14 +188,14 @@ async def update_user_center_email(
 
 
 @router.get(
-    "/spaces/{account_id}",
+    "/spaces/detail",
     response_model=ApiResponse[PortalPublicProfileResponse],
 )
 async def get_public_space(
-    account_id: str,
+    query: Annotated[PortalPublicSpaceQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[PortalPublicProfileResponse]:
-    return success(await PortalUserProfileService(db).get_public_profile(account_id))
+    return success(await PortalUserProfileService(db).get_public_profile(query))
 
 
 @router.get(
@@ -201,11 +203,10 @@ async def get_public_space(
     response_model=ApiResponse[PageData[PortalSolvedRankItem]],
 )
 async def solved_rank(
+    query: Annotated[PageQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current: Current = 1,
-    size: Size = 20,
 ) -> ApiResponse[PageData[PortalSolvedRankItem]]:
-    return success(await PortalRankService(db).page_solved_rank(PageQuery(current=current, size=size)))
+    return success(await PortalRankService(db).page_solved_rank(query))
 
 
 @router.get(
@@ -213,11 +214,10 @@ async def solved_rank(
     response_model=ApiResponse[PageData[PortalRatingRankItem]],
 )
 async def rating_rank(
+    query: Annotated[PageQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current: Current = 1,
-    size: Size = 20,
 ) -> ApiResponse[PageData[PortalRatingRankItem]]:
-    return success(await PortalRankService(db).page_rating_rank(PageQuery(current=current, size=size)))
+    return success(await PortalRankService(db).page_rating_rank(query))
 
 
 @router.get(
@@ -226,11 +226,11 @@ async def rating_rank(
     response_model=ApiResponse[PortalRankMeResponse],
 )
 async def rank_me(
+    query: Annotated[PortalRankBoardQuery, Depends()],
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    board: Annotated[Literal["solved", "rating"], Query()] = "solved",
 ) -> ApiResponse[PortalRankMeResponse]:
-    return success(await PortalRankService(db).get_me(session.account_id, board))
+    return success(await PortalRankService(db).get_me(query, session))
 
 
 @router.get(
@@ -238,10 +238,10 @@ async def rank_me(
     response_model=ApiResponse[PortalRankSummaryResponse],
 )
 async def rank_summary(
+    query: Annotated[PortalRankBoardQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    board: Annotated[Literal["solved", "rating"], Query()] = "solved",
 ) -> ApiResponse[PortalRankSummaryResponse]:
-    return success(await PortalRankService(db).summary(board))
+    return success(await PortalRankService(db).summary(query))
 
 
 def _identity_login_enabled(identity) -> bool:

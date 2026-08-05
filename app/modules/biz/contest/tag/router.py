@@ -6,13 +6,13 @@ Generated at: 2026-07-28 20:51:12
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
-from app.core.response.pagination import Current, PageData, PageQuery, Size
+from app.core.response.pagination import PageData
 from app.core.response.schema import ApiResponse, success
-from app.core.schema.base import Id, IdQuery, IdsRequest
+from app.core.schema.base import IdQuery, IdsRequest
 from app.deps.auth import require_account_type, require_permission
 from app.deps.db import get_db_session
 from app.modules.biz.oj_options import OjNamedOption
@@ -86,10 +86,10 @@ async def delete(
     response_model=ApiResponse[OjContestTagSchema],
 )
 async def detail(
+    query: Annotated[IdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
 ) -> ApiResponse[OjContestTagSchema]:
-    return success(await OjContestTagService(db).detail(IdQuery(id=id)))
+    return success(await OjContestTagService(db).detail(query))
 
 
 @router.get(
@@ -101,17 +101,9 @@ async def detail(
     response_model=ApiResponse[PageData[OjContestTagSchema]],
 )
 async def page(
+    query: Annotated[OjContestTagAdminPageQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current: Current = 1,
-    size: Size = 20,
-    code: str | None = Query(default=None),
-    name: str | None = Query(default=None),
 ) -> ApiResponse[PageData[OjContestTagSchema]]:
-    query = OjContestTagAdminPageQuery(
-        pagination=PageQuery(current=current, size=size),
-        code=code,
-        name=name,
-    )
     return success(await OjContestTagService(db).page_admin(query))
 
 

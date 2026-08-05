@@ -1,13 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Empty, Spin, Typography } from 'antd'
 import { Link } from 'react-router-dom'
-import {
-  submissionPerformance,
-  submissionSimilar,
-  type PerformanceBucket,
-  type SimilarSubmissionItem,
-  type SubmissionPerformanceData,
-} from '@/api/submission'
+import { submissionApi } from '@/api'
 import { MonacoEditor } from '@/components/editor/MonacoEditor'
 import { languageLabel, monacoLanguage } from '@/utils/monacoLanguage'
 
@@ -27,7 +21,7 @@ function Histogram({
   unit,
 }: {
   title: string
-  buckets: PerformanceBucket[]
+  buckets: any[]
   unit: string
 }) {
   const maxCount = Math.max(...buckets.map((b) => b.count), 1)
@@ -89,7 +83,7 @@ function SimilarListItem({
   selected,
   onSelect,
 }: {
-  item: SimilarSubmissionItem
+  item: any
   selected: boolean
   onSelect: () => void
 }) {
@@ -121,12 +115,12 @@ export function SubmissionPerformance({
   showBackLink = false,
   onBackToSubmissions,
 }: Props) {
-  const [performance, setPerformance] = useState<SubmissionPerformanceData | null>(null)
-  const [similarItems, setSimilarItems] = useState<SimilarSubmissionItem[]>([])
+  const [performance, setPerformance] = useState<any>(null)
+  const [similarItems, setSimilarItems] = useState<any[]>([])
   const [similarAvailable, setSimilarAvailable] = useState(true)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [selectedSimilar, setSelectedSimilar] = useState<SimilarSubmissionItem | null>(null)
+  const [selectedSimilar, setSelectedSimilar] = useState<any>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -139,8 +133,8 @@ export function SubmissionPerformance({
     async function load() {
       try {
         const [perfRes, similarRes] = await Promise.all([
-          submissionPerformance(submissionId),
-          submissionSimilar(submissionId),
+          submissionApi.submissionPerformance(submissionId),
+          submissionApi.submissionSimilar(submissionId),
         ])
         if (cancelled) return
         setPerformance(perfRes.data)

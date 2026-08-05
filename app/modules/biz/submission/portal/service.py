@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import AuthorizationError, NotFoundError
 from app.core.response.pagination import PageData, build_page
+from app.core.schema.base import IdQuery
+from app.core.security.session import SessionPayload
 from app.modules.biz.problem.enums import SubmissionSourceVisibility
 from app.modules.biz.problem.problem.model import OjProblem
 from app.modules.biz.submission.enums import SubmissionKind, SubmissionResult, SubmissionStatus
@@ -59,8 +61,9 @@ class PortalSubmissionService:
             schema.source = None
         return schema
 
-    async def my_stats(self, account_id: str) -> MySubmissionStatsOut:
+    async def my_stats(self, session: SessionPayload) -> MySubmissionStatsOut:
         """Aggregate the viewer's non-trial submissions for the submissions board sidebar."""
+        account_id = session.account_id
         base = [
             OjSubmission.user_id == account_id,
             OjSubmission.kind != SubmissionKind.TRIAL.value,
@@ -128,11 +131,11 @@ class PortalSubmissionService:
             solved_problem_total=solved_problem_total,
         )
 
-    async def assert_owner(self, submission_id: str, account_id: str) -> None:
-        entity = await self.repo.get_by_id(submission_id)
+    async def assert_owner(self, query: IdQuery, session: SessionPayload) -> None:
+        entity = await self.repo.get_by_id(query.id)
         if entity is None or entity.kind == SubmissionKind.TRIAL.value:
             raise NotFoundError("提交不存在")
-        if entity.user_id != account_id:
+        if entity.user_id != session.account_id:
             raise AuthorizationError("只能查看自己的提交事件流")
 
     async def _can_view_source(

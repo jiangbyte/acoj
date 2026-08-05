@@ -18,18 +18,7 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import { CopyOutlined, MessageOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import {
-  teamDetail,
-  teamDissolve,
-  teamInviteRefresh,
-  teamLeave,
-  teamMemberAdd,
-  teamMemberRemove,
-  teamMembers,
-  teamUpdate,
-  teamUserSearch,
-} from '@/api/team'
-import type { PortalTeamBrief, PortalTeamMember, PortalTeamUserSearchItem } from '@/api/team'
+import { teamApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { formatDateTime } from '@/utils/time'
 
@@ -53,23 +42,23 @@ export function TeamDetailPage() {
   const myId = useAuthStore((s) => s.userInfo?.accountId ?? '')
   const loginHref = `/auth/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`
   const [loading, setLoading] = useState(true)
-  const [team, setTeam] = useState<PortalTeamBrief | null>(null)
-  const [members, setMembers] = useState<PortalTeamMember[]>([])
+  const [team, setTeam] = useState<any>(null)
+  const [members, setMembers] = useState<any[]>([])
   const [actionLoading, setActionLoading] = useState(false)
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
-  const [searchOptions, setSearchOptions] = useState<PortalTeamUserSearchItem[]>([])
+  const [searchOptions, setSearchOptions] = useState<any[]>([])
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([])
   const [settingsForm] = Form.useForm()
 
   async function load() {
     setLoading(true)
     try {
-      const detailRes = await teamDetail(id)
+      const detailRes = await teamApi.teamDetail(id)
       setTeam(detailRes.data)
       if (detailRes.data?.is_member) {
-        const membersRes = await teamMembers(id)
+        const membersRes = await teamApi.teamMembers(id)
         setMembers(membersRes.data ?? [])
       } else {
         setMembers([])
@@ -99,7 +88,7 @@ export function TeamDetailPage() {
   const canManage = Boolean(isOwner && team?.status === 'ENABLED')
   const isIndependent = team?.scope === 'INDEPENDENT'
 
-  const memberColumns: ColumnsType<PortalTeamMember> = useMemo(
+  const memberColumns: ColumnsType<any> = useMemo(
     () => [
       {
         title: '账号 ID',
@@ -127,7 +116,7 @@ export function TeamDetailPage() {
             {
               title: '操作',
               width: 100,
-              render: (_: unknown, record: PortalTeamMember) =>
+              render: (_: unknown, record: any) =>
                 record.role === 'OWNER' ? (
                   '-'
                 ) : (
@@ -140,7 +129,7 @@ export function TeamDetailPage() {
                     移除
                   </Button>
                 ),
-            } as ColumnsType<PortalTeamMember>[number],
+            } as ColumnsType<any>[number],
           ]
         : []),
     ],
@@ -165,7 +154,7 @@ export function TeamDetailPage() {
       onOk: async () => {
         setActionLoading(true)
         try {
-          await teamLeave(id)
+          await teamApi.teamLeave(id)
           message.success('已退出小组')
           navigate('/teams')
         } finally {
@@ -185,7 +174,7 @@ export function TeamDetailPage() {
       onOk: async () => {
         setActionLoading(true)
         try {
-          await teamDissolve(id)
+          await teamApi.teamDissolve(id)
           message.success('小组已解散')
           navigate('/teams')
         } finally {
@@ -204,9 +193,9 @@ export function TeamDetailPage() {
       onOk: async () => {
         setActionLoading(true)
         try {
-          const res = await teamInviteRefresh(id)
+          const res = await teamApi.teamInviteRefresh(id)
           message.success('邀请码已更新')
-          setTeam((prev) => (prev ? { ...prev, invite_code: res.data.invite_code } : prev))
+          setTeam((prev: any) => (prev ? { ...prev, invite_code: res.data.invite_code } : prev))
         } finally {
           setActionLoading(false)
         }
@@ -222,7 +211,7 @@ export function TeamDetailPage() {
       cancelText: '取消',
       okButtonProps: { danger: true },
       onOk: async () => {
-        await teamMemberRemove({ team_id: id, account_id: accountId })
+        await teamApi.teamMemberRemove({ team_id: id, account_id: accountId })
         message.success('已移除')
         await load()
       },
@@ -233,7 +222,7 @@ export function TeamDetailPage() {
     const values = await settingsForm.validateFields()
     setSettingsSaving(true)
     try {
-      await teamUpdate({
+      await teamApi.teamUpdate({
         id,
         name: values.name,
         description: values.description || null,
@@ -257,9 +246,9 @@ export function TeamDetailPage() {
     }
     setSearchLoading(true)
     try {
-      const res = await teamUserSearch(q)
+      const res = await teamApi.teamUserSearch(q)
       const existing = new Set(members.map((m) => m.account_id))
-      setSearchOptions((res.data ?? []).filter((u) => !existing.has(u.account_id)))
+      setSearchOptions((res.data ?? []).filter((u: any) => !existing.has(u.account_id)))
     } finally {
       setSearchLoading(false)
     }
@@ -270,7 +259,7 @@ export function TeamDetailPage() {
       message.warning('请选择要添加的成员')
       return
     }
-    await teamMemberAdd({ team_id: id, account_ids: selectedAccountIds })
+    await teamApi.teamMemberAdd({ team_id: id, account_ids: selectedAccountIds })
     message.success('已添加成员')
     setAddOpen(false)
     setSelectedAccountIds([])

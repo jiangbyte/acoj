@@ -13,19 +13,10 @@ import {
 } from '@ant-design/icons'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import dayjs, { type Dayjs } from 'dayjs'
-import {
-  problemGroups,
-  problemPage,
-  problemTypes,
-  type PortalProblemGroupItem,
-  type PortalProblemPageData,
-  type PortalProblemTypeItem,
-  type ProblemDifficulty,
-} from '@/api/problem'
-import { dailyApi, learningPlanApi, type DailyCalendar, type DailyToday, type LearningPlanItem } from '@/api/study'
 import { ProblemBankSidebar } from '@/components/oj/ProblemBankSidebar'
 import { useDict } from '@/hooks/useDict'
 import { dictTypeData } from '@/utils/dict'
+import { dailyApi, learningPlanApi, problemApi } from '@/api'
 
 const formatRate = (rate: number) => `${Number(rate || 0).toFixed(1)}%`
 
@@ -37,7 +28,7 @@ const groupIcons: Record<string, ReactNode> = {
 }
 
 /** 缺省难度：优先 API，否则按通过率启发式兜底 */
-function normalizeDifficulty(value: string | null | undefined, acRate: number): ProblemDifficulty {
+function normalizeDifficulty(value: string | null | undefined, acRate: number): any {
   if (value === 'Easy' || value === 'Medium' || value === 'Hard') return value
   if (Number.isNaN(acRate)) return 'Medium'
   if (acRate >= 50) return 'Easy'
@@ -45,13 +36,13 @@ function normalizeDifficulty(value: string | null | undefined, acRate: number): 
   return 'Hard'
 }
 
-function difficultyClass(level: ProblemDifficulty) {
+function difficultyClass(level: any) {
   if (level === 'Easy') return 'text-[var(--ant-color-diff-easy)]'
   if (level === 'Medium') return 'text-[var(--ant-color-diff-medium)]'
   return 'text-[var(--ant-color-diff-hard)]'
 }
 
-function difficultyLabel(level: ProblemDifficulty) {
+function difficultyLabel(level: any) {
   return (
     dictTypeData('PROBLEM_DIFFICULTY', level) ||
     (level === 'Easy' ? '简单' : level === 'Medium' ? '中等' : '困难')
@@ -69,20 +60,20 @@ export function ProblemListPage() {
   const size = Number(searchParams.get('size') ?? 20)
 
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState<PortalProblemPageData | null>(null)
-  const [groups, setGroups] = useState<PortalProblemGroupItem[]>([])
-  const [types, setTypes] = useState<PortalProblemTypeItem[]>([])
+  const [data, setData] = useState<any>(null)
+  const [groups, setGroups] = useState<any[]>([])
+  const [types, setTypes] = useState<any[]>([])
   const [searchText, setSearchText] = useState(keyword)
   const [topicsExpanded, setTopicsExpanded] = useState(false)
-  const [featuredPlans, setFeaturedPlans] = useState<LearningPlanItem[]>([])
-  const [dailyToday, setDailyToday] = useState<DailyToday | null>(null)
-  const [dailyCal, setDailyCal] = useState<DailyCalendar | null>(null)
+  const [featuredPlans, setFeaturedPlans] = useState<any[]>([])
+  const [dailyToday, setDailyToday] = useState<any>(null)
+  const [dailyCal, setDailyCal] = useState<any>(null)
   const [calMonth, setCalMonth] = useState(() => dayjs())
 
   async function loadMeta() {
     const [groupRes, typeRes, planRes] = await Promise.allSettled([
-      problemGroups(),
-      problemTypes(),
+      problemApi.problemGroups(),
+      problemApi.problemTypes(),
       learningPlanApi.page({ current: 1, size: 4, category: 'FEATURED' }),
     ])
     if (groupRes.status === 'fulfilled') setGroups(groupRes.value.data)
@@ -101,7 +92,7 @@ export function ProblemListPage() {
 
   async function load() {
     try {
-      const res = await problemPage({
+      const res = await problemApi.problemPage({
         current,
         size,
         keyword: keyword || undefined,
@@ -299,7 +290,7 @@ export function ProblemListPage() {
           <Spin spinning={loading}>
             {records.length ? (
               <div>
-                {records.map((problem, index) => {
+                {records.map((problem: any, index: any) => {
                   const level = normalizeDifficulty(problem.difficulty, problem.ac_rate)
                   const zebra = index % 2 === 1
                   return (
@@ -413,7 +404,7 @@ export function ProblemListPage() {
               className="problem-calendar"
               fullCellRender={(date: Dayjs) => {
                 const key = date.format('YYYY-MM-DD')
-                const day = dailyCal?.days.find((d) => d.day_date.slice(0, 10) === key)
+                const day = dailyCal?.days.find((d: any) => d.day_date.slice(0, 10) === key)
                 return (
                   <div className="ant-picker-cell-inner">
                     <Badge

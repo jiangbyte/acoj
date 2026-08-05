@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType, StatusEnum
 from app.core.exceptions.business import BusinessError, NotFoundError
-from app.core.response.pagination import Current, PageData, PageQuery, Size, build_page
+from app.core.response.pagination import PageData, PageQuery, build_page
 from app.core.response.schema import ApiResponse, success
-from app.core.schema.base import Id, to_schema
+from app.core.schema.base import ContestIdQuery, IdQuery, to_schema
 from app.core.security.session import SessionPayload
 from app.deps.auth import get_current_session, get_optional_session, require_account_type
 from app.deps.db import get_db_session
@@ -39,12 +39,14 @@ from app.modules.biz.contest.portal.schema import (
     PortalClarificationThreadSchema,
     PortalContestBriefSchema,
     PortalContestEnterResultSchema,
-    PortalContestJoinRequest,
+    PortalContestPageQuery,
     PortalContestParticipationSchema,
+    PortalContestProblemDetailQuery,
     PortalContestProblemDetailSchema,
     PortalContestProblemMetaSchema,
     PortalContestRegisterRequest,
     PortalContestSubmitRequest,
+    PortalContestThreadMessageQuery,
 )
 from app.modules.biz.contest.problem.model import OjContestProblem
 from app.modules.biz.contest.registration.service import ContestRegistrationService
@@ -161,33 +163,30 @@ async def _enrich_brief(
     response_model=ApiResponse[PageData[PortalContestBriefSchema]],
 )
 async def contest_page(
+    query: Annotated[PortalContestPageQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current: Current = 1,
-    size: Size = 20,
-    keyword: str | None = Query(default=None),
     session: Annotated[SessionPayload | None, Depends(get_optional_session)] = None,
 ) -> ApiResponse[PageData[PortalContestBriefSchema]]:
-    pagination = PageQuery(current=current, size=size)
     filters = [
         OjContest.is_visible.is_(True),
         OjContest.list_visibility == ContestListVisibility.PUBLIC,
     ]
-    if keyword:
-        like = f"%{keyword}%"
+    if query.keyword:
+        like = f"%{query.keyword}%"
         filters.append(or_(OjContest.name.ilike(like), OjContest.key.ilike(like)))
     count_stmt = select(func.count(OjContest.id)).where(*filters)
     stmt = (
         select(OjContest)
         .where(*filters)
         .order_by(OjContest.start_time.desc())
-        .offset(pagination.offset)
-        .limit(pagination.size)
+        .offset(query.offset)
+        .limit(query.size)
     )
     items = list((await db.execute(stmt)).scalars().all())
     total = (await db.execute(count_stmt)).scalar_one()
     account_id = session.account_id if session else None
     briefs = [await _enrich_brief(db, c, account_id) for c in items]
-    return success(build_page(pagination, total, briefs))
+    return success(build_page(query, total, briefs))
 
 
 @router.get(
@@ -196,29 +195,27 @@ async def contest_page(
     response_model=ApiResponse[PageData[PortalContestBriefSchema]],
 )
 async def contest_mine(
+    query: Annotated[PageQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
     session: Annotated[SessionPayload, Depends(get_current_session)],
-    current: Current = 1,
-    size: Size = 20,
 ) -> ApiResponse[PageData[PortalContestBriefSchema]]:
-    pagination = PageQuery(current=current, size=size)
     reg_svc = ContestRegistrationService(db)
     contest_ids = await reg_svc.list_mine_contest_ids(session.account_id)
     if not contest_ids:
-        return success(build_page(pagination, 0, []))
+        return success(build_page(query, 0, []))
     filters = [OjContest.id.in_(contest_ids), OjContest.is_visible.is_(True)]
     count_stmt = select(func.count(OjContest.id)).where(*filters)
     stmt = (
         select(OjContest)
         .where(*filters)
         .order_by(OjContest.start_time.desc())
-        .offset(pagination.offset)
-        .limit(pagination.size)
+        .offset(query.offset)
+        .limit(query.size)
     )
     items = list((await db.execute(stmt)).scalars().all())
     total = (await db.execute(count_stmt)).scalar_one()
     briefs = [await _enrich_brief(db, c, session.account_id) for c in items]
-    return success(build_page(pagination, total, briefs))
+    return success(build_page(query, total, briefs))
 
 
 @router.get(
@@ -226,11 +223,11 @@ async def contest_mine(
     response_model=ApiResponse[PortalContestBriefSchema],
 )
 async def contest_detail(
+    query: Annotated[IdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
     session: Annotated[SessionPayload | None, Depends(get_optional_session)] = None,
 ) -> ApiResponse[PortalContestBriefSchema]:
-    contest = await _require_visible_contest(db, id)
+    contest = await _require_visible_contest(db, query.id)
     return success(
         await _enrich_brief(db, contest, session.account_id if session else None, include_description=True)
     )
@@ -243,16 +240,16 @@ async def contest_detail(
 )
 async def contest_register(
     payload: PortalContestRegisterRequest,
+    query: Annotated[ContestIdQuery, Depends()],
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    contest_id: Annotated[Id, Query()],
 ) -> ApiResponse[PortalContestBriefSchema]:
     await ContestRegistrationService(db).register(
-        contest_id=contest_id,
+        contest_id=query.contest_id,
         account_id=session.account_id,
         access_code=payload.access_code,
     )
-    contest = await _require_visible_contest(db, contest_id)
+    contest = await _require_visible_contest(db, query.contest_id)
     return success(await _enrich_brief(db, contest, session.account_id, include_description=True))
 
 
@@ -262,11 +259,11 @@ async def contest_register(
     response_model=ApiResponse[None],
 )
 async def contest_unregister(
+    query: Annotated[ContestIdQuery, Depends()],
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    contest_id: Annotated[Id, Query()],
 ) -> ApiResponse[None]:
-    await ContestRegistrationService(db).unregister(contest_id=contest_id, account_id=session.account_id)
+    await ContestRegistrationService(db).unregister(contest_id=query.contest_id, account_id=session.account_id)
     return success()
 
 
@@ -276,12 +273,12 @@ async def contest_unregister(
     response_model=ApiResponse[PortalContestEnterResultSchema],
 )
 async def contest_enter(
+    query: Annotated[ContestIdQuery, Depends()],
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    contest_id: Annotated[Id, Query()],
 ) -> ApiResponse[PortalContestEnterResultSchema]:
     part, first_problem_id = await ContestRegistrationService(db).enter(
-        contest_id=contest_id,
+        contest_id=query.contest_id,
         account_id=session.account_id,
     )
     return success(
@@ -293,44 +290,16 @@ async def contest_enter(
 
 
 @router.post(
-    "/biz/contest/join",
-    dependencies=[Depends(require_account_type(AccountType.PORTAL))],
-    response_model=ApiResponse[PortalContestParticipationSchema],
-)
-async def contest_join(
-    payload: PortalContestJoinRequest,
-    session: Annotated[SessionPayload, Depends(get_current_session)],
-    db: Annotated[AsyncSession, Depends(get_db_session)],
-    contest_id: Annotated[Id, Query()],
-) -> ApiResponse[PortalContestParticipationSchema]:
-    """兼容：赛前报名；赛中进入。"""
-    contest = await _require_visible_contest(db, contest_id)
-    status = lifecycle_status(contest)
-    reg_svc = ContestRegistrationService(db)
-    if status == ContestLifecycleStatus.SCHEDULED:
-        await reg_svc.register(
-            contest_id=contest_id,
-            account_id=session.account_id,
-            access_code=payload.access_code,
-        )
-        raise BusinessError("报名成功，请等待开赛后进入比赛")
-    if payload.spectate:
-        raise BusinessError("观赛模式暂未开放")
-    part, _ = await reg_svc.enter(contest_id=contest_id, account_id=session.account_id)
-    return success(to_schema(PortalContestParticipationSchema, part))
-
-
-@router.post(
     "/biz/contest/leave",
     dependencies=[Depends(require_account_type(AccountType.PORTAL))],
     response_model=ApiResponse[None],
 )
 async def contest_leave(
+    query: Annotated[ContestIdQuery, Depends()],
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    contest_id: Annotated[Id, Query()],
 ) -> ApiResponse[None]:
-    await ContestRegistrationService(db).unregister(contest_id=contest_id, account_id=session.account_id)
+    await ContestRegistrationService(db).unregister(contest_id=query.contest_id, account_id=session.account_id)
     return success()
 
 
@@ -341,12 +310,12 @@ async def contest_leave(
 )
 async def contest_submit(
     payload: PortalContestSubmitRequest,
+    query: Annotated[ContestIdQuery, Depends()],
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    contest_id: Annotated[Id, Query()],
 ) -> ApiResponse[dict[str, Any]]:
     snap = await ContestSubmitService(db).submit(
-        contest_id=contest_id,
+        contest_id=query.contest_id,
         account_id=session.account_id,
         problem_id=payload.problem_id,
         language_key=payload.language_key,
@@ -362,11 +331,11 @@ async def contest_submit(
     response_model=ApiResponse[list[PortalContestProblemMetaSchema]],
 )
 async def contest_problems(
+    query: Annotated[ContestIdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    contest_id: Annotated[Id, Query()],
     session: Annotated[SessionPayload | None, Depends(get_optional_session)] = None,
 ) -> ApiResponse[list[PortalContestProblemMetaSchema]]:
-    contest = await _require_visible_contest(db, contest_id)
+    contest = await _require_visible_contest(db, query.contest_id)
     account_id = session.account_id if session else None
     if not await _can_view_statements(db, contest, account_id):
         return success([])
@@ -374,7 +343,7 @@ async def contest_problems(
         (
             await db.execute(
                 select(OjContestProblem)
-                .where(OjContestProblem.contest_id == contest_id)
+                .where(OjContestProblem.contest_id == query.contest_id)
                 .order_by(OjContestProblem.sort.asc())
             )
         )
@@ -410,33 +379,32 @@ async def contest_problems(
     response_model=ApiResponse[PortalContestProblemDetailSchema],
 )
 async def contest_problem_detail(
+    query: Annotated[PortalContestProblemDetailQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    contest_id: Annotated[Id, Query()],
-    problem_id: Annotated[Id, Query()],
     session: Annotated[SessionPayload | None, Depends(get_optional_session)] = None,
 ) -> ApiResponse[PortalContestProblemDetailSchema]:
-    contest = await _require_visible_contest(db, contest_id)
+    contest = await _require_visible_contest(db, query.contest_id)
     account_id = session.account_id if session else None
     if not await _can_view_statements(db, contest, account_id):
         raise BusinessError("暂不可查看题面（需已通过报名且比赛已开始）")
     cproblem = (
         await db.execute(
             select(OjContestProblem).where(
-                OjContestProblem.contest_id == contest_id,
-                OjContestProblem.problem_id == problem_id,
+                OjContestProblem.contest_id == query.contest_id,
+                OjContestProblem.problem_id == query.problem_id,
             )
         )
     ).scalar_one_or_none()
     if cproblem is None:
         raise NotFoundError("竞赛题目不存在")
-    problem = await db.get(OjProblem, problem_id)
+    problem = await db.get(OjProblem, query.problem_id)
     if problem is None:
         raise NotFoundError("题目不存在")
     lang_rows = list(
         (
             await db.execute(
                 select(OjProblemLanguage).where(
-                    OjProblemLanguage.problem_id == problem_id,
+                    OjProblemLanguage.problem_id == query.problem_id,
                     OjProblemLanguage.status == StatusEnum.ENABLED.value,
                 )
             )
@@ -479,11 +447,11 @@ async def contest_problem_detail(
     response_model=ApiResponse[dict[str, Any]],
 )
 async def contest_scoreboard(
+    query: Annotated[ContestIdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    contest_id: Annotated[Id, Query()],
     session: Annotated[SessionPayload | None, Depends(get_optional_session)] = None,
 ) -> ApiResponse[dict[str, Any]]:
-    contest = await _require_visible_contest(db, contest_id)
+    contest = await _require_visible_contest(db, query.contest_id)
     vis = contest.scoreboard_visibility
     status = lifecycle_status(contest)
     if vis == ScoreboardVisibility.HIDDEN:
@@ -494,10 +462,10 @@ async def contest_scoreboard(
     ):
         raise BusinessError("比赛结束后才可查看榜单")
     if vis == ScoreboardVisibility.AFTER_PARTICIPATION:
-        joined = await _is_joined(db, contest_id, session.account_id if session else None)
+        joined = await _is_joined(db, query.contest_id, session.account_id if session else None)
         if not joined:
             raise BusinessError("报名参赛后才可查看榜单")
-    board = await build_scoreboard(db, contest_id, ignore_freeze=False)
+    board = await build_scoreboard(db, query.contest_id, ignore_freeze=False)
     return success(board)
 
 
@@ -507,14 +475,14 @@ async def contest_scoreboard(
     response_model=ApiResponse[list[dict[str, Any]]],
 )
 async def my_submissions(
+    query: Annotated[ContestIdQuery, Depends()],
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    contest_id: Annotated[Id, Query()],
 ) -> ApiResponse[list[dict[str, Any]]]:
     part = (
         await db.execute(
             select(OjContestParticipation).where(
-                OjContestParticipation.contest_id == contest_id,
+                OjContestParticipation.contest_id == query.contest_id,
                 OjContestParticipation.account_id == session.account_id,
                 OjContestParticipation.virtual == ContestParticipationVirtual.LIVE,
             )
@@ -554,17 +522,17 @@ async def my_submissions(
     response_model=ApiResponse[list[PortalClarificationSchema]],
 )
 async def list_clarifications(
+    query: Annotated[ContestIdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    contest_id: Annotated[Id, Query()],
 ) -> ApiResponse[list[PortalClarificationSchema]]:
-    contest = await _require_visible_contest(db, contest_id)
+    contest = await _require_visible_contest(db, query.contest_id)
     if not contest.use_clarifications:
         return success([])
     rows = list(
         (
             await db.execute(
                 select(OjContestClarification)
-                .where(OjContestClarification.contest_id == contest_id)
+                .where(OjContestClarification.contest_id == query.contest_id)
                 .order_by(OjContestClarification.published_at.desc())
             )
         )
@@ -580,15 +548,15 @@ async def list_clarifications(
     response_model=ApiResponse[list[PortalClarificationThreadSchema]],
 )
 async def my_threads(
+    query: Annotated[ContestIdQuery, Depends()],
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    contest_id: Annotated[Id, Query()],
 ) -> ApiResponse[list[PortalClarificationThreadSchema]]:
     threads = list(
         (
             await db.execute(
                 select(OjContestClarificationThread).where(
-                    OjContestClarificationThread.contest_id == contest_id,
+                    OjContestClarificationThread.contest_id == query.contest_id,
                     OjContestClarificationThread.account_id == session.account_id,
                 )
             )
@@ -606,11 +574,11 @@ async def my_threads(
 )
 async def create_thread(
     payload: PortalClarificationThreadCreateRequest,
+    query: Annotated[ContestIdQuery, Depends()],
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    contest_id: Annotated[Id, Query()],
 ) -> ApiResponse[PortalClarificationThreadSchema]:
-    contest = await db.get(OjContest, contest_id)
+    contest = await db.get(OjContest, query.contest_id)
     if contest is None:
         raise NotFoundError("竞赛不存在")
     if not contest.use_clarifications:
@@ -618,7 +586,7 @@ async def create_thread(
     async with transactional(db):
         thread = OjContestClarificationThread(
             id=generate_snowflake_id(),
-            contest_id=contest_id,
+            contest_id=query.contest_id,
             problem_id=payload.problem_id,
             account_id=session.account_id,
             title=payload.title,
@@ -645,13 +613,12 @@ async def create_thread(
 )
 async def add_thread_message(
     payload: PortalClarificationMessageCreateRequest,
+    query: Annotated[PortalContestThreadMessageQuery, Depends()],
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    contest_id: Annotated[Id, Query()],
-    thread_id: Annotated[Id, Query()],
 ) -> ApiResponse[PortalClarificationMessageSchema]:
-    thread = await db.get(OjContestClarificationThread, thread_id)
-    if thread is None or thread.contest_id != contest_id:
+    thread = await db.get(OjContestClarificationThread, query.thread_id)
+    if thread is None or thread.contest_id != query.contest_id:
         raise NotFoundError("提问不存在")
     if thread.account_id != session.account_id:
         raise BusinessError("只能在自己的提问中追加消息")
@@ -660,7 +627,7 @@ async def add_thread_message(
     async with transactional(db):
         msg = OjContestClarificationMessage(
             id=generate_snowflake_id(),
-            thread_id=thread_id,
+            thread_id=query.thread_id,
             account_id=session.account_id,
             body=payload.body,
             is_staff=False,

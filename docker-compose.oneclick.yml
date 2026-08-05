@@ -55,18 +55,6 @@ services:
       retries: 30
     restart: unless-stopped
 
-  rabbitmq:
-    image: ${RABBITMQ_IMAGE:-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/rabbitmq:4-management}
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 10s
-      retries: 30
-    restart: unless-stopped
-
   minio:
     image: ${MINIO_IMAGE:-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/quay.io/minio/minio:RELEASE.2025-07-23T15-54-02Z}
     command: ["server", "/data", "--console-address", ":9001"]
@@ -108,8 +96,6 @@ services:
       seed:
         condition: service_completed_successfully
       redis:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
       minio:
         condition: service_started

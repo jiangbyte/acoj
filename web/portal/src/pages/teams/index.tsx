@@ -7,8 +7,7 @@ import {
   UsergroupAddOutlined,
 } from '@ant-design/icons'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { teamCreate, teamJoin, teamMy, teamPage } from '@/api/team'
-import type { PortalTeamBrief, PortalTeamPublic } from '@/api/team'
+import { teamApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { formatDateMinute } from '@/utils/time'
 
@@ -30,10 +29,10 @@ export function TeamListPage() {
   const size = Number(searchParams.get('size') ?? 12)
 
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState<PortalTeamPublic[]>([])
+  const [data, setData] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [searchText, setSearchText] = useState(keyword)
-  const [myTeams, setMyTeams] = useState<PortalTeamBrief[]>([])
+  const [myTeams, setMyTeams] = useState<any[]>([])
   const [joinOpen, setJoinOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [inviteCode, setInviteCode] = useState('')
@@ -47,7 +46,7 @@ export function TeamListPage() {
   async function loadPublic() {
     setLoading(true)
     try {
-      const res = await teamPage({ current, size, keyword: keyword || undefined })
+      const res = await teamApi.teamPage({ current, size, keyword: keyword || undefined })
       setData(res.data.records ?? [])
       setTotal(res.data.total ?? 0)
     } finally {
@@ -61,7 +60,7 @@ export function TeamListPage() {
       return
     }
     try {
-      const res = await teamMy()
+      const res = await teamApi.teamMy()
       setMyTeams(res.data ?? [])
     } catch {
       setMyTeams([])
@@ -104,7 +103,7 @@ export function TeamListPage() {
     }
     setJoinLoading(true)
     try {
-      const res = await teamJoin({ invite_code: code })
+      const res = await teamApi.teamJoin({ invite_code: code })
       message.success('加入成功')
       setJoinOpen(false)
       setInviteCode('')
@@ -123,7 +122,7 @@ export function TeamListPage() {
     const values = await form.validateFields()
     setCreateLoading(true)
     try {
-      const res = await teamCreate({
+      const res = await teamApi.teamCreate({
         name: values.name.trim(),
         description: values.description?.trim() || undefined,
         max_members: values.max_members,

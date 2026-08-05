@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import Field
 
@@ -30,6 +31,12 @@ class PortalPublicProfileResponse(ApiSchema):
     nickname: str | None = None
     avatar: str | None = None
     signature: str | None = None
+
+
+class PortalPublicSpaceQuery(ApiSchema):
+    """门户公开主页查询。"""
+
+    account_id: str = Field(min_length=1, max_length=64)
 
 
 class PortalRatingRankItem(ApiSchema):
@@ -74,6 +81,10 @@ class PortalRankSummaryResponse(ApiSchema):
     top_score: int = 0
     avg_score: int = 0
     max_delta: int = 0
+
+
+class PortalRankBoardQuery(ApiSchema):
+    board: Literal["solved", "rating"] = "solved"
 
 
 class PortalProfileUpsertPayload(ApiSchema):

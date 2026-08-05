@@ -17,8 +17,7 @@ import {
   message,
 } from 'antd'
 import { UserOutlined } from '@ant-design/icons'
-import * as authApi from '@/api/auth'
-import type { PortalMeResponse, PortalProfileData } from '@/api/auth'
+import { authApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { encryptPasswords } from '@/utils/security'
 import { resolveFileUrl } from '@/utils/file'
@@ -43,7 +42,7 @@ export function UserCenterPage() {
   const refreshUserInfo = useAuthStore((s) => s.refreshUserInfo)
 
   const [loading, setLoading] = useState(true)
-  const [me, setMe] = useState<PortalMeResponse | null>(null)
+  const [me, setMe] = useState<any>(null)
   const [avatarModalShow, setAvatarModalShow] = useState(false)
 
   const [profileForm] = Form.useForm()
@@ -83,8 +82,8 @@ export function UserCenterPage() {
     syncForms(data)
   }
 
-  function syncForms(data: PortalMeResponse) {
-    const profile = (data.profile ?? {}) as PortalProfileData
+  function syncForms(data: any) {
+    const profile = (data.profile ?? {}) as any
     profileForm.setFieldsValue({
       name: data.name ?? profile.name ?? '',
       nickname: data.nickname ?? profile.nickname ?? '',
@@ -194,7 +193,7 @@ export function UserCenterPage() {
     }
   }
 
-  const profile = (me?.profile ?? {}) as PortalProfileData
+  const profile = (me?.profile ?? {}) as any
   const displayName = me?.nickname || me?.name || '-'
   const avatarUrl = resolveFileUrl(me?.avatar || profile.avatar)
   const roleNames = mapNames(me?.role_id_names)

@@ -6,13 +6,13 @@ Generated at: 2026-07-28 20:51:11
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
-from app.core.response.pagination import Current, PageData, PageQuery, Size
+from app.core.response.pagination import PageData
 from app.core.response.schema import ApiResponse, success
-from app.core.schema.base import Id, IdQuery, IdsRequest
+from app.core.schema.base import ProblemIdsRequest, ProblemScopedIdQuery
 from app.deps.auth import require_account_type, require_permission
 from app.deps.db import get_db_session
 from app.modules.biz.problem.solution.schema import (
@@ -37,11 +37,10 @@ router = APIRouter()
     response_model=ApiResponse[None],
 )
 async def create(
-    problem_id: Annotated[Id, Query()],
     payload: OjProblemSolutionCreateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await OjProblemSolutionService(db).create(problem_id, payload)
+    await OjProblemSolutionService(db).create(payload)
     return success()
 
 
@@ -54,11 +53,10 @@ async def create(
     response_model=ApiResponse[None],
 )
 async def update(
-    problem_id: Annotated[Id, Query()],
     payload: OjProblemSolutionUpdateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await OjProblemSolutionService(db).update(problem_id, payload)
+    await OjProblemSolutionService(db).update(payload)
     return success()
 
 
@@ -71,11 +69,10 @@ async def update(
     response_model=ApiResponse[None],
 )
 async def delete(
-    problem_id: Annotated[Id, Query()],
-    payload: IdsRequest,
+    payload: ProblemIdsRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await OjProblemSolutionService(db).delete(problem_id, payload)
+    await OjProblemSolutionService(db).delete(payload)
     return success()
 
 
@@ -88,11 +85,10 @@ async def delete(
     response_model=ApiResponse[OjProblemSolutionSchema],
 )
 async def detail(
-    problem_id: Annotated[Id, Query()],
+    query: Annotated[ProblemScopedIdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
 ) -> ApiResponse[OjProblemSolutionSchema]:
-    return success(await OjProblemSolutionService(db).detail(problem_id, IdQuery(id=id)))
+    return success(await OjProblemSolutionService(db).detail(query))
 
 
 @router.get(
@@ -104,12 +100,7 @@ async def detail(
     response_model=ApiResponse[PageData[OjProblemSolutionSchema]],
 )
 async def page(
-    problem_id: Annotated[Id, Query()],
+    query: Annotated[OjProblemSolutionAdminPageQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current: Current = 1,
-    size: Size = 20,
 ) -> ApiResponse[PageData[OjProblemSolutionSchema]]:
-    query = OjProblemSolutionAdminPageQuery(
-        pagination=PageQuery(current=current, size=size),
-    )
-    return success(await OjProblemSolutionService(db).page_admin(problem_id, query))
+    return success(await OjProblemSolutionService(db).page_admin(query))

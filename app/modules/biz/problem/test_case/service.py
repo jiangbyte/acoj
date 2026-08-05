@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions.business import NotFoundError
 from app.modules.biz.oj_scope import delete_owned_by_parent, ensure_belongs_to_parent
 from app.core.response.pagination import PageData, build_page
-from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
+from app.core.schema.base import ProblemIdsRequest, ProblemScopedIdQuery, to_schema, to_schema_list
 from app.platform.db.transaction import transactional
 from app.modules.biz.problem.test_case.model import OjProblemTestCase
 from app.modules.biz.problem.test_case.repository import (
@@ -28,35 +28,34 @@ class OjProblemTestCaseService:
         self.db = db
         self.repo = OjProblemTestCaseRepository(db)
 
-    async def create(self, problem_id: str, payload: OjProblemTestCaseCreateRequest) -> None:
+    async def create(self, payload: OjProblemTestCaseCreateRequest) -> None:
         async with transactional(self.db):
-            await self.repo.create(payload.model_copy(update={"problem_id": problem_id}))
+            await self.repo.create(payload)
 
-    async def update(self, problem_id: str, payload: OjProblemTestCaseUpdateRequest) -> None:
+    async def update(self, payload: OjProblemTestCaseUpdateRequest) -> None:
         async with transactional(self.db):
             entity = await self.repo.get_required(payload.id)
-            ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=problem_id, not_found_message="OjProblemTestCase not found")
-            await self.repo.update(payload.model_copy(update={"problem_id": problem_id}))
+            ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=payload.problem_id, not_found_message="OjProblemTestCase not found")
+            await self.repo.update(payload)
 
-    async def delete(self, problem_id: str, payload: IdsRequest) -> None:
+    async def delete(self, payload: ProblemIdsRequest) -> None:
         async with transactional(self.db):
             await delete_owned_by_parent(
                 self.db,
                 model=OjProblemTestCase,
                 parent_attr="problem_id",
-                parent_id=problem_id,
+                parent_id=payload.problem_id,
                 entity_ids=payload.ids,
                 not_found_message="OjProblemTestCase not found",
             )
 
-    async def detail(self, problem_id: str, query: IdQuery) -> OjProblemTestCaseSchema:
+    async def detail(self, query: ProblemScopedIdQuery) -> OjProblemTestCaseSchema:
         entity = await self.repo.get_required(query.id)
-        ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=problem_id, not_found_message="OjProblemTestCase not found")
+        ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=query.problem_id, not_found_message="OjProblemTestCase not found")
         return to_schema(OjProblemTestCaseSchema, entity)
 
     async def page_admin(
-        self, problem_id: str, query: OjProblemTestCaseAdminPageQuery
+        self, query: OjProblemTestCaseAdminPageQuery
     ) -> PageData[OjProblemTestCaseSchema]:
-        scoped_query = query.model_copy(update={"problem_id": problem_id})
-        items, total = await self.repo.page_admin(scoped_query)
-        return build_page(scoped_query.pagination, total, to_schema_list(OjProblemTestCaseSchema, items))
+        items, total = await self.repo.page_admin(query)
+        return build_page(query.pagination, total, to_schema_list(OjProblemTestCaseSchema, items))

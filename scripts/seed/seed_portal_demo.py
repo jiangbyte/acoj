@@ -18,14 +18,13 @@ from app.modules.biz.problem.language.model import OjProblemLanguage
 from app.modules.biz.problem.problem.model import OjProblem
 from app.modules.biz.problem.stats import refresh_problem_ac_stats
 from app.modules.biz.study.enums import LearningPlanCategory, ProblemListKind, ProblemListVisibility
-from app.modules.biz.study.model import (
-    OjDailyProblem,
+from app.modules.biz.study.daily.model import OjDailyProblem
+from app.modules.biz.study.learning_plan.model import (
     OjLearningPlan,
     OjLearningPlanItem,
     OjLearningPlanSection,
-    OjProblemList,
-    OjProblemListItem,
 )
+from app.modules.biz.study.problem_list.model import OjProblemList, OjProblemListItem
 from app.platform.db.session import get_session_factory, init_engine
 from app.platform.id_generator.snowflake import generate_snowflake_id
 

@@ -7,17 +7,17 @@ export function page(contestId: string, params: Record<string, unknown>) {
 }
 
 export function add(contestId: string, data: { account_id: string; remark?: string }) {
-  return http.post<string>(`${prefix}/add`, data, { params: { contest_id: contestId } })
+  return http.post<string>(`${prefix}/add`, { ...data, contest_id: contestId })
 }
 
 export function approve(contestId: string, data: { ids: string[]; remark?: string }) {
-  return http.post<null>(`${prefix}/approve`, data, { params: { contest_id: contestId } })
+  return http.post<null>(`${prefix}/approve`, { ...data, contest_id: contestId })
 }
 
 export function reject(contestId: string, data: { ids: string[]; remark?: string }) {
-  return http.post<null>(`${prefix}/reject`, data, { params: { contest_id: contestId } })
+  return http.post<null>(`${prefix}/reject`, { ...data, contest_id: contestId })
 }
 
 export function cancel(contestId: string, data: { ids: string[] }) {
-  return http.post<null>(`${prefix}/cancel`, data, { params: { contest_id: contestId } })
+  return http.post<null>(`${prefix}/cancel`, { ...data, contest_id: contestId })
 }

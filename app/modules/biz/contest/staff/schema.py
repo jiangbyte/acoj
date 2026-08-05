@@ -23,9 +23,8 @@ class OjContestStaffUpdateRequest(OjContestStaffCreateRequest):
     id: str = Field(min_length=1, max_length=64)
 
 
-class OjContestStaffAdminPageQuery(ApiSchema):
-    pagination: PageQuery
-    contest_id: str | None = None
+class OjContestStaffAdminPageQuery(PageQuery):
+    contest_id: str = Field(min_length=1, max_length=64)
     account_id: str | None = None
     role: str | None = None
 

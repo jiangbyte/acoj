@@ -9,8 +9,7 @@ import {
 } from '@ant-design/icons'
 import { Link, useSearchParams } from 'react-router-dom'
 import dayjs from 'dayjs'
-import { contestMine, contestPage } from '@/api/contest'
-import type { PortalContestBrief } from '@/api/contest'
+import { contestApi } from '@/api'
 import { PromoCarousel } from '@/components/common/PromoCarousel'
 import { ContestStatusBadge } from '@/components/oj/ContestStatusBadge'
 import { useBannerSlides } from '@/hooks/useBannerSlides'
@@ -91,7 +90,7 @@ export function ContestListPage() {
   const size = Number(searchParams.get('size') ?? 10)
 
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState<PortalContestBrief[]>([])
+  const [data, setData] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [searchText, setSearchText] = useState(keyword)
   const [formatFilter, setFormatFilter] = useState('all')
@@ -99,28 +98,28 @@ export function ContestListPage() {
   const [statusFilter, setStatusFilter] = useState('all')
 
   const formatFilters = useMemo(
-    () => [{ key: 'all', label: '全部' }, ...dictList('CONTEST_FORMAT').map((d) => ({ key: String(d.value), label: d.label }))],
+    () => [{ key: 'all', label: '全部' }, ...dictList('CONTEST_FORMAT').map((d: any) => ({ key: String(d.value), label: d.label }))],
     [dictTree],
   )
   const typeFilters = useMemo(
-    () => [{ key: 'all', label: '全部' }, ...dictList('CONTEST_TYPE').map((d) => ({ key: String(d.value), label: d.label }))],
+    () => [{ key: 'all', label: '全部' }, ...dictList('CONTEST_TYPE').map((d: any) => ({ key: String(d.value), label: d.label }))],
     [dictTree],
   )
   const statusFilters = useMemo(
     () => [
       { key: 'all', label: '全部' },
       ...dictList('CONTEST_LIFECYCLE_STATUS')
-        .filter((d) => d.value !== 'LOCKED')
-        .map((d) => ({ key: String(d.value), label: d.label })),
+        .filter((d: any) => d.value !== 'LOCKED')
+        .map((d: any) => ({ key: String(d.value), label: d.label })),
     ],
     [dictTree],
   )
 
-  const [myContests, setMyContests] = useState<PortalContestBrief[]>([])
+  const [myContests, setMyContests] = useState<any[]>([])
 
   async function load() {
     try {
-      const res = await contestPage({ current, size, keyword: keyword || undefined })
+      const res = await contestApi.contestPage({ current, size, keyword: keyword || undefined })
       setData(res.data.records)
       setTotal(res.data.total)
     } finally {
@@ -130,7 +129,7 @@ export function ContestListPage() {
 
   async function loadMine() {
     try {
-      const res = await contestMine({ current: 1, size: 20 })
+      const res = await contestApi.contestMine({ current: 1, size: 20 })
       setMyContests(res.data.records ?? [])
     } catch {
       setMyContests([])

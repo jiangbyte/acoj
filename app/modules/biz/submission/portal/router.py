@@ -8,23 +8,26 @@ import time
 from collections.abc import AsyncIterator
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
-from app.core.response.pagination import Current, PageData, PageQuery, Size
+from app.core.response.pagination import PageData
 from app.core.response.schema import ApiResponse, success
-from app.core.schema.base import Id
+from app.core.schema.base import IdQuery, ProblemIdQuery
 from app.core.security.session import SessionPayload
 from app.deps.auth import get_current_session, get_optional_session, require_account_type
 from app.deps.db import get_db_session
-from app.modules.biz.submission.enums import SubmissionKind, SubmissionStatus
+from app.modules.biz.submission.enums import SubmissionStatus
 from app.modules.biz.submission.events import submission_event_channel
 from app.modules.biz.submission.performance.schema import (
     MyLatestPracticeAcOut,
+    MyLatestPracticeAcQuery,
     MySubmissionStatsOut,
     SimilarSubmissionListOut,
+    SimilarSubmissionQuery,
+    SubmissionEventsQuery,
     SubmissionPerformanceOut,
 )
 from app.modules.biz.submission.performance.service import SubmissionPerformanceService
@@ -51,29 +54,9 @@ def _sse_pack(event: str, data: dict) -> str:
     response_model=ApiResponse[PageData[OjSubmissionListSchema]],
 )
 async def submission_page(
+    query: Annotated[OjSubmissionAdminPageQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current: Current = 1,
-    size: Size = 20,
-    problem_id: str | None = Query(default=None),
-    problem_code: str | None = Query(default=None),
-    contest_id: str | None = Query(default=None),
-    user_id: str | None = Query(default=None),
-    kind: SubmissionKind | None = Query(default=None),
-    status: SubmissionStatus | None = Query(default=None),
-    result: str | None = Query(default=None),
-    language_key: str | None = Query(default=None),
 ) -> ApiResponse[PageData[OjSubmissionListSchema]]:
-    query = OjSubmissionAdminPageQuery(
-        pagination=PageQuery(current=current, size=size),
-        problem_id=problem_id,
-        problem_code=problem_code,
-        contest_id=contest_id,
-        user_id=user_id,
-        kind=kind,
-        status=status,
-        result=result,
-        language_key=language_key,
-    )
     return success(await PortalSubmissionService(db).page(query))
 
 
@@ -82,12 +65,12 @@ async def submission_page(
     response_model=ApiResponse[OjSubmissionDetailSchema],
 )
 async def submission_detail(
+    query: Annotated[IdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
     session: Annotated[SessionPayload | None, Depends(get_optional_session)] = None,
 ) -> ApiResponse[OjSubmissionDetailSchema]:
     viewer = session.account_id if session else None
-    return success(await PortalSubmissionService(db).detail(id, viewer_account_id=viewer))
+    return success(await PortalSubmissionService(db).detail(query.id, viewer_account_id=viewer))
 
 
 @router.get(
@@ -95,14 +78,14 @@ async def submission_detail(
     response_model=ApiResponse[SubmissionPerformanceOut],
 )
 async def submission_performance(
+    query: Annotated[IdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
     session: Annotated[SessionPayload | None, Depends(get_optional_session)] = None,
 ) -> ApiResponse[SubmissionPerformanceOut]:
     viewer = session.account_id if session else None
     return success(
         await SubmissionPerformanceService(db).get_performance(
-            id, viewer=viewer, for_admin=False
+            query, viewer=viewer, for_admin=False
         )
     )
 
@@ -112,15 +95,14 @@ async def submission_performance(
     response_model=ApiResponse[SimilarSubmissionListOut],
 )
 async def submission_similar(
+    query: Annotated[SimilarSubmissionQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
-    size: int = Query(default=10, ge=1, le=50),
     session: Annotated[SessionPayload | None, Depends(get_optional_session)] = None,
 ) -> ApiResponse[SimilarSubmissionListOut]:
     viewer = session.account_id if session else None
     return success(
         await SubmissionPerformanceService(db).list_similar(
-            id, size=size, viewer=viewer, for_admin=False
+            query, viewer=viewer, for_admin=False
         )
     )
 
@@ -131,12 +113,12 @@ async def submission_similar(
     response_model=ApiResponse[MyLatestPracticeAcOut],
 )
 async def submission_my_latest_ac(
+    query: Annotated[MyLatestPracticeAcQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    problem_id: Annotated[Id, Query()],
     session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[MyLatestPracticeAcOut]:
     submission_id = await SubmissionPerformanceService(db).my_latest_practice_ac(
-        session.account_id, problem_id
+        query, user_id=session.account_id
     )
     return success(MyLatestPracticeAcOut(submission_id=submission_id))
 
@@ -150,7 +132,7 @@ async def submission_my_stats(
     db: Annotated[AsyncSession, Depends(get_db_session)],
     session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[MySubmissionStatsOut]:
-    return success(await PortalSubmissionService(db).my_stats(session.account_id))
+    return success(await PortalSubmissionService(db).my_stats(session))
 
 
 @router.get(
@@ -158,16 +140,15 @@ async def submission_my_stats(
     dependencies=[Depends(require_account_type(AccountType.PORTAL))],
 )
 async def submission_events(
-    id: Annotated[Id, Query()],
+    query: Annotated[SubmissionEventsQuery, Depends()],
     session: Annotated[SessionPayload, Depends(get_current_session)],
-    max_wait_sec: int = Query(default=120, ge=5, le=600),
 ) -> StreamingResponse:
     from app.platform.db.session import get_session_factory
 
-    submission_id = id
+    submission_id = query.id
 
     async with get_session_factory()() as db:
-        await PortalSubmissionService(db).assert_owner(submission_id, session.account_id)
+        await PortalSubmissionService(db).assert_owner(IdQuery(id=submission_id), session)
 
     async def _snapshot() -> dict:
         async with get_session_factory()() as sess:
@@ -187,7 +168,7 @@ async def submission_events(
             pubsub = redis.pubsub()
             await pubsub.subscribe(channel)
 
-        deadline = time.monotonic() + max_wait_sec
+        deadline = time.monotonic() + query.max_wait_sec
         last_poll = 0.0
         try:
             while time.monotonic() < deadline:

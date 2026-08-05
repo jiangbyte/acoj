@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { message } from 'antd'
-import * as authApi from '@/api/auth'
-import type { PortalMeResponse } from '@/api/auth'
+import { authApi } from '@/api'
 import { refreshDict, syncDictTree } from '@/utils/dict'
 import {
   clearAuthStorage,
@@ -41,12 +40,12 @@ interface AuthState {
     identityType?: string,
     security?: { password_key_id: string; captcha_id: string; captcha_value: string },
   ) => Promise<string>
-  refreshUserInfo: () => Promise<PortalMeResponse>
+  refreshUserInfo: () => Promise<any>
   logout: (redirect?: string) => Promise<void>
   resetSession: () => void
 }
 
-function mapMe(data: PortalMeResponse, loginAt = Date.now()): AuthUserInfo {
+function mapMe(data: any, loginAt = Date.now()): AuthUserInfo {
   return {
     accountId: data.account_id,
     account: data.account,

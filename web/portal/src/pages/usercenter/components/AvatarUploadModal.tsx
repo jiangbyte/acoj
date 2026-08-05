@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Avatar, Button, Modal, Slider, Space, Upload, message } from 'antd'
 import { UploadOutlined, UserOutlined } from '@ant-design/icons'
 import Cropper, { type Area } from 'react-easy-crop'
-import { uploadUserCenterAvatar } from '@/api/auth'
+import { authApi } from '@/api'
 import './avatar-upload.css'
 
 type Props = {
@@ -86,7 +86,7 @@ export function AvatarUploadModal({ open, avatar, onClose, onUploaded }: Props) 
 
     setUploading(true)
     try {
-      await uploadUserCenterAvatar(new File([blob], 'avatar.png', { type: 'image/png' }))
+      await authApi.uploadUserCenterAvatar(new File([blob], 'avatar.png', { type: 'image/png' }))
       message.success('头像已更新')
       onUploaded()
       onClose()

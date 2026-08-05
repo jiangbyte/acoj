@@ -83,7 +83,8 @@ class ContestRegistrationService:
         )
         return build_page(query.pagination, total, to_schema_list(OjContestRegistrationSchema, rows))
 
-    async def add(self, contest_id: str, payload: OjContestRegistrationAddRequest, reviewer_id: str | None) -> str:
+    async def add(self, payload: OjContestRegistrationAddRequest, reviewer_id: str | None) -> str:
+        contest_id = payload.contest_id
         contest = await self.db.get(OjContest, contest_id)
         if contest is None:
             raise NotFoundError("竞赛不存在")
@@ -113,9 +114,9 @@ class ContestRegistrationService:
             await self.db.flush()
             return entity.id
 
-    async def approve(self, contest_id: str, payload: OjContestRegistrationIdsRequest, reviewer_id: str) -> None:
+    async def approve(self, payload: OjContestRegistrationIdsRequest, reviewer_id: str) -> None:
         async with transactional(self.db):
-            rows = await self._rows_for_ids(contest_id, payload.ids)
+            rows = await self._rows_for_ids(payload.contest_id, payload.ids)
             now = utcnow()
             for row in rows:
                 row.status = ContestRegistrationStatus.APPROVED
@@ -125,9 +126,9 @@ class ContestRegistrationService:
                     row.remark = payload.remark
             await self.db.flush()
 
-    async def reject(self, contest_id: str, payload: OjContestRegistrationRejectRequest, reviewer_id: str) -> None:
+    async def reject(self, payload: OjContestRegistrationRejectRequest, reviewer_id: str) -> None:
         async with transactional(self.db):
-            rows = await self._rows_for_ids(contest_id, payload.ids)
+            rows = await self._rows_for_ids(payload.contest_id, payload.ids)
             now = utcnow()
             for row in rows:
                 row.status = ContestRegistrationStatus.REJECTED
@@ -136,9 +137,9 @@ class ContestRegistrationService:
                 row.remark = payload.remark
             await self.db.flush()
 
-    async def cancel(self, contest_id: str, payload: OjContestRegistrationIdsRequest) -> None:
+    async def cancel(self, payload: OjContestRegistrationIdsRequest) -> None:
         async with transactional(self.db):
-            rows = await self._rows_for_ids(contest_id, payload.ids)
+            rows = await self._rows_for_ids(payload.contest_id, payload.ids)
             for row in rows:
                 row.status = ContestRegistrationStatus.CANCELLED
             await self.db.flush()

@@ -2,17 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { Empty, Spin, Table, Tabs, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { Link, useLocation, useParams } from 'react-router-dom'
-import {
-  courseAnnouncementList,
-  courseDetail,
-  courseTaskList,
-} from '@/api/course'
-import type { PortalCourseAnnouncement, PortalCourseBrief, PortalCourseTask } from '@/api/course'
-import { teamCourseList } from '@/api/team'
-import type { PortalTeamBrief } from '@/api/team'
 import { Markdown } from '@/components/common/Markdown'
 import { useAuthStore } from '@/stores/auth'
 import { formatDateTime } from '@/utils/time'
+import { courseApi, teamApi } from '@/api'
 
 const courseStatusLabel: Record<string, { color: string; label: string }> = {
   PUBLISHED: { color: 'success', label: '已发布' },
@@ -39,10 +32,10 @@ export function CourseDetailPage() {
   const loggedIn = isLogin()
   const loginHref = `/auth/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`
   const [loading, setLoading] = useState(false)
-  const [course, setCourse] = useState<PortalCourseBrief | null>(null)
-  const [announcements, setAnnouncements] = useState<PortalCourseAnnouncement[]>([])
-  const [tasks, setTasks] = useState<PortalCourseTask[]>([])
-  const [teams, setTeams] = useState<PortalTeamBrief[]>([])
+  const [course, setCourse] = useState<any>(null)
+  const [announcements, setAnnouncements] = useState<any[]>([])
+  const [tasks, setTasks] = useState<any[]>([])
+  const [teams, setTeams] = useState<any[]>([])
   const [announcementsLoading, setAnnouncementsLoading] = useState(false)
   const [tasksLoading, setTasksLoading] = useState(false)
   const [teamsLoading, setTeamsLoading] = useState(false)
@@ -52,7 +45,7 @@ export function CourseDetailPage() {
     void (async () => {
       setLoading(true)
       try {
-        const res = await courseDetail(id)
+        const res = await courseApi.courseDetail(id)
         setCourse(res.data)
       } catch {
         setCourse(null)
@@ -65,7 +58,7 @@ export function CourseDetailPage() {
   async function loadAnnouncements() {
     setAnnouncementsLoading(true)
     try {
-      const res = await courseAnnouncementList(id)
+      const res = await courseApi.courseAnnouncementList(id)
       setAnnouncements(res.data ?? [])
     } finally {
       setAnnouncementsLoading(false)
@@ -75,7 +68,7 @@ export function CourseDetailPage() {
   async function loadTasks() {
     setTasksLoading(true)
     try {
-      const res = await courseTaskList(id)
+      const res = await courseApi.courseTaskList(id)
       setTasks(res.data ?? [])
     } finally {
       setTasksLoading(false)
@@ -89,7 +82,7 @@ export function CourseDetailPage() {
     }
     setTeamsLoading(true)
     try {
-      const res = await teamCourseList(id)
+      const res = await teamApi.teamCourseList(id)
       setTeams(res.data ?? [])
     } finally {
       setTeamsLoading(false)
@@ -101,12 +94,12 @@ export function CourseDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
-  const taskColumns: ColumnsType<PortalCourseTask> = useMemo(
+  const taskColumns: ColumnsType<any> = useMemo(
     () => [
       {
         title: '任务',
         dataIndex: 'title',
-        render: (title: string, record: PortalCourseTask) => (
+        render: (title: string, record: any) => (
           <Link
             to={`/courses/${id}/tasks/${record.id}`}
             className="font-medium text-[var(--ant-color-primary)]"
@@ -149,12 +142,12 @@ export function CourseDetailPage() {
     [id],
   )
 
-  const teamColumns: ColumnsType<PortalTeamBrief> = useMemo(
+  const teamColumns: ColumnsType<any> = useMemo(
     () => [
       {
         title: '小组',
         dataIndex: 'name',
-        render: (name: string, record: PortalTeamBrief) => (
+        render: (name: string, record: any) => (
           <Link to={`/teams/${record.id}`} className="font-medium text-[var(--ant-color-primary)]">
             {name}
           </Link>
@@ -164,7 +157,7 @@ export function CourseDetailPage() {
         title: '成员',
         dataIndex: 'member_count',
         width: 90,
-        render: (count: number, record: PortalTeamBrief) => `${count}/${record.max_members}`,
+        render: (count: number, record: any) => `${count}/${record.max_members}`,
       },
       {
         title: '状态',
@@ -316,7 +309,7 @@ export function CourseDetailPage() {
             ) : null}
             {course.classes?.length ? (
               <div className="mt-2 flex flex-wrap gap-3 text-sm">
-                {course.classes.map((clazz) => (
+                {course.classes.map((clazz: any) => (
                   <Link
                     key={clazz.id}
                     to={`/classes/${clazz.id}`}

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Button, ConfigProvider, Form, Input, message } from 'antd'
 import { Link, useNavigate } from 'react-router-dom'
-import * as authApi from '@/api/auth'
+import { authApi } from '@/api'
 import { CaptchaInput, type CaptchaInputHandle } from '@/components/common/CaptchaInput'
 import { PasswordStrength } from '@/components/common/PasswordStrength'
 import { encryptPasswords } from '@/utils/security'

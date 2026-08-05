@@ -6,13 +6,13 @@ Generated at: 2026-07-28 20:51:13
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
-from app.core.response.pagination import Current, PageData, PageQuery, Size
+from app.core.response.pagination import PageData
 from app.core.response.schema import ApiResponse, success
-from app.core.schema.base import Id, IdQuery, IdsRequest
+from app.core.schema.base import ContestIdsRequest, ContestScopedIdQuery
 from app.deps.auth import require_account_type, require_permission
 from app.deps.db import get_db_session
 from app.modules.biz.contest.participation.schema import (
@@ -37,11 +37,10 @@ router = APIRouter()
     response_model=ApiResponse[None],
 )
 async def create(
-    contest_id: Annotated[Id, Query()],
     payload: OjContestParticipationCreateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await OjContestParticipationService(db).create(contest_id, payload)
+    await OjContestParticipationService(db).create(payload)
     return success()
 
 
@@ -54,11 +53,10 @@ async def create(
     response_model=ApiResponse[None],
 )
 async def update(
-    contest_id: Annotated[Id, Query()],
     payload: OjContestParticipationUpdateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await OjContestParticipationService(db).update(contest_id, payload)
+    await OjContestParticipationService(db).update(payload)
     return success()
 
 
@@ -71,11 +69,10 @@ async def update(
     response_model=ApiResponse[None],
 )
 async def delete(
-    contest_id: Annotated[Id, Query()],
-    payload: IdsRequest,
+    payload: ContestIdsRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await OjContestParticipationService(db).delete(contest_id, payload)
+    await OjContestParticipationService(db).delete(payload)
     return success()
 
 
@@ -88,11 +85,10 @@ async def delete(
     response_model=ApiResponse[OjContestParticipationSchema],
 )
 async def detail(
-    contest_id: Annotated[Id, Query()],
+    query: Annotated[ContestScopedIdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
 ) -> ApiResponse[OjContestParticipationSchema]:
-    return success(await OjContestParticipationService(db).detail(contest_id, IdQuery(id=id)))
+    return success(await OjContestParticipationService(db).detail(query))
 
 
 @router.get(
@@ -104,14 +100,7 @@ async def detail(
     response_model=ApiResponse[PageData[OjContestParticipationSchema]],
 )
 async def page(
-    contest_id: Annotated[Id, Query()],
+    query: Annotated[OjContestParticipationAdminPageQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current: Current = 1,
-    size: Size = 20,
-    account_id: str | None = Query(default=None),
 ) -> ApiResponse[PageData[OjContestParticipationSchema]]:
-    query = OjContestParticipationAdminPageQuery(
-        pagination=PageQuery(current=current, size=size),
-        account_id=account_id,
-    )
-    return success(await OjContestParticipationService(db).page_admin(contest_id, query))
+    return success(await OjContestParticipationService(db).page_admin(query))

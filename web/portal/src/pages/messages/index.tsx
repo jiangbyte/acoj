@@ -33,25 +33,12 @@ import {
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 const { useBreakpoint } = Grid
-import { uploadFile } from '@/api/file'
-import {
-  imApi,
-  type ImConversation,
-  type ImFriend,
-  type ImFriendRequest,
-  type ImGroup,
-  type ImGroupJoinRequest,
-  type ImGroupMember,
-  type ImMessage,
-  type ImMessageAttachment,
-  type ImNotification,
-  type ImSearchUser,
-} from '@/api/message/im'
 import { useImWebSocket } from '@/hooks/useImWebSocket'
 import { useAuthStore } from '@/stores/auth'
 import { useImUnreadStore } from '@/stores/imUnread'
 import { isImageFile, resolveFileUrl } from '@/utils/file'
 import { formatDateTime } from '@/utils/time'
+import { fileApi, imApi } from '@/api'
 
 type PendingAttachment = {
   name: string
@@ -67,10 +54,10 @@ function formatFileSize(size?: number | null) {
   return `${(size / 1024 / 1024).toFixed(1)} MB`
 }
 
-function unwrapOfflineMessage(item: any): ImMessage | null {
+function unwrapOfflineMessage(item: any): any | null {
   const msg = item?.event_payload?.data ?? item?.data ?? item
   if (!msg?.id || !msg?.conversation_id) return null
-  return msg as ImMessage
+  return msg as any
 }
 
 function typeLabel(accountType: string) {
@@ -78,7 +65,7 @@ function typeLabel(accountType: string) {
 }
 
 /** 与 Admin ContactList 一致：name → nickname */
-function friendListName(friend: Pick<ImFriend, 'name' | 'nickname'>) {
+function friendListName(friend: Pick<any, 'name' | 'nickname'>) {
   return friend.name || friend.nickname || '未知'
 }
 
@@ -91,7 +78,7 @@ function displayName(parts: {
   return parts.remark || parts.nickname || parts.name || parts.fallback || '未命名'
 }
 
-function messagePreviewText(msg: Pick<ImMessage, 'content' | 'sender_nickname' | 'sender_name'>) {
+function messagePreviewText(msg: Pick<any, 'content' | 'sender_nickname' | 'sender_name'>) {
   const prefix =
     msg.sender_nickname || msg.sender_name
       ? `${msg.sender_nickname || msg.sender_name}：`
@@ -101,17 +88,18 @@ function messagePreviewText(msg: Pick<ImMessage, 'content' | 'sender_nickname' |
 }
 
 function conversationPreview(
-  conv: ImConversation,
-  opts?: { activeId?: string | null; messages?: ImMessage[] },
+  conv: any,
+  opts?: { activeId?: string | null; messages?: any[] },
 ) {
-  if (opts?.activeId === conv.id && opts.messages?.length) {
-    return messagePreviewText(opts.messages[opts.messages.length - 1])
+  const activeMessages = opts?.messages
+  if (opts?.activeId === conv.id && activeMessages?.length) {
+    return messagePreviewText(activeMessages[activeMessages.length - 1])
   }
   if (conv.last_message?.trim()) return conv.last_message.trim()
   return conv.title || '会话'
 }
 
-function sortConversations(list: ImConversation[]) {
+function sortConversations(list: any[]) {
   return [...list].sort((a, b) => {
     const ta = a.last_message_at ?? a.created_at ?? ''
     const tb = b.last_message_at ?? b.created_at ?? ''
@@ -132,23 +120,23 @@ export function MessagesPage() {
   const myName = userInfo?.nickname || userInfo?.name || '?'
 
   const [loading, setLoading] = useState(true)
-  const [conversations, setConversations] = useState<ImConversation[]>([])
-  const [friends, setFriends] = useState<ImFriend[]>([])
-  const [groups, setGroups] = useState<ImGroup[]>([])
-  const [requests, setRequests] = useState<ImFriendRequest[]>([])
-  const [myJoinRequests, setMyJoinRequests] = useState<ImGroupJoinRequest[]>([])
-  const [pendingJoinRequests, setPendingJoinRequests] = useState<ImGroupJoinRequest[]>([])
-  const [notices, setNotices] = useState<ImNotification[]>([])
+  const [conversations, setConversations] = useState<any[]>([])
+  const [friends, setFriends] = useState<any[]>([])
+  const [groups, setGroups] = useState<any[]>([])
+  const [requests, setRequests] = useState<any[]>([])
+  const [myJoinRequests, setMyJoinRequests] = useState<any[]>([])
+  const [pendingJoinRequests, setPendingJoinRequests] = useState<any[]>([])
+  const [notices, setNotices] = useState<any[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [selectedNoticeId, setSelectedNoticeId] = useState<string | null>(null)
   const [selectedRequest, setSelectedRequest] = useState<
-    | { kind: 'friend'; data: ImFriendRequest }
-    | { kind: 'group'; data: ImGroupJoinRequest }
+    | { kind: 'friend'; data: any }
+    | { kind: 'group'; data: any }
     | null
   >(null)
   /** 移动端 IM 分层：列表层 / 会话层，不同时上下堆叠 */
   const [mobilePane, setMobilePane] = useState<'list' | 'chat'>('list')
-  const [messages, setMessages] = useState<ImMessage[]>([])
+  const [messages, setMessages] = useState<any[]>([])
   const [msgLoading, setMsgLoading] = useState(false)
   const [draft, setDraft] = useState('')
   const [pendingFiles, setPendingFiles] = useState<PendingAttachment[]>([])
@@ -164,8 +152,8 @@ export function MessagesPage() {
   const [addOpen, setAddOpen] = useState(false)
   const [addMode, setAddMode] = useState<'friend' | 'group'>('friend')
   const [searchKw, setSearchKw] = useState('')
-  const [searchHits, setSearchHits] = useState<ImSearchUser[]>([])
-  const [groupHits, setGroupHits] = useState<ImGroup[]>([])
+  const [searchHits, setSearchHits] = useState<any[]>([])
+  const [groupHits, setGroupHits] = useState<any[]>([])
   const [searching, setSearching] = useState(false)
 
   const [createGroupOpen, setCreateGroupOpen] = useState(false)
@@ -175,7 +163,7 @@ export function MessagesPage() {
   const [creatingGroup, setCreatingGroup] = useState(false)
 
   const [groupManageId, setGroupManageId] = useState<string | null>(null)
-  const [groupMembers, setGroupMembers] = useState<ImGroupMember[]>([])
+  const [groupMembers, setGroupMembers] = useState<any[]>([])
 
   const refreshUnread = useImUnreadStore((s) => s.refresh)
 
@@ -185,7 +173,7 @@ export function MessagesPage() {
   )
 
   const isIncomingFriend = useCallback(
-    (r: ImFriendRequest) => r.recipient_type === myType && r.recipient_id === myId,
+    (r: any) => r.recipient_type === myType && r.recipient_id === myId,
     [myType, myId],
   )
 
@@ -204,7 +192,7 @@ export function MessagesPage() {
   const noticeBadgeTotal = unreadNoticeCount + incomingPendingCount
 
   const combinedGroupJoinRequests = useMemo(() => {
-    const map = new Map<string, ImGroupJoinRequest>()
+    const map = new Map<string, any>()
     for (const r of [...myJoinRequests, ...pendingJoinRequests]) {
       map.set(r.id, r)
     }
@@ -240,7 +228,7 @@ export function MessagesPage() {
     setGroups(groupRes.data ?? [])
     setRequests(reqRes.data ?? [])
     setNotices(
-      (noticeRes.data.records ?? []).map((n) => ({
+      (noticeRes.data.records ?? []).map((n: any) => ({
         ...n,
         is_read: n.is_read ?? false,
         severity: String(n.severity || 'INFO').toLowerCase(),
@@ -368,7 +356,7 @@ export function MessagesPage() {
     setSelectedRequest(null)
   }, [])
 
-  const openNoticeDetail = useCallback((notice: ImNotification) => {
+  const openNoticeDetail = useCallback((notice: any) => {
     setSelectedRequest(null)
     setSelectedNoticeId(notice.id)
     setMobilePane('chat')
@@ -381,13 +369,13 @@ export function MessagesPage() {
     }
   }, [])
 
-  const openFriendRequestDetail = useCallback((req: ImFriendRequest) => {
+  const openFriendRequestDetail = useCallback((req: any) => {
     setSelectedNoticeId(null)
     setSelectedRequest({ kind: 'friend', data: req })
     setMobilePane('chat')
   }, [])
 
-  const openGroupRequestDetail = useCallback((req: ImGroupJoinRequest) => {
+  const openGroupRequestDetail = useCallback((req: any) => {
     setSelectedNoticeId(null)
     setSelectedRequest({ kind: 'group', data: req })
     setMobilePane('chat')
@@ -401,7 +389,7 @@ export function MessagesPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, activeId])
 
-  const appendIncomingMessage = useCallback((raw: ImMessage) => {
+  const appendIncomingMessage = useCallback((raw: any) => {
     const convId = raw.conversation_id
     if (!convId) return
     const viewing = convId === activeIdRef.current
@@ -436,7 +424,7 @@ export function MessagesPage() {
     onNewMessage: (data) => {
       const convId = data?.conversation_id as string | undefined
       if (!convId) return
-      appendIncomingMessage(data as ImMessage)
+      appendIncomingMessage(data as any)
       // 会话可能尚不在列表中，轻量刷新列表；不覆盖当前消息区
       void reloadLists()
     },
@@ -459,7 +447,7 @@ export function MessagesPage() {
             ...data,
             is_read: data.is_read ?? false,
             severity: String(data.severity || 'INFO').toLowerCase(),
-          } as ImNotification,
+          } as any,
           ...prev,
         ]
       })
@@ -496,9 +484,9 @@ export function MessagesPage() {
     if (!text && !pendingFiles.length) return
     setSending(true)
     try {
-      const attachments: ImMessageAttachment[] = []
+      const attachments: any[] = []
       for (const item of pendingFiles) {
-        const res = await uploadFile(item.file)
+        const res = await fileApi.uploadFile(item.file)
         const data = res.data
         if (!data?.id) {
           throw new Error(`upload failed: ${item.name}`)
@@ -549,7 +537,7 @@ export function MessagesPage() {
     }
   }
 
-  async function startChatWithFriend(friend: ImFriend) {
+  async function startChatWithFriend(friend: any) {
     try {
       const res = await imApi.createDirect({
         account_type: friend.friend_account_type,
@@ -584,7 +572,7 @@ export function MessagesPage() {
     }
   }
 
-  async function applyFriend(user: ImSearchUser) {
+  async function applyFriend(user: any) {
     if (user.is_friend || user.has_pending_request) return
     const key = `${user.account_type}:${user.account_id}`
     setSearchHits((prev) =>
@@ -611,7 +599,7 @@ export function MessagesPage() {
     }
   }
 
-  async function applyJoinGroup(group: ImGroup) {
+  async function applyJoinGroup(group: any) {
     if (group.is_member || group.has_pending_request) return
     setGroupHits((prev) =>
       prev.map((g) => (g.id === group.id ? { ...g, has_pending_request: true } : g)),
@@ -674,12 +662,12 @@ export function MessagesPage() {
     }
   }
 
-  function friendRequestTitle(req: ImFriendRequest) {
+  function friendRequestTitle(req: any) {
     if (isIncomingFriend(req)) return req.applicant_name || '好友申请'
     return req.recipient_name || '好友申请'
   }
 
-  function friendRequestHint(req: ImFriendRequest) {
+  function friendRequestHint(req: any) {
     if (req.status !== 'PENDING') return req.message || '-'
     if (isIncomingFriend(req)) return req.message || '请求添加你为好友'
     return '等待对方处理'
@@ -720,7 +708,7 @@ export function MessagesPage() {
       const convRes = await imApi.conversationList({ current: 1, size: 50 })
       const list = convRes.data.records ?? []
       setConversations(list)
-      const found = list.find((c) => c.group_id === group?.id)
+      const found = list.find((c: any) => c.group_id === group?.id)
       if (found) await openConversation(found.id)
     } catch {
       message.error('创建群聊失败')
@@ -729,7 +717,7 @@ export function MessagesPage() {
     }
   }
 
-  async function openGroupManage(group: ImGroup) {
+  async function openGroupManage(group: any) {
     setGroupManageId(group.id)
     try {
       const res = await imApi.groupMemberList(group.id)
@@ -762,7 +750,7 @@ export function MessagesPage() {
     }
   }
 
-  async function setMemberRole(member: ImGroupMember, role: string) {
+  async function setMemberRole(member: any, role: string) {
     if (!manageGroup) return
     try {
       await imApi.setGroupMemberRole({
@@ -1421,7 +1409,7 @@ export function MessagesPage() {
                                     ) : null}
                                     {m.attachments?.length ? (
                                       <div className="mt-2 flex flex-col gap-2">
-                                        {m.attachments.map((att, idx) => {
+                                        {m.attachments.map((att: any, idx: any) => {
                                           const url = resolveFileUrl(att.url)
                                           const key = att.file_id || `${att.name}-${idx}`
                                           if (isImageFile(att) && url) {

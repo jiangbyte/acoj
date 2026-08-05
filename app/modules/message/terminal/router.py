@@ -89,10 +89,10 @@ async def delete(
     response_model=ApiResponse[MsgTerminalSchema],
 )
 async def detail(
+    query: Annotated[IdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
 ) -> ApiResponse[MsgTerminalSchema]:
-    return success(await MsgTerminalService(db).detail(IdQuery(id=id)))
+    return success(await MsgTerminalService(db).detail(query))
 
 
 @admin_router.get(
@@ -104,15 +104,9 @@ async def detail(
     response_model=ApiResponse[PageData[MsgTerminalSchema]],
 )
 async def page(
+    query: Annotated[MsgTerminalAdminPageQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current: Current = 1,
-    size: Size = 20,
-    keyword: str | None = Query(default=None),
 ) -> ApiResponse[PageData[MsgTerminalSchema]]:
-    query = MsgTerminalAdminPageQuery(
-        pagination=PageQuery(current=current, size=size),
-        keyword=keyword,
-    )
     return success(await MsgTerminalService(db).page_admin(query))
 
 

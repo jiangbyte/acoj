@@ -10,7 +10,7 @@ from app.core.config.enums import StatusEnum
 from app.core.exceptions.business import NotFoundError
 from app.modules.biz.oj_scope import delete_owned_by_parent, ensure_belongs_to_parent
 from app.core.response.pagination import PageData, build_page
-from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
+from app.core.schema.base import ProblemIdsRequest, ProblemScopedIdQuery, to_schema, to_schema_list
 from app.platform.db.transaction import transactional
 from app.modules.biz.problem.language.model import OjProblemLanguage
 from app.modules.biz.problem.language.repository import (
@@ -36,53 +36,50 @@ class OjProblemLanguageService:
             return StatusEnum.ENABLED.value
         return StatusEnum(str(status)).value
 
-    async def create(self, problem_id: str, payload: OjProblemLanguageCreateRequest) -> None:
+    async def create(self, payload: OjProblemLanguageCreateRequest) -> None:
         language_key = ensure_worker_language_key(payload.language_key)
         async with transactional(self.db):
             await self.repo.create(
                 payload.model_copy(
                     update={
-                        "problem_id": problem_id,
                         "language_key": language_key,
                         "status": self._normalize_status(payload.status),
                     }
                 )
             )
 
-    async def update(self, problem_id: str, payload: OjProblemLanguageUpdateRequest) -> None:
+    async def update(self, payload: OjProblemLanguageUpdateRequest) -> None:
         language_key = ensure_worker_language_key(payload.language_key)
         async with transactional(self.db):
             entity = await self.repo.get_required(payload.id)
-            ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=problem_id, not_found_message="OjProblemLanguage not found")
+            ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=payload.problem_id, not_found_message="OjProblemLanguage not found")
             await self.repo.update(
                 payload.model_copy(
                     update={
-                        "problem_id": problem_id,
                         "language_key": language_key,
                         "status": self._normalize_status(payload.status),
                     }
                 )
             )
 
-    async def delete(self, problem_id: str, payload: IdsRequest) -> None:
+    async def delete(self, payload: ProblemIdsRequest) -> None:
         async with transactional(self.db):
             await delete_owned_by_parent(
                 self.db,
                 model=OjProblemLanguage,
                 parent_attr="problem_id",
-                parent_id=problem_id,
+                parent_id=payload.problem_id,
                 entity_ids=payload.ids,
                 not_found_message="OjProblemLanguage not found",
             )
 
-    async def detail(self, problem_id: str, query: IdQuery) -> OjProblemLanguageSchema:
+    async def detail(self, query: ProblemScopedIdQuery) -> OjProblemLanguageSchema:
         entity = await self.repo.get_required(query.id)
-        ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=problem_id, not_found_message="OjProblemLanguage not found")
+        ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=query.problem_id, not_found_message="OjProblemLanguage not found")
         return to_schema(OjProblemLanguageSchema, entity)
 
     async def page_admin(
-        self, problem_id: str, query: OjProblemLanguageAdminPageQuery
+        self, query: OjProblemLanguageAdminPageQuery
     ) -> PageData[OjProblemLanguageSchema]:
-        scoped_query = query.model_copy(update={"problem_id": problem_id})
-        items, total = await self.repo.page_admin(scoped_query)
-        return build_page(scoped_query.pagination, total, to_schema_list(OjProblemLanguageSchema, items))
+        items, total = await self.repo.page_admin(query)
+        return build_page(query.pagination, total, to_schema_list(OjProblemLanguageSchema, items))

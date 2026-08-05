@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import BusinessError, NotFoundError
 from app.core.response.pagination import PageData, build_page
-from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
+from app.core.schema.base import ContestIdsRequest, ContestScopedIdQuery, to_schema, to_schema_list
 from app.modules.biz.contest.contest.model import OjContest
 from app.modules.biz.contest.problem.model import OjContestProblem
 from app.modules.biz.contest.problem.repository import (
@@ -70,48 +70,47 @@ class OjContestProblemService:
             raise BusinessError("仅已发布的题目可以加入竞赛")
         return problem
 
-    async def create(self, contest_id: str, payload: OjContestProblemCreateRequest) -> None:
+    async def create(self, payload: OjContestProblemCreateRequest) -> None:
         async with transactional(self.db):
             await ensure_parent_exists(
                 self.db,
                 model=OjContest,
-                parent_id=contest_id,
+                parent_id=payload.contest_id,
                 not_found_message="OjContest not found",
             )
             await self._ensure_published_problem(payload.problem_id)
-            await self.repo.create(payload.model_copy(update={"contest_id": contest_id}))
+            await self.repo.create(payload)
 
-    async def update(self, contest_id: str, payload: OjContestProblemUpdateRequest) -> None:
+    async def update(self, payload: OjContestProblemUpdateRequest) -> None:
         async with transactional(self.db):
             entity = await self.repo.get_required(payload.id)
-            self._ensure_belongs_to_contest(entity, contest_id)
+            self._ensure_belongs_to_contest(entity, payload.contest_id)
             await self._ensure_published_problem(payload.problem_id)
-            await self.repo.update(payload.model_copy(update={"contest_id": contest_id}))
+            await self.repo.update(payload)
 
-    async def delete(self, contest_id: str, payload: IdsRequest) -> None:
+    async def delete(self, payload: ContestIdsRequest) -> None:
         async with transactional(self.db):
             await delete_owned_by_parent(
                 self.db,
                 model=OjContestProblem,
                 parent_attr="contest_id",
-                parent_id=contest_id,
+                parent_id=payload.contest_id,
                 entity_ids=payload.ids,
                 not_found_message="OjContestProblem not found",
             )
 
-    async def detail(self, contest_id: str, query: IdQuery) -> OjContestProblemSchema:
+    async def detail(self, query: ContestScopedIdQuery) -> OjContestProblemSchema:
         entity = await self.repo.get_required(query.id)
-        self._ensure_belongs_to_contest(entity, contest_id)
+        self._ensure_belongs_to_contest(entity, query.contest_id)
         meta_map = await self._map_problem_meta([entity.problem_id])
         self._attach_problem_meta(entity, meta_map)
         return to_schema(OjContestProblemSchema, entity)
 
     async def page_admin(
-        self, contest_id: str, query: OjContestProblemAdminPageQuery
+        self, query: OjContestProblemAdminPageQuery
     ) -> PageData[OjContestProblemSchema]:
-        scoped_query = query.model_copy(update={"contest_id": contest_id})
-        items, total = await self.repo.page_admin(scoped_query)
+        items, total = await self.repo.page_admin(query)
         meta_map = await self._map_problem_meta([item.problem_id for item in items])
         for item in items:
             self._attach_problem_meta(item, meta_map)
-        return build_page(scoped_query.pagination, total, to_schema_list(OjContestProblemSchema, items))
+        return build_page(query.pagination, total, to_schema_list(OjContestProblemSchema, items))

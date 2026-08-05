@@ -22,9 +22,8 @@ class OjContestPrivateContestantUpdateRequest(OjContestPrivateContestantCreateRe
     id: str = Field(min_length=1, max_length=64)
 
 
-class OjContestPrivateContestantAdminPageQuery(ApiSchema):
-    pagination: PageQuery
-    contest_id: str | None = None
+class OjContestPrivateContestantAdminPageQuery(PageQuery):
+    contest_id: str = Field(min_length=1, max_length=64)
     account_id: str | None = None
 
 

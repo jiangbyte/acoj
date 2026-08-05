@@ -19,6 +19,8 @@ from app.modules.biz.submission.enums import SubmissionKind, SubmissionStatus
 from app.modules.biz.submission.events import submission_event_channel
 from app.modules.biz.submission.performance.schema import (
     SimilarSubmissionListOut,
+    SimilarSubmissionQuery,
+    SubmissionEventsQuery,
     SubmissionPerformanceOut,
 )
 from app.modules.biz.submission.performance.service import SubmissionPerformanceService
@@ -50,29 +52,9 @@ def _sse_pack(event: str, data: dict) -> str:
     response_model=ApiResponse[PageData[OjSubmissionListSchema]],
 )
 async def page(
+    query: Annotated[OjSubmissionAdminPageQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current: Current = 1,
-    size: Size = 20,
-    problem_id: str | None = Query(default=None),
-    problem_code: str | None = Query(default=None),
-    contest_id: str | None = Query(default=None),
-    user_id: str | None = Query(default=None),
-    kind: SubmissionKind | None = Query(default=None),
-    status: SubmissionStatus | None = Query(default=None),
-    result: str | None = Query(default=None),
-    language_key: str | None = Query(default=None),
 ) -> ApiResponse[PageData[OjSubmissionListSchema]]:
-    query = OjSubmissionAdminPageQuery(
-        pagination=PageQuery(current=current, size=size),
-        problem_id=problem_id,
-        problem_code=problem_code,
-        contest_id=contest_id,
-        user_id=user_id,
-        kind=kind,
-        status=status,
-        result=result,
-        language_key=language_key,
-    )
     return success(await OjSubmissionService(db).page_admin(query))
 
 
@@ -85,10 +67,10 @@ async def page(
     response_model=ApiResponse[OjSubmissionDetailSchema],
 )
 async def detail(
+    query: Annotated[IdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
 ) -> ApiResponse[OjSubmissionDetailSchema]:
-    return success(await OjSubmissionService(db).detail(IdQuery(id=id)))
+    return success(await OjSubmissionService(db).detail(query))
 
 
 @router.get(
@@ -100,11 +82,11 @@ async def detail(
     response_model=ApiResponse[SubmissionPerformanceOut],
 )
 async def performance(
+    query: Annotated[IdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
 ) -> ApiResponse[SubmissionPerformanceOut]:
     return success(
-        await SubmissionPerformanceService(db).get_performance(id, viewer=None, for_admin=True)
+        await SubmissionPerformanceService(db).get_performance(query, viewer=None, for_admin=True)
     )
 
 
@@ -117,13 +99,12 @@ async def performance(
     response_model=ApiResponse[SimilarSubmissionListOut],
 )
 async def similar(
+    query: Annotated[SimilarSubmissionQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
-    size: int = Query(default=10, ge=1, le=50),
 ) -> ApiResponse[SimilarSubmissionListOut]:
     return success(
         await SubmissionPerformanceService(db).list_similar(
-            id, size=size, viewer=None, for_admin=True
+            query, viewer=None, for_admin=True
         )
     )
 
@@ -168,8 +149,7 @@ async def rejudge(
     ],
 )
 async def events(
-    id: Annotated[Id, Query()],
-    max_wait_sec: int = Query(default=120, ge=5, le=600),
+    query: Annotated[SubmissionEventsQuery, Depends()],
 ) -> StreamingResponse:
     """SSE stream for one submission until COMPLETED/FAILED.
 
@@ -178,7 +158,7 @@ async def events(
     """
     from app.platform.db.session import get_session_factory
 
-    submission_id = id
+    submission_id = query.id
 
     async def _snapshot() -> dict:
         async with get_session_factory()() as session:
@@ -198,7 +178,7 @@ async def events(
             pubsub = redis.pubsub()
             await pubsub.subscribe(channel)
 
-        deadline = time.monotonic() + max_wait_sec
+        deadline = time.monotonic() + query.max_wait_sec
         last_poll = 0.0
         try:
             while time.monotonic() < deadline:

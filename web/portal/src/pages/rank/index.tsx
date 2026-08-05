@@ -7,14 +7,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
-import {
-  rankApi,
-  type RankBoard,
-  type RankMe,
-  type RankSummary,
-  type RatingRankItem,
-  type SolvedRankItem,
-} from '@/api/rank'
+import { rankApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { resolveFileUrl } from '@/utils/file'
 
@@ -28,7 +21,7 @@ type RankRow = {
   delta?: number
 }
 
-const tabs: { key: RankBoard; label: string }[] = [
+const tabs: { key: any; label: string }[] = [
   { key: 'solved', label: '练习榜' },
   { key: 'rating', label: '竞赛 Rating' },
 ]
@@ -78,9 +71,9 @@ function DeltaText({ delta = 0 }: { delta?: number }) {
   return <span className="text-xs text-[var(--ant-color-error)]">↓{Math.abs(delta)}</span>
 }
 
-function toRows(board: RankBoard, records: SolvedRankItem[] | RatingRankItem[]): RankRow[] {
+function toRows(board: any, records: any[] | any[]): RankRow[] {
   if (board === 'solved') {
-    return (records as SolvedRankItem[]).map((r) => ({
+    return (records as any[]).map((r) => ({
       rank: r.rank,
       account_id: r.account_id,
       nickname: r.nickname,
@@ -88,7 +81,7 @@ function toRows(board: RankBoard, records: SolvedRankItem[] | RatingRankItem[]):
       score: r.solved,
     }))
   }
-  return (records as RatingRankItem[]).map((r) => ({
+  return (records as any[]).map((r) => ({
     rank: r.rank,
     account_id: r.account_id,
     nickname: r.nickname,
@@ -103,14 +96,14 @@ export function RankPage() {
   const isLogin = useAuthStore((s) => s.isLogin)
   const userInfo = useAuthStore((s) => s.userInfo)
   const loggedIn = isLogin()
-  const [board, setBoard] = useState<RankBoard>('solved')
+  const [board, setBoard] = useState<any>('solved')
   const [current, setCurrent] = useState(1)
   const [size, setSize] = useState(20)
   const [loading, setLoading] = useState(true)
   const [rows, setRows] = useState<RankRow[]>([])
   const [total, setTotal] = useState(0)
-  const [summary, setSummary] = useState<RankSummary | null>(null)
-  const [me, setMe] = useState<RankMe | null>(null)
+  const [summary, setSummary] = useState<any>(null)
+  const [me, setMe] = useState<any>(null)
 
   useEffect(() => {
     setCurrent(1)

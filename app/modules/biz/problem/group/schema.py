@@ -23,8 +23,7 @@ class OjProblemGroupUpdateRequest(OjProblemGroupCreateRequest):
     id: str = Field(min_length=1, max_length=64)
 
 
-class OjProblemGroupAdminPageQuery(ApiSchema):
-    pagination: PageQuery
+class OjProblemGroupAdminPageQuery(PageQuery):
     code: str | None = None
     name: str | None = None
 

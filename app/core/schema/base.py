@@ -47,6 +47,46 @@ class IdsRequest(ApiSchema):
     ids: list[Id] = Field(min_length=1)
 
 
+class KeywordQuery(ApiSchema):
+    keyword: str | None = None
+
+
+class ProblemIdQuery(ApiSchema):
+    problem_id: Id
+
+
+class ContestIdQuery(ApiSchema):
+    contest_id: Id
+
+
+class ProblemScopedIdQuery(IdQuery):
+    problem_id: Id
+
+
+class ContestScopedIdQuery(IdQuery):
+    contest_id: Id
+
+
+class ProblemIdsRequest(IdsRequest):
+    problem_id: Id
+
+
+class ContestIdsRequest(IdsRequest):
+    contest_id: Id
+
+
+class ClassIdQuery(ApiSchema):
+    class_id: Id
+
+
+class CourseIdQuery(ApiSchema):
+    course_id: Id
+
+
+class TeamIdQuery(ApiSchema):
+    team_id: Id
+
+
 def to_schema(schema_cls: type[SchemaT], item: object) -> SchemaT:
     """Convert ORM/entity objects to API schemas through Pydantic attributes mode."""
     normalize_orm_datetimes(item)

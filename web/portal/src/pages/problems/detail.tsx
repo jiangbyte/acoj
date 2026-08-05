@@ -14,12 +14,6 @@ import {
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { problemDetail, problemLanguages, problemSubmit } from '@/api/problem'
-import type { PortalProblemDetail, PortalProblemLanguage } from '@/api/problem'
-import { courseTaskRecordSubmission } from '@/api/course'
-import { problemListApi } from '@/api/study'
-import { myLatestPracticeAc, submissionPage } from '@/api/submission'
-import type { OjSubmissionListItem } from '@/api/submission'
 import { CustomTabs } from '@/components/common/CustomTabs'
 import { Markdown } from '@/components/common/Markdown'
 import { AiChatPanel } from '@/components/oj/AiChatPanel'
@@ -33,6 +27,7 @@ import { useDict } from '@/hooks/useDict'
 import { useAuthStore } from '@/stores/auth'
 import { dictTypeData } from '@/utils/dict'
 import { formatDateTime } from '@/utils/time'
+import { courseApi, problemApi, problemListApi, submissionApi } from '@/api'
 
 const formatMemory = (kb: number) => `${Math.round(kb / 1024)} MB`
 const formatRate = (rate: number) => `${Number(rate || 0).toFixed(1)}%`
@@ -46,10 +41,10 @@ export function ProblemDetailPage() {
   const isDesktop = screens.lg ?? false
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const [detail, setDetail] = useState<PortalProblemDetail | null>(null)
-  const [languages, setLanguages] = useState<PortalProblemLanguage[]>([])
+  const [detail, setDetail] = useState<any>(null)
+  const [languages, setLanguages] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [mySubmissions, setMySubmissions] = useState<OjSubmissionListItem[]>([])
+  const [mySubmissions, setMySubmissions] = useState<any[]>([])
   const [submissionsLoading, setSubmissionsLoading] = useState(true)
   const [aiChatOpen, setAiChatOpen] = useState(false)
   const [favorited, setFavorited] = useState(false)
@@ -79,7 +74,7 @@ export function ProblemDetailPage() {
   async function loadLatestAc() {
     setLatestAcLoading(true)
     try {
-      const res = await myLatestPracticeAc(id)
+      const res = await submissionApi.myLatestPracticeAc(id)
       setLatestAcSubmissionId(res.data.submission_id)
     } catch {
       setLatestAcSubmissionId(null)
@@ -127,7 +122,7 @@ export function ProblemDetailPage() {
 
   async function load() {
     try {
-      const [detailRes, langRes] = await Promise.all([problemDetail(id), problemLanguages(id)])
+      const [detailRes, langRes] = await Promise.all([problemApi.problemDetail(id), problemApi.problemLanguages(id)])
       setDetail(detailRes.data)
       setLanguages(langRes.data)
     } finally {
@@ -137,7 +132,7 @@ export function ProblemDetailPage() {
 
   async function loadMySubmissions() {
     try {
-      const res = await submissionPage({
+      const res = await submissionApi.submissionPage({
         current: 1,
         size: 20,
         problem_id: id,
@@ -181,12 +176,12 @@ export function ProblemDetailPage() {
   }, [queryTab, showPassedTab, latestAcLoading])
 
   async function handleSubmit(payload: { language_key: string; source: string }) {
-    const res = await problemSubmit(id, payload)
+    const res = await problemApi.problemSubmit(id, payload)
     const snapshot = res.data
     const taskId = searchParams.get('taskId')
     if (taskId && snapshot?.submission_id) {
       try {
-        await courseTaskRecordSubmission({
+        await courseApi.courseTaskRecordSubmission({
           task_id: taskId,
           problem_id: id,
           submission_id: snapshot.submission_id,
@@ -224,7 +219,7 @@ export function ProblemDetailPage() {
     message.success('已复制题面 Markdown')
   }
 
-  const submissionsColumns: ColumnsType<OjSubmissionListItem> = [
+  const submissionsColumns: ColumnsType<any> = [
     {
       title: '提交',
       dataIndex: 'id',
@@ -307,7 +302,7 @@ export function ProblemDetailPage() {
               </Tag>
             ) : null}
             {detail.partial ? <Tag color="blue">部分分</Tag> : null}
-            {detail.type_names.map((name) => (
+            {detail.type_names.map((name: any) => (
               <Tag key={name}>{name}</Tag>
             ))}
           </div>

@@ -86,10 +86,10 @@ async def delete(
     response_model=ApiResponse[OjProblemGroupSchema],
 )
 async def detail(
+    query: Annotated[IdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
 ) -> ApiResponse[OjProblemGroupSchema]:
-    return success(await OjProblemGroupService(db).detail(IdQuery(id=id)))
+    return success(await OjProblemGroupService(db).detail(query))
 
 
 @router.get(
@@ -101,17 +101,9 @@ async def detail(
     response_model=ApiResponse[PageData[OjProblemGroupSchema]],
 )
 async def page(
+    query: Annotated[OjProblemGroupAdminPageQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current: Current = 1,
-    size: Size = 20,
-    code: str | None = Query(default=None),
-    name: str | None = Query(default=None),
 ) -> ApiResponse[PageData[OjProblemGroupSchema]]:
-    query = OjProblemGroupAdminPageQuery(
-        pagination=PageQuery(current=current, size=size),
-        code=code,
-        name=name,
-    )
     return success(await OjProblemGroupService(db).page_admin(query))
 
 

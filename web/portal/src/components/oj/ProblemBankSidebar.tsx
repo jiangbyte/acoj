@@ -11,7 +11,7 @@ import {
 } from '@ant-design/icons'
 import { Input, Modal, message } from 'antd'
 import { Link, useNavigate } from 'react-router-dom'
-import { problemListApi, type ProblemListItem } from '@/api/study'
+import { problemListApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 
 type NavKey = 'problems' | 'plans' | 'lists'
@@ -24,7 +24,7 @@ const navItems: { key: NavKey; label: string; icon: ReactNode; to: string }[] = 
 export function ProblemBankSidebar({ active }: { active: NavKey }) {
   const navigate = useNavigate()
   const isLogin = useAuthStore((s) => s.isLogin)
-  const [lists, setLists] = useState<ProblemListItem[]>([])
+  const [lists, setLists] = useState<any[]>([])
   const [createOpen, setCreateOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [creating, setCreating] = useState(false)

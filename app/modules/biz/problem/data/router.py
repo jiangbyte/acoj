@@ -6,13 +6,13 @@ Generated at: 2026-07-28 20:51:11
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
-from app.core.response.pagination import Current, PageData, PageQuery, Size
+from app.core.response.pagination import PageData
 from app.core.response.schema import ApiResponse, success
-from app.core.schema.base import Id, IdQuery, IdsRequest
+from app.core.schema.base import ProblemIdsRequest, ProblemScopedIdQuery
 from app.deps.auth import require_account_type, require_permission
 from app.deps.db import get_db_session
 from app.modules.biz.problem.data.schema import (
@@ -42,11 +42,10 @@ router = APIRouter()
     response_model=ApiResponse[None],
 )
 async def create(
-    problem_id: Annotated[Id, Query()],
     payload: OjProblemDataCreateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await OjProblemDataService(db).create(problem_id, payload)
+    await OjProblemDataService(db).create(payload)
     return success()
 
 
@@ -59,11 +58,10 @@ async def create(
     response_model=ApiResponse[None],
 )
 async def update(
-    problem_id: Annotated[Id, Query()],
     payload: OjProblemDataUpdateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await OjProblemDataService(db).update(problem_id, payload)
+    await OjProblemDataService(db).update(payload)
     return success()
 
 
@@ -76,11 +74,10 @@ async def update(
     response_model=ApiResponse[None],
 )
 async def delete(
-    problem_id: Annotated[Id, Query()],
-    payload: IdsRequest,
+    payload: ProblemIdsRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await OjProblemDataService(db).delete(problem_id, payload)
+    await OjProblemDataService(db).delete(payload)
     return success()
 
 
@@ -93,11 +90,10 @@ async def delete(
     response_model=ApiResponse[OjProblemDataSchema],
 )
 async def detail(
-    problem_id: Annotated[Id, Query()],
+    query: Annotated[ProblemScopedIdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
 ) -> ApiResponse[OjProblemDataSchema]:
-    return success(await OjProblemDataService(db).detail(problem_id, IdQuery(id=id)))
+    return success(await OjProblemDataService(db).detail(query))
 
 
 @router.get(
@@ -109,17 +105,10 @@ async def detail(
     response_model=ApiResponse[PageData[OjProblemDataSchema]],
 )
 async def page(
-    problem_id: Annotated[Id, Query()],
+    query: Annotated[OjProblemDataAdminPageQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current: Current = 1,
-    size: Size = 20,
-    zip_object_name: str | None = Query(default=None),
 ) -> ApiResponse[PageData[OjProblemDataSchema]]:
-    query = OjProblemDataAdminPageQuery(
-        pagination=PageQuery(current=current, size=size),
-        zip_object_name=zip_object_name,
-    )
-    return success(await OjProblemDataService(db).page_admin(problem_id, query))
+    return success(await OjProblemDataService(db).page_admin(query))
 
 
 @router.post(
@@ -131,8 +120,7 @@ async def page(
     response_model=ApiResponse[ImportZipResult],
 )
 async def import_zip(
-    problem_id: Annotated[Id, Query()],
     payload: ImportZipRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[ImportZipResult]:
-    return success(await TestdataImportService(db).import_zip(problem_id, payload))
+    return success(await TestdataImportService(db).import_zip(payload))

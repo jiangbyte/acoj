@@ -82,54 +82,22 @@ docker-compose.oneclick.yml   一键本地部署（推荐）
 
 ## 一键部署（Docker Compose）
 
-单容器运行 **API + Celery worker + beat**；PostgreSQL / Redis / RabbitMQ / MinIO 同编排启动。**不挂载 volume**（演示用，删容器即丢数据）。
+**推荐（全栈 Demo，含判题 worker）**：在 monorepo 根目录的 **`deploy/`**：
 
-### 1. 准备镜像
-
-已推送版本示例（`1.1.0`）：
-
-```text
-registry.cn-beijing.aliyuncs.com/czbyte/acoj-api:1.1.0
-registry.cn-beijing.aliyuncs.com/czbyte/acoj-admin:1.1.0
-registry.cn-beijing.aliyuncs.com/czbyte/acoj-portal:1.1.0
+```bash
+cd ../deploy   # 相对 acoj/ 仓库
+cp .env.demo.example .env.demo
+docker compose --env-file .env.demo up -d
 ```
 
-基础设施镜像（与历史本地环境一致，SWR 加速）：
+详见 [deploy/README.md](../deploy/README.md)。包含 Postgres（`demo.dump` 本机库快照）/ Redis / MinIO（Celery=Redis，无 RabbitMQ）、`acoj-api:1.1.0`（API+平台 worker+beat）、`acoj-worker:1.1.0`（判题）、admin、portal。**不挂载 volume**。
 
-```text
-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/pgvector/pgvector:pg18
-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/redis:8-alpine
-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/rabbitmq:4-management
-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/quay.io/minio/minio:RELEASE.2025-07-23T15-54-02Z
-```
-
-### 2. 启动
-
-若本机已有占用 `8000/8080/8081` 的进程，先停掉或改 `.env.oneclick` 中的端口。
+本仓库内还有精简版（不含判题 worker）：
 
 ```bash
 cp .env.oneclick.example .env.oneclick
 docker compose -f docker-compose.oneclick.yml --env-file .env.oneclick up -d
 ```
-
-编排会依次：起基础设施 → `migrate` → `seed`（超管 + OJ 字典 + Portal 演示数据）→ `api(all)` → admin / portal。
-
-### 3. 访问
-
-| 服务 | 地址 |
-|---|---|
-| API / Swagger | http://127.0.0.1:8000/docs |
-| 门户 | http://127.0.0.1:8080 |
-| 管理端 | http://127.0.0.1:8081 |
-| 超管账号 | `superadmin` / `123456`（可用环境变量覆盖） |
-
-停止并清理（无 volume，数据一并消失）：
-
-```bash
-docker compose -f docker-compose.oneclick.yml --env-file .env.oneclick down
-```
-
-说明：本编排内 Celery worker 处理平台异步任务；**真判题**仍需单独部署 `acoj-worker`（见 sibling 仓库）。
 
 ---
 

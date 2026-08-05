@@ -13,11 +13,13 @@ from app.modules.biz.submission.submission.model import OjSubmission
 from app.modules.user.portal.model import PortalUserProfile
 from app.modules.user.portal.repository import PortalUserProfileRepository
 from app.modules.user.portal.schema import (
+    PortalRankBoardQuery,
     PortalRankMeResponse,
     PortalRankSummaryResponse,
     PortalRatingRankItem,
     PortalSolvedRankItem,
 )
+from app.core.security.session import SessionPayload
 from app.platform.storage.url import resolve_file_url
 
 BOARD_SOLVED = "solved"
@@ -105,8 +107,9 @@ class PortalRankService:
             )
         return build_page(pagination, total, schemas)
 
-    async def get_me(self, account_id: str, board: str) -> PortalRankMeResponse:
-        board = normalize_board(board)
+    async def get_me(self, query: PortalRankBoardQuery, session: SessionPayload) -> PortalRankMeResponse:
+        account_id = session.account_id
+        board = normalize_board(query.board)
         profile = await self.repo.get_by_account_id(account_id)
         nickname = self._display_name(profile, account_id)
         avatar = self._avatar(profile)
@@ -141,8 +144,8 @@ class PortalRankService:
 
         raise BusinessError("board 须为 solved 或 rating")
 
-    async def summary(self, board: str) -> PortalRankSummaryResponse:
-        board = normalize_board(board)
+    async def summary(self, query: PortalRankBoardQuery) -> PortalRankSummaryResponse:
+        board = normalize_board(query.board)
         if board == BOARD_SOLVED:
             agg = self._solved_agg_subquery()
             row = (

@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { Empty, Input, Spin, Tag } from 'antd'
 import { BookOutlined, SearchOutlined } from '@ant-design/icons'
 import { Link, useSearchParams } from 'react-router-dom'
-import { coursePage } from '@/api/course'
-import type { PortalCourseBrief } from '@/api/course'
+import { courseApi } from '@/api'
 import { formatDateMinute } from '@/utils/time'
 
 const thumbTones = [
@@ -21,7 +20,7 @@ export function CourseListPage() {
   const size = Number(searchParams.get('size') ?? 12)
 
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState<PortalCourseBrief[]>([])
+  const [data, setData] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [searchText, setSearchText] = useState(keyword)
 
@@ -30,7 +29,7 @@ export function CourseListPage() {
   async function loadPublic() {
     setLoading(true)
     try {
-      const res = await coursePage({ current, size, keyword: keyword || undefined })
+      const res = await courseApi.coursePage({ current, size, keyword: keyword || undefined })
       setData(res.data.records ?? [])
       setTotal(res.data.total ?? 0)
     } finally {

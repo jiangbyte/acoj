@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import NotFoundError
 from app.core.response.pagination import PageData, build_page
-from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
+from app.core.schema.base import ContestIdsRequest, ContestScopedIdQuery, to_schema, to_schema_list
 from app.modules.biz.contest.banned_user.model import OjContestBannedUser
 from app.modules.biz.contest.participation.model import OjContestParticipation
 from app.modules.biz.contest.participation.repository import (
@@ -37,24 +37,19 @@ class OjContestParticipationService:
         if getattr(entity, "contest_id") != contest_id:
             raise NotFoundError("OjContestParticipation not found")
 
-    async def create(self, contest_id: str, payload: OjContestParticipationCreateRequest) -> None:
+    async def create(self, payload: OjContestParticipationCreateRequest) -> None:
         async with transactional(self.db):
-            await self.repo.create(payload.model_copy(update={"contest_id": contest_id}))
+            await self.repo.create(payload)
 
-    async def update(self, contest_id: str, payload: OjContestParticipationUpdateRequest) -> None:
+    async def update(self, payload: OjContestParticipationUpdateRequest) -> None:
+        contest_id = payload.contest_id
         async with transactional(self.db):
             entity = await self.repo.get_required(payload.id)
             self._ensure_belongs_to_contest(entity, contest_id)
             was_dq = bool(entity.is_disqualified)
-            await self.repo.update(payload.model_copy(update={"contest_id": contest_id}))
+            await self.repo.update(payload)
             entity = await self.repo.get_required(payload.id)
             if entity.is_disqualified and not was_dq:
-                from sqlalchemy import select
-
-                from app.modules.biz.contest.banned_user.model import OjContestBannedUser
-                from app.modules.biz.contest.scoring import recompute_participation
-                from app.platform.id_generator.snowflake import generate_snowflake_id
-
                 exists = (
                     await self.db.execute(
                         select(OjContestBannedUser.id).where(
@@ -94,25 +89,24 @@ class OjContestParticipationService:
                     await self.db.flush()
                 await recompute_participation(self.db, payload.id)
 
-    async def delete(self, contest_id: str, payload: IdsRequest) -> None:
+    async def delete(self, payload: ContestIdsRequest) -> None:
         async with transactional(self.db):
             await delete_owned_by_parent(
                 self.db,
                 model=OjContestParticipation,
                 parent_attr="contest_id",
-                parent_id=contest_id,
+                parent_id=payload.contest_id,
                 entity_ids=payload.ids,
                 not_found_message="OjContestParticipation not found",
             )
 
-    async def detail(self, contest_id: str, query: IdQuery) -> OjContestParticipationSchema:
+    async def detail(self, query: ContestScopedIdQuery) -> OjContestParticipationSchema:
         entity = await self.repo.get_required(query.id)
-        self._ensure_belongs_to_contest(entity, contest_id)
+        self._ensure_belongs_to_contest(entity, query.contest_id)
         return to_schema(OjContestParticipationSchema, entity)
 
     async def page_admin(
-        self, contest_id: str, query: OjContestParticipationAdminPageQuery
+        self, query: OjContestParticipationAdminPageQuery
     ) -> PageData[OjContestParticipationSchema]:
-        scoped_query = query.model_copy(update={"contest_id": contest_id})
-        items, total = await self.repo.page_admin(scoped_query)
-        return build_page(scoped_query.pagination, total, to_schema_list(OjContestParticipationSchema, items))
+        items, total = await self.repo.page_admin(query)
+        return build_page(query.pagination, total, to_schema_list(OjContestParticipationSchema, items))

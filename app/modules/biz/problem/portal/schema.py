@@ -10,8 +10,7 @@ from app.core.schema.base import ApiSchema
 from app.modules.biz.problem.enums import ProblemDifficulty, SubmissionSourceVisibility
 
 
-class PortalProblemPageQuery(ApiSchema):
-    pagination: PageQuery
+class PortalProblemPageQuery(PageQuery):
     keyword: str | None = None
     code: str | None = None
     name: str | None = None
@@ -70,7 +69,12 @@ class PortalProblemLanguageSchema(ApiSchema):
     memory_limit_kb: int | None = None
 
 
+class PortalProblemRecommendQuery(ApiSchema):
+    size: int = Field(default=8, ge=1, le=50)
+
+
 class PortalProblemSubmitRequest(ApiSchema):
+    problem_id: str = Field(min_length=1, max_length=64)
     language_key: str = Field(min_length=1, max_length=32)
     source: str = Field(min_length=1)
     wait: bool = False

@@ -10,6 +10,7 @@ from app.modules.biz.contest.enums import ClarificationThreadStatus
 
 
 class OjContestClarificationCreateRequest(ApiSchema):
+    contest_id: str = Field(min_length=1, max_length=64)
     problem_id: str | None = None
     title: str = Field(min_length=1, max_length=200)
     body: str = Field(min_length=1)
@@ -18,15 +19,15 @@ class OjContestClarificationCreateRequest(ApiSchema):
 
 class OjContestClarificationUpdateRequest(ApiSchema):
     id: str = Field(min_length=1, max_length=64)
+    contest_id: str = Field(min_length=1, max_length=64)
     problem_id: str | None = None
     title: str = Field(min_length=1, max_length=200)
     body: str = Field(min_length=1)
     published_at: datetime | None = None
 
 
-class OjContestClarificationAdminPageQuery(ApiSchema):
-    pagination: PageQuery
-    contest_id: str | None = None
+class OjContestClarificationAdminPageQuery(PageQuery):
+    contest_id: str = Field(min_length=1, max_length=64)
     problem_id: str | None = None
 
 
@@ -43,9 +44,8 @@ class OjContestClarificationSchema(ApiSchema):
     updated_by: str | None = None
 
 
-class OjContestClarificationThreadAdminPageQuery(ApiSchema):
-    pagination: PageQuery
-    contest_id: str | None = None
+class OjContestClarificationThreadAdminPageQuery(PageQuery):
+    contest_id: str = Field(min_length=1, max_length=64)
     status: ClarificationThreadStatus | None = None
     account_id: str | None = None
 
@@ -77,17 +77,20 @@ class OjContestClarificationThreadSchema(ApiSchema):
 
 
 class OjContestClarificationThreadReplyRequest(ApiSchema):
+    contest_id: str = Field(min_length=1, max_length=64)
     thread_id: str = Field(min_length=1, max_length=64)
     body: str = Field(min_length=1)
     set_answered: bool = True
 
 
 class OjContestClarificationThreadStatusRequest(ApiSchema):
+    contest_id: str = Field(min_length=1, max_length=64)
     thread_id: str = Field(min_length=1, max_length=64)
     status: ClarificationThreadStatus
 
 
 class OjContestClarificationThreadPromoteRequest(ApiSchema):
+    contest_id: str = Field(min_length=1, max_length=64)
     thread_id: str = Field(min_length=1, max_length=64)
     title: str | None = Field(default=None, max_length=200)
     body: str | None = None

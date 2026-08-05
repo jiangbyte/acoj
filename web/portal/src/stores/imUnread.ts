@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { imApi } from '@/api/message/im'
+import { imApi } from '@/api'
 
 type ImUnreadState = {
   messageUnread: number
@@ -29,7 +29,7 @@ export const useImUnreadStore = create<ImUnreadState>((set, get) => ({
         imApi.pendingJoinRequestCount(),
       ])
       const messageUnread = (convRes.data.records ?? []).reduce(
-        (sum, c) => sum + (c.unread_count || 0),
+        (sum: any, c: any) => sum + (c.unread_count || 0),
         0,
       )
       const raw = reqRes.data as any

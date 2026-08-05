@@ -230,17 +230,17 @@ class MsgConversationService:
 
     # ── Member actions ──────────────────────────────────────────────────────────
 
-    async def leave(self, conversation_id: str, session: SessionPayload) -> None:
+    async def leave(self, query: IdQuery, session: SessionPayload) -> None:
         member = await self.repo.get_member(
-            conversation_id, str(session.account_type), session.account_id
+            query.id, str(session.account_type), session.account_id
         )
         if member is None:
             raise NotFoundError("Conversation member not found")
         member.left_at = datetime.now(timezone.utc)
         await self.db.flush()
 
-    async def mark_read(self, conversation_id: str, session: SessionPayload) -> None:
+    async def mark_read(self, query: IdQuery, session: SessionPayload) -> None:
         await self.repo.reset_unread(
-            conversation_id, str(session.account_type), session.account_id
+            query.id, str(session.account_type), session.account_id
         )
         await self.db.commit()

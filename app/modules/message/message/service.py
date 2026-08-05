@@ -16,6 +16,7 @@ from app.modules.message.message.schema import (
     MessageReadRequest,
     MessageSchema,
     MessageAttachmentSchema,
+    MessageUnreadCountQuery,
     RevokeMessageRequest,
     SendMessageRequest,
     UnreadCountResponse,
@@ -221,8 +222,8 @@ class MessageService:
                 payload.conversation_id, str(session.account_type), session.account_id
             )
 
-    async def unread_count(self, conversation_id: str, session: SessionPayload) -> UnreadCountResponse:
-        count = await self.repo.count_unread(conversation_id, str(session.account_type), session.account_id)
+    async def unread_count(self, query: MessageUnreadCountQuery, session: SessionPayload) -> UnreadCountResponse:
+        count = await self.repo.count_unread(query.conversation_id, str(session.account_type), session.account_id)
         return UnreadCountResponse(unread_count=count)
 
 

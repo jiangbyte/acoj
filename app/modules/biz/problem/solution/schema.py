@@ -25,9 +25,8 @@ class OjProblemSolutionUpdateRequest(OjProblemSolutionCreateRequest):
     id: str = Field(min_length=1, max_length=64)
 
 
-class OjProblemSolutionAdminPageQuery(ApiSchema):
-    pagination: PageQuery
-    problem_id: str | None = None
+class OjProblemSolutionAdminPageQuery(PageQuery):
+    problem_id: str = Field(min_length=1, max_length=64)
 
 
 class OjProblemSolutionSchema(ApiSchema):

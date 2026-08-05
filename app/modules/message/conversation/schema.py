@@ -31,8 +31,7 @@ class MsgConversationUpdateRequest(MsgConversationCreateRequest):
     id: str = Field(min_length=1, max_length=64)
 
 
-class MsgConversationAdminPageQuery(ApiSchema):
-    pagination: PageQuery
+class MsgConversationAdminPageQuery(PageQuery):
     title: str | None = None
     status: str | None = None
 

@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { contestProblems } from '@/api/contest'
-import { problemPage } from '@/api/problem'
-import { learningPlanApi, problemListApi } from '@/api/study'
+import { contestApi, learningPlanApi, problemApi, problemListApi } from '@/api'
 
 export type SolveMode = 'bank' | 'list' | 'plan' | 'contest'
 
@@ -105,9 +103,9 @@ export function useSolveContext(currentProblemId: string): SolveContextValue {
     setLoading(true)
     try {
       if (mode === 'contest' && contestId) {
-        const res = await contestProblems(contestId)
+        const res = await contestApi.contestProblems(contestId)
         setItems(
-          (res.data ?? []).map((p) => ({
+          (res.data ?? []).map((p: any) => ({
             id: p.problem_id,
             code: p.problem_code,
             name: p.problem_name,
@@ -120,7 +118,7 @@ export function useSolveContext(currentProblemId: string): SolveContextValue {
       if (mode === 'list' && listId) {
         const res = await problemListApi.detail(listId)
         setItems(
-          (res.data?.problems ?? []).map((p) => ({
+          (res.data?.problems ?? []).map((p: any) => ({
             id: p.id,
             code: p.code,
             name: p.name,
@@ -133,8 +131,8 @@ export function useSolveContext(currentProblemId: string): SolveContextValue {
       if (mode === 'plan' && planId) {
         const res = await learningPlanApi.detail(planId)
         const flat =
-          res.data?.sections?.flatMap((s) =>
-            s.problems.map((p) => ({
+          res.data?.sections?.flatMap((s: any) =>
+            s.problems.map((p: any) => ({
               id: p.id,
               code: p.code,
               name: p.name,
@@ -145,9 +143,9 @@ export function useSolveContext(currentProblemId: string): SolveContextValue {
         setBankTotal(0)
         return
       }
-      const res = await problemPage({ current: drawerPage, size: drawerSize })
+      const res = await problemApi.problemPage({ current: drawerPage, size: drawerSize })
       setItems(
-        (res.data?.records ?? []).map((p) => ({
+        (res.data?.records ?? []).map((p: any) => ({
           id: p.id,
           code: p.code,
           name: p.name,

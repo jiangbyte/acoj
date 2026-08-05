@@ -11,8 +11,7 @@ import {
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { Link, useParams } from 'react-router-dom'
-import { contestMySubmissions, contestProblemDetail, contestSubmit } from '@/api/contest'
-import type { PortalContestProblemDetail, PortalContestSubmission } from '@/api/contest'
+import { contestApi } from '@/api'
 import { CustomTabs } from '@/components/common/CustomTabs'
 import { Markdown } from '@/components/common/Markdown'
 import { AiChatPanel } from '@/components/oj/AiChatPanel'
@@ -35,15 +34,15 @@ export function ContestProblemPage() {
   const screens = Grid.useBreakpoint()
   const isDesktop = screens.lg ?? false
 
-  const [detail, setDetail] = useState<PortalContestProblemDetail | null>(null)
+  const [detail, setDetail] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [mySubmissions, setMySubmissions] = useState<PortalContestSubmission[]>([])
+  const [mySubmissions, setMySubmissions] = useState<any[]>([])
   const [submissionsLoading, setSubmissionsLoading] = useState(true)
   const [aiChatOpen, setAiChatOpen] = useState(false)
 
   async function load() {
     try {
-      const res = await contestProblemDetail(id, problemId)
+      const res = await contestApi.contestProblemDetail(id, problemId)
       setDetail(res.data)
     } finally {
       setLoading(false)
@@ -52,8 +51,8 @@ export function ContestProblemPage() {
 
   async function loadMySubmissions() {
     try {
-      const res = await contestMySubmissions(id)
-      setMySubmissions(res.data.filter((s) => s.problem_id === problemId))
+      const res = await contestApi.contestMySubmissions(id)
+      setMySubmissions(res.data.filter((s: any) => s.problem_id === problemId))
     } finally {
       setSubmissionsLoading(false)
     }
@@ -72,7 +71,7 @@ export function ContestProblemPage() {
   }, [id, userInfo?.accountId])
 
   async function handleSubmit(payload: { language_key: string; source: string }) {
-    const res = await contestSubmit(id, { problem_id: problemId, ...payload })
+    const res = await contestApi.contestSubmit(id, { problem_id: problemId, ...payload })
     return res.data
   }
 
@@ -81,7 +80,7 @@ export function ContestProblemPage() {
     message.success('已复制题面 Markdown')
   }
 
-  const submissionsColumns: ColumnsType<PortalContestSubmission> = [
+  const submissionsColumns: ColumnsType<any> = [
     {
       title: '提交',
       dataIndex: 'submission_id',

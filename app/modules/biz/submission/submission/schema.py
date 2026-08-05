@@ -64,8 +64,7 @@ class OjSubmissionDetailSchema(OjSubmissionListSchema):
     contest_submission: OjContestSubmissionSchema | None = None
 
 
-class OjSubmissionAdminPageQuery(ApiSchema):
-    pagination: PageQuery
+class OjSubmissionAdminPageQuery(PageQuery):
     problem_id: str | None = None
     problem_code: str | None = None
     contest_id: str | None = None

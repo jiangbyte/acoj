@@ -10,6 +10,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import BusinessError, NotFoundError
+from app.core.schema.base import ContestIdQuery
 from app.modules.biz.contest.contest.model import OjContest
 from app.modules.biz.contest.enums import ContestLifecycleStatus, ContestParticipationVirtual
 from app.modules.biz.contest.lifecycle import ensure_aware, lifecycle_status, utcnow
@@ -44,7 +45,8 @@ class OjContestRatingService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def rate_contest(self, contest_id: str) -> dict[str, Any]:
+    async def rate_contest(self, query: ContestIdQuery) -> dict[str, Any]:
+        contest_id = query.contest_id
         async with transactional(self.db):
             contest = await self.db.get(OjContest, contest_id)
             if contest is None:
@@ -122,7 +124,8 @@ class OjContestRatingService:
                 "ratings_cleared": cleared,
             }
 
-    async def undo_rate(self, contest_id: str) -> dict[str, Any]:
+    async def undo_rate(self, query: ContestIdQuery) -> dict[str, Any]:
+        contest_id = query.contest_id
         async with transactional(self.db):
             contest = await self.db.get(OjContest, contest_id)
             if contest is None:
@@ -141,7 +144,8 @@ class OjContestRatingService:
                 await self._refresh_profile_ratings(account_ids)
             return {"contest_id": contest_id, "deleted": deleted}
 
-    async def list_ratings(self, contest_id: str) -> list[OjContestRating]:
+    async def list_ratings(self, query: ContestIdQuery) -> list[OjContestRating]:
+        contest_id = query.contest_id
         contest = await self.db.get(OjContest, contest_id)
         if contest is None:
             raise NotFoundError("竞赛不存在")
@@ -358,13 +362,13 @@ class OjContestRatingService:
         await self.db.flush()
 
 
-async def rate_contest(db: AsyncSession, contest_id: str) -> dict[str, Any]:
-    return await OjContestRatingService(db).rate_contest(contest_id)
+async def rate_contest(db: AsyncSession, query: ContestIdQuery) -> dict[str, Any]:
+    return await OjContestRatingService(db).rate_contest(query)
 
 
-async def undo_rate(db: AsyncSession, contest_id: str) -> dict[str, Any]:
-    return await OjContestRatingService(db).undo_rate(contest_id)
+async def undo_rate(db: AsyncSession, query: ContestIdQuery) -> dict[str, Any]:
+    return await OjContestRatingService(db).undo_rate(query)
 
 
-async def list_ratings(db: AsyncSession, contest_id: str) -> list[OjContestRating]:
-    return await OjContestRatingService(db).list_ratings(contest_id)
+async def list_ratings(db: AsyncSession, query: ContestIdQuery) -> list[OjContestRating]:
+    return await OjContestRatingService(db).list_ratings(query)

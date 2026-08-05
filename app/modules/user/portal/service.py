@@ -18,6 +18,7 @@ from app.modules.user.portal.repository import PortalUserProfileRepository
 from app.modules.user.portal.schema import (
     PortalProfileUpsertPayload,
     PortalPublicProfileResponse,
+    PortalPublicSpaceQuery,
     PortalRatingRankItem,
     PortalUserCenterAvatarUpdateResponse,
     PortalUserCenterEmailUpdateRequest,
@@ -56,8 +57,9 @@ class PortalUserProfileService:
         """按账户 ID 查询门户资料。"""
         return await self.repo.get_by_account_id(account_id)
 
-    async def get_public_profile(self, account_id: str) -> PortalPublicProfileResponse:
+    async def get_public_profile(self, query: PortalPublicSpaceQuery) -> PortalPublicProfileResponse:
         """查询门户用户公开主页资料，不返回联系方式和授权信息。"""
+        account_id = query.account_id
         account = await self.account_repo.get_required(account_id)
         if account.account_type != AccountType.PORTAL.value:
             raise NotFoundError("Portal profile not found")

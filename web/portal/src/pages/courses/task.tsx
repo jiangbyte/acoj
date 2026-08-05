@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Empty, Spin, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { Link, useLocation, useParams } from 'react-router-dom'
-import { courseTaskCanSubmit, courseTaskDetail } from '@/api/course'
-import type { PortalCourseTask, PortalCourseTaskProblem } from '@/api/course'
+import { courseApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { formatDateTime } from '@/utils/time'
 
@@ -25,18 +24,18 @@ export function CourseTaskPage() {
   const loggedIn = isLogin()
   const loginHref = `/auth/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`
   const [loading, setLoading] = useState(false)
-  const [task, setTask] = useState<PortalCourseTask | null>(null)
+  const [task, setTask] = useState<any>(null)
   const [canSubmit, setCanSubmit] = useState<boolean | null>(null)
 
   useEffect(() => {
     void (async () => {
       setLoading(true)
       try {
-        const res = await courseTaskDetail(taskId)
+        const res = await courseApi.courseTaskDetail(taskId)
         setTask(res.data)
         if (isLogin()) {
           try {
-            await courseTaskCanSubmit(taskId)
+            await courseApi.courseTaskCanSubmit(taskId)
             setCanSubmit(true)
           } catch {
             setCanSubmit(false)
@@ -54,7 +53,7 @@ export function CourseTaskPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taskId, loggedIn])
 
-  const problemColumns: ColumnsType<PortalCourseTaskProblem> = useMemo(
+  const problemColumns: ColumnsType<any> = useMemo(
     () => [
       {
         title: '#',

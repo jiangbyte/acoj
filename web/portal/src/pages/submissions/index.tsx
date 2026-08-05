@@ -11,8 +11,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons'
 import { Link, useSearchParams } from 'react-router-dom'
-import { mySubmissionStats, submissionPage } from '@/api/submission'
-import type { MySubmissionStatsData, OjSubmissionListItem } from '@/api/submission'
+import { submissionApi } from '@/api'
 import { VerdictBadge } from '@/components/oj/VerdictBadge'
 import { useDict } from '@/hooks/useDict'
 import { useAuthStore } from '@/stores/auth'
@@ -36,14 +35,14 @@ export function SubmissionListPage() {
   const size = Number(searchParams.get('size') ?? 20)
 
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState<PageData<OjSubmissionListItem> | null>(null)
+  const [data, setData] = useState<PageData<any> | null>(null)
   const [codeText, setCodeText] = useState(problemCode)
-  const [myStats, setMyStats] = useState<MySubmissionStatsData | null>(null)
+  const [myStats, setMyStats] = useState<any>(null)
   const [myStatsLoading, setMyStatsLoading] = useState(false)
 
   async function load() {
     try {
-      const res = await submissionPage({
+      const res = await submissionApi.submissionPage({
         current,
         size,
         problem_code: problemCode || undefined,
@@ -62,7 +61,7 @@ export function SubmissionListPage() {
     }
     setMyStatsLoading(true)
     try {
-      const res = await mySubmissionStats()
+      const res = await submissionApi.mySubmissionStats()
       setMyStats(res.data)
     } catch {
       setMyStats(null)
@@ -132,7 +131,7 @@ export function SubmissionListPage() {
       .slice(0, 5)
   }, [records])
 
-  const columns: ColumnsType<OjSubmissionListItem> = [
+  const columns: ColumnsType<any> = [
     {
       title: 'ID',
       dataIndex: 'id',

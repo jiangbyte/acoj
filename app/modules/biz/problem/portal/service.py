@@ -13,6 +13,7 @@ from app.modules.biz.problem.enums import ProblemDifficulty, ProblemStatus
 from app.modules.biz.problem.group.model import OjProblemGroup
 from app.modules.biz.problem.language.model import OjProblemLanguage
 from app.modules.biz.problem.portal.recommend import recommend_problems
+from app.core.schema.base import IdQuery, ProblemIdQuery
 from app.modules.biz.problem.portal.schema import (
     PortalProblemDetailSchema,
     PortalProblemGroupItem,
@@ -22,6 +23,7 @@ from app.modules.biz.problem.portal.schema import (
     PortalProblemPageQuery,
     PortalProblemRecommendData,
     PortalProblemRecommendItem,
+    PortalProblemRecommendQuery,
     PortalProblemSubmitRequest,
     PortalProblemTypeItem,
 )
@@ -215,11 +217,11 @@ class PortalProblemService:
 
     async def recommend(
         self,
+        query: PortalProblemRecommendQuery,
         *,
         account_id: str | None = None,
-        size: int = 8,
     ) -> PortalProblemRecommendData:
-        result = await recommend_problems(self.db, account_id=account_id, size=size)
+        result = await recommend_problems(self.db, account_id=account_id, size=query.size)
         items = [row.problem for row in result.items]
         type_map = await self.repo.map_type_ids([item.id for item in items])
         all_type_ids = [tid for tids in type_map.values() for tid in tids]
@@ -263,11 +265,11 @@ class PortalProblemService:
 
     async def detail(
         self,
-        problem_id: str,
+        query: IdQuery,
         *,
         account_id: str | None = None,
     ) -> PortalProblemDetailSchema:
-        entity = await self.repo.get_by_id(problem_id)
+        entity = await self.repo.get_by_id(query.id)
         if entity is None:
             raise NotFoundError("题目不存在")
         self._assert_public(entity)
@@ -300,16 +302,16 @@ class PortalProblemService:
             extra=entity.extra or {},
         )
 
-    async def languages(self, problem_id: str) -> list[PortalProblemLanguageSchema]:
-        entity = await self.repo.get_by_id(problem_id)
+    async def languages(self, query: ProblemIdQuery) -> list[PortalProblemLanguageSchema]:
+        entity = await self.repo.get_by_id(query.problem_id)
         if entity is None:
             raise NotFoundError("题目不存在")
         self._assert_public(entity)
         rows = list(
             (
                 await self.db.execute(
-                    select(OjProblemLanguage).where(
-                        OjProblemLanguage.problem_id == problem_id,
+                select(OjProblemLanguage).where(
+                    OjProblemLanguage.problem_id == query.problem_id,
                         OjProblemLanguage.status == StatusEnum.ENABLED.value,
                     )
                 )
@@ -332,18 +334,17 @@ class PortalProblemService:
     async def submit(
         self,
         *,
-        problem_id: str,
-        account_id: str,
         payload: PortalProblemSubmitRequest,
+        account_id: str,
     ) -> OjProblemTrialJudgeResult:
-        entity = await self.repo.get_by_id(problem_id)
+        entity = await self.repo.get_by_id(payload.problem_id)
         if entity is None:
             raise NotFoundError("题目不存在")
         self._assert_public(entity)
         if not payload.source.strip():
             raise BusinessError("源代码不能为空")
         return await OjSubmissionService(self.db).create_official_and_judge(
-            problem_id=problem_id,
+            problem_id=payload.problem_id,
             user_id=account_id,
             language_key=payload.language_key,
             source=payload.source,

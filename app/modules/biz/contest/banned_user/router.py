@@ -6,13 +6,13 @@ Generated at: 2026-07-28 20:51:13
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
-from app.core.response.pagination import Current, PageData, PageQuery, Size
+from app.core.response.pagination import PageData
 from app.core.response.schema import ApiResponse, success
-from app.core.schema.base import Id, IdQuery, IdsRequest
+from app.core.schema.base import ContestIdsRequest, ContestScopedIdQuery
 from app.deps.auth import require_account_type, require_permission
 from app.deps.db import get_db_session
 from app.modules.biz.contest.banned_user.schema import (
@@ -37,11 +37,10 @@ router = APIRouter()
     response_model=ApiResponse[None],
 )
 async def create(
-    contest_id: Annotated[Id, Query()],
     payload: OjContestBannedUserCreateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await OjContestBannedUserService(db).create(contest_id, payload)
+    await OjContestBannedUserService(db).create(payload)
     return success()
 
 
@@ -54,11 +53,10 @@ async def create(
     response_model=ApiResponse[None],
 )
 async def update(
-    contest_id: Annotated[Id, Query()],
     payload: OjContestBannedUserUpdateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await OjContestBannedUserService(db).update(contest_id, payload)
+    await OjContestBannedUserService(db).update(payload)
     return success()
 
 
@@ -71,11 +69,10 @@ async def update(
     response_model=ApiResponse[None],
 )
 async def delete(
-    contest_id: Annotated[Id, Query()],
-    payload: IdsRequest,
+    payload: ContestIdsRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await OjContestBannedUserService(db).delete(contest_id, payload)
+    await OjContestBannedUserService(db).delete(payload)
     return success()
 
 
@@ -88,11 +85,10 @@ async def delete(
     response_model=ApiResponse[OjContestBannedUserSchema],
 )
 async def detail(
-    contest_id: Annotated[Id, Query()],
+    query: Annotated[ContestScopedIdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
 ) -> ApiResponse[OjContestBannedUserSchema]:
-    return success(await OjContestBannedUserService(db).detail(contest_id, IdQuery(id=id)))
+    return success(await OjContestBannedUserService(db).detail(query))
 
 
 @router.get(
@@ -104,14 +100,7 @@ async def detail(
     response_model=ApiResponse[PageData[OjContestBannedUserSchema]],
 )
 async def page(
-    contest_id: Annotated[Id, Query()],
+    query: Annotated[OjContestBannedUserAdminPageQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current: Current = 1,
-    size: Size = 20,
-    account_id: str | None = Query(default=None),
 ) -> ApiResponse[PageData[OjContestBannedUserSchema]]:
-    query = OjContestBannedUserAdminPageQuery(
-        pagination=PageQuery(current=current, size=size),
-        account_id=account_id,
-    )
-    return success(await OjContestBannedUserService(db).page_admin(contest_id, query))
+    return success(await OjContestBannedUserService(db).page_admin(query))

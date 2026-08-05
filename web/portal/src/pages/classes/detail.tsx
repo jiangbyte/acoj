@@ -3,11 +3,9 @@ import { Button, Empty, Spin, Table, Tabs, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { MessageOutlined, TeamOutlined } from '@ant-design/icons'
 import { Link, useLocation, useParams } from 'react-router-dom'
-import { clazzCourses, clazzDetail, clazzMembers } from '@/api/clazz'
-import type { PortalClassBrief, PortalClassMember } from '@/api/clazz'
-import type { PortalCourseBrief } from '@/api/course'
 import { useAuthStore } from '@/stores/auth'
 import { formatDateTime } from '@/utils/time'
+import { clazzApi, courseApi } from '@/api'
 
 const statusLabel: Record<string, string> = {
   ENABLED: '正常',
@@ -25,9 +23,9 @@ export function ClassDetailPage() {
   const isLogin = useAuthStore((s) => s.isLogin)
   const loginHref = `/auth/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`
   const [loading, setLoading] = useState(true)
-  const [clazz, setClazz] = useState<PortalClassBrief | null>(null)
-  const [courses, setCourses] = useState<PortalCourseBrief[]>([])
-  const [members, setMembers] = useState<PortalClassMember[]>([])
+  const [clazz, setClazz] = useState<any>(null)
+  const [courses, setCourses] = useState<any[]>([])
+  const [members, setMembers] = useState<any[]>([])
   const [coursesLoading, setCoursesLoading] = useState(false)
   const [membersLoading, setMembersLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
@@ -36,7 +34,7 @@ export function ClassDetailPage() {
     void (async () => {
       setLoading(true)
       try {
-        const res = await clazzDetail(id)
+        const res = await clazzApi.clazzDetail(id)
         setClazz(res.data)
       } catch {
         setClazz(null)
@@ -50,7 +48,7 @@ export function ClassDetailPage() {
     if (!clazz?.joined) return
     setCoursesLoading(true)
     try {
-      const res = await clazzCourses(id)
+      const res = await courseApi.courseList(id)
       setCourses(res.data ?? [])
     } finally {
       setCoursesLoading(false)
@@ -61,19 +59,19 @@ export function ClassDetailPage() {
     if (!clazz?.joined) return
     setMembersLoading(true)
     try {
-      const res = await clazzMembers(id)
+      const res = await clazzApi.clazzMembers(id)
       setMembers(res.data ?? [])
     } finally {
       setMembersLoading(false)
     }
   }
 
-  const courseColumns: ColumnsType<PortalCourseBrief> = useMemo(
+  const courseColumns: ColumnsType<any> = useMemo(
     () => [
       {
         title: '课程',
         dataIndex: 'name',
-        render: (name: string, record: PortalCourseBrief) => (
+        render: (name: string, record: any) => (
           <Link to={`/courses/${record.id}`} className="font-medium text-[var(--ant-color-primary)]">
             {name}
           </Link>
@@ -106,7 +104,7 @@ export function ClassDetailPage() {
     [],
   )
 
-  const memberColumns: ColumnsType<PortalClassMember> = useMemo(
+  const memberColumns: ColumnsType<any> = useMemo(
     () => [
       {
         title: '账号 ID',

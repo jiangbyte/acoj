@@ -15,6 +15,7 @@ from app.modules.biz.problem.enums import ProblemDifficulty, ProblemStatus, Subm
 
 
 class OjProblemTrialJudgeRequest(ApiSchema):
+    problem_id: str = Field(min_length=1, max_length=64)
     language_key: str = Field(min_length=1, max_length=32)
     source: str = Field(min_length=1)
     case_ids: list[str] | None = None
@@ -65,8 +66,7 @@ class OjProblemStatusRequest(ApiSchema):
     status: ProblemStatus
 
 
-class OjProblemAdminPageQuery(ApiSchema):
-    pagination: PageQuery
+class OjProblemAdminPageQuery(PageQuery):
     code: str | None = None
     name: str | None = None
     group_id: str | None = None

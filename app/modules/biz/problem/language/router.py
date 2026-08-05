@@ -6,13 +6,13 @@ Generated at: 2026-07-28 20:51:10
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
-from app.core.response.pagination import Current, PageData, PageQuery, Size
+from app.core.response.pagination import PageData
 from app.core.response.schema import ApiResponse, success
-from app.core.schema.base import Id, IdQuery, IdsRequest
+from app.core.schema.base import ProblemIdsRequest, ProblemScopedIdQuery
 from app.deps.auth import require_account_type, require_permission
 from app.deps.db import get_db_session
 from app.modules.biz.problem.language.schema import (
@@ -52,11 +52,10 @@ async def options() -> ApiResponse[list[WorkerLanguageOption]]:
     response_model=ApiResponse[None],
 )
 async def create(
-    problem_id: Annotated[Id, Query()],
     payload: OjProblemLanguageCreateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await OjProblemLanguageService(db).create(problem_id, payload)
+    await OjProblemLanguageService(db).create(payload)
     return success()
 
 
@@ -69,11 +68,10 @@ async def create(
     response_model=ApiResponse[None],
 )
 async def update(
-    problem_id: Annotated[Id, Query()],
     payload: OjProblemLanguageUpdateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await OjProblemLanguageService(db).update(problem_id, payload)
+    await OjProblemLanguageService(db).update(payload)
     return success()
 
 
@@ -86,11 +84,10 @@ async def update(
     response_model=ApiResponse[None],
 )
 async def delete(
-    problem_id: Annotated[Id, Query()],
-    payload: IdsRequest,
+    payload: ProblemIdsRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await OjProblemLanguageService(db).delete(problem_id, payload)
+    await OjProblemLanguageService(db).delete(payload)
     return success()
 
 
@@ -103,11 +100,10 @@ async def delete(
     response_model=ApiResponse[OjProblemLanguageSchema],
 )
 async def detail(
-    problem_id: Annotated[Id, Query()],
+    query: Annotated[ProblemScopedIdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
 ) -> ApiResponse[OjProblemLanguageSchema]:
-    return success(await OjProblemLanguageService(db).detail(problem_id, IdQuery(id=id)))
+    return success(await OjProblemLanguageService(db).detail(query))
 
 
 @router.get(
@@ -119,12 +115,7 @@ async def detail(
     response_model=ApiResponse[PageData[OjProblemLanguageSchema]],
 )
 async def page(
-    problem_id: Annotated[Id, Query()],
+    query: Annotated[OjProblemLanguageAdminPageQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current: Current = 1,
-    size: Size = 20,
 ) -> ApiResponse[PageData[OjProblemLanguageSchema]]:
-    query = OjProblemLanguageAdminPageQuery(
-        pagination=PageQuery(current=current, size=size),
-    )
-    return success(await OjProblemLanguageService(db).page_admin(problem_id, query))
+    return success(await OjProblemLanguageService(db).page_admin(query))

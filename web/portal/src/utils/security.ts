@@ -1,4 +1,4 @@
-import * as authApi from '@/api/auth'
+import { authApi } from '@/api'
 
 export async function encryptPasswords<T extends Record<string, string | null | undefined>>(
   fields: T,

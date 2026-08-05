@@ -25,9 +25,8 @@ class OjProblemLanguageUpdateRequest(OjProblemLanguageCreateRequest):
     id: str = Field(min_length=1, max_length=64)
 
 
-class OjProblemLanguageAdminPageQuery(ApiSchema):
-    pagination: PageQuery
-    problem_id: str | None = None
+class OjProblemLanguageAdminPageQuery(PageQuery):
+    problem_id: str = Field(min_length=1, max_length=64)
 
 
 class OjProblemLanguageSchema(ApiSchema):

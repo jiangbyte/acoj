@@ -3,7 +3,9 @@ from typing import Literal
 
 from pydantic import Field
 
-from app.core.schema.base import ApiSchema
+from pydantic import Field
+
+from app.core.schema.base import ApiSchema, IdQuery, ProblemIdQuery
 
 PerformanceScope = Literal["practice", "contest"]
 
@@ -48,6 +50,18 @@ class SimilarSubmissionListOut(ApiSchema):
     available: bool
     reason: str | None = None
     items: list[SimilarSubmissionItem] = Field(default_factory=list)
+
+
+class SimilarSubmissionQuery(IdQuery):
+    size: int = Field(default=10, ge=1, le=50)
+
+
+class SubmissionEventsQuery(IdQuery):
+    max_wait_sec: int = Field(default=120, ge=5, le=600)
+
+
+class MyLatestPracticeAcQuery(ProblemIdQuery):
+    pass
 
 
 class MyLatestPracticeAcOut(ApiSchema):

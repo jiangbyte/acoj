@@ -38,6 +38,7 @@ from app.modules.message.group.schema import (
     GroupMemberListRequest,
     GroupMemberRemoveRequest,
     GroupMemberSchema,
+    GroupSearchQuery,
     GroupUpdateRequest,
     GroupDetailRequest,
     SetMemberRoleRequest,
@@ -124,8 +125,9 @@ class MsgGroupService:
             )
         return to_schema(MsgGroupSchema, group)
 
-    async def dissolve(self, group_id: str, session: SessionPayload) -> None:
+    async def dissolve(self, payload: GroupDetailRequest, session: SessionPayload) -> None:
         """Dissolve a group. Only the owner can dissolve."""
+        group_id = payload.id
         async with transactional(self.db):
             if not await self.repo.is_owner(
                 group_id, str(session.account_type), session.account_id
@@ -138,8 +140,9 @@ class MsgGroupService:
             # Mark conversation as disabled
             await self._disable_group_conversation(group_id)
 
-    async def leave(self, group_id: str, session: SessionPayload) -> None:
+    async def leave(self, payload: GroupDetailRequest, session: SessionPayload) -> None:
         """Leave a group. The owner cannot leave."""
+        group_id = payload.id
         account_type = str(session.account_type)
         account_id = session.account_id
 
@@ -165,9 +168,10 @@ class MsgGroupService:
         return schemas
 
     async def search_groups(
-        self, keyword: str, session: SessionPayload
+        self, query: GroupSearchQuery, session: SessionPayload
     ) -> list[MsgGroupSchema]:
         """Search groups by name; mark membership / pending apply for UI states."""
+        keyword = query.keyword
         account_type = str(session.account_type)
         account_id = session.account_id
         my_groups = await self.repo.list_my_groups(account_type, account_id)
@@ -187,8 +191,9 @@ class MsgGroupService:
             result.append(schema)
         return result
 
-    async def group_detail(self, group_id: str, session: SessionPayload) -> MsgGroupSchema:
+    async def group_detail(self, query: IdQuery, session: SessionPayload) -> MsgGroupSchema:
         """Get group detail. Verifies the user is a member."""
+        group_id = query.id
         account_type = str(session.account_type)
         account_id = session.account_id
 
@@ -201,9 +206,10 @@ class MsgGroupService:
     # ==================== Group Members ====================
 
     async def list_members(
-        self, group_id: str, session: SessionPayload
+        self, query: IdQuery, session: SessionPayload
     ) -> list[GroupMemberSchema]:
         """List group members with profile info (name/avatar). Batch load profiles."""
+        group_id = query.id
         members = await self.repo.list_members(group_id)
         if not members:
             return []

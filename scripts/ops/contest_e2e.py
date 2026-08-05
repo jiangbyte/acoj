@@ -359,7 +359,7 @@ async def main() -> None:
             await api_ok(
                 client,
                 "POST",
-                f"{PORTAL_BASE}/biz/contest/join",
+                f"{PORTAL_BASE}/biz/contest/enter",
                 headers=ph,
                 params={"contest_id": cid_icpc},
                 json={},
@@ -419,7 +419,7 @@ async def main() -> None:
                 await api_ok(
                     client,
                     "POST",
-                    f"{PORTAL_BASE}/biz/contest/join",
+                    f"{PORTAL_BASE}/biz/contest/enter",
                     headers={"Authorization": tok},
                     params={"contest_id": cid_atc},
                     json={},
@@ -447,7 +447,7 @@ async def main() -> None:
         await api_ok(
             client,
             "POST",
-            f"{PORTAL_BASE}/biz/contest/join",
+            f"{PORTAL_BASE}/biz/contest/enter",
             headers={"Authorization": portal_tokens["contestant1"]},
             params={"contest_id": cid_oi},
             json={},
@@ -461,7 +461,7 @@ async def main() -> None:
         await api_ok(
             client,
             "POST",
-            f"{PORTAL_BASE}/biz/contest/join",
+            f"{PORTAL_BASE}/biz/contest/enter",
             headers={"Authorization": portal_tokens["contestant1"]},
             params={"contest_id": cid_def},
             json={},
@@ -475,7 +475,7 @@ async def main() -> None:
         await api_ok(
             client,
             "POST",
-            f"{PORTAL_BASE}/biz/contest/join",
+            f"{PORTAL_BASE}/biz/contest/enter",
             headers={"Authorization": portal_tokens["contestant1"]},
             params={"contest_id": cid_ioi},
             json={},
@@ -664,7 +664,7 @@ async def main() -> None:
             await api_ok(
                 client,
                 "POST",
-                f"{PORTAL_BASE}/biz/contest/join",
+                f"{PORTAL_BASE}/biz/contest/register",
                 params={"contest_id": cid_priv},
                 headers=ph1,
                 json={"access_code": "wrong"},

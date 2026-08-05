@@ -1,17 +1,12 @@
 import { useEffect, useState } from 'react'
-import {
-  listBanners,
-  recordBannerInteraction,
-  type BannerListQuery,
-  type PortalBanner,
-} from '@/api/sys/banner'
+import { bannerApi } from '@/api'
 import type { PromoSlide } from '@/components/common/PromoCarousel'
 
 function isExternalUrl(url: string) {
   return /^https?:\/\//i.test(url)
 }
 
-export function bannerToSlide(banner: PortalBanner): PromoSlide {
+function bannerToSlide(banner: any): PromoSlide {
   const link = banner.url?.trim() || undefined
   const slide: PromoSlide = {
     key: banner.id,
@@ -20,7 +15,7 @@ export function bannerToSlide(banner: PortalBanner): PromoSlide {
     imageUrl: banner.image,
     cta: link ? '了解更多' : undefined,
     onClick: () => {
-      void recordBannerInteraction(banner.id).catch(() => undefined)
+      void bannerApi.recordBannerInteraction(banner.id).catch(() => undefined)
     },
   }
 
@@ -37,14 +32,14 @@ export function bannerToSlide(banner: PortalBanner): PromoSlide {
   return slide
 }
 
-export function useBannerSlides(query: BannerListQuery) {
+export function useBannerSlides(query: any) {
   const [slides, setSlides] = useState<PromoSlide[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    void listBanners(query)
+    void bannerApi.listBanners(query)
       .then((res) => {
         if (cancelled) return
         setSlides(res.data.map(bannerToSlide))

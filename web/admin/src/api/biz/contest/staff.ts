@@ -16,13 +16,13 @@ export function detail(contestId: string, params: any) {
 }
 
 export function create(contestId: string, data: any) {
-  return http.post<any>(`${prefix}/create`, data, { params: { contest_id: contestId } })
+  return http.post<any>(`${prefix}/create`, { ...data, contest_id: contestId })
 }
 
 export function update(contestId: string, data: any) {
-  return http.post<any>(`${prefix}/update`, data, { params: { contest_id: contestId } })
+  return http.post<any>(`${prefix}/update`, { ...data, contest_id: contestId })
 }
 
 export function remove(contestId: string, data: any) {
-  return http.post<any>(`${prefix}/delete`, data, { params: { contest_id: contestId } })
+  return http.post<any>(`${prefix}/delete`, { ...data, contest_id: contestId })
 }

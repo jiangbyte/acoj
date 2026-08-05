@@ -28,9 +28,8 @@ class OjProblemDataUpdateRequest(OjProblemDataCreateRequest):
     id: str = Field(min_length=1, max_length=64)
 
 
-class OjProblemDataAdminPageQuery(ApiSchema):
-    pagination: PageQuery
-    problem_id: str | None = None
+class OjProblemDataAdminPageQuery(PageQuery):
+    problem_id: str = Field(min_length=1, max_length=64)
     zip_object_name: str | None = None
 
 

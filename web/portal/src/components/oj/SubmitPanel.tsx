@@ -22,8 +22,7 @@ import { monacoLanguage } from '@/utils/monacoLanguage'
 import { useAppStore } from '@/stores/app'
 import { VerdictBadge } from './VerdictBadge'
 import { SolveProblemNav } from './SolveProblemNav'
-import { isTerminalStatus, pollSubmissionUntilDone, watchSubmissionEvents } from '@/api/submissionWatch'
-import type { SubmissionSnapshot } from '@/api/problem'
+import { submissionApi } from '@/api'
 import { useDict } from '@/hooks/useDict'
 import { dictTypeColor, dictTypeData } from '@/utils/dict'
 
@@ -36,7 +35,7 @@ export interface LanguageOption {
 type Props = {
   languages: LanguageOption[]
   defaultLanguage?: string
-  onSubmit: (payload: { language_key: string; source: string }) => Promise<SubmissionSnapshot>
+  onSubmit: (payload: { language_key: string; source: string }) => Promise<any>
   fillHeight?: boolean
   mobileStacked?: boolean
   aiChatOpen?: boolean
@@ -66,7 +65,7 @@ export function SubmitPanel({
   const [languageKey, setLanguageKey] = useState<string>(defaultLanguage ?? '')
   const [source, setSource] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [result, setResult] = useState<SubmissionSnapshot | null>(null)
+  const [result, setResult] = useState<any>(null)
   const [watching, setWatching] = useState(false)
   const [activeTab, setActiveTab] = useState('cases')
   const [editorTheme, setEditorTheme] = useState<'vs' | 'vs-dark'>(
@@ -94,8 +93,8 @@ export function SubmitPanel({
     setEditorTheme(resolvedTheme === 'dark' ? 'vs-dark' : 'vs')
   }, [resolvedTheme])
 
-  async function startWatching(submissionId: string, initial: SubmissionSnapshot) {
-    if (isTerminalStatus(initial.status)) {
+  async function startWatching(submissionId: string, initial: any) {
+    if (submissionApi.isTerminalStatus(initial.status)) {
       setResult(initial)
       return
     }
@@ -105,22 +104,22 @@ export function SubmitPanel({
     setWatching(true)
     setResult(initial)
 
-    await watchSubmissionEvents(
+    await submissionApi.watchSubmissionEvents(
       submissionId,
       {
-        onUpdate: (snap) => setResult(snap),
-        onDone: (snap) => {
+        onUpdate: (snap: any) => setResult(snap),
+        onDone: (snap: any) => {
           setResult(snap)
           setWatching(false)
         },
-        onTimeout: (snap) => {
+        onTimeout: (snap: any) => {
           setResult(snap)
           setWatching(false)
         },
         onError: async () => {
           // SSE 不可用时降级轮询
           try {
-            const final = await pollSubmissionUntilDone(submissionId, {
+            const final = await submissionApi.pollSubmissionUntilDone(submissionId, {
               signal: controller.signal,
               maxWaitMs: 120_000,
             })
@@ -194,7 +193,7 @@ export function SubmitPanel({
   const currentLanguageLabel =
     options.find((option) => option.value === effectiveLanguage)?.label || '选择语言'
 
-  const terminal = result ? isTerminalStatus(result.status) : false
+  const terminal = result ? submissionApi.isTerminalStatus(result.status) : false
 
   const languageBar = (
     <div className="toolbar flex shrink-0 flex-wrap items-center gap-2 px-3 py-2">
@@ -324,7 +323,7 @@ export function SubmitPanel({
         <div className="mt-2">
           <div className="muted-text mb-1 text-xs font-medium">测试用例（{result.cases.length}）</div>
           <div className="space-y-1">
-            {result.cases.map((c) => (
+            {result.cases.map((c: any) => (
               <div
                 key={c.case_no}
                 className="case-row flex flex-wrap items-center gap-2 rounded px-2 py-1 text-xs"

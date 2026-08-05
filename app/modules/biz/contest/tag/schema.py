@@ -24,8 +24,7 @@ class OjContestTagUpdateRequest(OjContestTagCreateRequest):
     id: str = Field(min_length=1, max_length=64)
 
 
-class OjContestTagAdminPageQuery(ApiSchema):
-    pagination: PageQuery
+class OjContestTagAdminPageQuery(PageQuery):
     code: str | None = None
     name: str | None = None
 

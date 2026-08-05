@@ -7,8 +7,7 @@ import {
   TeamOutlined,
 } from '@ant-design/icons'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { clazzJoin, clazzMy, clazzPage } from '@/api/clazz'
-import type { PortalClassBrief, PortalClassPublic } from '@/api/clazz'
+import { clazzApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { formatDateMinute } from '@/utils/time'
 
@@ -30,10 +29,10 @@ export function ClassListPage() {
   const size = Number(searchParams.get('size') ?? 12)
 
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState<PortalClassPublic[]>([])
+  const [data, setData] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [searchText, setSearchText] = useState(keyword)
-  const [myClasses, setMyClasses] = useState<PortalClassBrief[]>([])
+  const [myClasses, setMyClasses] = useState<any[]>([])
   const [joinOpen, setJoinOpen] = useState(false)
   const [inviteCode, setInviteCode] = useState('')
   const [joinLoading, setJoinLoading] = useState(false)
@@ -44,7 +43,7 @@ export function ClassListPage() {
   async function loadPublic() {
     setLoading(true)
     try {
-      const res = await clazzPage({ current, size, keyword: keyword || undefined })
+      const res = await clazzApi.clazzPage({ current, size, keyword: keyword || undefined })
       setData(res.data.records ?? [])
       setTotal(res.data.total ?? 0)
     } finally {
@@ -58,7 +57,7 @@ export function ClassListPage() {
       return
     }
     try {
-      const res = await clazzMy()
+      const res = await clazzApi.clazzMy()
       setMyClasses(res.data ?? [])
     } catch {
       setMyClasses([])
@@ -101,7 +100,7 @@ export function ClassListPage() {
     }
     setJoinLoading(true)
     try {
-      const res = await clazzJoin({ invite_code: code })
+      const res = await clazzApi.clazzJoin({ invite_code: code })
       message.success('加入成功')
       setJoinOpen(false)
       setInviteCode('')

@@ -23,25 +23,7 @@ import {
 } from '@ant-design/icons'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
-import {
-  contestClarifications,
-  contestCreateThread,
-  contestDetail,
-  contestEnter,
-  contestMySubmissions,
-  contestMyThreads,
-  contestProblems,
-  contestRegister,
-  contestScoreboard,
-  contestUnregister,
-} from '@/api/contest'
-import type {
-  PortalClarificationThread,
-  PortalClarification,
-  PortalContestBrief,
-  PortalContestProblemMeta,
-  PortalContestSubmission,
-} from '@/api/contest'
+import { contestApi } from '@/api'
 import { Markdown } from '@/components/common/Markdown'
 import { ContestStatusBadge } from '@/components/oj/ContestStatusBadge'
 import { ScoreboardTable } from '@/components/oj/ScoreboardTable'
@@ -55,7 +37,7 @@ import { formatDateTime } from '@/utils/time'
 const formatTime = (value: string | null) => formatDateTime(value)
 
 /** 封面：优先 cover_url，其次 extra.cover_url（后续扩展位） */
-function resolveCoverUrl(contest: PortalContestBrief | null): string | null {
+function resolveCoverUrl(contest: any): string | null {
   if (!contest) return null
   if (contest.cover_url) return contest.cover_url
   const fromExtra = contest.extra?.cover_url
@@ -64,7 +46,7 @@ function resolveCoverUrl(contest: PortalContestBrief | null): string | null {
 
 type RemainParts = { days: number; hours: number; minutes: number; seconds: number; label: string }
 
-function calcRemain(contest: PortalContestBrief | null, nowMs: number): RemainParts {
+function calcRemain(contest: any, nowMs: number): RemainParts {
   const empty = { days: 0, hours: 0, minutes: 0, seconds: 0, label: '时间待定' }
   if (!contest?.start_time || !contest?.end_time) return empty
 
@@ -101,19 +83,19 @@ export function ContestDetailPage() {
   const navigate = useNavigate()
   const isLogin = useAuthStore((s) => s.isLogin)
 
-  const [contest, setContest] = useState<PortalContestBrief | null>(null)
+  const [contest, setContest] = useState<any>(null)
   const [joinLoading, setJoinLoading] = useState(false)
   const [accessCode, setAccessCode] = useState('')
   const [joinModalOpen, setJoinModalOpen] = useState(false)
 
-  const [problems, setProblems] = useState<PortalContestProblemMeta[]>([])
+  const [problems, setProblems] = useState<any[]>([])
   const [problemsLoading, setProblemsLoading] = useState(true)
-  const [scoreboard, setScoreboard] = useState<Awaited<ReturnType<typeof contestScoreboard>>['data'] | null>(null)
+  const [scoreboard, setScoreboard] = useState<any>(null)
   const [scoreboardLoading, setScoreboardLoading] = useState(false)
-  const [clarifications, setClarifications] = useState<PortalClarification[]>([])
-  const [threads, setThreads] = useState<PortalClarificationThread[]>([])
+  const [clarifications, setClarifications] = useState<any[]>([])
+  const [threads, setThreads] = useState<any[]>([])
   const [qaLoading, setQaLoading] = useState(true)
-  const [mySubmissions, setMySubmissions] = useState<PortalContestSubmission[]>([])
+  const [mySubmissions, setMySubmissions] = useState<any[]>([])
   const [mySubmissionsLoading, setMySubmissionsLoading] = useState(true)
 
   const [threadModalOpen, setThreadModalOpen] = useState(false)
@@ -159,13 +141,13 @@ export function ContestDetailPage() {
   }, [])
 
   async function refreshDetail() {
-    const res = await contestDetail(id)
+    const res = await contestApi.contestDetail(id)
     setContest(res.data)
   }
 
   async function loadProblems() {
     try {
-      const res = await contestProblems(id)
+      const res = await contestApi.contestProblems(id)
       setProblems(res.data)
     } finally {
       setProblemsLoading(false)
@@ -174,10 +156,10 @@ export function ContestDetailPage() {
 
   async function loadQa() {
     try {
-      const clarRes = await contestClarifications(id)
+      const clarRes = await contestApi.contestClarifications(id)
       setClarifications(clarRes.data)
       if (isLogin()) {
-        const threadRes = await contestMyThreads(id)
+        const threadRes = await contestApi.contestMyThreads(id)
         setThreads(threadRes.data)
       } else {
         setThreads([])
@@ -189,7 +171,7 @@ export function ContestDetailPage() {
 
   async function loadMySubmissions() {
     try {
-      const res = await contestMySubmissions(id)
+      const res = await contestApi.contestMySubmissions(id)
       setMySubmissions(res.data)
     } finally {
       setMySubmissionsLoading(false)
@@ -198,7 +180,7 @@ export function ContestDetailPage() {
 
   useEffect(() => {
     void (async () => {
-      const res = await contestDetail(id)
+      const res = await contestApi.contestDetail(id)
       setContest(res.data)
     })()
   }, [id])
@@ -218,7 +200,7 @@ export function ContestDetailPage() {
   async function loadScoreboard() {
     setScoreboardLoading(true)
     try {
-      const res = await contestScoreboard(id)
+      const res = await contestApi.contestScoreboard(id)
       setScoreboard(res.data)
     } finally {
       setScoreboardLoading(false)
@@ -244,7 +226,7 @@ export function ContestDetailPage() {
   async function doRegister(code: string | null) {
     setJoinLoading(true)
     try {
-      const res = await contestRegister(id, { access_code: code })
+      const res = await contestApi.contestRegister(id, { access_code: code })
       setContest(res.data)
       const status = res.data.registration_status
       if (status === 'PENDING') {
@@ -253,7 +235,7 @@ export function ContestDetailPage() {
         message.success('报名成功，正在进入比赛')
         setJoinModalOpen(false)
         setAccessCode('')
-        const enterRes = await contestEnter(id)
+        const enterRes = await contestApi.contestEnter(id)
         await refreshDetail()
         if (enterRes.data.first_problem_id) {
           navigate(`/contests/${id}/problems/${enterRes.data.first_problem_id}`)
@@ -278,7 +260,7 @@ export function ContestDetailPage() {
     }
     setJoinLoading(true)
     try {
-      const res = await contestEnter(id)
+      const res = await contestApi.contestEnter(id)
       message.success('已进入比赛')
       await refreshDetail()
       if (goFirst && res.data.first_problem_id) {
@@ -294,7 +276,7 @@ export function ContestDetailPage() {
   async function handleLeave() {
     setJoinLoading(true)
     try {
-      await contestUnregister(id)
+      await contestApi.contestUnregister(id)
       message.success('已取消报名')
       await refreshDetail()
     } finally {
@@ -306,7 +288,7 @@ export function ContestDetailPage() {
     const values = await threadForm.validateFields()
     setThreadSubmitting(true)
     try {
-      await contestCreateThread(id, {
+      await contestApi.contestCreateThread(id, {
         title: values.title,
         body: values.body,
         problem_id: values.problem_id || null,
@@ -323,7 +305,7 @@ export function ContestDetailPage() {
   const remain = useMemo(() => calcRemain(contest, nowMs), [contest, nowMs])
   const coverUrl = resolveCoverUrl(contest)
 
-  const problemColumns: ColumnsType<PortalContestProblemMeta> = [
+  const problemColumns: ColumnsType<any> = [
     {
       title: '#',
       dataIndex: 'label',
@@ -360,7 +342,7 @@ export function ContestDetailPage() {
     },
   ]
 
-  const mySubmissionColumns: ColumnsType<PortalContestSubmission> = [
+  const mySubmissionColumns: ColumnsType<any> = [
     {
       title: '提交',
       dataIndex: 'submission_id',
@@ -522,7 +504,7 @@ export function ContestDetailPage() {
                           {thread.status === 'CLOSED' ? <Tag>已关闭</Tag> : null}
                         </div>
                         <div className="mt-2 space-y-2">
-                          {thread.messages.map((msg) => (
+                          {thread.messages.map((msg: any) => (
                             <div
                               key={msg.id}
                               className="rounded-lg bg-[var(--ant-color-fill-quaternary)] px-3 py-2 text-sm"

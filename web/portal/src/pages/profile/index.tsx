@@ -2,20 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { Avatar, Empty, Progress, Spin, Tabs, Tag } from 'antd'
 import { UserOutlined } from '@ant-design/icons'
 import { Link, useSearchParams } from 'react-router-dom'
-import { getPublicSpace, type PortalPublicProfile } from '@/api/auth'
-import {
-  problemListApi,
-  userStatsApi,
-  type ProblemListItem,
-  type RecentSolvedItem,
-  type UserHeatmap,
-  type UserStats,
-} from '@/api/study'
 import { useAuthStore } from '@/stores/auth'
 import { resolveFileUrl } from '@/utils/file'
 import { formatDateTime } from '@/utils/time'
 import { useDict } from '@/hooks/useDict'
 import { dictTypeData } from '@/utils/dict'
+import { authApi, problemListApi, userStatsApi } from '@/api'
 
 function DiffBar({ label, solved, total, color }: { label: string; solved: number; total: number; color: string }) {
   const pct = total ? Math.round((solved / total) * 100) : 0
@@ -41,11 +33,11 @@ export function ProfilePage() {
   const isSelf = Boolean(userInfo?.accountId && accountId === userInfo.accountId)
 
   const [loading, setLoading] = useState(true)
-  const [profile, setProfile] = useState<PortalPublicProfile | null>(null)
-  const [stats, setStats] = useState<UserStats | null>(null)
-  const [heatmap, setHeatmap] = useState<UserHeatmap | null>(null)
-  const [recent, setRecent] = useState<RecentSolvedItem[]>([])
-  const [lists, setLists] = useState<ProblemListItem[]>([])
+  const [profile, setProfile] = useState<any>(null)
+  const [stats, setStats] = useState<any>(null)
+  const [heatmap, setHeatmap] = useState<any>(null)
+  const [recent, setRecent] = useState<any[]>([])
+  const [lists, setLists] = useState<any[]>([])
 
   const year = new Date().getFullYear()
 
@@ -59,7 +51,7 @@ export function ProfilePage() {
       setLoading(true)
       try {
         const [spaceRes, s, h, r] = await Promise.all([
-          getPublicSpace(accountId),
+          authApi.getPublicSpace(accountId),
           userStatsApi.stats(accountId),
           userStatsApi.heatmap(year, accountId),
           userStatsApi.recentSolved({ current: 1, size: 20, account_id: accountId }),
@@ -86,15 +78,17 @@ export function ProfilePage() {
     })()
   }, [accountId, isSelf, year])
 
-  const easy = stats?.by_difficulty.find((d) => d.difficulty === 'Easy')
-  const medium = stats?.by_difficulty.find((d) => d.difficulty === 'Medium')
-  const hard = stats?.by_difficulty.find((d) => d.difficulty === 'Hard')
+  const easy = stats?.by_difficulty.find((d: any) => d.difficulty === 'Easy')
+  const medium = stats?.by_difficulty.find((d: any) => d.difficulty === 'Medium')
+  const hard = stats?.by_difficulty.find((d: any) => d.difficulty === 'Hard')
   const solvedPct = stats?.problem_total
     ? Math.round((stats.solved_total / stats.problem_total) * 100)
     : 0
 
   const heatMap = useMemo(() => {
-    const map = new Map((heatmap?.days ?? []).map((d) => [d.day_date.slice(0, 10), d.count]))
+    const map = new Map<string, number>(
+      (heatmap?.days ?? []).map((d: any) => [d.day_date.slice(0, 10), Number(d.count) || 0]),
+    )
     return map
   }, [heatmap])
 

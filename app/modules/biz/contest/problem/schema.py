@@ -29,10 +29,9 @@ class OjContestProblemUpdateRequest(OjContestProblemCreateRequest):
     id: str = Field(min_length=1, max_length=64)
 
 
-class OjContestProblemAdminPageQuery(ApiSchema):
-    pagination: PageQuery
-    contest_id: str | None = None
-    problem_id: str | None = None
+class OjContestProblemAdminPageQuery(PageQuery):
+    contest_id: str = Field(min_length=1, max_length=64)
+    problem_id: str = Field(min_length=1, max_length=64)
     problem_code: str | None = None
 
 

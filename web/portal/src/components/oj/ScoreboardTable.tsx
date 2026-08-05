@@ -1,9 +1,8 @@
 import { Alert, Table, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import type { ContestScoreboard } from '@/api/contest'
 
 type Props = {
-  board: ContestScoreboard
+  board: any
 }
 
 interface RowData {
@@ -77,7 +76,7 @@ export function ScoreboardTable({ board }: Props) {
           },
         ]
       : []),
-    ...board.problems.map((problem) => ({
+    ...board.problems.map((problem: any) => ({
       title: (
         <span className="font-medium">
           {problem.label}
@@ -94,7 +93,7 @@ export function ScoreboardTable({ board }: Props) {
     })),
   ]
 
-  const dataSource: RowData[] = board.rows.map((row) => ({
+  const dataSource: RowData[] = board.rows.map((row: any) => ({
     key: row.participation_id,
     rank: row.rank,
     accountId: row.account_id,

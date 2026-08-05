@@ -30,6 +30,7 @@ from app.modules.message.friend.schema import (
     ApplyFriendRequest,
     FriendRequestSchema,
     FriendSchema,
+    FriendSearchQuery,
     HandleFriendRequest,
     MyRequestCountSchema,
     MsgFriendAdminPageQuery,
@@ -338,12 +339,13 @@ class MsgFriendService:
     # ── Search users ────────────────────────────────────────────────────────
 
     async def search(
-        self, keyword: str, session: SessionPayload
+        self, query: FriendSearchQuery, session: SessionPayload
     ) -> list[SearchUserSchema]:
         """搜索用户（非自己、非好友），通过 profile 的 name/nickname 和登录用户名匹配"""
         from app.modules.iam.account.model import SysAccount, SysAccountIdentity
         from app.modules.iam.enums import AccountIdentityType
 
+        keyword = query.keyword
         keyword_like = f"%{keyword}%"
         results: list[SearchUserSchema] = []
         seen: set[tuple[str, str]] = set()

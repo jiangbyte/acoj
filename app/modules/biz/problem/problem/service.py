@@ -46,13 +46,12 @@ class OjProblemService:
 
     async def trial_judge(
         self,
-        problem_id: str,
         payload: OjProblemTrialJudgeRequest,
         *,
         user_id: str,
     ) -> OjProblemTrialJudgeResult:
         return await OjSubmissionService(self.db).create_trial_and_judge(
-            problem_id=problem_id,
+            problem_id=payload.problem_id,
             user_id=user_id,
             language_key=payload.language_key,
             source=payload.source,

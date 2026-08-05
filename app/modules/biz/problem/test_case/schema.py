@@ -49,9 +49,8 @@ class OjProblemTestCaseUpdateRequest(OjProblemTestCaseCreateRequest):
     id: str = Field(min_length=1, max_length=64)
 
 
-class OjProblemTestCaseAdminPageQuery(ApiSchema):
-    pagination: PageQuery
-    problem_id: str | None = None
+class OjProblemTestCaseAdminPageQuery(PageQuery):
+    problem_id: str = Field(min_length=1, max_length=64)
     data_mode: TestCaseDataMode | None = None
 
 

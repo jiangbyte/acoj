@@ -23,9 +23,8 @@ class OjContestBannedUserUpdateRequest(OjContestBannedUserCreateRequest):
     id: str = Field(min_length=1, max_length=64)
 
 
-class OjContestBannedUserAdminPageQuery(ApiSchema):
-    pagination: PageQuery
-    contest_id: str | None = None
+class OjContestBannedUserAdminPageQuery(PageQuery):
+    contest_id: str = Field(min_length=1, max_length=64)
     account_id: str | None = None
 
 

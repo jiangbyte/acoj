@@ -23,8 +23,7 @@ class OjProblemTypeUpdateRequest(OjProblemTypeCreateRequest):
     id: str = Field(min_length=1, max_length=64)
 
 
-class OjProblemTypeAdminPageQuery(ApiSchema):
-    pagination: PageQuery
+class OjProblemTypeAdminPageQuery(PageQuery):
     code: str | None = None
     name: str | None = None
 

@@ -16,13 +16,13 @@ export function detail(problemId: string, params: any) {
 }
 
 export function create(problemId: string, data: any) {
-  return http.post<any>(`${prefix}/create`, data, { params: { problem_id: problemId } })
+  return http.post<any>(`${prefix}/create`, { ...data, problem_id: problemId })
 }
 
 export function update(problemId: string, data: any) {
-  return http.post<any>(`${prefix}/update`, data, { params: { problem_id: problemId } })
+  return http.post<any>(`${prefix}/update`, { ...data, problem_id: problemId })
 }
 
 export function remove(problemId: string, data: any) {
-  return http.post<any>(`${prefix}/delete`, data, { params: { problem_id: problemId } })
+  return http.post<any>(`${prefix}/delete`, { ...data, problem_id: problemId })
 }

@@ -43,6 +43,7 @@ def _natural_key(value: str) -> list:
 
 
 class ImportZipRequest(ApiSchema):
+    problem_id: str = Field(min_length=1, max_length=64)
     zip_file_key: str = Field(min_length=1, max_length=512)
     replace: bool = True
 
@@ -134,7 +135,8 @@ class TestdataImportService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def import_zip(self, problem_id: str, payload: ImportZipRequest) -> ImportZipResult:
+    async def import_zip(self, payload: ImportZipRequest) -> ImportZipResult:
+        problem_id = payload.problem_id
         problem = await self.db.get(OjProblem, problem_id)
         if problem is None:
             raise NotFoundError("OjProblem not found")

@@ -1,3 +1,28 @@
+const PUBLIC_FILE_PATH = '/api/v1/files'
+
+function isAbsoluteUrl(value: string) {
+  return /^(https?:|data:|blob:)/i.test(value)
+}
+
+function toPublicFilePath(value: string) {
+  const rawValue = value.trim()
+  if (!rawValue || isAbsoluteUrl(rawValue)) {
+    return rawValue
+  }
+  if (rawValue.startsWith(`${PUBLIC_FILE_PATH}?`)) {
+    return rawValue
+  }
+  const legacyPrefix = `${PUBLIC_FILE_PATH}/`
+  if (rawValue.startsWith(legacyPrefix)) {
+    const objectName = rawValue.slice(legacyPrefix.length).replace(/^\/+/, '')
+    return objectName ? `${PUBLIC_FILE_PATH}?object_name=${encodeURIComponent(objectName)}` : PUBLIC_FILE_PATH
+  }
+  if (!rawValue.startsWith('/')) {
+    return `${PUBLIC_FILE_PATH}?object_name=${encodeURIComponent(rawValue)}`
+  }
+  return rawValue
+}
+
 export function resolveFileUrl(value?: string | null) {
   if (!value) {
     return undefined
@@ -6,14 +31,15 @@ export function resolveFileUrl(value?: string | null) {
   if (!rawValue) {
     return undefined
   }
-  if (/^(https?:|data:|blob:)/i.test(rawValue)) {
+  if (isAbsoluteUrl(rawValue)) {
     return rawValue
   }
+  const path = toPublicFilePath(rawValue)
   const baseURL = import.meta.env.VITE_API_URL || ''
   if (!baseURL) {
-    return rawValue
+    return path
   }
-  return `${baseURL.replace(/\/$/, '')}/${rawValue.replace(/^\//, '')}`
+  return `${baseURL.replace(/\/$/, '')}/${path.replace(/^\//, '')}`
 }
 
 export function isImageFile(

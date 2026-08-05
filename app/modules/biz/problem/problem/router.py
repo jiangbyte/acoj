@@ -105,10 +105,10 @@ async def set_status(
     response_model=ApiResponse[OjProblemSchema],
 )
 async def detail(
+    query: Annotated[IdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
 ) -> ApiResponse[OjProblemSchema]:
-    return success(await OjProblemService(db).detail(IdQuery(id=id)))
+    return success(await OjProblemService(db).detail(query))
 
 
 @router.get(
@@ -120,25 +120,9 @@ async def detail(
     response_model=ApiResponse[PageData[OjProblemSchema]],
 )
 async def page(
+    query: Annotated[OjProblemAdminPageQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current: Current = 1,
-    size: Size = 20,
-    code: str | None = Query(default=None),
-    name: str | None = Query(default=None),
-    group_id: str | None = Query(default=None),
-    type_id: str | None = Query(default=None),
-    status: ProblemStatus | None = Query(default=None),
-    is_public: bool | None = Query(default=None),
 ) -> ApiResponse[PageData[OjProblemSchema]]:
-    query = OjProblemAdminPageQuery(
-        pagination=PageQuery(current=current, size=size),
-        code=code,
-        name=name,
-        group_id=group_id,
-        type_id=type_id,
-        status=status,
-        is_public=is_public,
-    )
     return success(await OjProblemService(db).page_admin(query))
 
 
@@ -151,13 +135,12 @@ async def page(
     response_model=ApiResponse[OjProblemTrialJudgeResult],
 )
 async def trial_judge(
-    problem_id: Annotated[Id, Query()],
     payload: OjProblemTrialJudgeRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
     session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[OjProblemTrialJudgeResult]:
     return success(
         await OjProblemService(db).trial_judge(
-            problem_id, payload, user_id=session.account_id
+            payload, user_id=session.account_id
         )
     )

@@ -5,7 +5,7 @@ from datetime import datetime
 from pydantic import Field
 
 from app.core.response.pagination import PageQuery
-from app.core.schema.base import ApiSchema
+from app.core.schema.base import ApiSchema, ContestIdsRequest
 from app.modules.biz.contest.enums import ContestRegistrationSource, ContestRegistrationStatus
 
 
@@ -25,20 +25,19 @@ class OjContestRegistrationSchema(ApiSchema):
     updated_by: str | None = None
 
 
-class OjContestRegistrationAdminPageQuery(ApiSchema):
-    pagination: PageQuery
-    contest_id: str | None = None
+class OjContestRegistrationAdminPageQuery(PageQuery):
+    contest_id: str = Field(min_length=1, max_length=64)
     account_id: str | None = None
     status: ContestRegistrationStatus | None = None
 
 
 class OjContestRegistrationAddRequest(ApiSchema):
+    contest_id: str = Field(min_length=1, max_length=64)
     account_id: str = Field(min_length=1, max_length=64)
     remark: str | None = None
 
 
-class OjContestRegistrationIdsRequest(ApiSchema):
-    ids: list[str] = Field(min_length=1)
+class OjContestRegistrationIdsRequest(ContestIdsRequest):
     remark: str | None = None
 
 

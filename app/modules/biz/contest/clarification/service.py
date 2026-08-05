@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import BusinessError, NotFoundError
 from app.core.response.pagination import PageData, build_page
-from app.core.schema.base import IdsRequest, to_schema, to_schema_list
+from app.core.schema.base import ContestIdsRequest, to_schema, to_schema_list
 from app.modules.biz.contest.clarification.model import (
     OjContestClarification,
     OjContestClarificationMessage,
@@ -36,12 +36,12 @@ class OjContestClarificationService:
         self.db = db
 
     async def create_broadcast(
-        self, contest_id: str, payload: OjContestClarificationCreateRequest
+        self, payload: OjContestClarificationCreateRequest
     ) -> str:
         async with transactional(self.db):
             entity = OjContestClarification(
                 id=generate_snowflake_id(),
-                contest_id=contest_id,
+                contest_id=payload.contest_id,
                 problem_id=payload.problem_id,
                 title=payload.title,
                 body=payload.body,
@@ -52,11 +52,11 @@ class OjContestClarificationService:
             return entity.id
 
     async def update_broadcast(
-        self, contest_id: str, payload: OjContestClarificationUpdateRequest
+        self, payload: OjContestClarificationUpdateRequest
     ) -> None:
         async with transactional(self.db):
             entity = await self.db.get(OjContestClarification, payload.id)
-            if entity is None or entity.contest_id != contest_id:
+            if entity is None or entity.contest_id != payload.contest_id:
                 raise NotFoundError("答疑广播不存在")
             entity.problem_id = payload.problem_id
             entity.title = payload.title
@@ -65,14 +65,14 @@ class OjContestClarificationService:
                 entity.published_at = payload.published_at
             await self.db.flush()
 
-    async def delete_broadcast(self, contest_id: str, payload: IdsRequest) -> None:
+    async def delete_broadcast(self, payload: ContestIdsRequest) -> None:
         async with transactional(self.db):
             rows = list(
                 (
                     await self.db.execute(
                         select(OjContestClarification).where(
                             OjContestClarification.id.in_(payload.ids),
-                            OjContestClarification.contest_id == contest_id,
+                            OjContestClarification.contest_id == payload.contest_id,
                         )
                     )
                 ).scalars().all()
@@ -84,9 +84,9 @@ class OjContestClarificationService:
             await self.db.flush()
 
     async def page_broadcasts(
-        self, contest_id: str, query: OjContestClarificationAdminPageQuery
+        self, query: OjContestClarificationAdminPageQuery
     ) -> PageData[OjContestClarificationSchema]:
-        filters = [OjContestClarification.contest_id == contest_id]
+        filters = [OjContestClarification.contest_id == query.contest_id]
         if query.problem_id:
             filters.append(OjContestClarification.problem_id == query.problem_id)
         stmt = (
@@ -102,9 +102,9 @@ class OjContestClarificationService:
         return build_page(query.pagination, total, to_schema_list(OjContestClarificationSchema, items))
 
     async def page_threads(
-        self, contest_id: str, query: OjContestClarificationThreadAdminPageQuery
+        self, query: OjContestClarificationThreadAdminPageQuery
     ) -> PageData[OjContestClarificationThreadSchema]:
-        filters = [OjContestClarificationThread.contest_id == contest_id]
+        filters = [OjContestClarificationThread.contest_id == query.contest_id]
         if query.status:
             filters.append(OjContestClarificationThread.status == query.status.value)
         if query.account_id:
@@ -124,13 +124,12 @@ class OjContestClarificationService:
 
     async def reply(
         self,
-        contest_id: str,
         account_id: str,
         payload: OjContestClarificationThreadReplyRequest,
     ) -> OjContestClarificationThreadSchema:
         async with transactional(self.db):
             thread = await self.db.get(OjContestClarificationThread, payload.thread_id)
-            if thread is None or thread.contest_id != contest_id:
+            if thread is None or thread.contest_id != payload.contest_id:
                 raise NotFoundError("提问不存在")
             self.db.add(
                 OjContestClarificationMessage(
@@ -148,21 +147,21 @@ class OjContestClarificationService:
             return (await self._with_messages([thread]))[0]
 
     async def set_status(
-        self, contest_id: str, payload: OjContestClarificationThreadStatusRequest
+        self, payload: OjContestClarificationThreadStatusRequest
     ) -> None:
         async with transactional(self.db):
             thread = await self.db.get(OjContestClarificationThread, payload.thread_id)
-            if thread is None or thread.contest_id != contest_id:
+            if thread is None or thread.contest_id != payload.contest_id:
                 raise NotFoundError("提问不存在")
             thread.status = payload.status.value
             await self.db.flush()
 
     async def promote(
-        self, contest_id: str, payload: OjContestClarificationThreadPromoteRequest
+        self, payload: OjContestClarificationThreadPromoteRequest
     ) -> str:
         async with transactional(self.db):
             thread = await self.db.get(OjContestClarificationThread, payload.thread_id)
-            if thread is None or thread.contest_id != contest_id:
+            if thread is None or thread.contest_id != payload.contest_id:
                 raise NotFoundError("提问不存在")
             msgs = list(
                 (
@@ -180,7 +179,7 @@ class OjContestClarificationService:
             title = payload.title or thread.title
             entity = OjContestClarification(
                 id=generate_snowflake_id(),
-                contest_id=contest_id,
+                contest_id=payload.contest_id,
                 problem_id=thread.problem_id,
                 title=title,
                 body=body,

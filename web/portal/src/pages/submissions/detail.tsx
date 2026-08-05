@@ -10,10 +10,6 @@ import {
   RightOutlined,
 } from '@ant-design/icons'
 import { Link, useParams } from 'react-router-dom'
-import { submissionDetail } from '@/api/submission'
-import type { OjSubmissionCase, OjSubmissionDetail } from '@/api/submission'
-import type { SubmissionSnapshot } from '@/api/problem'
-import { isTerminalStatus, pollSubmissionUntilDone, watchSubmissionEvents } from '@/api/submissionWatch'
 import { MonacoEditor } from '@/components/editor/MonacoEditor'
 import { SubmissionPerformance } from '@/components/oj/SubmissionPerformance'
 import { VerdictBadge } from '@/components/oj/VerdictBadge'
@@ -23,6 +19,7 @@ import { languageLabel, monacoLanguage } from '@/utils/monacoLanguage'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { formatDateTime } from '@/utils/time'
+import { submissionApi } from '@/api'
 
 const formatTime = (value: string | null) => formatDateTime(value)
 const formatMemory = (kb: number) => `${(kb / 1024).toFixed(1)} MB`
@@ -34,18 +31,18 @@ export function SubmissionDetailPage() {
   const isLogin = useAuthStore((s) => s.isLogin)
   const resolvedTheme = useAppStore((s) => s.resolvedTheme)
 
-  const [detail, setDetail] = useState<OjSubmissionDetail | null>(null)
+  const [detail, setDetail] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [snapshot, setSnapshot] = useState<SubmissionSnapshot | null>(null)
+  const [snapshot, setSnapshot] = useState<any>(null)
   const [watching, setWatching] = useState(false)
 
   const abortRef = useRef<AbortController | null>(null)
 
   async function load() {
     try {
-      const res = await submissionDetail(id)
+      const res = await submissionApi.submissionDetail(id)
       setDetail(res.data)
-      if (!isTerminalStatus(res.data.status) && isLogin()) {
+      if (!submissionApi.isTerminalStatus(res.data.status) && isLogin()) {
         startWatching(id)
       }
     } finally {
@@ -67,24 +64,24 @@ export function SubmissionDetailPage() {
     abortRef.current = controller
     setWatching(true)
 
-    await watchSubmissionEvents(
+    await submissionApi.watchSubmissionEvents(
       submissionId,
       {
-        onSnapshot: (snap) => setSnapshot(snap),
-        onUpdate: (snap) => setSnapshot(snap),
-        onDone: async (snap) => {
+        onSnapshot: (snap: any) => setSnapshot(snap),
+        onUpdate: (snap: any) => setSnapshot(snap),
+        onDone: async (snap: any) => {
           setSnapshot(snap)
           setWatching(false)
           await reloadDetail()
         },
-        onTimeout: async (snap) => {
+        onTimeout: async (snap: any) => {
           setSnapshot(snap)
           setWatching(false)
           await reloadDetail()
         },
         onError: async () => {
           try {
-            const final = await pollSubmissionUntilDone(submissionId, {
+            const final = await submissionApi.pollSubmissionUntilDone(submissionId, {
               signal: controller.signal,
               maxWaitMs: 120_000,
             })
@@ -107,7 +104,7 @@ export function SubmissionDetailPage() {
   }
 
   async function reloadDetail() {
-    const res = await submissionDetail(id)
+    const res = await submissionApi.submissionDetail(id)
     setDetail(res.data)
   }
 
@@ -116,7 +113,7 @@ export function SubmissionDetailPage() {
     return dictTypeColor('SUBMISSION_RESULT', result) || token.colorTextSecondary
   }
 
-  const casesColumns: ColumnsType<OjSubmissionCase> = [
+  const casesColumns: ColumnsType<any> = [
     {
       title: '#',
       dataIndex: 'case_no',
@@ -175,7 +172,7 @@ export function SubmissionDetailPage() {
 
   const caseStats = useMemo(() => {
     const total = cases.length
-    const ac = cases.filter((c) => c.result === 'AC').length
+    const ac = cases.filter((c: any) => c.result === 'AC').length
     const fail = Math.max(0, total - ac)
     const rate = total ? Math.round((ac / total) * 100) : 0
     return { total, ac, fail, rate }
@@ -313,7 +310,7 @@ export function SubmissionDetailPage() {
             {cases.length ? (
               <>
                 <div className="flex flex-wrap gap-1.5 border-b border-[color-mix(in_srgb,var(--ant-color-border)_45%,transparent)] px-4 py-3">
-                  {cases.map((c) => (
+                  {cases.map((c: any) => (
                     <span
                       key={c.case_no}
                       title={`#${c.case_no} ${c.result ? dictTypeData('SUBMISSION_RESULT', c.result) || c.result : '-'}`}
@@ -332,7 +329,7 @@ export function SubmissionDetailPage() {
                 <Table
                   rowKey="case_no"
                   columns={casesColumns}
-                  dataSource={cases as OjSubmissionCase[]}
+                  dataSource={cases as any[]}
                   pagination={false}
                 />
               </>

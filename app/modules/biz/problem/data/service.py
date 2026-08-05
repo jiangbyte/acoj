@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import BusinessError, NotFoundError
 from app.core.response.pagination import PageData, build_page
-from app.core.schema.base import IdQuery, IdsRequest, to_schema
+from app.core.schema.base import ProblemIdsRequest, ProblemScopedIdQuery, to_schema
 from app.modules.biz.oj_scope import delete_owned_by_parent, ensure_belongs_to_parent
 from app.modules.biz.problem.data.model import OjProblemData
 from app.modules.biz.problem.data.repository import OjProblemDataRepository
@@ -29,41 +29,40 @@ class OjProblemDataService:
         self.db = db
         self.repo = OjProblemDataRepository(db)
 
-    async def create(self, problem_id: str, payload: OjProblemDataCreateRequest) -> None:
+    async def create(self, payload: OjProblemDataCreateRequest) -> None:
         prepared = self._prepare_payload(payload)
         async with transactional(self.db):
-            await self.repo.create(prepared.model_copy(update={"problem_id": problem_id}))
+            await self.repo.create(prepared)
 
-    async def update(self, problem_id: str, payload: OjProblemDataUpdateRequest) -> None:
+    async def update(self, payload: OjProblemDataUpdateRequest) -> None:
         prepared = self._prepare_payload(payload)
         async with transactional(self.db):
             entity = await self.repo.get_required(payload.id)
-            ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=problem_id, not_found_message="OjProblemData not found")
-            await self.repo.update(prepared.model_copy(update={"problem_id": problem_id}))
+            ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=payload.problem_id, not_found_message="OjProblemData not found")
+            await self.repo.update(prepared)
 
-    async def delete(self, problem_id: str, payload: IdsRequest) -> None:
+    async def delete(self, payload: ProblemIdsRequest) -> None:
         async with transactional(self.db):
             await delete_owned_by_parent(
                 self.db,
                 model=OjProblemData,
                 parent_attr="problem_id",
-                parent_id=problem_id,
+                parent_id=payload.problem_id,
                 entity_ids=payload.ids,
                 not_found_message="OjProblemData not found",
             )
 
-    async def detail(self, problem_id: str, query: IdQuery) -> OjProblemDataSchema:
+    async def detail(self, query: ProblemScopedIdQuery) -> OjProblemDataSchema:
         entity = await self.repo.get_required(query.id)
-        ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=problem_id, not_found_message="OjProblemData not found")
+        ensure_belongs_to_parent(entity, parent_attr="problem_id", parent_id=query.problem_id, not_found_message="OjProblemData not found")
         return to_schema(OjProblemDataSchema, entity)
 
     async def page_admin(
-        self, problem_id: str, query: OjProblemDataAdminPageQuery
+        self, query: OjProblemDataAdminPageQuery
     ) -> PageData[OjProblemDataSchema]:
-        scoped_query = query.model_copy(update={"problem_id": problem_id})
-        items, total = await self.repo.page_admin(scoped_query)
+        items, total = await self.repo.page_admin(query)
         schemas = [to_schema(OjProblemDataSchema, item) for item in items]
-        return build_page(scoped_query.pagination, total, schemas)
+        return build_page(query.pagination, total, schemas)
 
     def _prepare_payload(
         self,

@@ -6,7 +6,7 @@ from typing import Any
 from pydantic import Field
 
 from app.core.response.pagination import PageQuery
-from app.core.schema.base import ApiSchema
+from app.core.schema.base import ApiSchema, Id
 from app.modules.biz.contest.enums import ClarificationThreadStatus
 
 
@@ -111,9 +111,18 @@ class PortalContestEnterResultSchema(ApiSchema):
 
 
 
-class PortalContestPageQuery(ApiSchema):
-    pagination: PageQuery
+class PortalContestPageQuery(PageQuery):
     keyword: str | None = None
+
+
+class PortalContestProblemDetailQuery(ApiSchema):
+    contest_id: Id
+    problem_id: Id
+
+
+class PortalContestThreadMessageQuery(ApiSchema):
+    contest_id: Id
+    thread_id: Id
 
 
 class PortalContestProblemMetaSchema(ApiSchema):

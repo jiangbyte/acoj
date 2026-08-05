@@ -11,8 +11,8 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
-# Image build: skip tsc --noEmit; vite emit is enough for nginx static.
-RUN pnpm exec vite build
+# Prefer .env.production (empty VITE_API_URL) so browser uses same-origin /api via nginx.
+RUN pnpm exec vite build --mode production
 
 FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/nginx:1.27-alpine
 

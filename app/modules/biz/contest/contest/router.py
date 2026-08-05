@@ -92,10 +92,10 @@ async def delete(
     response_model=ApiResponse[OjContestSchema],
 )
 async def detail(
+    query: Annotated[IdQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    id: Annotated[Id, Query()],
 ) -> ApiResponse[OjContestSchema]:
-    return success(await OjContestService(db).detail(IdQuery(id=id)))
+    return success(await OjContestService(db).detail(query))
 
 
 @router.get(
@@ -107,19 +107,9 @@ async def detail(
     response_model=ApiResponse[PageData[OjContestSchema]],
 )
 async def page(
+    query: Annotated[OjContestAdminPageQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current: Current = 1,
-    size: Size = 20,
-    key: str | None = Query(default=None),
-    name: str | None = Query(default=None),
-    tag_id: str | None = Query(default=None),
 ) -> ApiResponse[PageData[OjContestSchema]]:
-    query = OjContestAdminPageQuery(
-        pagination=PageQuery(current=current, size=size),
-        key=key,
-        name=name,
-        tag_id=tag_id,
-    )
     return success(await OjContestService(db).page_admin(query))
 
 
@@ -207,11 +197,9 @@ async def rate(
     response_model=ApiResponse[dict[str, Any]],
 )
 async def scoreboard(
+    query: Annotated[OjContestScoreboardQuery, Depends()],
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    contest_id: Annotated[Id, Query()],
-    virtual: int = Query(default=int(ContestParticipationVirtual.LIVE)),
 ) -> ApiResponse[dict[str, Any]]:
-    query = OjContestScoreboardQuery(contest_id=contest_id, virtual=virtual)
     return success(await OjContestService(db).scoreboard(query))
 
 

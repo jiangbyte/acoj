@@ -11,22 +11,6 @@ import {
 } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
-import { contestPage, type PortalContestBrief } from '@/api/contest'
-import {
-  announcementApi,
-  type PortalAnnouncement,
-} from '@/api/message/announcement'
-import { problemRecommend, type PortalProblemRecommendItem } from '@/api/problem'
-import { submissionPage, type OjSubmissionListItem } from '@/api/submission'
-import {
-  dailyApi,
-  learningPlanApi,
-  userStatsApi,
-  type DailyToday,
-  type LearningPlanItem,
-  type UserHeatmap,
-  type UserStats,
-} from '@/api/study'
 import { PromoCarousel } from '@/components/common/PromoCarousel'
 import { ContestStatusBadge } from '@/components/oj/ContestStatusBadge'
 import { VerdictBadge } from '@/components/oj/VerdictBadge'
@@ -34,6 +18,7 @@ import { useBannerSlides } from '@/hooks/useBannerSlides'
 import { useAuthStore } from '@/stores/auth'
 import { languageLabel } from '@/utils/monacoLanguage'
 import { formatDateTime } from '@/utils/time'
+import { announcementApi, contestApi, dailyApi, learningPlanApi, problemApi, submissionApi, userStatsApi } from '@/api'
 
 const formatRate = (rate: number) => `${Number(rate || 0).toFixed(1)}%`
 const formatTime = (value: string | null) => formatDateTime(value)
@@ -77,16 +62,16 @@ export function HomePage() {
   const isLogin = useAuthStore((s) => s.isLogin)
 
   const [loading, setLoading] = useState(true)
-  const [problems, setProblems] = useState<PortalProblemRecommendItem[]>([])
-  const [contests, setContests] = useState<PortalContestBrief[]>([])
-  const [submissions, setSubmissions] = useState<OjSubmissionListItem[]>([])
-  const [studyPlans, setStudyPlans] = useState<LearningPlanItem[]>([])
-  const [dailyToday, setDailyToday] = useState<DailyToday | null>(null)
-  const [userStats, setUserStats] = useState<UserStats | null>(null)
-  const [userHeatmap, setUserHeatmap] = useState<UserHeatmap | null>(null)
-  const [announcements, setAnnouncements] = useState<PortalAnnouncement[]>([])
+  const [problems, setProblems] = useState<any[]>([])
+  const [contests, setContests] = useState<any[]>([])
+  const [submissions, setSubmissions] = useState<any[]>([])
+  const [studyPlans, setStudyPlans] = useState<any[]>([])
+  const [dailyToday, setDailyToday] = useState<any>(null)
+  const [userStats, setUserStats] = useState<any>(null)
+  const [userHeatmap, setUserHeatmap] = useState<any>(null)
+  const [announcements, setAnnouncements] = useState<any[]>([])
   const [announceLoading, setAnnounceLoading] = useState(true)
-  const [activeAnnouncement, setActiveAnnouncement] = useState<PortalAnnouncement | null>(null)
+  const [activeAnnouncement, setActiveAnnouncement] = useState<any>(null)
   const { slides: homeBanners } = useBannerSlides({
     position: 'HOME_TOP',
     type: 'CAROUSEL',
@@ -115,7 +100,7 @@ export function HomePage() {
     }
   }, [token])
 
-  async function openAnnouncement(item: PortalAnnouncement) {
+  async function openAnnouncement(item: any) {
     setActiveAnnouncement(item)
     if (!isLogin()) return
     try {
@@ -124,7 +109,7 @@ export function HomePage() {
         setAnnouncements((prev) =>
           prev.map((row) => (row.id === item.id ? { ...row, is_read: true } : row)),
         )
-        setActiveAnnouncement((curr) => (curr?.id === item.id ? { ...curr, is_read: true } : curr))
+        setActiveAnnouncement((curr: any) => (curr?.id === item.id ? { ...curr, is_read: true } : curr))
       }
     } catch {
       // 标已读失败不影响阅读
@@ -139,9 +124,9 @@ export function HomePage() {
         const year = new Date().getFullYear()
         const [problemRes, contestRes, submissionRes, planRes, dailyRes, statsRes, heatRes] =
           await Promise.allSettled([
-            problemRecommend({ size: 8 }),
-            contestPage({ current: 1, size: 4 }),
-            submissionPage({ current: 1, size: 6 }),
+            problemApi.problemRecommend({ size: 8 }),
+            contestApi.contestPage({ current: 1, size: 4 }),
+            submissionApi.submissionPage({ current: 1, size: 6 }),
             learningPlanApi.page({ current: 1, size: 3 }),
             dailyApi.today(),
             isLogin() ? userStatsApi.stats() : Promise.reject(new Error('skip')),
@@ -190,7 +175,9 @@ export function HomePage() {
     if (!userHeatmap?.days?.length) return cells
     const end = dayjs().startOf('day')
     const start = end.subtract(90, 'day')
-    const map = new Map(userHeatmap.days.map((d) => [d.day_date.slice(0, 10), d.count]))
+    const map = new Map<string, number>(
+      userHeatmap.days.map((d: any) => [d.day_date.slice(0, 10), Number(d.count) || 0]),
+    )
     for (let i = 0; i < 91; i++) {
       const key = start.add(i, 'day').format('YYYY-MM-DD')
       cells[i] = heatLevel(map.get(key) ?? 0)
@@ -219,7 +206,7 @@ export function HomePage() {
                     id: '',
                     title: '练习路径大厅',
                     subtitle: '按知识点循序练习',
-                  } as LearningPlanItem,
+                  } as any,
                 ]
             ).map((plan, i) => (
               <Link

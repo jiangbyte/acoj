@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Drawer, Input, Space, Table, Tag, Typography, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { problemPage } from '@/api/problem'
+import { problemApi } from '@/api'
 
 export interface ProblemOption {
   id: string
@@ -39,12 +39,12 @@ async function defaultLoadPage(params: {
   size: number
   keyword?: string
 }): Promise<ProblemSelectorPageResult> {
-  const res = await problemPage({
+  const res = await problemApi.problemPage({
     current: params.current,
     size: params.size,
     keyword: params.keyword || undefined,
   })
-  const records = (res.data?.records ?? []).map((item) => ({
+  const records = (res.data?.records ?? []).map((item: any) => ({
     id: String(item.id),
     code: item.code || '',
     name: item.name || '',

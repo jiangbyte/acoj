@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import type { editor as MonacoEditor } from 'monaco-editor'
+import type { editor as MonacoEditorNS } from 'monaco-editor'
 import { toCssSize } from './shared'
 import { setupMonacoWorkers } from './monacoWorkers'
 
@@ -11,9 +11,9 @@ type Props = {
   theme?: string
   height?: string | number
   readOnly?: boolean
-  options?: MonacoEditor.IStandaloneEditorConstructionOptions
+  options?: MonacoEditorNS.IStandaloneEditorConstructionOptions
   onChange?: (value: string) => void
-  onMount?: (editor: MonacoEditor.IStandaloneCodeEditor, monaco: MonacoModule) => void
+  onMount?: (editor: MonacoEditorNS.IStandaloneCodeEditor, monaco: MonacoModule) => void
   className?: string
 }
 
@@ -29,7 +29,7 @@ export function MonacoEditor({
   className,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null)
+  const editorRef = useRef<MonacoEditorNS.IStandaloneCodeEditor | null>(null)
   const monacoRef = useRef<MonacoModule | null>(null)
   const onChangeRef = useRef(onChange)
   const onMountRef = useRef(onMount)
@@ -41,7 +41,7 @@ export function MonacoEditor({
 
   useEffect(() => {
     let disposed = false
-    let instance: MonacoEditor.IStandaloneCodeEditor | null = null
+    let instance: MonacoEditorNS.IStandaloneCodeEditor | null = null
 
     setupMonacoWorkers()
 

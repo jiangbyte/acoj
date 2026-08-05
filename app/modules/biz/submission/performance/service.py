@@ -12,11 +12,13 @@ from app.core.exceptions.business import NotFoundError
 from app.modules.biz.problem.enums import SubmissionSourceVisibility
 from app.modules.biz.problem.problem.model import OjProblem
 from app.modules.biz.submission.enums import SubmissionKind, SubmissionResult, SubmissionStatus
+from app.core.schema.base import IdQuery, ProblemIdQuery
 from app.modules.biz.submission.performance.schema import (
     PerformanceBucketOut,
     PerformanceScope,
     SimilarSubmissionItem,
     SimilarSubmissionListOut,
+    SimilarSubmissionQuery,
     SubmissionPerformanceOut,
 )
 from app.modules.biz.submission.submission.model import OjSubmission, OjSubmissionSource
@@ -101,12 +103,12 @@ class SubmissionPerformanceService:
 
     async def get_performance(
         self,
-        submission_id: str,
+        query: IdQuery,
         *,
         viewer: str | None,
         for_admin: bool,
     ) -> SubmissionPerformanceOut:
-        submission = await self.repo.get_by_id(submission_id)
+        submission = await self.repo.get_by_id(query.id)
         if submission is None:
             raise NotFoundError("提交不存在")
 
@@ -146,13 +148,12 @@ class SubmissionPerformanceService:
 
     async def list_similar(
         self,
-        submission_id: str,
+        query: SimilarSubmissionQuery,
         *,
-        size: int = DEFAULT_SIMILAR_SIZE,
         viewer: str | None,
         for_admin: bool,
     ) -> SimilarSubmissionListOut:
-        submission = await self.repo.get_by_id(submission_id)
+        submission = await self.repo.get_by_id(query.id)
         if submission is None:
             raise NotFoundError("提交不存在")
 
@@ -176,7 +177,7 @@ class SubmissionPerformanceService:
                 -row.created_at.timestamp(),
             )
         )
-        picked = candidates[: max(size, 0)]
+        picked = candidates[: max(query.size, 0)]
 
         profile_map = await self.submission_service._batch_user_profiles([row.user_id for row in picked])
         source_map = await self._load_sources([row.id for row in picked])
@@ -204,12 +205,12 @@ class SubmissionPerformanceService:
 
         return SimilarSubmissionListOut(available=True, items=items)
 
-    async def my_latest_practice_ac(self, user_id: str, problem_id: str) -> str | None:
+    async def my_latest_practice_ac(self, query: ProblemIdQuery, *, user_id: str) -> str | None:
         stmt = (
             select(OjSubmission.id)
             .where(
                 OjSubmission.user_id == user_id,
-                OjSubmission.problem_id == problem_id,
+                OjSubmission.problem_id == query.problem_id,
                 OjSubmission.kind == SubmissionKind.OFFICIAL.value,
                 OjSubmission.contest_id.is_(None),
                 OjSubmission.status == SubmissionStatus.COMPLETED.value,

@@ -23,9 +23,8 @@ class OjProblemStaffUpdateRequest(OjProblemStaffCreateRequest):
     id: str = Field(min_length=1, max_length=64)
 
 
-class OjProblemStaffAdminPageQuery(ApiSchema):
-    pagination: PageQuery
-    problem_id: str | None = None
+class OjProblemStaffAdminPageQuery(PageQuery):
+    problem_id: str = Field(min_length=1, max_length=64)
     account_id: str | None = None
     role: str | None = None
 

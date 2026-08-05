@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions.business import NotFoundError
 from app.modules.biz.oj_scope import delete_owned_by_parent
 from app.core.response.pagination import PageData, build_page
-from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
+from app.core.schema.base import ContestIdsRequest, ContestScopedIdQuery, to_schema, to_schema_list
 from app.platform.db.transaction import transactional
 from app.modules.biz.contest.private_contestant.model import OjContestPrivateContestant
 from app.modules.biz.contest.private_contestant.repository import (
@@ -33,35 +33,34 @@ class OjContestPrivateContestantService:
         if getattr(entity, "contest_id") != contest_id:
             raise NotFoundError("OjContestPrivateContestant not found")
 
-    async def create(self, contest_id: str, payload: OjContestPrivateContestantCreateRequest) -> None:
+    async def create(self, payload: OjContestPrivateContestantCreateRequest) -> None:
         async with transactional(self.db):
-            await self.repo.create(payload.model_copy(update={"contest_id": contest_id}))
+            await self.repo.create(payload)
 
-    async def update(self, contest_id: str, payload: OjContestPrivateContestantUpdateRequest) -> None:
+    async def update(self, payload: OjContestPrivateContestantUpdateRequest) -> None:
         async with transactional(self.db):
             entity = await self.repo.get_required(payload.id)
-            self._ensure_belongs_to_contest(entity, contest_id)
-            await self.repo.update(payload.model_copy(update={"contest_id": contest_id}))
+            self._ensure_belongs_to_contest(entity, payload.contest_id)
+            await self.repo.update(payload)
 
-    async def delete(self, contest_id: str, payload: IdsRequest) -> None:
+    async def delete(self, payload: ContestIdsRequest) -> None:
         async with transactional(self.db):
             await delete_owned_by_parent(
                 self.db,
                 model=OjContestPrivateContestant,
                 parent_attr="contest_id",
-                parent_id=contest_id,
+                parent_id=payload.contest_id,
                 entity_ids=payload.ids,
                 not_found_message="OjContestPrivateContestant not found",
             )
 
-    async def detail(self, contest_id: str, query: IdQuery) -> OjContestPrivateContestantSchema:
+    async def detail(self, query: ContestScopedIdQuery) -> OjContestPrivateContestantSchema:
         entity = await self.repo.get_required(query.id)
-        self._ensure_belongs_to_contest(entity, contest_id)
+        self._ensure_belongs_to_contest(entity, query.contest_id)
         return to_schema(OjContestPrivateContestantSchema, entity)
 
     async def page_admin(
-        self, contest_id: str, query: OjContestPrivateContestantAdminPageQuery
+        self, query: OjContestPrivateContestantAdminPageQuery
     ) -> PageData[OjContestPrivateContestantSchema]:
-        scoped_query = query.model_copy(update={"contest_id": contest_id})
-        items, total = await self.repo.page_admin(scoped_query)
-        return build_page(scoped_query.pagination, total, to_schema_list(OjContestPrivateContestantSchema, items))
+        items, total = await self.repo.page_admin(query)
+        return build_page(query.pagination, total, to_schema_list(OjContestPrivateContestantSchema, items))
