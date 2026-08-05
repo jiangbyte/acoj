@@ -4,6 +4,7 @@ import { ojSubmissionApi } from '@/api'
 import MonacoEditor from '@/components/editor/MonacoEditor.vue'
 import { displayValue, formatDateTime, hasPermission, resolveFileUrl } from '@/utils'
 import { monacoLanguageFromExtension } from '@/views/biz/problem/shared/monacoLanguage'
+import SubmissionPerformancePanel from './SubmissionPerformancePanel.vue'
 import { NAvatar, NFlex, NTag } from 'naive-ui'
 import { computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
@@ -241,6 +242,12 @@ defineExpose({ openModal })
               :max-height="180"
             />
           </template>
+
+          <SubmissionPerformancePanel
+            v-if="state.detail.result === 'AC' && state.detail.id"
+            :key="state.detail.id"
+            :submission-id="state.detail.id"
+          />
         </NSpace>
       </NSpin>
     </NScrollbar>
