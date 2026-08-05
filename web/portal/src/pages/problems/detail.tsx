@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button, Descriptions, Empty, Grid, Skeleton, Splitter, Table, Tag, Typography } from 'antd'
-import { FileTextOutlined, HistoryOutlined } from '@ant-design/icons'
+import { CheckCircleOutlined, FileTextOutlined, HistoryOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { problemDetail, problemLanguages, problemSubmit } from '@/api/problem'
 import type { PortalProblemDetail, PortalProblemLanguage } from '@/api/problem'
-import { submissionPage } from '@/api/submission'
+import { myLatestPracticeAc, submissionPage } from '@/api/submission'
 import type { OjSubmissionListItem } from '@/api/submission'
 import { CustomTabs } from '@/components/common/CustomTabs'
 import { Markdown } from '@/components/common/Markdown'
 import { SolveSidebar } from '@/components/oj/SolveSidebar'
+import { SubmissionPerformance } from '@/components/oj/SubmissionPerformance'
 import { SubmitPanel } from '@/components/oj/SubmitPanel'
 import { VerdictBadge } from '@/components/oj/VerdictBadge'
 import { useAuthStore } from '@/stores/auth'
@@ -19,6 +20,7 @@ const formatRate = (rate: number) => `${rate.toFixed(1)}%`
 
 export function ProblemDetailPage() {
   const { id = '' } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const userInfo = useAuthStore((s) => s.userInfo)
   const isLogin = useAuthStore((s) => s.isLogin)
   const screens = Grid.useBreakpoint()
@@ -29,6 +31,24 @@ export function ProblemDetailPage() {
   const [loading, setLoading] = useState(true)
   const [mySubmissions, setMySubmissions] = useState<OjSubmissionListItem[]>([])
   const [submissionsLoading, setSubmissionsLoading] = useState(true)
+  const [latestAcSubmissionId, setLatestAcSubmissionId] = useState<string | null>(null)
+  const [latestAcLoading, setLatestAcLoading] = useState(false)
+
+  const queryTab = searchParams.get('tab')
+  const querySubmissionId = searchParams.get('submission_id')
+
+  const passedSubmissionId = useMemo(() => {
+    if (queryTab === 'passed' && querySubmissionId) {
+      return querySubmissionId
+    }
+    return latestAcSubmissionId
+  }, [queryTab, querySubmissionId, latestAcSubmissionId])
+
+  const [activeTab, setActiveTab] = useState(() => {
+    if (queryTab === 'passed' && querySubmissionId) return 'passed'
+    if (queryTab === 'submissions') return 'submissions'
+    return 'statement'
+  })
 
   async function load() {
     try {
@@ -54,6 +74,42 @@ export function ProblemDetailPage() {
     }
   }
 
+  async function loadLatestAc() {
+    setLatestAcLoading(true)
+    try {
+      const res = await myLatestPracticeAc(id)
+      setLatestAcSubmissionId(res.data.submission_id)
+    } catch {
+      setLatestAcSubmissionId(null)
+    } finally {
+      setLatestAcLoading(false)
+    }
+  }
+
+  function handleTabChange(key: string) {
+    setActiveTab(key)
+    if (key === 'passed') {
+      const next = new URLSearchParams(searchParams)
+      next.set('tab', 'passed')
+      if (passedSubmissionId) {
+        next.set('submission_id', passedSubmissionId)
+      } else {
+        next.delete('submission_id')
+      }
+      setSearchParams(next, { replace: true })
+    } else if (key === 'submissions') {
+      const next = new URLSearchParams(searchParams)
+      next.set('tab', 'submissions')
+      next.delete('submission_id')
+      setSearchParams(next, { replace: true })
+    } else {
+      const next = new URLSearchParams(searchParams)
+      next.delete('tab')
+      next.delete('submission_id')
+      setSearchParams(next, { replace: true })
+    }
+  }
+
   useEffect(() => {
     void load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -62,9 +118,18 @@ export function ProblemDetailPage() {
   useEffect(() => {
     if (isLogin()) {
       void loadMySubmissions()
+      void loadLatestAc()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, userInfo?.accountId])
+
+  useEffect(() => {
+    if (queryTab === 'passed' && querySubmissionId) {
+      setActiveTab('passed')
+    } else if (queryTab === 'submissions') {
+      setActiveTab('submissions')
+    }
+  }, [queryTab, querySubmissionId])
 
   async function handleSubmit(payload: { language_key: string; source: string }) {
     const res = await problemSubmit(id, payload)
@@ -148,6 +213,25 @@ export function ProblemDetailPage() {
         </div>
       ) : null,
     },
+    ...(passedSubmissionId
+      ? [
+          {
+            key: 'passed',
+            label: '通过',
+            icon: <CheckCircleOutlined />,
+            children: latestAcLoading && !passedSubmissionId ? (
+              <Skeleton active paragraph={{ rows: 6 }} />
+            ) : passedSubmissionId ? (
+              <SubmissionPerformance
+                submissionId={passedSubmissionId}
+                problemId={id}
+                showBackLink
+                onBackToSubmissions={() => handleTabChange('submissions')}
+              />
+            ) : null,
+          },
+        ]
+      : []),
     {
       key: 'submissions',
       label: '提交记录',
@@ -173,7 +257,12 @@ export function ProblemDetailPage() {
 
   const statementPane = (
     <div className="flex h-full min-w-0 flex-col bg-white">
-      <CustomTabs items={tabItems} contentClassName="p-4" />
+      <CustomTabs
+        items={tabItems}
+        activeKey={activeTab}
+        onChange={handleTabChange}
+        contentClassName="p-4"
+      />
     </div>
   )
 

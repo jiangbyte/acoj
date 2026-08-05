@@ -7,6 +7,7 @@ import type { OjSubmissionCase, OjSubmissionDetail } from '@/api/submission'
 import type { SubmissionSnapshot } from '@/api/problem'
 import { isTerminalStatus, pollSubmissionUntilDone, watchSubmissionEvents } from '@/api/submissionWatch'
 import { MonacoEditor } from '@/components/editor/MonacoEditor'
+import { SubmissionPerformance } from '@/components/oj/SubmissionPerformance'
 import { VerdictBadge } from '@/components/oj/VerdictBadge'
 import { languageLabel, monacoLanguage } from '@/utils/monacoLanguage'
 import { useAuthStore } from '@/stores/auth'
@@ -165,6 +166,11 @@ export function SubmissionDetailPage() {
   const compileOutput = snapshot?.compile_output ?? detail.compile_output
   const cases = snapshot?.cases.length ? snapshot.cases : detail.cases
   const hasSource = detail.source !== null && detail.source !== undefined
+  const showPerformance =
+    detail.kind === 'OFFICIAL' &&
+    !detail.contest_id &&
+    detail.result === 'AC' &&
+    detail.status === 'COMPLETED'
 
   return (
     <div className="space-y-4">
@@ -203,6 +209,12 @@ export function SubmissionDetailPage() {
           ]}
         />
       </Card>
+
+      {showPerformance ? (
+        <Card size="small" title="练习表现">
+          <SubmissionPerformance submissionId={detail.id} problemId={detail.problem_id} />
+        </Card>
+      ) : null}
 
       {detail.error ? (
         <Card size="small" title="错误信息">
