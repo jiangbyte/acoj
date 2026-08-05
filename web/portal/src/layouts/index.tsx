@@ -1,21 +1,26 @@
 import { useEffect } from 'react'
-import { ensureDict } from '@/utils/dict'
+import { useLocation } from 'react-router-dom'
+import { refreshDict, syncDictTree } from '@/utils/dict'
 import { AppFooter, AppHeader, HEADER_HEIGHT } from './components'
 import { Content } from './Content'
 
 export { SolveLayout } from './SolveLayout'
 
 export function MainLayout() {
+  const { pathname } = useLocation()
+  const hideFooter = pathname === '/messages' || pathname.startsWith('/messages/')
+
   useEffect(() => {
-    void ensureDict()
+    syncDictTree()
+    void refreshDict()
   }, [])
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f5f5f5]">
+    <div className="flex min-h-screen flex-col bg-[var(--ant-color-bg-layout)] text-[var(--ant-color-text)]">
       <AppHeader />
-      <div className="flex-1 flex flex-col" style={{ paddingTop: HEADER_HEIGHT }}>
+      <div className="flex flex-1 flex-col" style={{ paddingTop: HEADER_HEIGHT }}>
         <Content />
-        <AppFooter />
+        {hideFooter ? null : <AppFooter />}
       </div>
     </div>
   )

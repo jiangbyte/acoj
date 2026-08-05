@@ -356,14 +356,14 @@ export function UserCenterPage() {
                 <div className="mt-4 max-w-full truncate text-xl font-medium">
                   {displayName}
                 </div>
-                <div className="mt-1 max-w-full truncate text-sm text-gray-500">
+                <div className="mt-1 max-w-full truncate text-sm text-[var(--ant-color-text-secondary)]">
                   {me?.account}
                 </div>
               </div>
 
               <Divider />
 
-              <Descriptions column={1} size="small" labelStyle={{ width: 72 }}>
+              <Descriptions column={1} labelStyle={{ width: 72 }}>
                 <Descriptions.Item label="角色">
                   {roleNames || '未设置'}
                 </Descriptions.Item>
@@ -373,7 +373,7 @@ export function UserCenterPage() {
               <Divider />
 
               <div className="text-sm font-medium">个性签名</div>
-              <div className="mt-2 min-h-16 rounded border border-gray-200 p-3 text-sm text-gray-500">
+              <div className="mt-2 min-h-16 rounded border border-[var(--ant-color-border)] p-3 text-sm text-[var(--ant-color-text-secondary)]">
                 {displayValue(profile.signature)}
               </div>
             </Card>

@@ -49,5 +49,13 @@ class OjContest(Base, TimestampMixin):
     tester_see_scoreboard: Mapped[bool] = mapped_column(Boolean, nullable=False, comment="测试员可见榜单")
     tester_see_submissions: Mapped[bool] = mapped_column(Boolean, nullable=False, comment="测试员可见提交")
     locked_after: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="重判锁定时间")
+    register_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="报名开始时间")
+    register_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="报名截止时间")
+    registration_mode: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="AUTO", server_default="AUTO", comment="报名模式 AUTO|REVIEW"
+    )
+    list_visibility: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="PUBLIC", server_default="PUBLIC", comment="列表可见性 PUBLIC|INVITE_ONLY"
+    )
     user_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="正式参赛人数")
     extra: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict, comment="扩展信息")

@@ -22,6 +22,7 @@ class OjProblem(Base, TimestampMixin):
         Index("ix_oj_problem_status", "status"),
         Index("ix_oj_problem_is_public", "is_public"),
         Index("ix_oj_problem_group_id", "group_id"),
+        Index("ix_oj_problem_difficulty", "difficulty"),
         Index("ix_oj_problem_published_at", "published_at"),
     )
 
@@ -41,6 +42,9 @@ class OjProblem(Base, TimestampMixin):
     )
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="发布时间")
     submission_source_visibility: Mapped[str] = mapped_column(String(32), nullable=False, comment="提交源码可见性")
+    difficulty: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="Medium", comment="难度 Easy|Medium|Hard"
+    )
     user_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="通过人数")
     ac_rate: Mapped[float] = mapped_column(Float, nullable=False, default=0.0, comment="通过率")
     extra: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict, comment="扩展信息")

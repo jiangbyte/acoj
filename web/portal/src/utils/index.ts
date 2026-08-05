@@ -2,6 +2,7 @@ import { createHttp } from './axios'
 
 export * from './dict'
 export * from './storage'
+export * from './time'
 export * from './validate'
 export { encryptPasswords } from './security'
 export { ApiResponseError, createHttp } from './axios'

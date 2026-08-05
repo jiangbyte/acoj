@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { theme } from 'antd'
 
 type Props = {
   password: string
@@ -10,13 +11,6 @@ interface StrengthLevel {
   percent: number
 }
 
-const levels: StrengthLevel[] = [
-  { label: '弱', color: '#e74c3c', percent: 25 },
-  { label: '较弱', color: '#f39c12', percent: 50 },
-  { label: '中等', color: '#f1c40f', percent: 75 },
-  { label: '强', color: '#2ecc71', percent: 100 },
-]
-
 const policyItems = [
   { label: '至少 8 个字符', met: (pwd: string) => pwd.length >= 8 },
   { label: '包含大写字母', met: (pwd: string) => /[A-Z]/.test(pwd) },
@@ -26,11 +20,22 @@ const policyItems = [
 ]
 
 export function PasswordStrength({ password }: Props) {
+  const { token } = theme.useToken()
   const pwd = password ?? ''
+
+  const levels: StrengthLevel[] = useMemo(
+    () => [
+      { label: '弱', color: token.colorError, percent: 25 },
+      { label: '较弱', color: token.colorWarning, percent: 50 },
+      { label: '中等', color: token.colorWarningHover, percent: 75 },
+      { label: '强', color: token.colorSuccess, percent: 100 },
+    ],
+    [token.colorError, token.colorWarning, token.colorWarningHover, token.colorSuccess],
+  )
 
   const strength = useMemo(() => {
     if (!pwd) {
-      return { label: '', color: '#e0e0e0', percent: 0 }
+      return { label: '', color: token.colorBorder, percent: 0 }
     }
     let score = 0
     if (pwd.length >= 8) score += 1
@@ -38,21 +43,21 @@ export function PasswordStrength({ password }: Props) {
     if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score += 1
     if (/[0-9]/.test(pwd) && /[^A-Za-z0-9]/.test(pwd)) score += 1
     return levels[Math.min(score, levels.length - 1)]
-  }, [pwd])
+  }, [pwd, levels, token.colorBorder])
 
   if (!pwd) {
     return null
   }
 
   return (
-    <div className="password-strength-bar mt-1">
-      <div className="h-1 rounded overflow-hidden bg-gray-100 mb-1">
+    <div className="mt-1">
+      <div className="mb-1 h-1 overflow-hidden rounded bg-[var(--ant-color-fill-quaternary)]">
         <div
           className="h-full rounded transition-all duration-300"
           style={{ width: `${strength.percent}%`, backgroundColor: strength.color }}
         />
       </div>
-      <span className="text-xs font-semibold inline-block mb-1" style={{ color: strength.color }}>
+      <span className="mb-1 inline-block text-xs font-semibold" style={{ color: strength.color }}>
         {strength.label}
       </span>
       <div className="flex flex-wrap gap-x-3 gap-y-0.5">
@@ -62,10 +67,18 @@ export function PasswordStrength({ password }: Props) {
             <span
               key={item.label}
               className={`inline-flex items-center gap-0.5 text-[11px] ${
-                met ? 'text-gray-800' : 'text-gray-400'
+                met
+                  ? 'text-[var(--ant-color-text)]'
+                  : 'text-[var(--ant-color-text-quaternary)]'
               }`}
             >
-              <span className={`text-[10px] ${met ? 'text-green-500' : 'text-gray-300'}`}>
+              <span
+                className={`text-[10px] ${
+                  met
+                    ? 'text-[var(--ant-color-success)]'
+                    : 'text-[var(--ant-color-text-quaternary)]'
+                }`}
+              >
                 {met ? '✓' : '○'}
               </span>
               {item.label}

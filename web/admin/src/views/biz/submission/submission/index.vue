@@ -4,6 +4,7 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { ojSubmissionApi } from '@/api'
 import { formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon, resolveFileUrl } from '@/utils'
+import { dictList, dictTreeState, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NAvatar, NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
@@ -47,6 +48,7 @@ const searchForm = createProSearchForm<any>({
 })
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => {
+  void dictTreeState.value
   const cols: ProSearchFormColumns<any> = [
     { title: '用户ID', path: 'user_id', field: 'input' },
     {
@@ -54,10 +56,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => {
       path: 'kind',
       field: 'select',
       fieldProps: {
-        options: [
-          { label: '正式', value: 'OFFICIAL' },
-          { label: '试测', value: 'TRIAL' },
-        ],
+        options: dictList('SUBMISSION_KIND'),
         clearable: true,
       },
     },
@@ -66,12 +65,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => {
       path: 'status',
       field: 'select',
       fieldProps: {
-        options: [
-          { label: 'QUEUED', value: 'QUEUED' },
-          { label: 'JUDGING', value: 'JUDGING' },
-          { label: 'COMPLETED', value: 'COMPLETED' },
-          { label: 'FAILED', value: 'FAILED' },
-        ],
+        options: dictList('SUBMISSION_STATUS'),
         clearable: true,
       },
     },
@@ -80,7 +74,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => {
       path: 'result',
       field: 'select',
       fieldProps: {
-        options: ['AC', 'WA', 'TLE', 'MLE', 'RE', 'CE', 'OLE', 'SE', 'IE'].map(v => ({ label: v, value: v })),
+        options: dictList('SUBMISSION_RESULT'),
         clearable: true,
       },
     },
@@ -116,14 +110,15 @@ const pagination = computed<PaginationProps>(() => ({
   },
 }))
 
-const resultType = (value?: string) => {
-  if (value === 'AC')
-    return 'success'
-  if (['WA', 'RE', 'CE', 'SE', 'IE'].includes(String(value)))
-    return 'error'
-  if (['TLE', 'MLE', 'OLE'].includes(String(value)))
-    return 'warning'
-  return 'default'
+function renderDictTag(dictCode: string, value?: string | null) {
+  if (!value)
+    return '-'
+  const color = dictTypeColor(dictCode, value)
+  return (
+    <NTag size="small" bordered={false} color={color || undefined}>
+      {dictTypeData(dictCode, value) || value}
+    </NTag>
+  )
 }
 
 const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
@@ -169,18 +164,14 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ellipsis: { tooltip: true },
     render: row => row.contest_name || row.contest_key || '-',
   },
-  { title: '类型', path: 'kind', width: 90 },
+  { title: '类型', path: 'kind', width: 100, render: row => renderDictTag('SUBMISSION_KIND', row.kind) },
   { title: '语言', path: 'language_key', width: 90 },
-  { title: '状态', path: 'status', width: 100 },
+  { title: '状态', path: 'status', width: 110, render: row => renderDictTag('SUBMISSION_STATUS', row.status) },
   {
     title: '结果',
     path: 'result',
-    width: 80,
-    render: row => (
-      <NTag size="small" type={resultType(row.result)} bordered={false}>
-        {row.result || '-'}
-      </NTag>
-    ),
+    width: 90,
+    render: row => renderDictTag('SUBMISSION_RESULT', row.result),
   },
   { title: '得分', path: 'score', width: 70 },
   {

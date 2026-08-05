@@ -45,6 +45,10 @@ class OjContestRepository:
             data["format_name"] = str(data["format_name"].value)
         if data.get("scoreboard_visibility") is not None and not isinstance(data["scoreboard_visibility"], str):
             data["scoreboard_visibility"] = str(data["scoreboard_visibility"].value)
+        if data.get("registration_mode") is not None and not isinstance(data["registration_mode"], str):
+            data["registration_mode"] = str(data["registration_mode"].value)
+        if data.get("list_visibility") is not None and not isinstance(data["list_visibility"], str):
+            data["list_visibility"] = str(data["list_visibility"].value)
         data["user_count"] = 0
         entity = OjContest(**data)
         self.db.add(entity)
@@ -72,6 +76,10 @@ class OjContestRepository:
             data["format_name"] = str(data["format_name"].value)
         if data.get("scoreboard_visibility") is not None and not isinstance(data["scoreboard_visibility"], str):
             data["scoreboard_visibility"] = str(data["scoreboard_visibility"].value)
+        if data.get("registration_mode") is not None and not isinstance(data["registration_mode"], str):
+            data["registration_mode"] = str(data["registration_mode"].value)
+        if data.get("list_visibility") is not None and not isinstance(data["list_visibility"], str):
+            data["list_visibility"] = str(data["list_visibility"].value)
         for key, value in data.items():
             setattr(entity, key, value)
         await self.replace_tag_ids(entity.id, payload.tag_ids)
@@ -124,6 +132,10 @@ class OjContestRepository:
             "tester_see_scoreboard": source.tester_see_scoreboard,
             "tester_see_submissions": source.tester_see_submissions,
             "locked_after": None,
+            "register_start": source.register_start,
+            "register_end": source.register_end,
+            "registration_mode": source.registration_mode,
+            "list_visibility": source.list_visibility,
             "user_count": 0,
             "extra": dict(source.extra or {}),
         }

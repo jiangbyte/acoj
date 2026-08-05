@@ -1,78 +1,80 @@
 import type { ReactNode } from 'react'
-import { Card, Typography } from 'antd'
-import { CodeOutlined, SafetyCertificateOutlined, TrophyOutlined } from '@ant-design/icons'
+import { Link } from 'react-router-dom'
 import './auth-page.css'
 
-type Props = {
+type SplitProps = {
   title: string
-  subtitle: string
-  wide?: boolean
+  headerExtra?: ReactNode
   children: ReactNode
 }
 
-const highlights = [
-  {
-    icon: <SafetyCertificateOutlined />,
-    title: '安全登录',
-    text: '验证码与加密传输保障账号安全',
-  },
-  {
-    icon: <CodeOutlined />,
-    title: '在线评测',
-    text: '题库练习与提交记录一站完成',
-  },
-  {
-    icon: <TrophyOutlined />,
-    title: '竞赛参赛',
-    text: '报名参赛、查看榜单与答疑',
-  },
+const brandName = import.meta.env.VITE_APP_TITLE || 'ACOJ'
+
+const features = [
+  '题库练习与提交记录',
+  '课程路径与今日练习',
+  '竞赛报名与实时榜单',
 ]
 
-export function AuthSplit({ title, subtitle, wide = false, children }: Props) {
+/** 登录 / 注册：Gitee 风格左右分栏卡片 */
+export function AuthSplit({ title, headerExtra, children }: SplitProps) {
   return (
-    <section className="auth-split">
-      <aside className="auth-split__visual" aria-hidden>
-        <div className="auth-split__visual-inner">
-          <Typography.Text type="success" strong>
-            ACOJ 在线评测门户
-          </Typography.Text>
-          <Typography.Title level={2} className="!mt-2 !mb-0">
-            刷题、竞赛、排名一站完成
-          </Typography.Title>
-          <Typography.Paragraph type="secondary" className="!mb-0 !mt-3">
-            面向选手的身份入口。登录后即可提交代码、参加竞赛并查看 Rating。
-          </Typography.Paragraph>
-          <div className="auth-split__highlights">
-            {highlights.map((item) => (
-              <Card key={item.title} size="small">
-                <div className="flex gap-2">
-                  <span className="text-lg" style={{ color: 'var(--ant-color-primary)' }}>
-                    {item.icon}
-                  </span>
-                  <div>
-                    <div className="font-medium">{item.title}</div>
-                    <Typography.Text type="secondary" className="text-xs">
-                      {item.text}
-                    </Typography.Text>
-                  </div>
-                </div>
-              </Card>
-            ))}
+    <div className="auth-page">
+      <div className="auth-card">
+        <aside className="auth-card__brand" aria-hidden={false}>
+          <div className="auth-card__brand-deco" aria-hidden />
+          <div className="auth-card__brand-inner">
+            <Link to="/" className="auth-card__logo">
+              <span className="auth-card__logo-mark">{brandName.slice(0, 1).toUpperCase()}</span>
+              <span className="auth-card__logo-text">{brandName}</span>
+            </Link>
+            <h2 className="auth-card__headline">校园在线评测平台</h2>
+            <p className="auth-card__lead">
+              服务课程教学与日常练习：做题、参赛、看排名，一站完成。
+            </p>
+            <ul className="auth-card__features">
+              {features.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+            <div className="auth-card__brand-foot">
+              <Link to="/" className="auth-card__brand-link">
+                进入门户首页
+              </Link>
+            </div>
           </div>
-        </div>
-      </aside>
+        </aside>
 
-      <div className="auth-split__panel">
-        <Card className={wide ? 'auth-split__card auth-split__card--wide' : 'auth-split__card'}>
-          <Typography.Title level={3} className="!mt-0 !mb-1">
-            {title}
-          </Typography.Title>
-          <Typography.Paragraph type="secondary" className="!mb-6">
-            {subtitle}
-          </Typography.Paragraph>
+        <div className="auth-card__form">
+          <div className="auth-card__form-head">
+            <h1 className="auth-card__title">{title}</h1>
+            {headerExtra ? <div className="auth-card__form-extra">{headerExtra}</div> : null}
+          </div>
           {children}
-        </Card>
+        </div>
       </div>
-    </section>
+    </div>
+  )
+}
+
+type CenterProps = {
+  title: string
+  description?: string
+  children: ReactNode
+}
+
+/** 找回 / 重置密码：居中简版 */
+export function AuthCenter({ title, description, children }: CenterProps) {
+  return (
+    <div className="auth-page auth-page--center">
+      <div className="auth-center">
+        <Link to="/" className="auth-center__logo">
+          <span className="auth-center__logo-mark">{brandName.slice(0, 1).toUpperCase()}</span>
+        </Link>
+        <h1 className="auth-center__title">{title}</h1>
+        {description ? <p className="auth-center__desc">{description}</p> : null}
+        <div className="auth-center__body">{children}</div>
+      </div>
+    </div>
   )
 }

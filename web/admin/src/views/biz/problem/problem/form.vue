@@ -3,6 +3,7 @@ import type { FormInst, FormRules, SelectOption } from 'naive-ui'
 import { ojProblemApi, ojProblemGroupApi, ojProblemTestCaseApi, ojProblemTypeApi } from '@/api'
 import MdEditor from '@/components/editor/MdEditor.vue'
 import { createRequiredRule, formatDateTime } from '@/utils'
+import { dictList } from '@/utils/dict'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TestdataPanel from '../data/index.vue'
@@ -34,6 +35,18 @@ const statusOptions = [
   { label: '已发布', value: 'published' },
 ]
 
+const difficultyOptions = computed(() => {
+  const fromDict = dictList('PROBLEM_DIFFICULTY')
+  if (fromDict.length) {
+    return fromDict
+  }
+  return [
+    { label: '简单', value: 'Easy' },
+    { label: '中等', value: 'Medium' },
+    { label: '困难', value: 'Hard' },
+  ]
+})
+
 const defaultFormData: Record<string, any> = {
   code: '',
   name: '',
@@ -48,6 +61,7 @@ const defaultFormData: Record<string, any> = {
   is_public: false,
   published_at: null,
   submission_source_visibility: 'FOLLOW',
+  difficulty: 'Medium',
   type_ids: [],
   extra: '{}',
 }
@@ -69,6 +83,7 @@ const rules = computed<FormRules>(() => ({
   name: [createRequiredRule('题目标题', 'input')],
   description: [createRequiredRule('题面正文', 'input')],
   submission_source_visibility: [createRequiredRule('提交源码可见性', 'select')],
+  difficulty: [createRequiredRule('难度', 'select')],
 }))
 
 onMounted(async () => {
@@ -308,6 +323,9 @@ async function changeStatus(next: string) {
                   </NFormItemGi>
                   <NFormItemGi label="题目分值" path="points">
                     <NInputNumber v-model:value="state.formModel.points" class="w-full" />
+                  </NFormItemGi>
+                  <NFormItemGi label="难度" path="difficulty">
+                    <NSelect v-model:value="state.formModel.difficulty" :options="difficultyOptions" />
                   </NFormItemGi>
                   <NFormItemGi label="提交源码可见性" path="submission_source_visibility">
                     <NSelect v-model:value="state.formModel.submission_source_visibility" :options="submissionSourceVisibilityOptions" />

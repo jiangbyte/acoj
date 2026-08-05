@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs } from 'react-router-dom'
 import { redirect } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
-import { ensureDict } from '@/utils/dict'
+import { refreshDict, syncDictTree } from '@/utils/dict'
 import { getSafeRedirect } from '@/utils/validate'
 
 const publicPrefixes = ['/auth']
@@ -11,7 +11,8 @@ export function isPublicPath(pathname: string) {
 }
 
 export async function requireAuth({ request }: LoaderFunctionArgs) {
-  void ensureDict()
+  syncDictTree()
+  void refreshDict()
   const { token } = useAuthStore.getState()
   if (!token) {
     const url = new URL(request.url)
@@ -23,7 +24,8 @@ export async function requireAuth({ request }: LoaderFunctionArgs) {
 }
 
 export async function guestOnly({ request }: LoaderFunctionArgs) {
-  void ensureDict()
+  syncDictTree()
+  void refreshDict()
   const { token } = useAuthStore.getState()
   if (token) {
     const url = new URL(request.url)

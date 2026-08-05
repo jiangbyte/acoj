@@ -1,28 +1,12 @@
 <script setup lang="ts">
 import { ojContestApi } from '@/api'
 import { MdPreview } from '@/components/editor'
-import { displayValue, formatDateTime, hasPermission } from '@/utils'
+import { createTagColor, dictTypeColor, dictTypeData, displayValue, formatDateTime, hasPermission } from '@/utils'
 import { computed, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
-
-const lifecycleLabel: Record<string, string> = {
-  SCHEDULED: '未开始',
-  RUNNING: '进行中',
-  ENDED: '已结束',
-  LOCKED: '已锁定',
-}
-
-const formatLabel: Record<string, string> = {
-  default: 'Default',
-  acm: 'ACM',
-  icpc: 'ICPC',
-  atcoder: 'AtCoder',
-  oi: 'OI',
-  ioi: 'IOI',
-}
 
 const scoreboardLabel: Record<string, string> = {
   VISIBLE: '始终可见',
@@ -39,12 +23,9 @@ const state = reactive({
 
 const contestId = computed(() => String(route.query.id ?? ''))
 
-const lifecycleType = computed(() => {
-  const status = state.detail.lifecycle_status
-  if (status === 'RUNNING') return 'success'
-  if (status === 'ENDED') return 'warning'
-  if (status === 'LOCKED') return 'error'
-  return 'info'
+const contestTypeValue = computed(() => {
+  if (state.detail.is_private) return 'PRIVATE'
+  return state.detail.is_rated ? 'RATED' : 'UNRATED'
 })
 
 onMounted(() => {
@@ -86,8 +67,20 @@ function goEdit() {
           返回
         </NButton>
         <span class="text-16px font-medium">竞赛详情</span>
-        <NTag v-if="state.detail.lifecycle_status" size="small" :type="lifecycleType">
-          {{ lifecycleLabel[state.detail.lifecycle_status] || state.detail.lifecycle_status }}
+        <NTag
+          v-if="state.detail.lifecycle_status"
+          size="small"
+          :color="createTagColor(dictTypeColor('CONTEST_LIFECYCLE_STATUS', state.detail.lifecycle_status))"
+          :bordered="false"
+        >
+          {{ dictTypeData('CONTEST_LIFECYCLE_STATUS', state.detail.lifecycle_status) || state.detail.lifecycle_status }}
+        </NTag>
+        <NTag
+          size="small"
+          :color="createTagColor(dictTypeColor('CONTEST_TYPE', contestTypeValue))"
+          :bordered="false"
+        >
+          {{ dictTypeData('CONTEST_TYPE', contestTypeValue) || contestTypeValue }}
         </NTag>
         <span v-if="state.detail.key" class="text-gray-500">
           {{ state.detail.key }} · {{ state.detail.name }}
@@ -154,7 +147,7 @@ function goEdit() {
                   {{ state.detail.freeze_seconds ? `${state.detail.freeze_seconds} 秒` : '-' }}
                 </NDescriptionsItem>
                 <NDescriptionsItem label="赛制">
-                  {{ formatLabel[state.detail.format_name] || displayValue(state.detail.format_name) }}
+                  {{ dictTypeData('CONTEST_FORMAT', state.detail.format_name) || displayValue(state.detail.format_name) }}
                 </NDescriptionsItem>
                 <NDescriptionsItem label="榜单可见性">
                   {{

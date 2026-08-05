@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react'
-import { Alert, Button, ConfigProvider, Form, Input, message } from 'antd'
+import { Button, ConfigProvider, Form, Input, message } from 'antd'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import * as authApi from '@/api/auth'
 import { CaptchaInput, type CaptchaInputHandle } from '@/components/common/CaptchaInput'
 import { PasswordStrength } from '@/components/common/PasswordStrength'
 import { encryptPasswords } from '@/utils/security'
 import { isValidEmail } from '@/utils/validate'
-import { AuthSplit } from './AuthSplit'
+import { AuthCenter } from './AuthSplit'
 
 type FormValues = {
   email: string
@@ -88,53 +88,36 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthSplit
+    <AuthCenter
       title={isResetMode ? '重置密码' : '找回密码'}
-      subtitle={
-        isResetMode ? '使用邮件重置链接设置新密码。' : '向已启用登录的邮箱发送密码重置链接。'
+      description={
+        isResetMode
+          ? '请设置新密码。重置链接在过期前仅可使用一次。'
+          : '请输入已启用登录的邮箱，系统将发送密码重置链接。'
       }
     >
       <ConfigProvider componentSize="large">
-        <Alert
-          type="info"
-          showIcon
-          className="mb-4"
-          message={
-            isResetMode
-              ? '该重置链接在过期前仅可使用一次。'
-              : '仅当该邮箱已启用门户登录时，系统才会发送重置链接。'
-          }
-        />
-
         <Form
           form={form}
           layout="vertical"
+          requiredMark={false}
           initialValues={{ captcha_id: '', captcha_value: '' }}
           onFinish={() => {
             void (isResetMode ? resetPassword() : sendLink())
           }}
         >
-          <Form.Item
-            name="email"
-            label="登录邮箱"
-            rules={[{ required: true, message: '请输入登录邮箱' }]}
-          >
-            <Input placeholder="请输入登录邮箱" allowClear />
+          <Form.Item name="email" rules={[{ required: true, message: '请输入登录邮箱' }]}>
+            <Input placeholder="登录邮箱" allowClear />
           </Form.Item>
 
           {isResetMode ? (
             <>
-              <Form.Item
-                name="password"
-                label="新密码"
-                rules={[{ required: true, message: '请输入新密码' }]}
-              >
-                <Input.Password placeholder="至少 8 个字符，含大小写、数字与特殊字符" />
+              <Form.Item name="password" rules={[{ required: true, message: '请输入新密码' }]}>
+                <Input.Password placeholder="新密码（至少 8 位，含大小写、数字与特殊字符）" />
               </Form.Item>
               <PasswordStrength password={password} />
               <Form.Item
                 name="confirmPassword"
-                label="确认密码"
                 dependencies={['password']}
                 rules={[
                   { required: true, message: '请确认密码' },
@@ -148,7 +131,7 @@ export function ForgotPasswordPage() {
                   }),
                 ]}
               >
-                <Input.Password placeholder="请再次输入新密码" />
+                <Input.Password placeholder="确认新密码" />
               </Form.Item>
             </>
           ) : null}
@@ -157,11 +140,7 @@ export function ForgotPasswordPage() {
             <Input />
           </Form.Item>
 
-          <Form.Item
-            name="captcha_value"
-            label="验证码"
-            rules={[{ required: true, message: '请输入验证码' }]}
-          >
+          <Form.Item name="captcha_value" rules={[{ required: true, message: '请输入验证码' }]}>
             <CaptchaInput
               ref={captchaRef}
               size="large"
@@ -178,7 +157,7 @@ export function ForgotPasswordPage() {
             </Button>
           </Form.Item>
 
-          <div className="flex items-center justify-between">
+          <div className="auth-center__links">
             <Link to="/auth/login">返回登录</Link>
             {isResetMode ? (
               <Button type="link" className="!px-0" onClick={() => void sendLink()}>
@@ -190,6 +169,6 @@ export function ForgotPasswordPage() {
           </div>
         </Form>
       </ConfigProvider>
-    </AuthSplit>
+    </AuthCenter>
   )
 }

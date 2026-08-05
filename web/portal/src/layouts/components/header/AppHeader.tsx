@@ -5,6 +5,7 @@ import { useLocation } from 'react-router-dom'
 import { MobileDrawer } from '../common/MobileDrawer'
 import { Logo } from './Logo'
 import { NavMenu } from './NavMenu'
+import { ThemeSwitch } from './ThemeSwitch'
 import { UserCenter } from './UserCenter'
 import './header.css'
 
@@ -42,7 +43,10 @@ export function AppHeader() {
               </div>
             ) : null}
           </div>
-          <UserCenter />
+          <div className="flex shrink-0 items-center gap-2">
+            <ThemeSwitch />
+            <UserCenter />
+          </div>
         </div>
       </header>
 

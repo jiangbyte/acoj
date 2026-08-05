@@ -3,6 +3,7 @@ import type { DataTableColumns } from 'naive-ui'
 import { ojSubmissionApi } from '@/api'
 import MonacoEditor from '@/components/editor/MonacoEditor.vue'
 import { displayValue, formatDateTime, hasPermission, resolveFileUrl } from '@/utils'
+import { dictTypeColor, dictTypeData } from '@/utils/dict'
 import { monacoLanguageFromExtension } from '@/views/biz/problem/shared/monacoLanguage'
 import SubmissionPerformancePanel from './SubmissionPerformancePanel.vue'
 import { NAvatar, NFlex, NTag } from 'naive-ui'
@@ -12,20 +13,15 @@ import { useRouter } from 'vue-router'
 const emit = defineEmits<{ rejudged: [] }>()
 const router = useRouter()
 
-const statusColor: Record<string, 'success' | 'error' | 'warning' | 'info' | 'default'> = {
-  AC: 'success',
-  WA: 'error',
-  TLE: 'warning',
-  MLE: 'warning',
-  RE: 'error',
-  CE: 'error',
-  OLE: 'warning',
-  SE: 'error',
-  IE: 'error',
-  COMPLETED: 'info',
-  JUDGING: 'info',
-  QUEUED: 'info',
-  FAILED: 'error',
+function renderDictTag(dictCode: string, value?: string | null) {
+  if (!value)
+    return <span>-</span>
+  const color = dictTypeColor(dictCode, value)
+  return (
+    <NTag size="small" color={color || undefined}>
+      {dictTypeData(dictCode, value) || value}
+    </NTag>
+  )
 }
 
 const state = reactive({
@@ -58,11 +54,7 @@ const caseColumns = computed<DataTableColumns<any>>(() => [
     title: '结果',
     key: 'result',
     width: 90,
-    render: row => (
-      <NTag size="small" type={statusColor[String(row.result ?? '')] ?? 'default'}>
-        {String(row.result ?? '-')}
-      </NTag>
-    ),
+    render: row => renderDictTag('SUBMISSION_RESULT', row.result),
   },
   { title: '分', key: 'score', width: 60 },
   {
@@ -188,13 +180,19 @@ defineExpose({ openModal })
               {{ displayValue(state.detail.language_key) }}
             </NDescriptionsItem>
             <NDescriptionsItem label="状态">
-              <NTag size="small" :type="statusColor[String(state.detail.status ?? '')] ?? 'default'">
-                {{ displayValue(state.detail.status) }}
+              <NTag
+                size="small"
+                :color="dictTypeColor('SUBMISSION_STATUS', state.detail.status) || undefined"
+              >
+                {{ dictTypeData('SUBMISSION_STATUS', state.detail.status) || displayValue(state.detail.status) }}
               </NTag>
             </NDescriptionsItem>
             <NDescriptionsItem label="结果">
-              <NTag size="small" :type="statusColor[String(state.detail.result ?? '')] ?? 'default'">
-                {{ displayValue(state.detail.result || '-') }}
+              <NTag
+                size="small"
+                :color="dictTypeColor('SUBMISSION_RESULT', state.detail.result) || undefined"
+              >
+                {{ dictTypeData('SUBMISSION_RESULT', state.detail.result) || displayValue(state.detail.result || '-') }}
               </NTag>
             </NDescriptionsItem>
             <NDescriptionsItem label="得分">

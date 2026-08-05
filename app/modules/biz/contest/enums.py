@@ -52,3 +52,33 @@ class ClarificationThreadStatus(StrEnum):
     OPEN = "OPEN"
     ANSWERED = "ANSWERED"
     CLOSED = "CLOSED"
+
+
+class ContestRegistrationStatus(StrEnum):
+    """竞赛报名状态。"""
+
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    CANCELLED = "CANCELLED"
+
+
+class ContestRegistrationMode(StrEnum):
+    """报名审核模式。"""
+
+    AUTO = "AUTO"
+    REVIEW = "REVIEW"
+
+
+class ContestListVisibility(StrEnum):
+    """竞赛列表可见性。"""
+
+    PUBLIC = "PUBLIC"
+    INVITE_ONLY = "INVITE_ONLY"
+
+
+class ContestRegistrationSource(StrEnum):
+    """报名来源。"""
+
+    SELF = "SELF"
+    ADMIN = "ADMIN"

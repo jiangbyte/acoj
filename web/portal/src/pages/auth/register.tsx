@@ -60,86 +60,76 @@ export function RegisterPage() {
   }
 
   return (
-    <AuthSplit title="注册" subtitle="创建门户账号，开始刷题与参赛。" wide>
+    <AuthSplit
+      title="注册"
+      headerExtra={
+        <>
+          已有账号？<Link to="/auth/login">点此登录</Link>
+        </>
+      }
+    >
       <ConfigProvider componentSize="large">
         <Form
           form={form}
           layout="vertical"
+          requiredMark={false}
           initialValues={{ captcha_id: '', captcha_value: '' }}
           onFinish={onFinish}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
-            <Form.Item
-              name="account"
-              label="用户名"
-              rules={[
-                { required: true, message: '请输入用户名' },
-                { min: 3, max: 64, message: '用户名需 3-64 个字符' },
-              ]}
-            >
-              <Input placeholder="输入用户名" allowClear />
-            </Form.Item>
+          <Form.Item
+            name="account"
+            rules={[
+              { required: true, message: '请输入用户名' },
+              { min: 3, max: 64, message: '用户名需 3-64 个字符' },
+            ]}
+          >
+            <Input placeholder="用户名" allowClear />
+          </Form.Item>
 
-            <Form.Item
-              name="email"
-              label="邮箱"
-              rules={[
-                { required: true, message: '请输入邮箱' },
-                { type: 'email', message: '邮箱格式不正确' },
-                { max: 128, message: '邮箱最多 128 个字符' },
-              ]}
-            >
-              <Input placeholder="your@example.com" allowClear />
-            </Form.Item>
+          <Form.Item
+            name="email"
+            rules={[
+              { required: true, message: '请输入邮箱' },
+              { type: 'email', message: '邮箱格式不正确' },
+              { max: 128, message: '邮箱最多 128 个字符' },
+            ]}
+          >
+            <Input placeholder="邮箱地址" allowClear />
+          </Form.Item>
 
-            <Form.Item
-              name="password"
-              label="密码"
-              className="col-span-full"
-              rules={[{ required: true, message: '请输入密码' }]}
-            >
-              <Input.Password placeholder="至少 8 个字符，含大小写、数字与特殊字符" />
-            </Form.Item>
-            <div className="col-span-full">
-              <PasswordStrength password={password} />
-            </div>
+          <Form.Item name="password" rules={[{ required: true, message: '请输入密码' }]}>
+            <Input.Password placeholder="密码（至少 8 位，含大小写、数字与特殊字符）" />
+          </Form.Item>
+          <PasswordStrength password={password} />
 
-            <Form.Item
-              name="confirmPassword"
-              label="确认密码"
-              className="col-span-full"
-              dependencies={['password']}
-              rules={[
-                { required: true, message: '请确认密码' },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (!value || getFieldValue('password') === value) {
-                      return Promise.resolve()
-                    }
-                    return Promise.reject(new Error('两次密码输入不一致'))
-                  },
-                }),
-              ]}
-            >
-              <Input.Password placeholder="再次输入密码" />
-            </Form.Item>
+          <Form.Item
+            name="confirmPassword"
+            dependencies={['password']}
+            rules={[
+              { required: true, message: '请确认密码' },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('password') === value) {
+                    return Promise.resolve()
+                  }
+                  return Promise.reject(new Error('两次密码输入不一致'))
+                },
+              }),
+            ]}
+          >
+            <Input.Password placeholder="确认密码" />
+          </Form.Item>
 
-            <Form.Item
-              name="captcha_value"
-              label="验证码"
-              className="col-span-full"
-              rules={[{ required: true, message: '请输入验证码' }]}
-            >
-              <CaptchaInput
-                ref={captchaRef}
-                size="large"
-                captchaId={captchaId}
-                captchaValue={captchaValue}
-                onCaptchaIdChange={(v) => form.setFieldValue('captcha_id', v)}
-                onCaptchaValueChange={(v) => form.setFieldValue('captcha_value', v)}
-              />
-            </Form.Item>
-          </div>
+          <Form.Item name="captcha_value" rules={[{ required: true, message: '请输入验证码' }]}>
+            <CaptchaInput
+              ref={captchaRef}
+              size="large"
+              captchaId={captchaId}
+              captchaValue={captchaValue}
+              onCaptchaIdChange={(v) => form.setFieldValue('captcha_id', v)}
+              onCaptchaValueChange={(v) => form.setFieldValue('captcha_value', v)}
+            />
+          </Form.Item>
 
           <Form.Item name="captcha_id" hidden>
             <Input />
@@ -147,14 +137,10 @@ export function RegisterPage() {
 
           <Form.Item>
             <Button type="primary" htmlType="submit" block loading={loading}>
-              注册
+              立即注册
             </Button>
           </Form.Item>
         </Form>
-
-        <div className="text-center text-gray-500">
-          已有账号？ <Link to="/auth/login">立即登录</Link>
-        </div>
       </ConfigProvider>
     </AuthSplit>
   )

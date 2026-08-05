@@ -107,6 +107,7 @@ class SearchUserSchema(ApiSchema):
     avatar: str | None = None
     signature: str | None = None
     is_friend: bool = False
+    has_pending_request: bool = False
 
 
 class FriendSchema(ApiSchema):

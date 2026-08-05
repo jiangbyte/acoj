@@ -10,6 +10,8 @@ export interface PortalContestBrief {
   name: string
   summary: string | null
   description: string | null
+  /** 竞赛封面图；未下发时可由 extra.cover_url 兜底 */
+  cover_url?: string | null
   start_time: string
   end_time: string
   format_name: string
@@ -21,6 +23,15 @@ export interface PortalContestBrief {
   freeze_seconds: number | null
   user_count: number
   joined: boolean
+  register_start?: string | null
+  register_end?: string | null
+  registration_mode?: string
+  list_visibility?: string
+  registration_status?: string | null
+  registration_remark?: string | null
+  can_register?: boolean
+  can_enter?: boolean
+  requires_access_code?: boolean
   extra?: Record<string, unknown> | null
 }
 
@@ -140,17 +151,40 @@ export interface ContestScoreboard {
 export function contestPage(params: { current?: number; size?: number; keyword?: string }) {
   return http.get<PageData<PortalContestBrief>>(`${prefix}/biz/contest/page`, {
     params,
-    addToken: false,
   })
+}
+
+export function contestMine(params: { current?: number; size?: number }) {
+  return http.get<PageData<PortalContestBrief>>(`${prefix}/biz/contest/mine`, { params })
 }
 
 export function contestDetail(id: string) {
   return http.get<PortalContestBrief>(`${prefix}/biz/contest/detail`, {
     params: { id },
-    addToken: false,
   })
 }
 
+export function contestRegister(contestId: string, data: { access_code?: string | null } = {}) {
+  return http.post<PortalContestBrief>(`${prefix}/biz/contest/register`, data, {
+    params: { contest_id: contestId },
+  })
+}
+
+export function contestUnregister(contestId: string) {
+  return http.post<null>(`${prefix}/biz/contest/unregister`, null, {
+    params: { contest_id: contestId },
+  })
+}
+
+export function contestEnter(contestId: string) {
+  return http.post<{ participation: PortalContestParticipation; first_problem_id: string | null }>(
+    `${prefix}/biz/contest/enter`,
+    null,
+    { params: { contest_id: contestId } },
+  )
+}
+
+/** @deprecated 使用 contestRegister / contestEnter */
 export function contestJoin(contestId: string, data: { access_code?: string | null; spectate?: boolean }) {
   return http.post<PortalContestParticipation>(`${prefix}/biz/contest/join`, data, {
     params: { contest_id: contestId },
@@ -172,21 +206,18 @@ export function contestSubmit(contestId: string, data: { problem_id: string; lan
 export function contestProblems(contestId: string) {
   return http.get<PortalContestProblemMeta[]>(`${prefix}/biz/contest/problems`, {
     params: { contest_id: contestId },
-    addToken: false,
   })
 }
 
 export function contestProblemDetail(contestId: string, problemId: string) {
   return http.get<PortalContestProblemDetail>(`${prefix}/biz/contest/problem/detail`, {
     params: { contest_id: contestId, problem_id: problemId },
-    addToken: false,
   })
 }
 
 export function contestScoreboard(contestId: string) {
   return http.get<ContestScoreboard>(`${prefix}/biz/contest/scoreboard`, {
     params: { contest_id: contestId },
-    addToken: false,
   })
 }
 
@@ -199,7 +230,6 @@ export function contestMySubmissions(contestId: string) {
 export function contestClarifications(contestId: string) {
   return http.get<PortalClarification[]>(`${prefix}/biz/contest/clarifications`, {
     params: { contest_id: contestId },
-    addToken: false,
   })
 }
 

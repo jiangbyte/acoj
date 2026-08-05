@@ -2,18 +2,18 @@
 import type { DataTableColumns, FormInst, FormRules, SelectOption } from 'naive-ui'
 import { ojContestApi, ojContestClarificationApi, ojContestRatingApi, ojContestTagApi } from '@/api'
 import MdEditor from '@/components/editor/MdEditor.vue'
-import { createRequiredRule, formatDateTime } from '@/utils'
+import { createRequiredRule, createTagColor, dictList, dictTypeColor, dictTypeData, formatDateTime } from '@/utils'
 import { NButton, NTag } from 'naive-ui'
 import { computed, h, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BannedPanel from '../banned-user/index.vue'
 import ParticipationPanel from '../participation/index.vue'
-import PrivatePanel from '../private-contestant/index.vue'
+import RegistrationPanel from '../registration/index.vue'
 import ProblemsPanel from '../problem/index.vue'
 import StaffPanel from '../staff/index.vue'
 import SubmissionPanel from '../../submission/submission/index.vue'
 
-const PEOPLE_TABS = ['staff', 'private', 'banned', 'participation'] as const
+const PEOPLE_TABS = ['staff', 'registration', 'banned', 'participation'] as const
 const threadStatusOptions: SelectOption[] = [
   { label: 'OPEN', value: 'OPEN' },
   { label: 'ANSWERED', value: 'ANSWERED' },
@@ -25,14 +25,19 @@ const router = useRouter()
 const formRef = ref<FormInst | null>(null)
 const tagOptions = ref<SelectOption[]>([])
 
-const formatOptions: SelectOption[] = [
-  { label: 'default', value: 'default' },
-  { label: 'ACM', value: 'acm' },
-  { label: 'ICPC', value: 'icpc' },
-  { label: 'AtCoder', value: 'atcoder' },
-  { label: 'OI', value: 'oi' },
-  { label: 'IOI', value: 'ioi' },
-]
+const formatOptions = computed<SelectOption[]>(() => {
+  const fromDict = dictList('CONTEST_FORMAT')
+  return fromDict.length
+    ? fromDict
+    : [
+        { label: 'default', value: 'default' },
+        { label: 'ACM', value: 'acm' },
+        { label: 'ICPC', value: 'icpc' },
+        { label: 'AtCoder', value: 'atcoder' },
+        { label: 'OI', value: 'oi' },
+        { label: 'IOI', value: 'ioi' },
+      ]
+})
 
 const scoreboardVisibilityOptions: SelectOption[] = [
   { label: 'VISIBLE', value: 'VISIBLE' },
@@ -40,13 +45,6 @@ const scoreboardVisibilityOptions: SelectOption[] = [
   { label: 'AFTER_PARTICIPATION', value: 'AFTER_PARTICIPATION' },
   { label: 'HIDDEN', value: 'HIDDEN' },
 ]
-
-const lifecycleTagType: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
-  SCHEDULED: 'info',
-  RUNNING: 'success',
-  ENDED: 'warning',
-  LOCKED: 'error',
-}
 
 const defaultFormData: Record<string, any> = {
   key: '',
@@ -75,6 +73,10 @@ const defaultFormData: Record<string, any> = {
   tester_see_scoreboard: false,
   tester_see_submissions: false,
   locked_after: null,
+  register_start: null,
+  register_end: null,
+  registration_mode: 'AUTO',
+  list_visibility: 'PUBLIC',
   tag_ids: [],
   extra: '{}',
   lifecycle_status: null,
@@ -320,6 +322,10 @@ function normalizeFormData(data: Record<string, any> = {}) {
     start_time: normalizeDateTimeValue(data.start_time),
     end_time: normalizeDateTimeValue(data.end_time),
     locked_after: normalizeDateTimeValue(data.locked_after),
+    register_start: normalizeDateTimeValue(data.register_start),
+    register_end: normalizeDateTimeValue(data.register_end),
+    registration_mode: data.registration_mode || 'AUTO',
+    list_visibility: data.list_visibility || 'PUBLIC',
     freeze_seconds: data.freeze_seconds ?? 0,
     scoreboard_visibility: visibility,
     format_name: data.format_name || 'default',
@@ -348,6 +354,8 @@ function normalizeSubmitData(data: Record<string, any>) {
     start_time: normalizeSubmitDateTimeValue(data.start_time),
     end_time: normalizeSubmitDateTimeValue(data.end_time),
     locked_after: normalizeSubmitDateTimeValue(data.locked_after),
+    register_start: normalizeSubmitDateTimeValue(data.register_start),
+    register_end: normalizeSubmitDateTimeValue(data.register_end),
     format_config: parseJsonValue(data.format_config),
     extra: parseJsonValue(data.extra),
   }
@@ -725,9 +733,10 @@ async function promoteThread() {
         <NTag
           v-if="state.dataId && state.formModel.lifecycle_status"
           size="small"
-          :type="lifecycleTagType[state.formModel.lifecycle_status] || 'default'"
+          :color="createTagColor(dictTypeColor('CONTEST_LIFECYCLE_STATUS', state.formModel.lifecycle_status))"
+          :bordered="false"
         >
-          {{ state.formModel.lifecycle_status }}
+          {{ dictTypeData('CONTEST_LIFECYCLE_STATUS', state.formModel.lifecycle_status) || state.formModel.lifecycle_status }}
         </NTag>
       </NFlex>
       <NSpace>
@@ -800,6 +809,12 @@ async function promoteThread() {
                   <NFormItemGi label="结束时间" path="end_time">
                     <NDatePicker v-model:formatted-value="state.formModel.end_time" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" class="w-full" clearable />
                   </NFormItemGi>
+                  <NFormItemGi label="报名开始" path="register_start">
+                    <NDatePicker v-model:formatted-value="state.formModel.register_start" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" class="w-full" clearable />
+                  </NFormItemGi>
+                  <NFormItemGi label="报名截止" path="register_end">
+                    <NDatePicker v-model:formatted-value="state.formModel.register_end" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" class="w-full" clearable />
+                  </NFormItemGi>
                   <NFormItemGi label="个人参赛时长（秒）" path="time_limit_seconds">
                     <NInputNumber v-model:value="state.formModel.time_limit_seconds" class="w-full" />
                   </NFormItemGi>
@@ -831,11 +846,30 @@ async function promoteThread() {
                   <NFormItemGi label="是否公开可见" path="is_visible">
                     <NSwitch v-model:value="state.formModel.is_visible" />
                   </NFormItemGi>
-                  <NFormItemGi label="是否仅限指定选手" path="is_private">
+                  <NFormItemGi label="是否私有赛（禁止自助报名）" path="is_private">
                     <NSwitch v-model:value="state.formModel.is_private" />
                   </NFormItemGi>
+                  <NFormItemGi label="列表可见性" path="list_visibility">
+                    <NSelect
+                      v-model:value="state.formModel.list_visibility"
+                      :options="[
+                        { label: '公开列表', value: 'PUBLIC' },
+                        { label: '仅邀请可见', value: 'INVITE_ONLY' },
+                      ]"
+                    />
+                  </NFormItemGi>
+                  <NFormItemGi label="报名审核" path="registration_mode">
+                    <NSelect
+                      v-model:value="state.formModel.registration_mode"
+                      :disabled="state.formModel.is_private"
+                      :options="[
+                        { label: '自动通过', value: 'AUTO' },
+                        { label: '需审核', value: 'REVIEW' },
+                      ]"
+                    />
+                  </NFormItemGi>
                   <NFormItemGi label="参赛准入码" path="access_code">
-                    <NInput v-model:value="state.formModel.access_code" />
+                    <NInput v-model:value="state.formModel.access_code" placeholder="公开赛可选" />
                   </NFormItemGi>
                   <NFormItemGi label="榜单可见性" path="scoreboard_visibility">
                     <NSelect v-model:value="state.formModel.scoreboard_visibility" :options="scoreboardVisibilityOptions" />
@@ -913,8 +947,8 @@ async function promoteThread() {
                 <NTabPane name="staff" tab="工作人员" display-directive="if">
                   <StaffPanel :contest-id="state.dataId" embedded />
                 </NTabPane>
-                <NTabPane name="private" tab="私有选手" display-directive="if">
-                  <PrivatePanel :contest-id="state.dataId" embedded />
+                <NTabPane name="registration" tab="报名人员" display-directive="if">
+                  <RegistrationPanel :contest-id="state.dataId" />
                 </NTabPane>
                 <NTabPane name="banned" tab="禁赛" display-directive="if">
                   <BannedPanel :contest-id="state.dataId" embedded />

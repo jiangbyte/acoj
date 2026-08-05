@@ -57,11 +57,11 @@ export const CaptchaInput = forwardRef<CaptchaInputHandle, Props>(function Captc
       />
       <button
         type="button"
-        className={`${imageHeight} w-140px overflow-hidden rounded-md bg-gray-50 p-0 cursor-pointer disabled:cursor-wait`}
+        className={`${imageHeight} w-140px overflow-hidden rounded-md bg-[var(--ant-color-fill-quaternary)] p-0 cursor-pointer disabled:cursor-wait`}
         disabled={loading}
         onClick={() => void refresh()}
       >
-        <Spin spinning={loading} size="small">
+        <Spin spinning={loading}>
           {imageSrc ? <img src={imageSrc} alt="验证码" className={`block ${imageHeight} w-140px`} /> : null}
         </Spin>
       </button>

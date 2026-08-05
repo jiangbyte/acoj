@@ -14,7 +14,7 @@ from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
 from app.core.schema.base import Id, IdQuery, IdsRequest
 from app.core.security.session import SessionPayload
-from app.deps.auth import get_current_session, require_account_type, require_permission
+from app.deps.auth import get_current_session, get_optional_session, require_account_type, require_permission
 from app.deps.db import get_db_session
 from app.modules.message.announcement.schema import (
     AnnouncementReadRequest,
@@ -31,6 +31,20 @@ from app.modules.message.announcement.service import (
 
 admin_router = APIRouter()
 portal_router = APIRouter()
+
+
+@portal_router.get(
+    "/message/announcements/list",
+    response_model=ApiResponse[PageData[MsgAnnouncementSchema]],
+)
+async def portal_announcement_list(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload | None, Depends(get_optional_session)] = None,
+    current: Current = 1,
+    size: Size = 20,
+) -> ApiResponse[PageData[MsgAnnouncementSchema]]:
+    query = MyAnnouncementPageQuery(pagination=PageQuery(current=current, size=size))
+    return success(await MsgAnnouncementService(db).page_portal_list(query, session))
 
 
 # ==================== Admin CRUD ====================

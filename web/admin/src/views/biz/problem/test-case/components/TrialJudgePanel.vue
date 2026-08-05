@@ -2,6 +2,7 @@
 import type { DataTableColumns, SelectOption } from 'naive-ui'
 import { ojProblemApi, ojProblemLanguageApi, ojSubmissionApi } from '@/api'
 import MonacoEditor from '@/components/editor/MonacoEditor.vue'
+import { dictTypeColor, dictTypeData } from '@/utils/dict'
 import { monacoLanguageFromExtension } from '../../shared/monacoLanguage'
 import { NTag } from 'naive-ui'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
@@ -14,29 +15,23 @@ const props = defineProps<{
   caseLabel?: string | number | null
 }>()
 
-const statusColor: Record<string, 'success' | 'error' | 'warning' | 'info' | 'default'> = {
-  AC: 'success',
-  Accepted: 'success',
-  WA: 'error',
-  WrongAnswer: 'error',
-  TLE: 'warning',
-  TimeLimitExceeded: 'warning',
-  MLE: 'warning',
-  MemoryLimitExceeded: 'warning',
-  RE: 'error',
-  RuntimeError: 'error',
-  CE: 'error',
-  CompileError: 'error',
-  OLE: 'warning',
-  SE: 'error',
-  SystemError: 'error',
-  Pending: 'info',
-  Judging: 'info',
-  JUDGING: 'info',
-  QUEUED: 'info',
-  COMPLETED: 'info',
-  FAILED: 'error',
-  Compiling: 'info',
+const RUNNING = new Set(['QUEUED', 'JUDGING', 'PENDING', 'COMPLETED', 'FAILED'])
+
+function resolveDictCode(value: string) {
+  return RUNNING.has(value) ? 'SUBMISSION_STATUS' : 'SUBMISSION_RESULT'
+}
+
+function renderJudgeTag(value?: string | null) {
+  const raw = String(value || '')
+  if (!raw)
+    return <span>-</span>
+  const dictCode = resolveDictCode(raw)
+  const color = dictTypeColor(dictCode, raw)
+  return (
+    <NTag size="small" color={color || undefined}>
+      {dictTypeData(dictCode, raw) || raw}
+    </NTag>
+  )
 }
 
 const languageOptions = ref<SelectOption[]>([])
@@ -92,8 +87,15 @@ async function loadLanguages() {
   }
 }
 
-const overallStatus = computed(() => String(state.result?.status ?? state.result?.result ?? ''))
-const overallType = computed(() => statusColor[overallStatus.value] ?? 'default')
+const overallStatus = computed(() => {
+  const result = state.result?.result
+  if (result)
+    return String(result)
+  return String(state.result?.status ?? '')
+})
+const overallDictCode = computed(() => resolveDictCode(overallStatus.value))
+const overallColor = computed(() => dictTypeColor(overallDictCode.value, overallStatus.value) || undefined)
+const overallLabel = computed(() => dictTypeData(overallDictCode.value, overallStatus.value) || overallStatus.value || '-')
 const scopeLabel = computed(() => {
   if (props.caseLabel != null && props.caseLabel !== '') {
     return `测例 #${props.caseLabel}`
@@ -112,11 +114,6 @@ const caseRows = computed(() => {
   return Array.isArray(cases) ? cases : []
 })
 
-function caseTagType(row: any) {
-  const status = String(row?.status ?? row?.result ?? '')
-  return statusColor[status] ?? 'default'
-}
-
 const caseColumns = computed<DataTableColumns<any>>(() => [
   {
     title: '#',
@@ -128,11 +125,7 @@ const caseColumns = computed<DataTableColumns<any>>(() => [
     title: '状态',
     key: 'status',
     width: 90,
-    render: row => (
-      <NTag size="small" type={caseTagType(row)}>
-        {String(row.status ?? row.result ?? '-')}
-      </NTag>
-    ),
+    render: row => renderJudgeTag(row.status ?? row.result),
   },
   {
     title: '分',
@@ -296,8 +289,8 @@ function resetSource() {
                 {{ scopeLabel }}
               </NDescriptionsItem>
               <NDescriptionsItem label="状态">
-                <NTag :type="overallType" size="small">
-                  {{ overallStatus || '-' }}
+                <NTag :color="overallColor" size="small">
+                  {{ overallLabel }}
                 </NTag>
               </NDescriptionsItem>
               <NDescriptionsItem label="得分">

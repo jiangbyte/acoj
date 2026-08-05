@@ -5,9 +5,9 @@ from typing import Any
 
 from pydantic import Field
 
-from app.core.response.pagination import PageQuery
+from app.core.response.pagination import PageData, PageQuery
 from app.core.schema.base import ApiSchema
-from app.modules.biz.problem.enums import SubmissionSourceVisibility
+from app.modules.biz.problem.enums import ProblemDifficulty, SubmissionSourceVisibility
 
 
 class PortalProblemPageQuery(ApiSchema):
@@ -30,10 +30,29 @@ class PortalProblemListSchema(ApiSchema):
     memory_limit_kb: int
     points: float
     partial: bool
+    difficulty: ProblemDifficulty = ProblemDifficulty.MEDIUM
     user_count: int
     ac_rate: float
+    solved: bool = False
     type_ids: list[str] = Field(default_factory=list)
     type_names: list[str] = Field(default_factory=list)
+
+
+class PortalProblemPageData(PageData[PortalProblemListSchema]):
+    solved_count: int = 0
+
+
+class PortalProblemRecommendItem(PortalProblemListSchema):
+    """推荐结果：列表字段 + 可解释原因。"""
+
+    reason: str = "综合推荐"
+    score: float = 0.0
+
+
+class PortalProblemRecommendData(ApiSchema):
+    records: list[PortalProblemRecommendItem] = Field(default_factory=list)
+    strategy: str = "personalized"
+    target_difficulty: str | None = None
 
 
 class PortalProblemDetailSchema(PortalProblemListSchema):
@@ -56,3 +75,19 @@ class PortalProblemSubmitRequest(ApiSchema):
     source: str = Field(min_length=1)
     wait: bool = False
     wait_timeout_sec: int = Field(default=60, ge=5, le=300)
+
+
+class PortalProblemGroupItem(ApiSchema):
+    id: str
+    code: str
+    name: str
+    sort: int
+    problem_count: int = 0
+
+
+class PortalProblemTypeItem(ApiSchema):
+    id: str
+    code: str
+    name: str
+    sort: int
+    problem_count: int = 0

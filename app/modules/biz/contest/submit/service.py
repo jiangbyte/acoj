@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions.business import BusinessError, NotFoundError
 from app.modules.biz.contest.banned_user.model import OjContestBannedUser
 from app.modules.biz.contest.contest.model import OjContest
-from app.modules.biz.contest.enums import ContestLifecycleStatus, ContestParticipationVirtual
+from app.modules.biz.contest.enums import ContestLifecycleStatus, ContestParticipationVirtual, ContestRegistrationStatus
 from app.modules.biz.contest.lifecycle import (
     contest_is_frozen,
     lifecycle_status,
@@ -19,8 +19,8 @@ from app.modules.biz.contest.lifecycle import (
     utcnow,
 )
 from app.modules.biz.contest.participation.model import OjContestParticipation
-from app.modules.biz.contest.private_contestant.model import OjContestPrivateContestant
 from app.modules.biz.contest.problem.model import OjContestProblem
+from app.modules.biz.contest.registration.model import OjContestRegistration
 from app.modules.biz.problem.judge_bridge import build_admin_trial_payload
 from app.modules.biz.problem.test_case.model import OjProblemTestCase
 from app.modules.biz.submission.enums import SubmissionKind, SubmissionStatus
@@ -119,7 +119,12 @@ class ContestSubmitService:
                 )
             ).scalar_one_or_none()
             if participation is None:
-                raise BusinessError("请先报名参赛")
+                raise BusinessError("请先进入比赛")
+
+        # 必须已通过报名（防止仅有脏 participation）
+        from app.modules.biz.contest.registration.service import ContestRegistrationService
+
+        await ContestRegistrationService(self.db).ensure_approved(contest_id, participation.account_id)
 
         cproblem = (
             await self.db.execute(
@@ -207,7 +212,7 @@ class ContestSubmitService:
             await self.db.flush()
 
         sub_svc = OjSubmissionService(self.db)
-        sub_svc.enqueue_judge(submission_id, judge_payload)
+        await sub_svc.enqueue_judge(submission_id, judge_payload)
 
         if wait:
             snap = await sub_svc._wait_until_terminal(submission_id, wait_timeout_sec)
@@ -242,15 +247,16 @@ async def join_contest(
         raise BusinessError("你已被禁止参加本场竞赛")
 
     if contest.is_private:
-        allowed = (
+        approved = (
             await db.execute(
-                select(OjContestPrivateContestant.id).where(
-                    OjContestPrivateContestant.contest_id == contest_id,
-                    OjContestPrivateContestant.account_id == account_id,
+                select(OjContestRegistration.id).where(
+                    OjContestRegistration.contest_id == contest_id,
+                    OjContestRegistration.account_id == account_id,
+                    OjContestRegistration.status == ContestRegistrationStatus.APPROVED,
                 )
             )
         ).scalar_one_or_none()
-        if not allowed:
+        if not approved:
             raise BusinessError("私有竞赛：你不在选手名单中")
 
     if contest.access_code and (access_code or "").strip() != contest.access_code:

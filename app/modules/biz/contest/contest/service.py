@@ -44,13 +44,20 @@ class OjContestService:
         setattr(entity, "lifecycle_status", lifecycle_status(entity))
 
     async def create(self, payload: OjContestCreateRequest) -> str:
+        self._validate_registration_window(payload.register_start, payload.register_end)
         async with transactional(self.db):
             entity = await self.repo.create(payload)
             return entity.id
 
     async def update(self, payload: OjContestUpdateRequest) -> None:
+        self._validate_registration_window(payload.register_start, payload.register_end)
         async with transactional(self.db):
             await self.repo.update(payload)
+
+    @staticmethod
+    def _validate_registration_window(register_start, register_end) -> None:
+        if register_start and register_end and register_end < register_start:
+            raise BusinessError("报名截止时间不能早于报名开始时间")
 
     async def delete(self, payload: IdsRequest) -> None:
         async with transactional(self.db):

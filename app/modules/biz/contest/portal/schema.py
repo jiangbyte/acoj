@@ -89,7 +89,26 @@ class PortalContestBriefSchema(ApiSchema):
     freeze_seconds: int | None = None
     user_count: int = 0
     joined: bool = False
+    register_start: datetime | None = None
+    register_end: datetime | None = None
+    registration_mode: str = "AUTO"
+    list_visibility: str = "PUBLIC"
+    registration_status: str | None = None
+    registration_remark: str | None = None
+    can_register: bool = False
+    can_enter: bool = False
+    requires_access_code: bool = False
     extra: dict[str, Any] | None = Field(default_factory=dict)
+
+
+class PortalContestRegisterRequest(ApiSchema):
+    access_code: str | None = None
+
+
+class PortalContestEnterResultSchema(ApiSchema):
+    participation: PortalContestParticipationSchema
+    first_problem_id: str | None = None
+
 
 
 class PortalContestPageQuery(ApiSchema):

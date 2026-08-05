@@ -133,6 +133,15 @@ export interface MyLatestPracticeAcData {
   submission_id: string | null
 }
 
+export interface MySubmissionStatsData {
+  submission_total: number
+  ac_total: number
+  fail_total: number
+  judging_total: number
+  ac_rate: number
+  solved_problem_total: number
+}
+
 export function submissionPerformance(id: string) {
   return http.get<SubmissionPerformanceData>(`${prefix}/biz/submission/performance`, {
     params: { id },
@@ -149,4 +158,8 @@ export function myLatestPracticeAc(problemId: string) {
   return http.get<MyLatestPracticeAcData>(`${prefix}/biz/submission/my-latest-ac`, {
     params: { problem_id: problemId },
   })
+}
+
+export function mySubmissionStats() {
+  return http.get<MySubmissionStatsData>(`${prefix}/biz/submission/my-stats`)
 }

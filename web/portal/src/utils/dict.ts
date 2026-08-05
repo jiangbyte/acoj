@@ -1,15 +1,49 @@
+/**
+ * Portal 字典工具 — API 与 admin/src/utils/dict.ts 对齐。
+ * 仅存储 key / 无 Vue 依赖处不同；查询与刷新语义保持一致。
+ */
+
 const DICT_TREE_STORAGE_KEY = 'hei:portal:dict-tree'
 
-let dictTree: any[] = []
+type DictTreeRef = {
+  value: any[]
+}
+
+const listeners = new Set<() => void>()
+
+function notifyDictListeners() {
+  listeners.forEach((listener) => listener())
+}
+
+/** 与 admin `shallowRef` 同形：`.value` 读写；写入时通知 React 订阅方。 */
+export const dictTreeState: DictTreeRef = {
+  get value() {
+    return _dictTree
+  },
+  set value(next: any[]) {
+    _dictTree = Array.isArray(next) ? next : []
+    notifyDictListeners()
+  },
+}
+
+let _dictTree: any[] = []
 let refreshDictPromise: Promise<void> | null = null
 
+/** React：订阅字典树变更（对齐 admin 对 shallowRef 的响应式依赖）。 */
+export function subscribeDict(listener: () => void) {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
 export function syncDictTree() {
-  dictTree = readStoredDictTree()
-  return dictTree
+  dictTreeState.value = readStoredDictTree()
+  return dictTreeState.value
 }
 
 export function isDictLoaded() {
-  return dictTree.length > 0 || syncDictTree().length > 0
+  return dictTreeState.value.length > 0 || syncDictTree().length > 0
 }
 
 export async function refreshDict() {
@@ -30,23 +64,13 @@ export async function refreshDict() {
   return refreshDictPromise
 }
 
-/** Portal 字典公开可读：先同步本地缓存，再拉取最新（无需登录）。 */
-export async function ensureDict() {
-  syncDictTree()
-  try {
-    await refreshDict()
-  } catch {
-    // keep cached tree if network fails
-  }
-}
-
 export function clearDict() {
-  dictTree = []
+  dictTreeState.value = []
   localStorage.removeItem(DICT_TREE_STORAGE_KEY)
 }
 
 export function dictDataAll() {
-  return dictTree
+  return dictTreeState.value
 }
 
 export function dictTypeList(dictCode: string, tree = dictDataAll()) {
@@ -80,6 +104,16 @@ export function dictTypeColor(
   return dict?.color || ''
 }
 
+export function translateDictTree(
+  dictCode: string,
+  value?: string | number | null,
+  tree = dictDataAll(),
+) {
+  const root = findDictRoot(tree, dictCode)
+  const dict = findNodeByValue(root, value)
+  return dict ? getDictLabel(dict) : ''
+}
+
 export function getDictValue(item: any) {
   return item.value || item.code
 }
@@ -104,9 +138,28 @@ function findDictRoot(tree: any[], dictCode: string) {
   return tree.find((item) => item.code === dictCode)
 }
 
+function findNodeByValue(node: any, value?: string | number | null): any {
+  if (!node || value === undefined || value === null || value === '') {
+    return undefined
+  }
+
+  if (getDictValue(node) === String(value)) {
+    return node
+  }
+
+  for (const child of node.children ?? []) {
+    const result = findNodeByValue(child, value)
+    if (result) {
+      return result
+    }
+  }
+
+  return undefined
+}
+
 function setDictTree(tree: any[]) {
-  dictTree = Array.isArray(tree) ? tree : []
-  localStorage.setItem(DICT_TREE_STORAGE_KEY, JSON.stringify(dictTree))
+  dictTreeState.value = Array.isArray(tree) ? tree : []
+  localStorage.setItem(DICT_TREE_STORAGE_KEY, JSON.stringify(dictTreeState.value))
 }
 
 function readStoredDictTree() {

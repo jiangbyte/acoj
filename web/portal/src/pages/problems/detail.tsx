@@ -1,42 +1,64 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Descriptions, Empty, Grid, Skeleton, Splitter, Table, Tag, Typography } from 'antd'
-import { CheckCircleOutlined, FileTextOutlined, HistoryOutlined } from '@ant-design/icons'
+import { Button, Empty, Grid, Skeleton, Splitter, Table, Tag, Typography, message } from 'antd'
+import {
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CopyOutlined,
+  DatabaseOutlined,
+  FileTextOutlined,
+  HistoryOutlined,
+  PercentageOutlined,
+  StarFilled,
+  StarOutlined,
+  TrophyOutlined,
+} from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { problemDetail, problemLanguages, problemSubmit } from '@/api/problem'
 import type { PortalProblemDetail, PortalProblemLanguage } from '@/api/problem'
+import { courseTaskRecordSubmission } from '@/api/course'
+import { problemListApi } from '@/api/study'
 import { myLatestPracticeAc, submissionPage } from '@/api/submission'
 import type { OjSubmissionListItem } from '@/api/submission'
 import { CustomTabs } from '@/components/common/CustomTabs'
 import { Markdown } from '@/components/common/Markdown'
+import { AiChatPanel } from '@/components/oj/AiChatPanel'
+import { SolveContextProvider } from '@/components/oj/SolveContext'
+import { SolveProblemNav } from '@/components/oj/SolveProblemNav'
 import { SolveSidebar } from '@/components/oj/SolveSidebar'
 import { SubmissionPerformance } from '@/components/oj/SubmissionPerformance'
 import { SubmitPanel } from '@/components/oj/SubmitPanel'
 import { VerdictBadge } from '@/components/oj/VerdictBadge'
+import { useDict } from '@/hooks/useDict'
 import { useAuthStore } from '@/stores/auth'
+import { dictTypeData } from '@/utils/dict'
+import { formatDateTime } from '@/utils/time'
 
 const formatMemory = (kb: number) => `${Math.round(kb / 1024)} MB`
-const formatRate = (rate: number) => `${rate.toFixed(1)}%`
+const formatRate = (rate: number) => `${Number(rate || 0).toFixed(1)}%`
 
 export function ProblemDetailPage() {
+  useDict()
   const { id = '' } = useParams()
-  const [searchParams, setSearchParams] = useSearchParams()
   const userInfo = useAuthStore((s) => s.userInfo)
   const isLogin = useAuthStore((s) => s.isLogin)
   const screens = Grid.useBreakpoint()
   const isDesktop = screens.lg ?? false
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [detail, setDetail] = useState<PortalProblemDetail | null>(null)
   const [languages, setLanguages] = useState<PortalProblemLanguage[]>([])
   const [loading, setLoading] = useState(true)
   const [mySubmissions, setMySubmissions] = useState<OjSubmissionListItem[]>([])
   const [submissionsLoading, setSubmissionsLoading] = useState(true)
+  const [aiChatOpen, setAiChatOpen] = useState(false)
+  const [favorited, setFavorited] = useState(false)
+  const [favoriteLoading, setFavoriteLoading] = useState(false)
   const [latestAcSubmissionId, setLatestAcSubmissionId] = useState<string | null>(null)
   const [latestAcLoading, setLatestAcLoading] = useState(false)
 
   const queryTab = searchParams.get('tab')
   const querySubmissionId = searchParams.get('submission_id')
-
   const showPassedTab = latestAcSubmissionId != null
 
   const passedSubmissionId = useMemo(() => {
@@ -53,29 +75,6 @@ export function ProblemDetailPage() {
     return 'statement'
   })
 
-  async function load() {
-    try {
-      const [detailRes, langRes] = await Promise.all([problemDetail(id), problemLanguages(id)])
-      setDetail(detailRes.data)
-      setLanguages(langRes.data)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function loadMySubmissions() {
-    try {
-      const res = await submissionPage({
-        current: 1,
-        size: 20,
-        problem_id: id,
-        user_id: userInfo?.accountId,
-      })
-      setMySubmissions(res.data.records)
-    } finally {
-      setSubmissionsLoading(false)
-    }
-  }
 
   async function loadLatestAc() {
     setLatestAcLoading(true)
@@ -113,15 +112,59 @@ export function ProblemDetailPage() {
     }
   }
 
+  async function loadFavoriteState() {
+    if (!isLogin() || !id) {
+      setFavorited(false)
+      return
+    }
+    try {
+      const res = await problemListApi.favoriteStatus(id)
+      setFavorited(Boolean(res.data?.favorited))
+    } catch {
+      setFavorited(false)
+    }
+  }
+
+  async function load() {
+    try {
+      const [detailRes, langRes] = await Promise.all([problemDetail(id), problemLanguages(id)])
+      setDetail(detailRes.data)
+      setLanguages(langRes.data)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function loadMySubmissions() {
+    try {
+      const res = await submissionPage({
+        current: 1,
+        size: 20,
+        problem_id: id,
+        user_id: userInfo?.accountId,
+      })
+      setMySubmissions(res.data.records)
+    } finally {
+      setSubmissionsLoading(false)
+    }
+  }
+
   useEffect(() => {
     void load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   useEffect(() => {
+    void loadFavoriteState()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, userInfo?.accountId])
+
+  useEffect(() => {
     if (isLogin()) {
       void loadMySubmissions()
       void loadLatestAc()
+    } else {
+      setLatestAcSubmissionId(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, userInfo?.accountId])
@@ -139,7 +182,46 @@ export function ProblemDetailPage() {
 
   async function handleSubmit(payload: { language_key: string; source: string }) {
     const res = await problemSubmit(id, payload)
-    return res.data
+    const snapshot = res.data
+    const taskId = searchParams.get('taskId')
+    if (taskId && snapshot?.submission_id) {
+      try {
+        await courseTaskRecordSubmission({
+          task_id: taskId,
+          problem_id: id,
+          submission_id: snapshot.submission_id,
+        })
+      } catch {
+        // 任务关联失败不阻断提交结果展示
+      }
+    }
+    return snapshot
+  }
+
+  async function toggleFavorite() {
+    if (!isLogin()) {
+      message.info('请先登录后再收藏')
+      return
+    }
+    setFavoriteLoading(true)
+    try {
+      if (favorited) {
+        await problemListApi.removeFavorite(id)
+        setFavorited(false)
+        message.success('已取消收藏')
+      } else {
+        await problemListApi.addFavorite(id)
+        setFavorited(true)
+        message.success('已加入收藏')
+      }
+    } finally {
+      setFavoriteLoading(false)
+    }
+  }
+
+  async function copyStatementMarkdown(content: string) {
+    await navigator.clipboard.writeText(content)
+    message.success('已复制题面 Markdown')
   }
 
   const submissionsColumns: ColumnsType<OjSubmissionListItem> = [
@@ -180,7 +262,7 @@ export function ProblemDetailPage() {
       dataIndex: 'created_at',
       render: (createdAt: string) => (
         <Typography.Text type="secondary" className="text-xs">
-          {createdAt ? new Date(createdAt).toLocaleString() : '-'}
+          {formatDateTime(createdAt)}
         </Typography.Text>
       ),
     },
@@ -195,26 +277,58 @@ export function ProblemDetailPage() {
         <Skeleton active paragraph={{ rows: 8 }} />
       ) : detail ? (
         <div>
-          <div className="mb-4 flex flex-wrap items-baseline gap-3">
-            <Typography.Title level={4} className="!mb-0">
-              {detail.code}. {detail.name}
-            </Typography.Title>
+          <div className="mb-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Typography.Title level={4} className="!mb-0">
+                {detail.code}. {detail.name}
+              </Typography.Title>
+              <Button
+                type="text"
+                icon={<CopyOutlined />}
+                aria-label="复制题面 Markdown"
+                onClick={() => void copyStatementMarkdown(detail.description)}
+              />
+              <Button
+                type="text"
+                loading={favoriteLoading}
+                icon={favorited ? <StarFilled className="text-[var(--ant-color-warning)]" /> : <StarOutlined />}
+                aria-label={favorited ? '取消收藏' : '收藏'}
+                onClick={() => void toggleFavorite()}
+              >
+                {favorited ? '已收藏' : '收藏'}
+              </Button>
+            </div>
+          </div>
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            {detail.solved ? <Tag color="success">已通过</Tag> : null}
+            {detail.difficulty ? (
+              <Tag>
+                {dictTypeData('PROBLEM_DIFFICULTY', detail.difficulty) || detail.difficulty}
+              </Tag>
+            ) : null}
             {detail.partial ? <Tag color="blue">部分分</Tag> : null}
             {detail.type_names.map((name) => (
               <Tag key={name}>{name}</Tag>
             ))}
           </div>
-          <Descriptions
-            size="small"
-            column={{ xs: 1, sm: 2, lg: 4 }}
-            className="mb-4"
-            items={[
-              { key: 'time', label: '时间限制', children: `${detail.time_limit_ms} ms` },
-              { key: 'memory', label: '内存限制', children: formatMemory(detail.memory_limit_kb) },
-              { key: 'points', label: '分值', children: detail.points },
-              { key: 'rate', label: '通过率', children: formatRate(detail.ac_rate) },
-            ]}
-          />
+          <div className="muted-text mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+            <span className="inline-flex items-center gap-1.5">
+              <ClockCircleOutlined />
+              时间限制 {detail.time_limit_ms} ms
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <DatabaseOutlined />
+              内存限制 {formatMemory(detail.memory_limit_kb)}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <TrophyOutlined />
+              分值 {detail.points}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <PercentageOutlined />
+              通过率 {formatRate(detail.ac_rate)}（{detail.user_count} 人）
+            </span>
+          </div>
           <Markdown content={detail.description} />
         </div>
       ) : null,
@@ -243,7 +357,7 @@ export function ProblemDetailPage() {
       children: isLogin() ? (
         <Table
           rowKey="id"
-          size="small"
+
           loading={submissionsLoading}
           columns={submissionsColumns}
           dataSource={mySubmissions}
@@ -260,61 +374,86 @@ export function ProblemDetailPage() {
   ]
 
   const statementPane = (
-    <div className="flex h-full min-w-0 flex-col bg-white">
+    <div className={`panel flex min-w-0 flex-col rounded-md ${isDesktop ? 'h-full' : ''}`}>
       <CustomTabs
         items={tabItems}
         activeKey={activeTab}
         onChange={handleTabChange}
         contentClassName="p-4"
+        fillHeight={isDesktop}
       />
     </div>
   )
 
   const solvePane = (
-    <div className="h-full min-w-0 overflow-hidden bg-white p-4">
+    <div className={`min-w-0 ${isDesktop ? 'h-full overflow-hidden' : ''}`}>
       <SubmitPanel
         languages={languages}
         defaultLanguage={languages[0]?.language_key}
         onSubmit={handleSubmit}
-        fillHeight
+        fillHeight={isDesktop}
+        mobileStacked={!isDesktop}
+        aiChatOpen={aiChatOpen}
+        onToggleAiChat={() => setAiChatOpen((open) => !open)}
       />
     </div>
   )
 
+  const aiPane = (
+    <div className="h-full min-w-0">
+      <AiChatPanel onClose={() => setAiChatOpen(false)} />
+    </div>
+  )
+
+  if (!isDesktop) {
+    return (
+      <SolveContextProvider problemId={id}>
+        <div className="workspace h-full overflow-y-auto p-3">
+          <SolveProblemNav />
+          <div className="mt-2 flex flex-col gap-3">
+            {statementPane}
+            {solvePane}
+          </div>
+        </div>
+      </SolveContextProvider>
+    )
+  }
+
   return (
-    <div className="flex h-full">
-      <SolveSidebar />
-      <div className="min-w-0 flex-1">
-        {isDesktop ? (
+    <SolveContextProvider problemId={id}>
+      <div className="workspace flex h-full">
+        <SolveSidebar />
+        <div className="min-w-0 flex-1">
           <Splitter style={{ height: '100%' }}>
             <Splitter.Panel
-              defaultSize="55%"
+              defaultSize={aiChatOpen ? '42%' : '55%'}
               min={320}
               className="min-w-0"
               collapsible={{ start: true, end: true, showCollapsibleIcon: 'auto' }}
             >
               {statementPane}
             </Splitter.Panel>
-            <Splitter.Panel min={360} className="min-w-0" collapsible={{ start: true, end: true, showCollapsibleIcon: 'auto' }}>
-              {solvePane}
-            </Splitter.Panel>
-          </Splitter>
-        ) : (
-          <Splitter orientation="vertical" style={{ height: '100%' }}>
             <Splitter.Panel
-              defaultSize="50%"
-              min={280}
+              defaultSize={aiChatOpen ? '34%' : undefined}
+              min={360}
               className="min-w-0"
               collapsible={{ start: true, end: true, showCollapsibleIcon: 'auto' }}
             >
-              {statementPane}
-            </Splitter.Panel>
-            <Splitter.Panel min={280} className="min-w-0" collapsible={{ start: true, end: true, showCollapsibleIcon: 'auto' }}>
               {solvePane}
             </Splitter.Panel>
+            {aiChatOpen ? (
+              <Splitter.Panel
+                defaultSize="24%"
+                min={280}
+                className="min-w-0"
+                collapsible={{ start: true, end: true, showCollapsibleIcon: 'auto' }}
+              >
+                {aiPane}
+              </Splitter.Panel>
+            ) : null}
           </Splitter>
-        )}
+        </div>
       </div>
-    </div>
+    </SolveContextProvider>
   )
 }

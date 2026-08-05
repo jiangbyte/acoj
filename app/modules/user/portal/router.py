@@ -1,6 +1,6 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
@@ -12,10 +12,14 @@ from app.deps.auth import get_current_session, require_account_type
 from app.deps.db import get_db_session
 from app.modules.iam.account.repository import AccountRepository
 from app.modules.iam.enums import AccountIdentityBindStatus
+from app.modules.user.portal.rank_service import PortalRankService
 from app.modules.user.portal.schema import (
     PortalProfileResponse,
     PortalPublicProfileResponse,
+    PortalRankMeResponse,
+    PortalRankSummaryResponse,
     PortalRatingRankItem,
+    PortalSolvedRankItem,
     PortalUserCenterAvatarUpdateResponse,
     PortalUserCenterEmailUpdateRequest,
     PortalUserCenterPasswordUpdateRequest,
@@ -193,6 +197,18 @@ async def get_public_space(
 
 
 @router.get(
+    "/biz/rank/solved",
+    response_model=ApiResponse[PageData[PortalSolvedRankItem]],
+)
+async def solved_rank(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current: Current = 1,
+    size: Size = 20,
+) -> ApiResponse[PageData[PortalSolvedRankItem]]:
+    return success(await PortalRankService(db).page_solved_rank(PageQuery(current=current, size=size)))
+
+
+@router.get(
     "/biz/rank/rating",
     response_model=ApiResponse[PageData[PortalRatingRankItem]],
 )
@@ -201,9 +217,31 @@ async def rating_rank(
     current: Current = 1,
     size: Size = 20,
 ) -> ApiResponse[PageData[PortalRatingRankItem]]:
-    return success(
-        await PortalUserProfileService(db).page_rating_rank(PageQuery(current=current, size=size))
-    )
+    return success(await PortalRankService(db).page_rating_rank(PageQuery(current=current, size=size)))
+
+
+@router.get(
+    "/biz/rank/me",
+    dependencies=[Depends(require_account_type(AccountType.PORTAL))],
+    response_model=ApiResponse[PortalRankMeResponse],
+)
+async def rank_me(
+    session: Annotated[SessionPayload, Depends(get_current_session)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    board: Annotated[Literal["solved", "rating"], Query()] = "solved",
+) -> ApiResponse[PortalRankMeResponse]:
+    return success(await PortalRankService(db).get_me(session.account_id, board))
+
+
+@router.get(
+    "/biz/rank/summary",
+    response_model=ApiResponse[PortalRankSummaryResponse],
+)
+async def rank_summary(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    board: Annotated[Literal["solved", "rating"], Query()] = "solved",
+) -> ApiResponse[PortalRankSummaryResponse]:
+    return success(await PortalRankService(db).summary(board))
 
 
 def _identity_login_enabled(identity) -> bool:

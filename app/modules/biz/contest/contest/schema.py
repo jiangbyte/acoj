@@ -11,7 +11,13 @@ from pydantic import Field
 
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
-from app.modules.biz.contest.enums import ContestFormat, ContestLifecycleStatus, ScoreboardVisibility
+from app.modules.biz.contest.enums import (
+    ContestFormat,
+    ContestLifecycleStatus,
+    ContestListVisibility,
+    ContestRegistrationMode,
+    ScoreboardVisibility,
+)
 
 
 class OjContestCreateRequest(ApiSchema):
@@ -41,6 +47,10 @@ class OjContestCreateRequest(ApiSchema):
     tester_see_scoreboard: bool
     tester_see_submissions: bool
     locked_after: datetime | None = None
+    register_start: datetime | None = None
+    register_end: datetime | None = None
+    registration_mode: ContestRegistrationMode = ContestRegistrationMode.AUTO
+    list_visibility: ContestListVisibility = ContestListVisibility.PUBLIC
     tag_ids: list[str] = Field(default_factory=list)
     extra: dict[str, Any] | None = Field(default_factory=dict)
 
@@ -84,6 +94,10 @@ class OjContestSchema(ApiSchema):
     tester_see_scoreboard: bool
     tester_see_submissions: bool
     locked_after: datetime | None = None
+    register_start: datetime | None = None
+    register_end: datetime | None = None
+    registration_mode: ContestRegistrationMode = ContestRegistrationMode.AUTO
+    list_visibility: ContestListVisibility = ContestListVisibility.PUBLIC
     lifecycle_status: ContestLifecycleStatus
     user_count: int
     tag_ids: list[str] = Field(default_factory=list)

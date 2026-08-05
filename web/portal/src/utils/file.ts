@@ -15,3 +15,23 @@ export function resolveFileUrl(value?: string | null) {
   }
   return `${baseURL.replace(/\/$/, '')}/${rawValue.replace(/^\//, '')}`
 }
+
+export function isImageFile(
+  file?:
+    | string
+    | null
+    | {
+        type?: string | null
+        name?: string | null
+        content_type?: string | null
+        url?: string | null
+      },
+) {
+  if (!file) return false
+  if (typeof file === 'string') {
+    return /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(file)
+  }
+  const type = file.type || file.content_type || ''
+  if (type.startsWith('image/')) return true
+  return /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(file.name || file.url || '')
+}

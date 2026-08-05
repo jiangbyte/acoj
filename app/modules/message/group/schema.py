@@ -52,6 +52,8 @@ class MsgGroupSchema(ApiSchema):
     created_by: str | None = None
     updated_at: datetime
     updated_by: str | None = None
+    is_member: bool = False
+    has_pending_request: bool = False
 
 
 # ==================== Group Create (current-user) ====================

@@ -40,6 +40,40 @@ class PortalRatingRankItem(ApiSchema):
     nickname: str | None = None
     avatar: str | None = None
     rating: int
+    contests: int = 0
+    delta: int = 0
+
+
+class PortalSolvedRankItem(ApiSchema):
+    """门户练习通关排行项。"""
+
+    rank: int
+    account_id: str
+    nickname: str | None = None
+    avatar: str | None = None
+    solved: int
+
+
+class PortalRankMeResponse(ApiSchema):
+    """当前用户在指定榜单上的名次摘要。"""
+
+    board: str
+    rank: int | None = None
+    score: int = 0
+    nickname: str | None = None
+    avatar: str | None = None
+    contests: int = 0
+    delta: int = 0
+
+
+class PortalRankSummaryResponse(ApiSchema):
+    """榜单汇总指标。"""
+
+    board: str
+    total_users: int = 0
+    top_score: int = 0
+    avg_score: int = 0
+    max_delta: int = 0
 
 
 class PortalProfileUpsertPayload(ApiSchema):

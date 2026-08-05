@@ -3,7 +3,15 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { ojContestApi } from '@/api'
-import { formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import {
+  createTagColor,
+  dictTypeColor,
+  dictTypeData,
+  formatDateTime,
+  hasPermission,
+  normalizeSearchValues,
+  renderButtonIcon,
+} from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive } from 'vue'
@@ -21,29 +29,6 @@ const state = reactive({
 })
 
 const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
-
-const lifecycleTagType: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
-  SCHEDULED: 'info',
-  RUNNING: 'success',
-  ENDED: 'warning',
-  LOCKED: 'error',
-}
-
-const lifecycleLabel: Record<string, string> = {
-  SCHEDULED: '未开始',
-  RUNNING: '进行中',
-  ENDED: '已结束',
-  LOCKED: '已锁定',
-}
-
-const formatLabel: Record<string, string> = {
-  default: 'Default',
-  acm: 'ACM',
-  icpc: 'ICPC',
-  atcoder: 'AtCoder',
-  oi: 'OI',
-  ioi: 'IOI',
-}
 
 const searchForm = createProSearchForm<any>({
   defaultCollapsed: true,
@@ -94,8 +79,12 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     path: 'lifecycle_status',
     width: 90,
     render: (row) => (
-      <NTag size="small" type={lifecycleTagType[row.lifecycle_status] || 'default'}>
-        {lifecycleLabel[row.lifecycle_status] || row.lifecycle_status || '-'}
+      <NTag
+        size="small"
+        color={createTagColor(dictTypeColor('CONTEST_LIFECYCLE_STATUS', row.lifecycle_status))}
+        bordered={false}
+      >
+        {dictTypeData('CONTEST_LIFECYCLE_STATUS', row.lifecycle_status) || row.lifecycle_status || '-'}
       </NTag>
     ),
   },
@@ -103,17 +92,24 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     title: '赛制',
     path: 'format_name',
     width: 90,
-    render: row => formatLabel[row.format_name] || row.format_name || '-',
+    render: row => dictTypeData('CONTEST_FORMAT', row.format_name) || row.format_name || '-',
   },
   {
-    title: 'Rated',
+    title: '类型',
     path: 'is_rated',
-    width: 70,
-    render: (row) => (
-      <NTag size="small" type={row.is_rated ? 'success' : 'default'} bordered={false}>
-        {row.is_rated ? '是' : '否'}
-      </NTag>
-    ),
+    width: 80,
+    render: (row) => {
+      const typeValue = row.is_private ? 'PRIVATE' : row.is_rated ? 'RATED' : 'UNRATED'
+      return (
+        <NTag
+          size="small"
+          color={createTagColor(dictTypeColor('CONTEST_TYPE', typeValue))}
+          bordered={false}
+        >
+          {dictTypeData('CONTEST_TYPE', typeValue) || typeValue}
+        </NTag>
+      )
+    },
   },
   {
     title: '标签',

@@ -143,7 +143,7 @@ class OjSubmissionService:
             )
             await self.db.flush()
 
-        self.enqueue_judge(submission_id, judge_payload)
+        await self.enqueue_judge(submission_id, judge_payload)
 
         if wait:
             snap = await self._wait_until_terminal(submission_id, wait_timeout_sec)
@@ -186,7 +186,7 @@ class OjSubmissionService:
                     await self.repo.replace_cases(submission_id, [])
                     await self.db.flush()
 
-                self.enqueue_judge(submission_id, judge_payload)
+                await self.enqueue_judge(submission_id, judge_payload)
                 result.queued += 1
             except Exception as exc:  # noqa: BLE001
                 result.failed += 1
@@ -203,12 +203,20 @@ class OjSubmissionService:
 
         return result
 
-    def enqueue_judge(self, submission_id: str, judge_payload: dict[str, Any]) -> str:
-        """Enqueue judge.execute; link/link_error apply on acoj_api (no slot held while judging)."""
+    async def enqueue_judge(self, submission_id: str, judge_payload: dict[str, Any]) -> str:
+        """Enqueue judge.execute; link/link_error apply on acoj_api (no slot held while judging).
+
+        Must commit first: request-scoped sessions often wrap writes in a savepoint
+        under an autobegin transaction, so flush alone is invisible to Celery workers.
+        Judge/apply running before commit yields ``OjSubmission not found``.
+        """
         from app.modules.biz.submission.submission.tasks import (
             apply_failure_signature,
             apply_success_signature,
         )
+
+        if self.db.in_transaction():
+            await self.db.commit()
 
         async_result = celery_app.send_task(
             "judge.execute",
@@ -275,6 +283,11 @@ class OjSubmissionService:
         from app.modules.biz.contest.scoring import apply_contest_submission_result
 
         await apply_contest_submission_result(self.db, submission_id)
+
+        if entity.kind != SubmissionKind.TRIAL.value:
+            from app.modules.biz.problem.stats import refresh_problem_ac_stats
+
+            await refresh_problem_ac_stats(self.db, entity.problem_id)
 
     async def snapshot_for_events(self, submission_id: str) -> dict[str, Any]:
         detail = await self.detail(IdQuery(id=submission_id))

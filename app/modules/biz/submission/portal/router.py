@@ -23,6 +23,7 @@ from app.modules.biz.submission.enums import SubmissionKind, SubmissionStatus
 from app.modules.biz.submission.events import submission_event_channel
 from app.modules.biz.submission.performance.schema import (
     MyLatestPracticeAcOut,
+    MySubmissionStatsOut,
     SimilarSubmissionListOut,
     SubmissionPerformanceOut,
 )
@@ -138,6 +139,18 @@ async def submission_my_latest_ac(
         session.account_id, problem_id
     )
     return success(MyLatestPracticeAcOut(submission_id=submission_id))
+
+
+@router.get(
+    "/biz/submission/my-stats",
+    dependencies=[Depends(require_account_type(AccountType.PORTAL))],
+    response_model=ApiResponse[MySubmissionStatsOut],
+)
+async def submission_my_stats(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
+) -> ApiResponse[MySubmissionStatsOut]:
+    return success(await PortalSubmissionService(db).my_stats(session.account_id))
 
 
 @router.get(

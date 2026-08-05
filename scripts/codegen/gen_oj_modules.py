@@ -232,6 +232,7 @@ class OjProblemTypeRel(Base, TimestampMixin):
             field("submission_source_visibility", comment="提交源码可见性", max_length=32, nullable=False, sort=140),
             field("is_full_markup", comment="是否允许完整 Markup", db_type="boolean", python_type="bool", ts_type="boolean", nullable=False, sort=150),
             field("og_image", comment="OpenGraph 图片", max_length=255, nullable=True, sort=160),
+            field("difficulty", comment="难度 Easy|Medium|Hard", max_length=16, nullable=False, sort=165, show_form=True),
             field("user_count", comment="通过人数", db_type="integer", python_type="int", ts_type="number", nullable=False, sort=170, show_form=False),
             field("ac_rate", comment="通过率", db_type="float", python_type="float", ts_type="number", nullable=False, sort=180, show_form=False),
             field("extra", comment="扩展信息", db_type="json", python_type="dict", ts_type="Record<string, any>", nullable=False, sort=190),

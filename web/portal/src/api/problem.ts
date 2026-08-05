@@ -3,6 +3,8 @@ import type { PageData } from '@/typing/api'
 
 const prefix = '/api/v1/portal'
 
+export type ProblemDifficulty = 'Easy' | 'Medium' | 'Hard'
+
 export interface PortalProblemListItem {
   id: string
   code: string
@@ -14,10 +16,43 @@ export interface PortalProblemListItem {
   memory_limit_kb: number
   points: number
   partial: boolean
+  difficulty: ProblemDifficulty
   user_count: number
   ac_rate: number
+  solved: boolean
   type_ids: string[]
   type_names: string[]
+}
+
+export interface PortalProblemPageData extends PageData<PortalProblemListItem> {
+  solved_count: number
+}
+
+export interface PortalProblemRecommendItem extends PortalProblemListItem {
+  reason: string
+  score: number
+}
+
+export interface PortalProblemRecommendData {
+  records: PortalProblemRecommendItem[]
+  strategy: string
+  target_difficulty: string | null
+}
+
+export interface PortalProblemGroupItem {
+  id: string
+  code: string
+  name: string
+  sort: number
+  problem_count: number
+}
+
+export interface PortalProblemTypeItem {
+  id: string
+  code: string
+  name: string
+  sort: number
+  problem_count: number
 }
 
 export interface PortalProblemDetail extends PortalProblemListItem {
@@ -78,8 +113,26 @@ export interface ProblemPageParams {
 }
 
 export function problemPage(params: ProblemPageParams) {
-  return http.get<PageData<PortalProblemListItem>>(`${prefix}/biz/problem/page`, {
+  return http.get<PortalProblemPageData>(`${prefix}/biz/problem/page`, {
     params,
+  })
+}
+
+/** 个性化题目推荐（登录按做题画像；游客按热门入门） */
+export function problemRecommend(params?: { size?: number }) {
+  return http.get<PortalProblemRecommendData>(`${prefix}/biz/problem/recommend`, {
+    params,
+  })
+}
+
+export function problemGroups() {
+  return http.get<PortalProblemGroupItem[]>(`${prefix}/biz/problem/group/list`, {
+    addToken: false,
+  })
+}
+
+export function problemTypes() {
+  return http.get<PortalProblemTypeItem[]>(`${prefix}/biz/problem/type/list`, {
     addToken: false,
   })
 }
@@ -87,7 +140,6 @@ export function problemPage(params: ProblemPageParams) {
 export function problemDetail(id: string) {
   return http.get<PortalProblemDetail>(`${prefix}/biz/problem/detail`, {
     params: { id },
-    addToken: false,
   })
 }
 

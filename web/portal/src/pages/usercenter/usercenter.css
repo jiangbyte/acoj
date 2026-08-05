@@ -13,8 +13,8 @@
 .avatar-trigger:hover,
 .avatar-trigger:focus-visible {
   box-shadow:
-    0 0 0 3px #fff,
-    0 0 0 5px rgba(22, 119, 255, 0.3);
+    0 0 0 3px var(--ant-color-bg-container),
+    0 0 0 5px var(--ant-color-primary-border-hover);
   transform: translateY(-1px);
   outline: none;
 }

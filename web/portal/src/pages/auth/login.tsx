@@ -84,11 +84,19 @@ export function LoginPage() {
   const activeField = activeType.toLowerCase() as 'account' | 'email' | 'phone'
 
   return (
-    <AuthSplit title="登录" subtitle="请选择登录身份。">
+    <AuthSplit
+      title="登录"
+      headerExtra={
+        <>
+          没有账号？<Link to="/auth/register">点击注册</Link>
+        </>
+      }
+    >
       <ConfigProvider componentSize="large">
         <Form
           form={form}
           layout="vertical"
+          requiredMark={false}
           initialValues={{ remember: true, captcha_id: '', captcha_value: '' }}
           onFinish={onFinish}
         >
@@ -96,12 +104,10 @@ export function LoginPage() {
             activeKey={activeType}
             items={tabItems.map((item) => ({ key: item.key, label: item.label }))}
             onChange={(key) => setActiveType(key as LoginType)}
-            style={{ marginBottom: 8 }}
           />
 
           <Form.Item
             name={activeField}
-            label={tabItems.find((t) => t.key === activeType)?.label}
             rules={[{ required: true, message: '请填写登录身份' }]}
           >
             <Input
@@ -110,7 +116,7 @@ export function LoginPage() {
             />
           </Form.Item>
 
-          <Form.Item name="password" label="密码" rules={[{ required: true, message: '请输入密码' }]}>
+          <Form.Item name="password" rules={[{ required: true, message: '请输入密码' }]}>
             <Input.Password placeholder="请输入密码" />
           </Form.Item>
 
@@ -118,11 +124,7 @@ export function LoginPage() {
             <Input />
           </Form.Item>
 
-          <Form.Item
-            name="captcha_value"
-            label="验证码"
-            rules={[{ required: true, message: '请输入验证码' }]}
-          >
+          <Form.Item name="captcha_value" rules={[{ required: true, message: '请输入验证码' }]}>
             <CaptchaInput
               ref={captchaRef}
               size="large"
@@ -138,7 +140,7 @@ export function LoginPage() {
               <Form.Item name="remember" valuePropName="checked" noStyle>
                 <Checkbox>记住我</Checkbox>
               </Form.Item>
-              <Link to="/auth/forgot-password">忘记密码？</Link>
+              <Link to="/auth/forgot-password">已有账号，忘记密码？</Link>
             </div>
           </Form.Item>
 
@@ -148,10 +150,6 @@ export function LoginPage() {
             </Button>
           </Form.Item>
         </Form>
-
-        <div className="text-center text-gray-500">
-          还没有账号？ <Link to="/auth/register">立即注册</Link>
-        </div>
       </ConfigProvider>
     </AuthSplit>
   )

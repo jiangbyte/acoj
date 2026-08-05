@@ -4,17 +4,37 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, datetime, timedelta
+import sys
+from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import delete, select
 
 from app.modules.biz.contest.contest.model import OjContest
 from app.modules.biz.contest.problem.model import OjContestProblem
-from app.modules.biz.problem.enums import ProblemStatus
+from app.modules.biz.problem.enums import ProblemDifficulty, ProblemStatus
 from app.modules.biz.problem.language.model import OjProblemLanguage
 from app.modules.biz.problem.problem.model import OjProblem
+from app.modules.biz.problem.stats import refresh_problem_ac_stats
+from app.modules.biz.study.enums import LearningPlanCategory, ProblemListKind, ProblemListVisibility
+from app.modules.biz.study.model import (
+    OjDailyProblem,
+    OjLearningPlan,
+    OjLearningPlanItem,
+    OjLearningPlanSection,
+    OjProblemList,
+    OjProblemListItem,
+)
 from app.platform.db.session import get_session_factory, init_engine
 from app.platform.id_generator.snowflake import generate_snowflake_id
+
+_SEED_DIR = Path(__file__).resolve().parent
+if str(_SEED_DIR) not in sys.path:
+    sys.path.insert(0, str(_SEED_DIR))
+from seed_oj_dict import upsert_oj_dicts  # noqa: E402
+
+SHANGHAI = ZoneInfo("Asia/Shanghai")
 
 # code -> (display name, markdown description)
 PORTAL_PROBLEMS: dict[str, tuple[str, str]] = {
@@ -95,6 +115,17 @@ PORTAL_PROBLEMS: dict[str, tuple[str, str]] = {
 
 DEFAULT_LANGS = ("cpp17", "python3", "c11", "java17", "go")
 
+# Demo difficulty map for portal showcase problems (Easy|Medium|Hard).
+PROBLEM_DIFFICULTY_BY_CODE: dict[str, str] = {
+    "1": ProblemDifficulty.EASY.value,
+    "L10": ProblemDifficulty.EASY.value,
+    "T10": ProblemDifficulty.MEDIUM.value,
+    "T11": ProblemDifficulty.HARD.value,
+    "T12": ProblemDifficulty.MEDIUM.value,
+    "T40": ProblemDifficulty.EASY.value,
+    "T57": ProblemDifficulty.MEDIUM.value,
+}
+
 
 async def ensure_languages(db, problem_id: str) -> None:
     existing = set(
@@ -142,11 +173,23 @@ async def seed_problems(db) -> dict[str, str]:
         entity.summary = name
         entity.status = ProblemStatus.PUBLISHED.value
         entity.is_public = True
+        entity.difficulty = PROBLEM_DIFFICULTY_BY_CODE.get(code, ProblemDifficulty.MEDIUM.value)
         if entity.published_at is None:
             entity.published_at = now
         await ensure_languages(db, entity.id)
+        await refresh_problem_ac_stats(db, entity.id)
         id_by_code[code] = entity.id
-        print("problem", code, "->", name, entity.id)
+        print(
+            "problem",
+            code,
+            "->",
+            name,
+            entity.id,
+            "diff=",
+            entity.difficulty,
+            f"ac={entity.ac_rate}%",
+            f"solvers={entity.user_count}",
+        )
     await db.flush()
     return id_by_code
 
@@ -201,6 +244,10 @@ async def upsert_contest(
         tester_see_scoreboard=True,
         tester_see_submissions=True,
         locked_after=None,
+        register_start=start - timedelta(days=14),
+        register_end=end,
+        registration_mode="AUTO",
+        list_visibility="PUBLIC",
         user_count=0,
         extra={},
     )
@@ -226,9 +273,204 @@ async def upsert_contest(
     return contest.id
 
 
+async def upsert_official_list(
+    db,
+    *,
+    code: str,
+    title: str,
+    summary: str,
+    problem_ids: list[str],
+    sort: int = 0,
+) -> str:
+    existing = (await db.execute(select(OjProblemList).where(OjProblemList.code == code))).scalar_one_or_none()
+    if existing is not None:
+        await db.execute(delete(OjProblemListItem).where(OjProblemListItem.list_id == existing.id))
+        await db.delete(existing)
+        await db.flush()
+        print("replaced problem list", code)
+
+    entity = OjProblemList(
+        id=generate_snowflake_id(),
+        kind=ProblemListKind.OFFICIAL.value,
+        owner_id=None,
+        code=code,
+        title=title,
+        summary=summary,
+        cover_url=None,
+        visibility=ProblemListVisibility.PUBLIC.value,
+        is_system=False,
+        status="ENABLED",
+        sort=sort,
+        extra={},
+    )
+    db.add(entity)
+    await db.flush()
+    for i, pid in enumerate(problem_ids):
+        db.add(OjProblemListItem(id=generate_snowflake_id(), list_id=entity.id, problem_id=pid, sort=i))
+    await db.flush()
+    print("problem list", code, entity.id, "items", len(problem_ids))
+    return entity.id
+
+
+async def upsert_learning_plan(
+    db,
+    *,
+    code: str,
+    title: str,
+    subtitle: str,
+    overview: str,
+    category: str,
+    sections: list[tuple[str, list[str]]],
+    sort: int = 0,
+) -> str:
+    existing = (await db.execute(select(OjLearningPlan).where(OjLearningPlan.code == code))).scalar_one_or_none()
+    if existing is not None:
+        section_ids = list(
+            (
+                await db.execute(
+                    select(OjLearningPlanSection.id).where(OjLearningPlanSection.plan_id == existing.id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        if section_ids:
+            await db.execute(delete(OjLearningPlanItem).where(OjLearningPlanItem.section_id.in_(section_ids)))
+        await db.execute(delete(OjLearningPlanSection).where(OjLearningPlanSection.plan_id == existing.id))
+        await db.delete(existing)
+        await db.flush()
+        print("replaced learning plan", code)
+
+    plan = OjLearningPlan(
+        id=generate_snowflake_id(),
+        code=code,
+        title=title,
+        subtitle=subtitle,
+        overview=overview,
+        cover_url=None,
+        category=category,
+        status="ENABLED",
+        sort=sort,
+        extra={},
+    )
+    db.add(plan)
+    await db.flush()
+    total = 0
+    for si, (sec_title, pids) in enumerate(sections):
+        section = OjLearningPlanSection(
+            id=generate_snowflake_id(),
+            plan_id=plan.id,
+            title=sec_title,
+            sort=si,
+        )
+        db.add(section)
+        await db.flush()
+        for pi, pid in enumerate(pids):
+            db.add(
+                OjLearningPlanItem(
+                    id=generate_snowflake_id(),
+                    section_id=section.id,
+                    problem_id=pid,
+                    sort=pi,
+                )
+            )
+            total += 1
+    await db.flush()
+    print("learning plan", code, plan.id, "problems", total)
+    return plan.id
+
+
+async def seed_daily_problems(db, problem_ids: list[str], days: int = 30) -> int:
+    if not problem_ids:
+        print("skip daily: no problems")
+        return 0
+    today = datetime.now(SHANGHAI).date()
+    start = today - timedelta(days=days - 1)
+    existing = list(
+        (
+            await db.execute(
+                select(OjDailyProblem).where(OjDailyProblem.day_date >= start, OjDailyProblem.day_date <= today)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    by_day = {row.day_date: row for row in existing}
+    count = 0
+    for offset in range(days):
+        day: date = start + timedelta(days=offset)
+        pid = problem_ids[offset % len(problem_ids)]
+        row = by_day.get(day)
+        if row is None:
+            db.add(OjDailyProblem(id=generate_snowflake_id(), day_date=day, problem_id=pid))
+            count += 1
+        else:
+            row.problem_id = pid
+            count += 1
+    await db.flush()
+    print("daily problems upserted", count, f"from {start} to {today}")
+    return count
+
+
+async def seed_study_content(db, id_by_code: dict[str, str]) -> None:
+    codes = [c for c in ("1", "L10", "T10", "T11", "T12", "T40", "T57") if c in id_by_code]
+    pids = [id_by_code[c] for c in codes]
+    if len(pids) < 3:
+        print("skip study seed: need at least 3 portal problems")
+        return
+
+    await upsert_official_list(
+        db,
+        code="HOT-100",
+        title="热门 100 题精选",
+        summary="门户演示官方题单：覆盖入门到中等难度的课堂练习。",
+        problem_ids=pids[:5],
+        sort=1,
+    )
+    await upsert_official_list(
+        db,
+        code="EASY-START",
+        title="新手入门题单",
+        summary="适合刚开始刷题的同学，建立基本输入输出与模拟能力。",
+        problem_ids=pids[:3],
+        sort=2,
+    )
+
+    await upsert_learning_plan(
+        db,
+        code="FEATURED-INTRO",
+        title="算法入门路径",
+        subtitle="从语法与模拟到基础算法",
+        overview="本路径帮助你建立稳定的练习节奏。按章节循序渐进，完成每日练习并在题单中巩固。",
+        category=LearningPlanCategory.FEATURED.value,
+        sections=[
+            ("第 1 章 · 入门模拟", pids[:2]),
+            ("第 2 章 · 进阶练习", pids[2:5] or pids[:2]),
+        ],
+        sort=1,
+    )
+    await upsert_learning_plan(
+        db,
+        code="INTERVIEW-CORE",
+        title="期末复习专题",
+        subtitle="覆盖常见笔试与综合作业题型",
+        overview="面向阶段性复习的短路径：挑重点题快速过一遍，关注通过率与解题思路。",
+        category=LearningPlanCategory.INTERVIEW.value,
+        sections=[
+            ("基础题", pids[:3]),
+            ("综合题", pids[3:] or pids[:2]),
+        ],
+        sort=2,
+    )
+
+    await seed_daily_problems(db, pids, days=30)
+
+
 async def main() -> None:
     init_engine()
     async with get_session_factory()() as db:
+        dict_count = await upsert_oj_dicts(db)
+        print("oj dict rows:", dict_count)
         id_by_code = await seed_problems(db)
         now = datetime.now(UTC)
 
@@ -311,6 +553,8 @@ async def main() -> None:
             if all(c in id_by_code for c in ("T11", "T12", "T57"))
             else [],
         )
+
+        await seed_study_content(db, id_by_code)
 
         await db.commit()
         print("done. portal problems:", len(id_by_code))

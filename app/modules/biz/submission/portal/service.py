@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import AuthorizationError, NotFoundError
@@ -10,6 +10,8 @@ from app.core.response.pagination import PageData, build_page
 from app.modules.biz.problem.enums import SubmissionSourceVisibility
 from app.modules.biz.problem.problem.model import OjProblem
 from app.modules.biz.submission.enums import SubmissionKind, SubmissionResult, SubmissionStatus
+from app.modules.biz.submission.performance.schema import MySubmissionStatsOut
+from app.modules.biz.submission.submission.model import OjSubmission
 from app.modules.biz.submission.submission.repository import OjSubmissionRepository
 from app.modules.biz.submission.submission.schema import (
     OjSubmissionAdminPageQuery,
@@ -56,6 +58,75 @@ class PortalSubmissionService:
         if not await self._can_view_source(entity.problem_id, entity.user_id, viewer_account_id):
             schema.source = None
         return schema
+
+    async def my_stats(self, account_id: str) -> MySubmissionStatsOut:
+        """Aggregate the viewer's non-trial submissions for the submissions board sidebar."""
+        base = [
+            OjSubmission.user_id == account_id,
+            OjSubmission.kind != SubmissionKind.TRIAL.value,
+        ]
+        total = int(
+            (
+                await self.db.execute(select(func.count()).select_from(OjSubmission).where(*base))
+            ).scalar_one()
+            or 0
+        )
+        ac_total = int(
+            (
+                await self.db.execute(
+                    select(func.count())
+                    .select_from(OjSubmission)
+                    .where(
+                        *base,
+                        OjSubmission.status == SubmissionStatus.COMPLETED.value,
+                        OjSubmission.result == SubmissionResult.AC.value,
+                    )
+                )
+            ).scalar_one()
+            or 0
+        )
+        judging_total = int(
+            (
+                await self.db.execute(
+                    select(func.count())
+                    .select_from(OjSubmission)
+                    .where(
+                        *base,
+                        OjSubmission.status.in_(
+                            [
+                                SubmissionStatus.QUEUED.value,
+                                SubmissionStatus.JUDGING.value,
+                            ]
+                        ),
+                    )
+                )
+            ).scalar_one()
+            or 0
+        )
+        fail_total = max(0, total - ac_total - judging_total)
+        solved_problem_total = int(
+            (
+                await self.db.execute(
+                    select(func.count(func.distinct(OjSubmission.problem_id)))
+                    .where(
+                        *base,
+                        OjSubmission.status == SubmissionStatus.COMPLETED.value,
+                        OjSubmission.result == SubmissionResult.AC.value,
+                    )
+                )
+            ).scalar_one()
+            or 0
+        )
+        judged = ac_total + fail_total
+        ac_rate = round(ac_total / judged * 100, 1) if judged else 0.0
+        return MySubmissionStatsOut(
+            submission_total=total,
+            ac_total=ac_total,
+            fail_total=fail_total,
+            judging_total=judging_total,
+            ac_rate=ac_rate,
+            solved_problem_total=solved_problem_total,
+        )
 
     async def assert_owner(self, submission_id: str, account_id: str) -> None:
         entity = await self.repo.get_by_id(submission_id)

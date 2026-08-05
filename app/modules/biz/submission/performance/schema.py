@@ -52,3 +52,14 @@ class SimilarSubmissionListOut(ApiSchema):
 
 class MyLatestPracticeAcOut(ApiSchema):
     submission_id: str | None = None
+
+
+class MySubmissionStatsOut(ApiSchema):
+    """当前登录用户的正式练习提交汇总（排除 TRIAL）。"""
+
+    submission_total: int = 0
+    ac_total: int = 0
+    fail_total: int = 0
+    judging_total: int = 0
+    ac_rate: float = 0
+    solved_problem_total: int = 0

@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { message } from 'antd'
 import * as authApi from '@/api/auth'
 import type { PortalMeResponse } from '@/api/auth'
-import { ensureDict } from '@/utils/dict'
+import { refreshDict, syncDictTree } from '@/utils/dict'
 import {
   clearAuthStorage,
   getStoredUserInfo,
@@ -102,7 +102,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     setStoredUserInfo(userInfo)
     set({ userInfo })
 
-    await ensureDict()
+    syncDictTree()
+    await refreshDict()
 
     return getSafeRedirect(redirect)
   },

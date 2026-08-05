@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
+import { theme } from 'antd'
 
 export type CustomTabItem = {
   key: string
@@ -15,6 +16,7 @@ type Props = {
   onChange?: (key: string) => void
   className?: string
   contentClassName?: string
+  fillHeight?: boolean
 }
 
 export function CustomTabs({
@@ -24,7 +26,9 @@ export function CustomTabs({
   onChange,
   className,
   contentClassName,
+  fillHeight = true,
 }: Props) {
+  const { token } = theme.useToken()
   const [innerActiveKey, setInnerActiveKey] = useState(defaultActiveKey ?? items[0]?.key)
   const current = activeKey ?? innerActiveKey
   const activeItem = items.find((item) => item.key === current) ?? items[0]
@@ -38,17 +42,24 @@ export function CustomTabs({
   }
 
   return (
-    <div className={`flex h-full min-h-0 flex-col ${className ?? ''}`}>
-      <div className="flex shrink-0 items-center gap-1 border-b border-gray-200">
+    <div
+      className={`tabs-shell flex min-h-0 flex-col ${fillHeight ? 'h-full' : ''} ${className ?? ''}`}
+    >
+      <div className="tabs-bar flex shrink-0 items-center gap-1">
         {items.map((item) => (
           <button
             key={item.key}
             type="button"
-            className={`flex h-9 cursor-pointer items-center gap-1 border-b-2 px-4 text-sm transition-colors ${
+            className={`tabs-btn flex h-9 cursor-pointer items-center gap-1 border-b-2 px-4 text-sm transition-colors ${
               current === item.key
-                ? 'border-blue-500 font-medium text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-800'
+                ? 'tabs-btn-active font-medium'
+                : 'border-transparent'
             }`}
+            style={
+              current === item.key
+                ? { borderColor: token.colorPrimary, color: token.colorPrimary }
+                : undefined
+            }
             onClick={() => handleClick(item.key)}
           >
             {item.icon}
@@ -56,7 +67,9 @@ export function CustomTabs({
           </button>
         ))}
       </div>
-      <div className={`min-h-0 flex-1 overflow-y-auto ${contentClassName ?? ''}`}>
+      <div
+        className={`${fillHeight ? 'min-h-0 flex-1 overflow-y-auto' : ''} ${contentClassName ?? ''}`}
+      >
         {activeItem?.children}
       </div>
     </div>

@@ -145,7 +145,7 @@ export function AvatarUploadModal({ open, avatar, onClose, onUploaded }: Props) 
               <div className="avatar-upload-modal__preview">
                 {previewUrl ? <img src={previewUrl} alt="裁剪预览" /> : null}
               </div>
-              <div className="mt-3 text-center text-sm text-gray-500">实时预览</div>
+              <div className="mt-3 text-center text-sm text-[var(--ant-color-text-secondary)]">实时预览</div>
             </div>
             <div className="avatar-upload-modal__zoom">
               <Slider min={1} max={4} step={0.01} value={zoom} onChange={setZoom} />

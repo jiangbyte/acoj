@@ -9,6 +9,14 @@ class ProblemStatus(StrEnum):
     PUBLISHED = "published"
 
 
+class ProblemDifficulty(StrEnum):
+    """题目难度（与门户展示 token 对齐）。"""
+
+    EASY = "Easy"
+    MEDIUM = "Medium"
+    HARD = "Hard"
+
+
 class ProblemStaffRole(StrEnum):
     """题目人员角色。"""
 

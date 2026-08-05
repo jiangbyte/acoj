@@ -12,6 +12,7 @@ class BannerCategory(StrEnum):
     NOTICE = "NOTICE"
     ADMIN_DASHBOARD = "ADMIN_DASHBOARD"
     SYSTEM_UPGRADE = "SYSTEM_UPGRADE"
+    CONTESTS = "CONTESTS"
 
 
 class BannerType(StrEnum):
@@ -36,6 +37,7 @@ class BannerPosition(StrEnum):
     NOTICE_AREA = "NOTICE_AREA"
     ADMIN_TOP = "ADMIN_TOP"
     ADMIN_SIDEBAR = "ADMIN_SIDEBAR"
+    CONTESTS_TOP = "CONTESTS_TOP"
 
 
 class BannerDisplayScope(StrEnum):

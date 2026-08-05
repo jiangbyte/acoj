@@ -13,6 +13,7 @@ type Props = {
   readOnly?: boolean
   options?: MonacoEditor.IStandaloneEditorConstructionOptions
   onChange?: (value: string) => void
+  onMount?: (editor: MonacoEditor.IStandaloneCodeEditor, monaco: MonacoModule) => void
   className?: string
 }
 
@@ -24,15 +25,18 @@ export function MonacoEditor({
   readOnly = false,
   options,
   onChange,
+  onMount,
   className,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null)
   const monacoRef = useRef<MonacoModule | null>(null)
   const onChangeRef = useRef(onChange)
+  const onMountRef = useRef(onMount)
 
   useEffect(() => {
     onChangeRef.current = onChange
+    onMountRef.current = onMount
   })
 
   useEffect(() => {
@@ -64,6 +68,7 @@ export function MonacoEditor({
         onChangeRef.current?.(instance?.getValue() ?? '')
       })
       editorRef.current = instance
+      onMountRef.current?.(instance, monaco)
     })
 
     return () => {

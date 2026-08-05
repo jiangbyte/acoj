@@ -4,6 +4,7 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { ojProblemApi, ojProblemGroupApi } from '@/api'
 import { formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -113,6 +114,22 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   { title: '时间限制(ms)', path: 'time_limit_ms', width: 110 },
   { title: '内存(KB)', path: 'memory_limit_kb', width: 100 },
   { title: '分值', path: 'points', width: 80 },
+  {
+    title: '难度',
+    path: 'difficulty',
+    width: 80,
+    render: (row) => {
+      const label = dictTypeData('PROBLEM_DIFFICULTY', row.difficulty) || row.difficulty || '-'
+      const color = dictTypeColor('PROBLEM_DIFFICULTY', row.difficulty)
+      return color ? (
+        <NTag size="small" bordered={false} color={{ color: 'transparent', textColor: color }}>
+          {label}
+        </NTag>
+      ) : (
+        label
+      )
+    },
+  },
   {
     title: '状态',
     path: 'status',

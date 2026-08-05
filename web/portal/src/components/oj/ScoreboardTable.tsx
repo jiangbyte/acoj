@@ -81,14 +81,14 @@ export function ScoreboardTable({ board }: Props) {
       title: (
         <span className="font-medium">
           {problem.label}
-          <span className="ml-1 text-xs font-normal text-gray-400">{problem.points}</span>
+          <span className="ml-1 text-xs font-normal text-[var(--ant-color-text-quaternary)]">{problem.points}</span>
         </span>
       ),
       align: 'center' as const,
       width: 80,
       render: (_: unknown, record: RowData) => {
         const cell = formatCell(record.formatData[problem.id])
-        const color = cell.color === 'green' ? 'text-green-600' : cell.color === 'red' ? 'text-red-500' : 'text-gray-400'
+        const color = cell.color === 'green' ? 'text-[var(--ant-color-success)]' : cell.color === 'red' ? 'text-[var(--ant-color-error)]' : 'text-[var(--ant-color-text-quaternary)]'
         return <span className={color}>{cell.text}</span>
       },
     })),
@@ -114,7 +114,7 @@ export function ScoreboardTable({ board }: Props) {
         />
       ) : null}
       <Table
-        size="small"
+
         rowKey="key"
         columns={columns}
         dataSource={dataSource}

@@ -2,8 +2,16 @@
 import { computed, onMounted, provide, reactive, ref, watch } from 'vue'
 import { useThemeVars } from 'naive-ui'
 import { useRoute, useRouter } from 'vue-router'
-import { useAppStore, useAuthStore } from '@/stores'
+import { useAppStore, useAuthStore, useImCenterStore } from '@/stores'
 import { messageApi } from '@/api'
+
+const props = withDefaults(
+  defineProps<{
+    /** 弹窗模式：不改写 URL，关闭回到工作台 */
+    modal?: boolean
+  }>(),
+  { modal: true },
+)
 import {
   type Message,
   type Conversation,
@@ -39,6 +47,7 @@ const router = useRouter()
 const route = useRoute()
 const homePath = import.meta.env.VITE_HOME_PATH || '/dashboard'
 const authStore = useAuthStore()
+const imCenterStore = useImCenterStore()
 
 /* ---- Page data ---- */
 
@@ -75,7 +84,8 @@ const noticeTab = ref('notices')
 
 const showProfileModal = ref(false)
 const contactActionHint = ref('')
-const isMobile = computed(() => appStore.isMobile)
+/** 弹窗仅 PC 三栏布局，不再走移动端响应式 */
+const isMobile = computed(() => (props.modal ? false : appStore.isMobile))
 const hasSearchKeyword = computed(() => searchText.value.trim().length > 0)
 
 const selectedConversation = computed(
@@ -137,6 +147,7 @@ const selectedGroupContact = computed(() => {
 /* ---- URL sync helpers ---- */
 
 function syncStateToUrl() {
+  if (props.modal) return
   const query: Record<string, string> = {}
   if (activeSection.value !== 'chat') query.section = activeSection.value
   if (selectedConversationId.value) query.conversation = selectedConversationId.value
@@ -193,7 +204,7 @@ watch(
 watch(
   () => route.query,
   () => {
-    applyFromRoute()
+    if (!props.modal) applyFromRoute()
   },
 )
 
@@ -206,10 +217,10 @@ const ws = useWebSocket({
     if (!data.messagesByConversation[convId]) {
       data.messagesByConversation[convId] = []
     }
-    // 去重：防止 REST 响应和 WS 同时到达导致重复
+    // 去重：防止 REST 响应和 WS 同时到达导致重复；换新数组以触发依赖 length/尾部的 watch
     const msgs = data.messagesByConversation[convId]
     if (!msgs.some((m: any) => m.id === msgData.id)) {
-      msgs.push(msgData)
+      data.messagesByConversation[convId] = [...msgs, msgData]
     }
     const conv = data.conversations.find((c) => c.id === convId)
     if (conv) {
@@ -239,7 +250,7 @@ const ws = useWebSocket({
       const existing = data.messagesByConversation[convId]
       const existingIds = new Set(existing.map((m: any) => m.id))
       if (!existingIds.has(msg.id)) {
-        existing.push(msg)
+        data.messagesByConversation[convId] = [...existing, msg]
       }
       const conv = data.conversations.find((c) => c.id === convId)
       if (conv) {
@@ -257,6 +268,25 @@ const ws = useWebSocket({
       if (!data.notices.some((n: any) => n.id === notificationData.id)) {
         data.notices.unshift(notificationData)
       }
+    }
+  },
+  onNewFriendRequest(reqData) {
+    if (reqData && reqData.id) {
+      if (!data.friendRequests.some((r: any) => r.id === reqData.id)) {
+        data.friendRequests.unshift({
+          ...reqData,
+          applicant_name: reqData.applicant_name || null,
+          applicant_avatar: reqData.applicant_avatar || null,
+          status: reqData.status || 'PENDING',
+        })
+      }
+    } else {
+      messageApi
+        .myFriendRequests()
+        .then((res: any) => {
+          if (res?.data) data.friendRequests = res.data
+        })
+        .catch(() => {})
     }
   },
   onNewJoinRequest(reqData) {
@@ -293,6 +323,10 @@ const ws = useWebSocket({
 /* ---- Actions ---- */
 
 function goHome() {
+  if (props.modal) {
+    imCenterStore.close()
+    return
+  }
   router.push(homePath)
 }
 function openProfileModal() {
@@ -584,6 +618,26 @@ async function handleLeaveGroup() {
   }
 }
 
+async function handleDissolveGroup() {
+  const g = selectedGroupContact.value
+  if (!g) return
+  contactActionHint.value = ''
+  try {
+    await messageApi.dissolveGroup({ id: g.id })
+    const idx = data.groups.findIndex((x) => x.id === g.id)
+    if (idx >= 0) data.groups.splice(idx, 1)
+    data.conversations = data.conversations.filter((c) => c.group_id !== g.id)
+    selectedContact.value = null
+    if (selectedConversationId.value) {
+      const cur = data.conversations.find((c) => c.id === selectedConversationId.value)
+      if (!cur) closeCurrentConversation()
+    }
+    window.$message?.success?.('已解散群聊')
+  } catch {
+    window.$message?.error?.('解散群聊失败')
+  }
+}
+
 const messageActions: MessageActions = {
   goHome,
   openProfileModal,
@@ -607,6 +661,7 @@ const messageActions: MessageActions = {
   continueChatFromContact,
   handleRemoveFriend,
   handleLeaveGroup,
+  handleDissolveGroup,
 }
 const messageUIState: MessageUIState = {
   activeSection,
@@ -618,6 +673,8 @@ const messageUIState: MessageUIState = {
   searchScope,
   contactTab,
   noticeTab,
+  selectedNoticeId,
+  selectedPendingRequestId,
 }
 
 provide(MESSAGE_ACTIONS_KEY, messageActions)
@@ -679,10 +736,18 @@ onMounted(async () => {
     if (joinReqRes?.data) data.groupJoinRequests = joinReqRes.data
     if (pendingGroupJoinRes?.data) data.pendingGroupJoinRequests = pendingGroupJoinRes.data
 
-    applyFromRoute()
-    // 如果 URL 指定了会话，调用 openConversation 清除未读状态
-    if (selectedConversationId.value) {
-      openConversation(selectedConversationId.value)
+    if (props.modal) {
+      activeSection.value = imCenterStore.initialSection || 'chat'
+      const cid = imCenterStore.initialConversationId
+      if (cid) {
+        selectedConversationId.value = cid
+        openConversation(cid)
+      }
+    } else {
+      applyFromRoute()
+      if (selectedConversationId.value) {
+        openConversation(selectedConversationId.value)
+      }
     }
   } catch {
     // silent
@@ -691,17 +756,42 @@ onMounted(async () => {
   ws.connect()
 })
 
+watch(
+  () => [imCenterStore.visible, imCenterStore.initialConversationId, imCenterStore.initialSection] as const,
+  ([visible, cid, section]) => {
+    if (!props.modal || !visible) return
+    if (section) activeSection.value = section
+    if (cid) {
+      selectedConversationId.value = cid
+      void openConversation(cid)
+    }
+  },
+)
+
 const pageStyle = computed(() => ({
   backgroundColor: themeVars.value.bodyColor,
   color: themeVars.value.textColorBase,
-  height: '100dvh',
-  minHeight: '100vh',
+  height: props.modal ? '100%' : '100dvh',
+  minHeight: props.modal ? '100%' : '100vh',
+  maxHeight: props.modal ? '100%' : undefined,
 }))
 </script>
 
 <template>
-  <n-el tag="main" class="fixed inset-0 flex flex-col overflow-hidden" :style="pageStyle">
-    <div class="grid min-h-0 flex-1 gap-0 md:grid-cols-[60px_minmax(280px,360px)_minmax(0,1fr)]">
+  <n-el
+    tag="main"
+    class="flex flex-col overflow-hidden"
+    :class="props.modal ? 'h-full max-h-full min-h-0' : 'fixed inset-0'"
+    :style="pageStyle"
+  >
+    <div
+      class="grid min-h-0 flex-1 gap-0 overflow-hidden"
+      :class="
+        props.modal
+          ? 'grid-cols-[60px_300px_minmax(0,1fr)]'
+          : 'md:grid-cols-[60px_minmax(280px,360px)_minmax(0,1fr)]'
+      "
+    >
       <Sidebar />
 
       <ListPane v-show="showListPane" />
@@ -732,13 +822,14 @@ const pageStyle = computed(() => ({
         @chat="continueChatFromContact"
         @remove-friend="handleRemoveFriend"
         @leave-group="handleLeaveGroup"
+        @dissolve-group="handleDissolveGroup"
         @back="backToListPane"
       />
 
       <ProfilePane v-show="showProfilePane" />
     </div>
 
-    <MobileBottomNav />
+    <MobileBottomNav v-if="!props.modal" />
 
     <ProfileModal />
     <AddFriendModal v-model:show="showAddModal" :initial-mode="addModalMode" />

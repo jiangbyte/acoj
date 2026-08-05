@@ -2,6 +2,7 @@
 import { ojProblemApi } from '@/api'
 import { MdPreview } from '@/components/editor'
 import { displayValue, formatDateTime, hasPermission } from '@/utils'
+import { dictTypeData } from '@/utils/dict'
 import { computed, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -147,6 +148,9 @@ function goEdit() {
                 </NDescriptionsItem>
                 <NDescriptionsItem label="题目分值">
                   {{ displayValue(state.detail.points) }}
+                </NDescriptionsItem>
+                <NDescriptionsItem label="难度">
+                  {{ dictTypeData('PROBLEM_DIFFICULTY', state.detail.difficulty) || displayValue(state.detail.difficulty) }}
                 </NDescriptionsItem>
                 <NDescriptionsItem label="允许部分分">
                   {{ state.detail.partial ? '是' : '否' }}

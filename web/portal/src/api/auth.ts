@@ -142,3 +142,15 @@ export function uploadUserCenterAvatar(file: File) {
   formData.append('file', file)
   return http.post<{ avatar: string }>(`${prefix}/user-center/avatar/upload`, formData)
 }
+
+export interface PortalPublicProfile {
+  account_id: string
+  name: string | null
+  nickname: string | null
+  avatar: string | null
+  signature: string | null
+}
+
+export function getPublicSpace(accountId: string) {
+  return http.get<PortalPublicProfile>(`${prefix}/spaces/${accountId}`, { addToken: false })
+}

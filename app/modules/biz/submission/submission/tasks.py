@@ -65,6 +65,9 @@ def apply_judge_failure_task(task_id: str, submission_id: str) -> None:
 
 
 async def _apply(raw_result: Any, submission_id: str) -> None:
+    import asyncio
+
+    from app.core.exceptions.business import NotFoundError
     from app.modules.biz.submission.enums import SubmissionStatus
     from app.modules.biz.submission.events import publish_submission_event
     from app.modules.biz.submission.submission.service import OjSubmissionService
@@ -82,11 +85,29 @@ async def _apply(raw_result: Any, submission_id: str) -> None:
         }
 
     session_factory = get_session_factory()
-    async with session_factory() as session:
-        service = OjSubmissionService(session)
-        async with transactional(session):
-            await service.apply_judge_result(submission_id, raw_result)
-        snap = await service.snapshot_for_events(submission_id)
+    last_error: Exception | None = None
+    snap: dict[str, Any] | None = None
+    # Brief retry: covers rare commit visibility races if enqueue raced historically.
+    for attempt in range(5):
+        try:
+            async with session_factory() as session:
+                service = OjSubmissionService(session)
+                async with transactional(session):
+                    await service.apply_judge_result(submission_id, raw_result)
+                if session.in_transaction():
+                    await session.commit()
+                snap = await service.snapshot_for_events(submission_id)
+                if session.in_transaction():
+                    await session.commit()
+            break
+        except NotFoundError as exc:
+            last_error = exc
+            await asyncio.sleep(0.05 * (attempt + 1))
+    else:
+        assert last_error is not None
+        raise last_error
+
+    assert snap is not None
     await publish_submission_event(submission_id, snap)
     logger.info(
         "Applied judge result submission_id=%s status=%s result=%s",

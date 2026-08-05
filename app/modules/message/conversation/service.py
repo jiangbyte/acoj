@@ -160,16 +160,20 @@ class MsgConversationService:
         # Enrich DIRECT conversations with other party's name/avatar
         await self._enrich_conversation_list(schemas, session)
 
-        # Batch load last message text
+        # Batch load last message preview（与前端会话列表一致：发送者：正文）
         msg_ids = [s.last_message_id for s in schemas if s.last_message_id]
         if msg_ids:
             from app.modules.message.message.model import MsgMessage
-            stmt = select(MsgMessage.id, MsgMessage.content).where(MsgMessage.id.in_(list(dict.fromkeys(msg_ids))))
+            stmt = select(MsgMessage.id, MsgMessage.content, MsgMessage.sender_name).where(
+                MsgMessage.id.in_(list(dict.fromkeys(msg_ids)))
+            )
             rows = list((await self.db.execute(stmt)).all())
-            msg_map = {row[0]: row[1] for row in rows}
+            msg_map = {row[0]: (row[1], row[2]) for row in rows}
             for s in schemas:
                 if s.last_message_id and s.last_message_id in msg_map:
-                    s.last_message = msg_map[s.last_message_id]
+                    content, sender_name = msg_map[s.last_message_id]
+                    body = (content or "").strip() or "[附件]"
+                    s.last_message = f"{sender_name}：{body}" if sender_name else body
 
         # Sort: pinned conversations first
         pinned_ids = set()

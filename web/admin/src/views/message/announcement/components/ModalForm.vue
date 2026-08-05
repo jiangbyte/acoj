@@ -28,7 +28,7 @@ const defaultFormData: Record<string, any> = {
   publish_locations: {},
   is_pinned: false,
   pinned_until: null,
-  status: 'ENABLED',
+  status: 'DRAFT',
   publish_at: null,
   expire_at: null,
 }

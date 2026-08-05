@@ -254,3 +254,5 @@ web1/**/coverage/
 # Auto-generated type stubs from Vite plugins
 web/admin/src/typing/components.d.ts
 web/portal/src/typing/components.d.ts
+
+.worktrees/

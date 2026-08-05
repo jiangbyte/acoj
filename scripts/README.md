@@ -17,5 +17,10 @@ python scripts/db/migrate.py
 python scripts/db/makemigration.py "describe schema change"
 python scripts/db/check_migration.py
 python scripts/seed/seed_super_admin.py
+python scripts/seed/seed_oj_dict.py
+python scripts/seed/seed_portal_demo.py
 python scripts/ops/loadtest_http.py --base-url http://127.0.0.1:8000 --path / --requests 1000 --concurrency 50
 ```
+
+- `seed_oj_dict.py`：补齐提交结果/状态/类型、题目难度等 OJ 字典（可重复执行）
+- `seed_portal_demo.py`：门户演示题公开状态、难度、通过率统计与演示比赛（可重复执行）

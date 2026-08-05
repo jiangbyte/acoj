@@ -11,7 +11,7 @@ from pydantic import Field
 
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
-from app.modules.biz.problem.enums import ProblemStatus, SubmissionSourceVisibility
+from app.modules.biz.problem.enums import ProblemDifficulty, ProblemStatus, SubmissionSourceVisibility
 
 
 class OjProblemTrialJudgeRequest(ApiSchema):
@@ -51,6 +51,7 @@ class OjProblemCreateRequest(ApiSchema):
     is_public: bool = False
     published_at: datetime | None = None
     submission_source_visibility: SubmissionSourceVisibility
+    difficulty: ProblemDifficulty = ProblemDifficulty.MEDIUM
     type_ids: list[str] = Field(default_factory=list)
     extra: dict[str, Any] | None = Field(default_factory=dict)
 
@@ -90,6 +91,7 @@ class OjProblemSchema(ApiSchema):
     is_public: bool = False
     published_at: datetime | None = None
     submission_source_visibility: SubmissionSourceVisibility
+    difficulty: ProblemDifficulty = ProblemDifficulty.MEDIUM
     user_count: int
     ac_rate: float
     type_ids: list[str] = Field(default_factory=list)

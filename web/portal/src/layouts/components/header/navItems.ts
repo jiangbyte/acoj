@@ -2,6 +2,9 @@ export const navItems = [
   { key: '/', label: '首页' },
   { key: '/problems', label: '题库' },
   { key: '/contests', label: '竞赛' },
+  { key: '/courses', label: '课程' },
+  { key: '/classes', label: '班级' },
+  { key: '/teams', label: '小组' },
   { key: '/submissions', label: '提交' },
   { key: '/rank', label: '排名' },
 ]

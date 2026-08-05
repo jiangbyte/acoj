@@ -1,17 +1,27 @@
 import { useEffect } from 'react'
+import { Grid } from 'antd'
 import { Outlet } from 'react-router-dom'
-import { ensureDict } from '@/utils/dict'
-import { SolveHeader } from './components/header/SolveHeader'
+import { refreshDict, syncDictTree } from '@/utils/dict'
+import { AppHeader, HEADER_HEIGHT } from './components'
+
+const { useBreakpoint } = Grid
 
 export function SolveLayout() {
+  const screens = useBreakpoint()
+  const isMobile = !screens.lg
+
   useEffect(() => {
-    void ensureDict()
+    syncDictTree()
+    void refreshDict()
   }, [])
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#f5f5f5]">
-      <SolveHeader />
-      <main className="min-h-0 flex-1 overflow-hidden">
+    <div className="h-screen overflow-hidden bg-[var(--ant-color-bg-layout)] text-[var(--ant-color-text)]">
+      {isMobile ? <AppHeader /> : null}
+      <main
+        className="h-full min-h-0 overflow-hidden"
+        style={{ paddingTop: isMobile ? HEADER_HEIGHT : 0 }}
+      >
         <Outlet />
       </main>
     </div>
