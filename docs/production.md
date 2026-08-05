@@ -79,15 +79,7 @@ APP__TRUSTED_PROXY_IPS='["10.0.0.0/24","127.0.0.1"]'
 
 ## 压测验收
 
-先用轻量脚本建立基线：
-
-```bash
-python scripts/ops/loadtest_http.py \
-  --base-url http://127.0.0.1:8000 \
-  --path /,/api/v1/internal/health/live \
-  --requests 5000 \
-  --concurrency 100
-```
+可用外部压测工具（如 wrk / hey / k6）对健康检查与业务接口建立基线。
 
 验收至少记录：
 

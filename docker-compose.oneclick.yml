@@ -77,9 +77,7 @@ services:
     image: ${ACOJ_API_IMAGE:-registry.cn-beijing.aliyuncs.com/czbyte/acoj-api:1.1.0}
     environment:
       <<: *api-env
-    entrypoint: ["sh", "-c"]
-    command:
-      - "python scripts/seed/seed_super_admin.py && python scripts/seed/seed_oj_dict.py && python scripts/seed/seed_portal_demo.py"
+    command: ["seed"]
     depends_on:
       migrate:
         condition: service_completed_successfully

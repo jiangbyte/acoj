@@ -42,7 +42,7 @@ run_migrate() {
 }
 
 run_seed() {
-    exec python scripts/seed/seed_super_admin.py
+    exec python scripts/db/load_bootstrap_sql.py
 }
 
 case "$ROLE" in

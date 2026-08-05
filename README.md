@@ -107,7 +107,7 @@ cp .env.example .env
 # 编辑 DB__URL、REDIS__URL、CELERY__BROKER_URL、APP__CONFIG_CRYPTO_KEY
 
 python scripts/db/migrate.py
-python scripts/seed/seed_super_admin.py
+python scripts/db/load_bootstrap_sql.py
 ./entrypoint.sh          # 默认 all = API + worker + beat
 ```
 
@@ -142,9 +142,8 @@ cd web/portal && pnpm install && pnpm dev   # 默认门户
 ```bash
 python scripts/db/makemigration.py "describe schema change"
 python scripts/db/migrate.py
-python scripts/seed/seed_super_admin.py
-python scripts/seed/seed_oj_dict.py
-python scripts/seed/seed_portal_demo.py
+python scripts/db/export_bootstrap_sql.py
+python scripts/db/load_bootstrap_sql.py
 
 python -m ruff check app tests
 python -m pytest

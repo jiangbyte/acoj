@@ -48,7 +48,7 @@ COPY app ./app
 COPY alembic.ini ./
 COPY migrations ./migrations
 COPY scripts/db ./scripts/db
-COPY scripts/seed ./scripts/seed
+COPY scripts/sql ./scripts/sql
 COPY gunicorn.conf.py ./
 COPY entrypoint.sh ./
 

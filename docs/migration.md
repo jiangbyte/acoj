@@ -1,6 +1,8 @@
 # 数据库迁移
 
-本项目使用 Alembic 管理数据库结构迁移。迁移只负责表、字段、索引、约束等结构变更；超管账号、初始角色等业务数据由 `scripts/seed/seed_super_admin.py` 处理。
+本项目使用 Alembic 管理数据库结构迁移。迁移只负责表、字段、索引、约束等结构变更。
+
+初始化数据（字典、系统配置、存储配置）放在 `scripts/sql/`，通过 `python scripts/db/load_bootstrap_sql.py` 导入。敏感配置值在导出时已脱敏。
 
 ## 配置来源
 
@@ -32,48 +34,26 @@ python scripts/db/makemigration.py "describe schema change"
 python scripts/db/check_migration.py
 ```
 
-初始化超管：
+导出 / 加载 bootstrap SQL：
 
 ```bash
-python scripts/seed/seed_super_admin.py
-python scripts/seed/seed_super_admin.py --help
+python scripts/db/export_bootstrap_sql.py
+python scripts/db/load_bootstrap_sql.py
 ```
 
-## Docker
-
-单机单 Docker：
+容器入口：
 
 ```bash
-docker compose run --rm hei migrate
-docker compose up -d --build
-```
-
-单机多 Docker 多实例：
-
-```bash
-docker compose -f docker-compose.multi.yml up -d --build --scale api=2 --scale worker=2
-docker compose -f docker-compose.multi.yml --profile seed run --rm seed
-```
-
-多机多节点：
-
-```bash
-docker compose -f docker-compose.distributed.yml config | docker stack deploy -c - hei-fastapi
-```
-
-后端镜像会复制 `scripts/db` 和 `scripts/seed`，容器入口统一通过 `entrypoint.sh` 参数切换：
-
-```bash
-docker run --rm --env-file .env hei-fastapi-backend migrate
-docker run --rm --env-file .env hei-fastapi-backend seed
+./entrypoint.sh migrate
+./entrypoint.sh seed   # 加载 scripts/sql bootstrap
 ```
 
 ## 迁移约束
 
-生成迁移后必须人工检查 `migrations/versions/*.py`，确认只包含结构操作，例如 `op.create_table`、`op.add_column`、`op.alter_column`、`op.create_index`、`op.drop_table`。
+生成迁移后必须人工检查 `migrations/versions/*.py`，确认只包含结构操作。
 
-不要在 migration 里写业务数据操作，例如 `op.bulk_insert`、业务 `insert/update/delete`、默认管理员、角色、字典、Banner 等初始化数据。需要初始化数据时使用独立 seed 脚本。
+不要在 migration 里写业务数据操作。需要初始化数据时使用 `scripts/sql/`。
 
-如果清空 `migrations/versions` 并重建初始迁移，必须基于空库生成并验证；已有开发库会让 Alembic 误判为当前结构，生成结果不可靠。旧库的 `alembic_version` 会指向已删除 revision，最干净的处理方式是重建数据库后执行新基线迁移。
+如果清空 `migrations/versions` 并重建初始迁移，必须基于空库生成并验证；已有开发库会让 Alembic 误判为当前结构。旧库的 `alembic_version` 会指向已删除 revision，最干净的处理方式是重建数据库后执行新基线迁移。
 
-参见 [migrations/README.md](../migrations/README.md) 获取目录级简要说明。
+参见 [migrations/README.md](../migrations/README.md)。

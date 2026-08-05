@@ -1,14 +1,10 @@
 # Scripts
 
-脚本按用途分目录，避免根目录平铺。
-
 | 目录 | 用途 |
 | --- | --- |
-| `db/` | Alembic 迁移执行、生成、结构检查 |
-| `seed/` | 初始化或补齐必要业务数据 |
-| `ops/` | 运维、压测、验收辅助脚本 |
-| `sql/` | 手工 SQL、备份 SQL、历史初始化 SQL |
-| `codegen/ddl_tests/` | 代码生成器的 DDL 测试样例 |
+| `db/` | Alembic 迁移、bootstrap SQL 导出 / 加载 |
+| `sql/` | 字典 / 配置（脱敏）/ 存储配置等 bootstrap 数据 |
+| `codegen/` | 代码生成器相关脚本与 DDL 测试样例 |
 
 常用命令：
 
@@ -16,11 +12,12 @@
 python scripts/db/migrate.py
 python scripts/db/makemigration.py "describe schema change"
 python scripts/db/check_migration.py
-python scripts/seed/seed_super_admin.py
-python scripts/seed/seed_oj_dict.py
-python scripts/seed/seed_portal_demo.py
-python scripts/ops/loadtest_http.py --base-url http://127.0.0.1:8000 --path / --requests 1000 --concurrency 50
+python scripts/db/export_bootstrap_sql.py
+python scripts/db/load_bootstrap_sql.py
 ```
 
-- `seed_oj_dict.py`：补齐提交结果/状态/类型、题目难度等 OJ 字典（可重复执行）
-- `seed_portal_demo.py`：门户演示题公开状态、难度、通过率统计与演示比赛（可重复执行）
+`scripts/sql/` 当前文件：
+
+- `sys_dict.sql`
+- `sys_config.sql`（敏感项已置空）
+- `sys_storage_config.sql`（`access_key` / `secret_key` 已置空）
