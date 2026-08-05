@@ -24,9 +24,9 @@
 - Modify: `app/modules/biz/team/service.py`
 - Modify: `app/modules/biz/team/router.py`
 
-- [ ] Add schemas: `OjTeamOwnerUpdateRequest`, `OjTeamInviteRefreshRequest`, `OjTeamUserSearchItem`
-- [ ] Add `_ensure_owner`, `update_by_owner`, `add_members_by_owner`, `remove_member_by_owner`, `refresh_invite`, `search_portal_users`
-- [ ] Wire portal routes under `/biz/team/*`
+- [x] Add schemas: `OjTeamOwnerUpdateRequest`, `OjTeamInviteRefreshRequest`, `OjTeamUserSearchItem`
+- [x] Add `_ensure_owner`, `update_by_owner`, `add_members_by_owner`, `remove_member_by_owner`, `refresh_invite`, `search_portal_users`
+- [x] Wire portal routes under `/biz/team/*`
 - [ ] Manual smoke via curl/OpenAPI if API up
 
 ### Task 2: Portal API client + detail UI
@@ -35,8 +35,8 @@
 - Modify: `web/portal/src/api/team.ts`
 - Modify: `web/portal/src/pages/teams/detail.tsx`
 
-- [ ] Client methods for update/remove/add/refresh/search
-- [ ] Owner settings form, invite refresh, member kick + add modal
+- [x] Client methods for update/remove/add/refresh/search
+- [x] Owner settings form, invite refresh, member kick + add modal
 - [ ] Manual check on `/teams/:id` as owner
 
 ### Task 3: Verify
