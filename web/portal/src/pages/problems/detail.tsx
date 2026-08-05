@@ -37,7 +37,10 @@ export function ProblemDetailPage() {
   const queryTab = searchParams.get('tab')
   const querySubmissionId = searchParams.get('submission_id')
 
+  const showPassedTab = latestAcSubmissionId != null
+
   const passedSubmissionId = useMemo(() => {
+    if (!latestAcSubmissionId) return null
     if (queryTab === 'passed' && querySubmissionId) {
       return querySubmissionId
     }
@@ -45,7 +48,7 @@ export function ProblemDetailPage() {
   }, [queryTab, querySubmissionId, latestAcSubmissionId])
 
   const [activeTab, setActiveTab] = useState(() => {
-    if (queryTab === 'passed' && querySubmissionId) return 'passed'
+    if (queryTab === 'passed') return 'passed'
     if (queryTab === 'submissions') return 'submissions'
     return 'statement'
   })
@@ -124,12 +127,15 @@ export function ProblemDetailPage() {
   }, [id, userInfo?.accountId])
 
   useEffect(() => {
-    if (queryTab === 'passed' && querySubmissionId) {
+    if (queryTab === 'passed' && showPassedTab && !latestAcLoading) {
       setActiveTab('passed')
     } else if (queryTab === 'submissions') {
       setActiveTab('submissions')
+    } else if (activeTab === 'passed' && !showPassedTab && !latestAcLoading) {
+      setActiveTab('statement')
     }
-  }, [queryTab, querySubmissionId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryTab, showPassedTab, latestAcLoading])
 
   async function handleSubmit(payload: { language_key: string; source: string }) {
     const res = await problemSubmit(id, payload)
@@ -213,22 +219,20 @@ export function ProblemDetailPage() {
         </div>
       ) : null,
     },
-    ...(passedSubmissionId
+    ...(showPassedTab && passedSubmissionId
       ? [
           {
             key: 'passed',
             label: '通过',
             icon: <CheckCircleOutlined />,
-            children: latestAcLoading && !passedSubmissionId ? (
-              <Skeleton active paragraph={{ rows: 6 }} />
-            ) : passedSubmissionId ? (
+            children: (
               <SubmissionPerformance
                 submissionId={passedSubmissionId}
                 problemId={id}
                 showBackLink
                 onBackToSubmissions={() => handleTabChange('submissions')}
               />
-            ) : null,
+            ),
           },
         ]
       : []),

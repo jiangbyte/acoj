@@ -125,11 +125,13 @@ export function SubmissionPerformance({
   const [similarItems, setSimilarItems] = useState<SimilarSubmissionItem[]>([])
   const [similarAvailable, setSimilarAvailable] = useState(true)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [selectedSimilar, setSelectedSimilar] = useState<SimilarSubmissionItem | null>(null)
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
+    setLoadError(null)
     setPerformance(null)
     setSimilarItems([])
     setSelectedSimilar(null)
@@ -146,6 +148,10 @@ export function SubmissionPerformance({
         setSimilarItems(similarRes.data.items)
         if (similarRes.data.items.length > 0) {
           setSelectedSimilar(similarRes.data.items[0])
+        }
+      } catch {
+        if (!cancelled) {
+          setLoadError('加载失败，请稍后重试')
         }
       } finally {
         if (!cancelled) {
@@ -168,10 +174,14 @@ export function SubmissionPerformance({
     )
   }
 
+  if (loadError) {
+    return <Empty description={loadError} className="py-8" />
+  }
+
   if (!performance?.available) {
     return (
       <Empty
-        description={performance?.reason ?? '暂无练习分布数据'}
+        description={performance?.reason ?? '该提交暂无练习分布数据'}
         className="py-8"
       />
     )
