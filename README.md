@@ -3,41 +3,54 @@
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.116%2B-009688?logo=fastapi&logoColor=white)
 ![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-ACOJ 是一个基于 FastAPI 构建的现代在线判题（Online Judge）平台，支持题目管理、代码提交与判题、竞赛举办以及用户/团队管理。
+ACOJ 是基于 FastAPI 的校园在线判题（Online Judge）平台：题库、提交判题、竞赛、班级/课程/小组教学，以及管理端与门户端。
 
-> ACOJ 由三个子项目组成：
-> - **acoj**（本仓库） — Web 主项目（API + 前端 + 数据库）
-> - **[acoj-worker](../acoj-worker/)** — 判题 worker 服务（Celery/Redis 消费判题任务）
-> - **[acoj-sandbox](../acoj-sandbox/)** — 判题沙箱执行器（C++ 执行引擎 + Python 封装）
-
-> 个人开发，有 bug 欢迎提，邮箱 jiangbytebiz@163.com
+> 由三个仓库组成：
+> - **acoj**（本仓库）— Web 主站（API + Admin + Portal）
+> - **[acoj-worker](../acoj-worker/)** — 判题 Worker
+> - **[acoj-sandbox](../acoj-sandbox/)** — 判题沙箱
+>
+> 个人开发，有问题欢迎邮件：jiangbytebiz@163.com
 
 ---
 
 ## 功能概览
 
-- **判题核心**：多语言代码提交与判题运行，题目与测试用例管理，判题结果异步消费与状态回调
-- **权限管理**：统一账号体系，角色/部门/用户组/岗位/资源菜单完整 RBAC 分层
-- **系统能力**：文件管理（Local / S3 / MinIO / OSS）、字典管理、系统配置、代码生成
-- **消息通讯**：站内消息、通知、公告、反馈、即时通讯、WebSocket 实时推送
-- **可观测性**：结构化日志、Prometheus metrics、OpenTelemetry tracing
+- **判题**：多语言提交、题目/用例管理、异步判题回调
+- **教学**：班级、公开课/私有课、课内与独立小组、邀请码加入
+- **竞赛**：比赛、报名、榜单、澄清
+- **权限**：统一账号、RBAC（角色/部门/用户组/岗位/菜单）
+- **系统**：文件存储（Local / MinIO / S3 / OSS）、字典、配置、代码生成
+- **消息**：站内信、公告、IM、WebSocket
+- **可观测**：结构化日志、Prometheus、OpenTelemetry
 
 ---
 
 ## 截图
 
+### 管理端
+
 | | |
 |---|---|
-| ![运营工作台](docs/IMAGES/img.png) | ![通知管理](docs/IMAGES/img_1.png) |
-| ![公告管理](docs/IMAGES/img_2.png) | ![反馈管理](docs/IMAGES/img_3.png) |
-| ![在线会话](docs/IMAGES/img_4.png) | ![字典管理](docs/IMAGES/img_5.png) |
-| ![文件管理](docs/IMAGES/img_6.png) | ![系统配置](docs/IMAGES/img_7.png) |
-| ![代码生成](docs/IMAGES/img_8.png) | ![账号管理](docs/IMAGES/img_9.png) |
+| ![运营工作台](docs/IMAGES/admin/img.png) | ![通知管理](docs/IMAGES/admin/img_1.png) |
+| ![公告管理](docs/IMAGES/admin/img_2.png) | ![反馈管理](docs/IMAGES/admin/img_3.png) |
+| ![在线会话](docs/IMAGES/admin/img_4.png) | ![字典管理](docs/IMAGES/admin/img_5.png) |
+| ![文件管理](docs/IMAGES/admin/img_6.png) | ![系统配置](docs/IMAGES/admin/img_7.png) |
+| ![代码生成](docs/IMAGES/admin/img_8.png) | ![账号管理](docs/IMAGES/admin/img_9.png) |
+
+### 门户端
+
+| | |
+|---|---|
+| ![首页](docs/IMAGES/portal/home.png) | ![题库](docs/IMAGES/portal/problems.png) |
+| ![竞赛](docs/IMAGES/portal/contests.png) | ![排名](docs/IMAGES/portal/rank.png) |
+| ![提交](docs/IMAGES/portal/submission.png) | ![IM](docs/IMAGES/portal/im.png) |
 
 ---
 
@@ -46,161 +59,121 @@ ACOJ 是一个基于 FastAPI 构建的现代在线判题（Online Judge）平台
 | 类别 | 技术 |
 |---|---|
 | 后端 | FastAPI / SQLAlchemy Async / Pydantic v2 / Gunicorn / Uvicorn |
-| 数据库 | PostgreSQL / MySQL / SQLite / Alembic |
-| 缓存会话 | Redis |
-| 任务队列 | Celery / celery-redbeat / Redis broker |
-| 存储 | Local / MinIO / S3 / OSS |
+| 数据库 | PostgreSQL（pgvector）/ Alembic |
+| 缓存与队列 | Redis（API 缓存 + Celery broker/beat） |
+| 对象存储 | MinIO / S3 / OSS / Local |
 | 管理端 | Vue 3 / Naive UI / Vite / TypeScript |
-| 门户端 | Nuxt 4 / @nuxt/ui |
-| 移动端 | uni-app |
+| 门户端 | React 19 / Ant Design / Vite / TypeScript |
 
 ---
 
 ## 项目结构
 
 ```text
-app/
-  core/          配置、安全、日志、异常、统一响应
-  deps/          FastAPI 依赖注入
-  middleware/    中间件
-  modules/       业务模块，自动发现并装配
-  platform/      DB、Redis、Storage、Celery、模块加载等基础设施
-  worker/        Celery 入口
-migrations/      Alembic 迁移
-scripts/         开发、迁移、seed 辅助脚本
-tests/           测试
-web/
-  admin/         Vue 管理端
-  portal/        Nuxt 门户端
-  admin-uniapp/  uni-app 管理端
+app/                 后端核心与业务模块
+migrations/          Alembic 迁移
+scripts/             migrate / seed / 运维脚本
+web/admin/           管理端
+web/portal/          门户端
+docker-compose.oneclick.yml   一键本地部署（推荐）
 ```
 
 ---
 
-## 快速开始
+## 一键部署（Docker Compose）
+
+单容器运行 **API + Celery worker + beat**；PostgreSQL / Redis / RabbitMQ / MinIO 同编排启动。**不挂载 volume**（演示用，删容器即丢数据）。
+
+### 1. 准备镜像
+
+已推送版本示例（`1.1.0`）：
+
+```text
+registry.cn-beijing.aliyuncs.com/czbyte/acoj-api:1.1.0
+registry.cn-beijing.aliyuncs.com/czbyte/acoj-admin:1.1.0
+registry.cn-beijing.aliyuncs.com/czbyte/acoj-portal:1.1.0
+```
+
+基础设施镜像（与历史本地环境一致，SWR 加速）：
+
+```text
+swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/pgvector/pgvector:pg18
+swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/redis:8-alpine
+swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/rabbitmq:4-management
+swr.cn-north-4.myhuaweicloud.com/ddn-k8s/quay.io/minio/minio:RELEASE.2025-07-23T15-54-02Z
+```
+
+### 2. 启动
+
+若本机已有占用 `8000/8080/8081` 的进程，先停掉或改 `.env.oneclick` 中的端口。
+
+```bash
+cp .env.oneclick.example .env.oneclick
+docker compose -f docker-compose.oneclick.yml --env-file .env.oneclick up -d
+```
+
+编排会依次：起基础设施 → `migrate` → `seed`（超管 + OJ 字典 + Portal 演示数据）→ `api(all)` → admin / portal。
+
+### 3. 访问
+
+| 服务 | 地址 |
+|---|---|
+| API / Swagger | http://127.0.0.1:8000/docs |
+| 门户 | http://127.0.0.1:8080 |
+| 管理端 | http://127.0.0.1:8081 |
+| 超管账号 | `superadmin` / `123456`（可用环境变量覆盖） |
+
+停止并清理（无 volume，数据一并消失）：
+
+```bash
+docker compose -f docker-compose.oneclick.yml --env-file .env.oneclick down
+```
+
+说明：本编排内 Celery worker 处理平台异步任务；**真判题**仍需单独部署 `acoj-worker`（见 sibling 仓库）。
+
+---
+
+## 本地开发
 
 ### 后端
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,postgres]"
+# 需可解析本地路径依赖：../acoj-sandbox/lang
 
 cp .env.example .env
-# 编辑 .env：DB__URL、REDIS__URL、CELERY__BROKER_URL、APP__CONFIG_CRYPTO_KEY
+# 编辑 DB__URL、REDIS__URL、CELERY__BROKER_URL、APP__CONFIG_CRYPTO_KEY
 
 python scripts/db/migrate.py
 python scripts/seed/seed_super_admin.py
-./entrypoint.sh
+./entrypoint.sh          # 默认 all = API + worker + beat
 ```
 
-默认地址：`http://127.0.0.1:8000`
+- API：http://127.0.0.1:8000  
+- Docs：http://127.0.0.1:8000/docs  
+- 角色切换：`./entrypoint.sh api|worker|beat|migrate|seed`
 
-接口文档：`http://127.0.0.1:8000/docs`
-
-`./entrypoint.sh` 默认按 `all` 模式启动 API、Celery worker 和 beat。也可以显式传参切换：`./entrypoint.sh api|worker|beat|migrate|seed`。
-
-### 管理端
+### 管理端 / 门户
 
 ```bash
-cd web/admin
-pnpm install
-pnpm dev
-```
-
-### 门户端
-
-```bash
-cd web/portal
-pnpm install
-pnpm dev
-```
-
-### uni-app
-
-```bash
-cd web/admin-uniapp
-pnpm install
-pnpm dev:h5
+cd web/admin && pnpm install && pnpm dev    # 默认管理端
+cd web/portal && pnpm install && pnpm dev   # 默认门户
 ```
 
 ---
 
 ## 配置边界
 
-`.env` 只放部署和基础设施配置，例如应用监听、数据库、Redis、Celery broker、CORS、加密 key。
+`.env` 只放部署与基础设施：监听地址、DB、Redis、Celery、CORS、加密 key。
 
-运行态业务配置放在数据库中：
+运行态业务配置在库中：
 
-- `sys_config`：上传限制、邮件配置、模块运行参数等普通配置
-- `sys_storage_config`：存储 provider、endpoint、bucket、access key、secret key 等连接配置
+- `sys_config`：上传限制、邮件等
+- `sys_storage_config`：MinIO / S3 / OSS 连接信息（后台维护）
 
-存储配置由管理后台维护并设置默认配置。上传接口可以只传 `storage_provider`，后端会解析到对应配置；需要精确指定时也支持 `storage_config_id`。
-
-多实例部署依赖 Redis 广播配置变更。管理后台保存 `sys_config` 或 `sys_storage_config` 后，当前进程会立即重载配置，其它 API/worker 会通过 Redis 订阅事件刷新本地缓存。
-
----
-
-## 模块扩展
-
-后端模块通过 `ModuleSpec` 声明式装配。新增业务模块通常只需要维护自己的 `router`、`model`、`schema`、`repository`、`service` 和 `module.py`。
-
-外部业务模块包可通过环境变量追加扫描：
-
-```bash
-HEI_MODULE_PACKAGES=your_company.modules
-HEI_DISABLED_MODULES=some.module
-HEI_ENABLED_MODULES=some.module
-```
-
-推荐二次开发方式：
-
-- 业务代码放在独立模块内，不直接改框架启动、路由聚合和基础设施代码
-- 模块间协作优先使用 `app/platform/interfaces`
-- 模块配置放在本模块配置模型或 `sys_config` 的模块名前缀下
-- 存储连接统一走 `sys_storage_config`，不要在业务模块里硬编码 provider 密钥
-
----
-
-## Docker
-
-单机单 Docker：一个项目容器内运行 API、worker、beat，PostgreSQL、Redis 由外部基础设施提供。
-
-```bash
-docker compose run --rm hei migrate
-docker compose up -d --build
-```
-
-等价 Docker 命令：
-
-```bash
-docker build -t hei-fastapi-backend .
-docker run --rm --env-file .env hei-fastapi-backend migrate
-docker run -d --name hei-fastapi-single --env-file .env -p 8000:8000 hei-fastapi-backend all
-```
-
-单机多 Docker 多实例：复制同一个项目镜像的 `api` / `worker` 角色，基础设施仍由外部提供。
-
-```bash
-docker compose -f docker-compose.multi.yml up -d --build --scale api=2 --scale worker=2
-docker compose -f docker-compose.multi.yml --profile seed run --rm seed
-```
-
-多机多节点：面向 Swarm/外部编排，基础设施地址通过环境变量注入。
-
-```bash
-docker build -t hei-fastapi-backend:latest .
-docker build -t hei-fastapi-admin:latest web/admin
-docker network create --driver overlay --attachable hei_overlay
-docker node update --label-add hei.beat=true <beat-node>
-docker compose -f docker-compose.distributed.yml config | docker stack deploy -c - hei-fastapi
-```
-
-管理端单独镜像：
-
-```bash
-docker build -t hei-fastapi-admin web/admin
-docker run -d -e BACKEND_URL="http://host.docker.internal:8000" -p 8081:81 hei-fastapi-admin
-```
+多实例时依赖 Redis 广播配置变更。
 
 ---
 
@@ -208,22 +181,24 @@ docker run -d -e BACKEND_URL="http://host.docker.internal:8000" -p 8081:81 hei-f
 
 ```bash
 python scripts/db/makemigration.py "describe schema change"
-python scripts/db/check_migration.py
 python scripts/db/migrate.py
+python scripts/seed/seed_super_admin.py
+python scripts/seed/seed_oj_dict.py
+python scripts/seed/seed_portal_demo.py
 
 python -m ruff check app tests
 python -m pytest
 ```
 
-```bash
-cd web/admin
-pnpm build
-```
-
-压测基线：
+构建并推送应用镜像示例：
 
 ```bash
-python scripts/ops/loadtest_http.py --base-url http://127.0.0.1:8000 --path / --requests 1000 --concurrency 50
+# API（需 sibling sandbox）
+DOCKER_BUILDKIT=1 docker build --build-context sandbox=../acoj-sandbox \
+  -t registry.cn-beijing.aliyuncs.com/czbyte/acoj-api:1.1.0 .
+
+DOCKER_BUILDKIT=1 docker build -t registry.cn-beijing.aliyuncs.com/czbyte/acoj-admin:1.1.0 web/admin
+DOCKER_BUILDKIT=1 docker build -t registry.cn-beijing.aliyuncs.com/czbyte/acoj-portal:1.1.0 web/portal
 ```
 
 ---
@@ -236,7 +211,6 @@ python scripts/ops/loadtest_http.py --base-url http://127.0.0.1:8000 --path / --
 - [migrations/README.md](migrations/README.md)
 - [web/admin/README.md](web/admin/README.md)
 - [web/portal/README.md](web/portal/README.md)
-- [web/admin-uniapp/README.md](web/admin-uniapp/README.md)
 
 ---
 

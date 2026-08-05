@@ -1,0 +1,150 @@
+# ACOJ 一键本地部署（单应用容器 = API + Celery worker + beat）
+#
+# 用法：
+#   cp .env.oneclick.example .env.oneclick   # 如需改密钥/端口
+#   docker compose -f docker-compose.oneclick.yml --env-file .env.oneclick up -d
+#
+# 说明：
+# - 不挂载任何 volume（数据随容器删除而清空，适合演示）
+# - 应用镜像：registry.cn-beijing.aliyuncs.com/czbyte/acoj-{api,admin,portal}:1.1.0
+# - 基础设施镜像使用华为云 SWR 加速源（与历史本地容器一致）
+# - 判题沙箱 worker（acoj-worker）不在本编排内；本 api 容器内 worker 跑平台 Celery 任务
+
+name: acoj-oneclick
+
+x-api-env: &api-env
+  APP__HOST: 0.0.0.0
+  APP__PORT: "8000"
+  APP__DEBUG: "false"
+  APP__PROCESS_ROLE: all
+  APP__CONFIG_CRYPTO_KEY: ${APP__CONFIG_CRYPTO_KEY:-XV1rJ-UPAbWeYjprihKNS3ZCCHdBuVbIc0WXmYc70ck=}
+  APP__TIMEZONE: Asia/Shanghai
+  APP__TRUSTED_PROXY_IPS: ${APP__TRUSTED_PROXY_IPS:-["172.16.0.0/12","127.0.0.1"]}
+  CORS__ALLOW_ORIGINS: ${CORS__ALLOW_ORIGINS:-["http://127.0.0.1:8080","http://localhost:8080","http://127.0.0.1:8081","http://localhost:8081"]}
+  DB__URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-123456}@postgres:5432/${POSTGRES_DB:-hei_fastapi}
+  REDIS__URL: redis://redis:6379/3
+  CELERY__BROKER_URL: redis://redis:6379/1
+  CELERY__BROKER_VISIBILITY_TIMEOUT: "3600"
+  CELERY__WORKER_POOL: threads
+  CELERY__WORKER_CONCURRENCY: ${CELERY__WORKER_CONCURRENCY:-8}
+  CELERY__AUTO_START_ENABLED: "false"
+  SEED_SUPER_ADMIN_ACCOUNT: ${SEED_SUPER_ADMIN_ACCOUNT:-superadmin}
+  SEED_SUPER_ADMIN_PASSWORD: ${SEED_SUPER_ADMIN_PASSWORD:-123456}
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/pgvector/pgvector:pg18}
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-123456}
+      POSTGRES_DB: ${POSTGRES_DB:-hei_fastapi}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d $${POSTGRES_DB:-hei_fastapi}"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  redis:
+    image: ${REDIS_IMAGE:-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/redis:8-alpine}
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  rabbitmq:
+    image: ${RABBITMQ_IMAGE:-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/rabbitmq:4-management}
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+    restart: unless-stopped
+
+  minio:
+    image: ${MINIO_IMAGE:-swr.cn-north-4.myhuaweicloud.com/ddn-k8s/quay.io/minio/minio:RELEASE.2025-07-23T15-54-02Z}
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    restart: unless-stopped
+
+  migrate:
+    image: ${ACOJ_API_IMAGE:-registry.cn-beijing.aliyuncs.com/czbyte/acoj-api:1.1.0}
+    environment:
+      <<: *api-env
+    command: ["migrate"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  seed:
+    image: ${ACOJ_API_IMAGE:-registry.cn-beijing.aliyuncs.com/czbyte/acoj-api:1.1.0}
+    environment:
+      <<: *api-env
+    entrypoint: ["sh", "-c"]
+    command:
+      - "python scripts/seed/seed_super_admin.py && python scripts/seed/seed_oj_dict.py && python scripts/seed/seed_portal_demo.py"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  api:
+    image: ${ACOJ_API_IMAGE:-registry.cn-beijing.aliyuncs.com/czbyte/acoj-api:1.1.0}
+    environment:
+      <<: *api-env
+    command: ["all"]
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/internal/health/live', timeout=3)\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    restart: unless-stopped
+
+  admin:
+    image: ${ACOJ_ADMIN_IMAGE:-registry.cn-beijing.aliyuncs.com/czbyte/acoj-admin:1.1.0}
+    environment:
+      BACKEND_URL: http://api:8000
+      CLIENT_MAX_BODY_SIZE: ${CLIENT_MAX_BODY_SIZE:-10m}
+    ports:
+      - "${ADMIN_PORT:-8081}:81"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  portal:
+    image: ${ACOJ_PORTAL_IMAGE:-registry.cn-beijing.aliyuncs.com/czbyte/acoj-portal:1.1.0}
+    environment:
+      BACKEND_URL: http://api:8000
+      CLIENT_MAX_BODY_SIZE: ${CLIENT_MAX_BODY_SIZE:-10m}
+    ports:
+      - "${PORTAL_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

@@ -1,3 +1,6 @@
+# Build from acoj/ (sandbox is a sibling repo):
+#   docker build --build-context sandbox=../acoj-sandbox -t acoj-api:<tag> .
+#
 #FROM python:3.11-slim
 FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/python:3.11-slim
 #FROM docker.xuanyuan.run/library/python:3.11-slim
@@ -35,9 +38,11 @@ ENV PIP_INDEX_URL=${PIP_INDEX_URL} \
 WORKDIR /app
 
 COPY pyproject.toml README.md ./
+COPY --from=sandbox lang /tmp/acoj-sandbox-lang
 
 RUN --mount=type=cache,target=/root/.cache/pip \
-    python -c 'import os, subprocess, sys, tomllib; data = tomllib.load(open("pyproject.toml", "rb")); deps = data["project"]["dependencies"] + data["project"]["optional-dependencies"]["postgres"]; subprocess.check_call([sys.executable, "-m", "pip", "install", "--index-url", os.environ["PIP_INDEX_URL"], "--prefer-binary", *deps])'
+    python -c 'import os, subprocess, sys, tomllib; data = tomllib.load(open("pyproject.toml", "rb")); deps = [d for d in data["project"]["dependencies"] + data["project"]["optional-dependencies"]["postgres"] if "file:" not in d]; subprocess.check_call([sys.executable, "-m", "pip", "install", "--index-url", os.environ["PIP_INDEX_URL"], "--prefer-binary", *deps]); subprocess.check_call([sys.executable, "-m", "pip", "install", "--index-url", os.environ["PIP_INDEX_URL"], "--prefer-binary", "/tmp/acoj-sandbox-lang"])' \
+    && rm -rf /tmp/acoj-sandbox-lang
 
 COPY app ./app
 COPY alembic.ini ./
