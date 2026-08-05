@@ -38,7 +38,7 @@ Portal 组长（`owner_id` / `OWNER`）可管理自己的小组：独立小组�
 - 不能移除组长本人
 - `max_members` 不可小于当前 `member_count`；范围仍 2–500
 - 课内加人：与现有 `add_members` / 邀请加入一致——非 OPEN 课程时，被加账号须为课程关联班级成员
-- 独立小组改 `visibility`；课内请求若带 `visibility` → 拒绝或忽略（显式拒绝更清晰）
+- 独立小组可改 `visibility`；课内请求若带 `visibility` → 显式拒绝
 
 ## Backend API
 
