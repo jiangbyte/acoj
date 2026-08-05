@@ -9,12 +9,12 @@
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-ACOJ 是基于 FastAPI 的校园在线判题（Online Judge）平台：题库、提交判题、竞赛、班级/课程/小组教学，以及管理端与门户端。
+ACOJ 是基于 FastAPI 的 Online Judge 平台：题库、提交判题、竞赛、班级/课程/小组教学，以及管理端与门户端。
 
 > 由三个仓库组成：
 > - **acoj**（本仓库）— Web 主站（API + Admin + Portal）
-> - **[acoj-worker](../acoj-worker/)** — 判题 Worker
-> - **[acoj-sandbox](../acoj-sandbox/)** — 判题沙箱
+> - **[acoj-worker](https://github.com/jiangbyte/acoj-worker)** — 判题 Worker
+> - **[acoj-sandbox](https://github.com/jiangbyte/acoj-sandbox)** — 判题沙箱
 >
 > 个人开发，有问题欢迎邮件：jiangbytebiz@163.com
 
@@ -82,22 +82,14 @@ docker-compose.oneclick.yml   一键本地部署（推荐）
 
 ## 一键部署（Docker Compose）
 
-**推荐（全栈 Demo，含判题 worker）**：在 monorepo 根目录的 **`deploy/`**：
-
-```bash
-cd ../deploy   # 相对 acoj/ 仓库
-cp .env.demo.example .env.demo
-docker compose --env-file .env.demo up -d
-```
-
-详见 [deploy/README.md](../deploy/README.md)。包含 Postgres（`demo.dump` 本机库快照）/ Redis / MinIO（Celery=Redis，无 RabbitMQ）、`acoj-api:1.1.0`（API+平台 worker+beat）、`acoj-worker:1.1.0`（判题）、admin、portal。**不挂载 volume**。
-
-本仓库内还有精简版（不含判题 worker）：
+本仓库提供精简一键编排（API + 平台 Celery + Admin + Portal；不含判题 worker）：
 
 ```bash
 cp .env.oneclick.example .env.oneclick
 docker compose -f docker-compose.oneclick.yml --env-file .env.oneclick up -d
 ```
+
+判题能力需另行部署 [acoj-worker](https://github.com/jiangbyte/acoj-worker)。
 
 ---
 
@@ -109,7 +101,7 @@ docker compose -f docker-compose.oneclick.yml --env-file .env.oneclick up -d
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,postgres]"
-# 需可解析本地路径依赖：../acoj-sandbox/lang
+# 需同级克隆 https://github.com/jiangbyte/acoj-sandbox 并安装 lang 包
 
 cp .env.example .env
 # 编辑 DB__URL、REDIS__URL、CELERY__BROKER_URL、APP__CONFIG_CRYPTO_KEY
@@ -158,15 +150,12 @@ python -m ruff check app tests
 python -m pytest
 ```
 
-构建并推送应用镜像示例：
+本地构建示例（需同级 [acoj-sandbox](https://github.com/jiangbyte/acoj-sandbox)）：
 
 ```bash
-# API（需 sibling sandbox）
-DOCKER_BUILDKIT=1 docker build --build-context sandbox=../acoj-sandbox \
-  -t registry.cn-beijing.aliyuncs.com/czbyte/acoj-api:1.1.0 .
-
-DOCKER_BUILDKIT=1 docker build -t registry.cn-beijing.aliyuncs.com/czbyte/acoj-admin:1.1.0 web/admin
-DOCKER_BUILDKIT=1 docker build -t registry.cn-beijing.aliyuncs.com/czbyte/acoj-portal:1.1.0 web/portal
+DOCKER_BUILDKIT=1 docker build --build-context sandbox=../acoj-sandbox -t acoj-api:local .
+DOCKER_BUILDKIT=1 docker build -t acoj-admin:local web/admin
+DOCKER_BUILDKIT=1 docker build -t acoj-portal:local web/portal
 ```
 
 ---
