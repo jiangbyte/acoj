@@ -17,6 +17,11 @@ from app.deps.auth import get_current_session, require_account_type, require_per
 from app.deps.db import get_db_session
 from app.modules.biz.submission.enums import SubmissionKind, SubmissionStatus
 from app.modules.biz.submission.events import submission_event_channel
+from app.modules.biz.submission.performance.schema import (
+    SimilarSubmissionListOut,
+    SubmissionPerformanceOut,
+)
+from app.modules.biz.submission.performance.service import SubmissionPerformanceService
 from app.modules.biz.submission.submission.schema import (
     OjSubmissionAdminPageQuery,
     OjSubmissionDetailSchema,
@@ -84,6 +89,43 @@ async def detail(
     id: Annotated[Id, Query()],
 ) -> ApiResponse[OjSubmissionDetailSchema]:
     return success(await OjSubmissionService(db).detail(IdQuery(id=id)))
+
+
+@router.get(
+    "/biz/submission/submission/performance",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("biz:submission:submission:detail")),
+    ],
+    response_model=ApiResponse[SubmissionPerformanceOut],
+)
+async def performance(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    id: Annotated[Id, Query()],
+) -> ApiResponse[SubmissionPerformanceOut]:
+    return success(
+        await SubmissionPerformanceService(db).get_performance(id, viewer=None, for_admin=True)
+    )
+
+
+@router.get(
+    "/biz/submission/submission/similar",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("biz:submission:submission:detail")),
+    ],
+    response_model=ApiResponse[SimilarSubmissionListOut],
+)
+async def similar(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    id: Annotated[Id, Query()],
+    size: int = Query(default=10, ge=1, le=50),
+) -> ApiResponse[SimilarSubmissionListOut]:
+    return success(
+        await SubmissionPerformanceService(db).list_similar(
+            id, size=size, viewer=None, for_admin=True
+        )
+    )
 
 
 @router.post(

@@ -21,6 +21,12 @@ from app.deps.auth import get_current_session, get_optional_session, require_acc
 from app.deps.db import get_db_session
 from app.modules.biz.submission.enums import SubmissionKind, SubmissionStatus
 from app.modules.biz.submission.events import submission_event_channel
+from app.modules.biz.submission.performance.schema import (
+    MyLatestPracticeAcOut,
+    SimilarSubmissionListOut,
+    SubmissionPerformanceOut,
+)
+from app.modules.biz.submission.performance.service import SubmissionPerformanceService
 from app.modules.biz.submission.portal.service import PortalSubmissionService
 from app.modules.biz.submission.submission.schema import (
     OjSubmissionAdminPageQuery,
@@ -81,6 +87,57 @@ async def submission_detail(
 ) -> ApiResponse[OjSubmissionDetailSchema]:
     viewer = session.account_id if session else None
     return success(await PortalSubmissionService(db).detail(id, viewer_account_id=viewer))
+
+
+@router.get(
+    "/biz/submission/performance",
+    response_model=ApiResponse[SubmissionPerformanceOut],
+)
+async def submission_performance(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    id: Annotated[Id, Query()],
+    session: Annotated[SessionPayload | None, Depends(get_optional_session)] = None,
+) -> ApiResponse[SubmissionPerformanceOut]:
+    viewer = session.account_id if session else None
+    return success(
+        await SubmissionPerformanceService(db).get_performance(
+            id, viewer=viewer, for_admin=False
+        )
+    )
+
+
+@router.get(
+    "/biz/submission/similar",
+    response_model=ApiResponse[SimilarSubmissionListOut],
+)
+async def submission_similar(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    id: Annotated[Id, Query()],
+    size: int = Query(default=10, ge=1, le=50),
+    session: Annotated[SessionPayload | None, Depends(get_optional_session)] = None,
+) -> ApiResponse[SimilarSubmissionListOut]:
+    viewer = session.account_id if session else None
+    return success(
+        await SubmissionPerformanceService(db).list_similar(
+            id, size=size, viewer=viewer, for_admin=False
+        )
+    )
+
+
+@router.get(
+    "/biz/submission/my-latest-ac",
+    dependencies=[Depends(require_account_type(AccountType.PORTAL))],
+    response_model=ApiResponse[MyLatestPracticeAcOut],
+)
+async def submission_my_latest_ac(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    problem_id: Annotated[Id, Query()],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
+) -> ApiResponse[MyLatestPracticeAcOut]:
+    submission_id = await SubmissionPerformanceService(db).my_latest_practice_ac(
+        session.account_id, problem_id
+    )
+    return success(MyLatestPracticeAcOut(submission_id=submission_id))
 
 
 @router.get(

@@ -48,3 +48,7 @@ class SimilarSubmissionListOut(ApiSchema):
     available: bool
     reason: str | None = None
     items: list[SimilarSubmissionItem] = Field(default_factory=list)
+
+
+class MyLatestPracticeAcOut(ApiSchema):
+    submission_id: str | None = None
