@@ -5,8 +5,17 @@ import { NSpace, NText } from 'naive-ui'
 const { getValueByCode } = useSysConfigFetch()
 
 const appName = ref('')
-const appLogo = ref('')
+const appLogo = ref('/logo.svg')
 const appAdminShowAppName = ref(false)
+
+function resolveLogo(url?: string | null) {
+  if (!url?.trim())
+    return '/logo.svg'
+  if (url.includes('120.26.180.149:9000/astro-code-oj/'))
+    return '/logo.svg'
+  return url
+}
+
 async function loadData() {
   const [appConfig, logoConfig, adminShowConfig] = await Promise.all([
     getValueByCode({ code: 'APP_NAME' }),
@@ -16,7 +25,7 @@ async function loadData() {
 
   // 处理配置项
   appName.value = appConfig?.data ?? appName.value
-  appLogo.value = logoConfig?.data ?? appLogo.value
+  appLogo.value = resolveLogo(logoConfig?.data)
   appAdminShowAppName.value = adminShowConfig?.data === 'true'
 }
 loadData()

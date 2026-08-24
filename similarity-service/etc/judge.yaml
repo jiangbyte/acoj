@@ -1,0 +1,13 @@
+Name: similarity-service
+Host: 0.0.0.0
+Port: 8882
+
+# Nacos 配置
+Nacos:
+  ServerAddr: "localhost:8848"
+  Username: "nacos"  # 可选，如果为空则不使用认证
+  Password: "123456"  # 可选
+  #  Namespace: "11a37e04-ac1b-4666-9e4c-5e4f88fa78f0" # prod
+  Namespace: "8fee08f3-44ea-4e26-a9b5-530c582330a3" # dev
+  Group: "DEFAULT_GROUP"
+  DataId: "similarity-service.yaml"

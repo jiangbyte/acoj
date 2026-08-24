@@ -8,28 +8,24 @@ type MatchTile struct {
 }
 
 // GreedyStringTiling 优化后的贪婪字符串匹配算法
+
+
 func GreedyStringTiling(token1, token2 []int, minMatchLength int) int {
 	if len(token1) == 0 || len(token2) == 0 {
 		return 0
 	}
-
 	matched1 := make([]bool, len(token1))
 	matched2 := make([]bool, len(token2))
 	var tiles []MatchTile
-
 	maxMatch := minMatchLength
-
 	for {
 		maxMatch = minMatchLength
 		var maxTiles []MatchTile
-
 		// 寻找最大匹配块
 		findMaxMatches(token1, token2, matched1, matched2, minMatchLength, &maxMatch, &maxTiles)
-
 		if maxMatch <= minMatchLength {
 			break
 		}
-
 		// 标记已匹配的块
 		for _, tile := range maxTiles {
 			for k := 0; k < tile.Length; k++ {
@@ -39,7 +35,6 @@ func GreedyStringTiling(token1, token2 []int, minMatchLength int) int {
 			tiles = append(tiles, tile)
 		}
 	}
-
 	// 计算总匹配数
 	totalMatches := 0
 	for _, tile := range tiles {

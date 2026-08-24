@@ -678,7 +678,7 @@ INSERT INTO `sys_config` VALUES ('1982136140003225603', 'Web端注册背景', 'A
 INSERT INTO `sys_config` VALUES ('1982136140003225604', 'Web端显示名称', 'APP_PC_SHOW_APP_NAME', 'false', '1', 'false 显示 Logo，true 显示 名称', 0, '2025-10-21 12:25:12', '1', '2025-10-28 16:49:58', '1', '5', 7);
 INSERT INTO `sys_config` VALUES ('1982136140003225605', '用户默认头像', 'APP_DEFAULT_AVATAR', 'http://120.26.180.149:9000/astro-code-oj/0e1cbf5a2a614929a6e103e57b2c1dbf.png', '6', '', 0, '2025-10-21 12:25:12', '1', '2025-10-30 09:02:14', '1', '5', 3);
 INSERT INTO `sys_config` VALUES ('1982136140003225606', '用户默认背景', 'APP_DEFAULT_USER_BACKGROUND', 'http://120.26.180.149:9000/astro-code-oj/21977c80d7bc4e549e3f67e26e330946.png', '6', '', 0, '2025-10-21 12:25:12', '1', '2025-10-28 20:32:06', '1', '5', 4);
-INSERT INTO `sys_config` VALUES ('1982136140003225607', '应用Logo', 'APP_LOGO', 'http://120.26.180.149:9000/astro-code-oj/a1c130a750c94856b028629382cf5b21.png', '6', '建议 1:1 图片上传', 0, '2025-10-21 12:25:12', '1', '2025-10-28 16:57:51', '1', '5', 1);
+INSERT INTO `sys_config` VALUES ('1982136140003225607', '应用Logo', 'APP_LOGO', '/logo.svg', '6', '建议 1:1 图片；默认使用前端 public/logo.svg', 0, '2025-10-21 12:25:12', '1', '2025-10-28 16:57:51', '1', '5', 1);
 INSERT INTO `sys_config` VALUES ('1982136140003225608', '应用名称', 'APP_NAME', 'Astro Code', '2', '应用名称', 0, '2025-10-21 12:25:12', '1', '2025-10-28 16:49:22', '1', '5', 2);
 INSERT INTO `sys_config` VALUES ('1982136140003225609', 'Admin端显示名称', 'APP_ADMIN_SHOW_APP_NAME', 'false', '1', '', 0, '2025-10-21 12:25:12', '1', '2025-10-28 16:50:16', '1', '5', 9);
 
