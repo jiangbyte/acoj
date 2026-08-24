@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# 4 vCPU / 8 GiB 同机：限制 Go 运行时，给 javac/用户程序和其它容器留内存
+export GOMAXPROCS="${GOMAXPROCS:-2}"
+export GOMEMLIMIT="${GOMEMLIMIT:-512MiB}"
+
 # 创建临时cgroup
 mkdir /sys/fs/cgroup/temp_group
 

@@ -14,7 +14,7 @@
 
 
 #FROM openjdk:21
-#FROM docker.io/openjdk:21
+#FROM bellsoft/liberica-openjdk-rocky:21
 FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/openjdk:21
 #FROM docker.xuanyuan.run/bellsoft/liberica-openjdk-alpine:21.0.8-cds
 #FROM  docker.1ms.run/astita/openjdk21-alpine:latest
@@ -121,17 +121,22 @@ EXPOSE 89
 #    "-jar", "galaxy-oj-1.0.0.jar"]
 
 
+# 4 vCPU / 8 GiB 同机：Nacos / MySQL / MinIO / Redis / 判题（相似度未启用）
+# galaxy-oj 进程约 2.0~2.4G（堆 1.5G + 元空间/直接内存/线程栈）
 ENTRYPOINT ["java", \
-    "-Xmx8G", \
-    "-Xms8G", \
-    "-XX:MaxMetaspaceSize=512M", \
-    "-XX:+UseZGC", \
-    "-XX:ConcGCThreads=1", \
+    "-Xms1536m", \
+    "-Xmx1536m", \
+    "-XX:MaxMetaspaceSize=256M", \
+    "-XX:MaxDirectMemorySize=192M", \
+    "-XX:+UseG1GC", \
+    "-XX:MaxGCPauseMillis=200", \
     "-XX:ParallelGCThreads=2", \
-    "-XX:+ZProactive", \
+    "-XX:ConcGCThreads=1", \
     "-XX:+UseContainerSupport", \
     "-XX:+DisableExplicitGC", \
     "-XX:+HeapDumpOnOutOfMemoryError", \
+    "-XX:HeapDumpPath=/app/logs/heap.hprof", \
+    "-XX:+ExitOnOutOfMemoryError", \
     "-Djava.security.egd=file:/dev/./urandom", \
     "-Dfile.encoding=UTF-8", \
     "-Dio.undertow.no-host-header=true", \
