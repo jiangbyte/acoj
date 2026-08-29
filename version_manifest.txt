@@ -1,0 +1,61 @@
+# Astro Code OJ — Version Manifest
+# Machine- and human-readable release inventory for this repository.
+# Keep in sync with pom.xml revision, module READMEs, and CITATION.cff.
+
+Project: Astro Code OJ (AC OJ)
+Package: astro-code-oj
+GroupId: io.charlie
+Version: 1.0.0
+License: MIT
+Date: 2026-08-29
+Author: Zhang Jianghu
+Author-EN: Charlie Zhang
+Author-ID: jiangbyte
+Repository: https://github.com/jiangbyte/acoj
+Citation: CITATION.cff
+
+# -----------------------------------------------------------------------------
+# Modules
+# -----------------------------------------------------------------------------
+module.oj=1.0.0
+module.judge-service=1.0.0
+module.similarity-service=1.0.0
+module.admin=1.0.0
+module.pc=1.0.0
+
+# -----------------------------------------------------------------------------
+# Runtime / language baselines
+# -----------------------------------------------------------------------------
+runtime.jdk=21
+runtime.maven=3.8+
+runtime.go=1.24.4
+runtime.nodejs=18+
+runtime.mysql=8+
+runtime.nacos=2.x
+
+# -----------------------------------------------------------------------------
+# Key dependency versions (from pom.xml / go.mod / package managers)
+# -----------------------------------------------------------------------------
+dep.spring-boot=3.5.4
+dep.spring-cloud=2025.0.0
+dep.spring-cloud-alibaba=2025.0.0.0
+dep.mybatis-plus=3.5.12
+dep.sa-token=1.39.0
+dep.redisson=3.41.0
+dep.knife4j=4.5.0
+dep.minio=8.5.2
+dep.spring-ai=1.0.0
+dep.spring-ai-alibaba=1.0.0.2
+dep.go-zero=1.9.2
+dep.vue=3.5.x
+dep.vite=7.x
+
+# -----------------------------------------------------------------------------
+# Default service ports (local / documentation defaults)
+# -----------------------------------------------------------------------------
+port.oj=89
+port.admin=81
+port.pc=80
+port.judge-service=8888
+port.similarity-service=8882
+port.nacos=8848
