@@ -1,5 +1,6 @@
 package io.charlie.web.modular.task.library.handle;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.charlie.web.modular.data.library.entity.DataLibrary;
@@ -20,7 +21,7 @@ import java.util.Date;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 30/10/2025
- * @description 样本库消息处理（主库 upsert，按业务 UK）
+ * @description 样本库消息处理（主库 upsert，按 module_type/module_id 隔离）
  */
 @Slf4j
 @Component
@@ -46,19 +47,28 @@ public class LibraryHandleMessage {
     public void receiveJudge(Library submit) {
         try {
             processLibraryRecord(submit);
-            log.debug("样本库处理完成, userId: {}, problemId: {}", submit.getUserId(), submit.getProblemId());
+            log.debug("样本库处理完成, userId: {}, problemId: {}, moduleType: {}, moduleId: {}",
+                    submit.getUserId(), submit.getProblemId(), submit.getModuleType(), submit.getModuleId());
         } catch (Exception e) {
-            log.error("处理样本库失败, userId: {}, problemId: {}, submitId: {}",
-                    submit.getUserId(), submit.getProblemId(), submit.getSubmitId(), e);
+            log.error("处理样本库失败, userId: {}, problemId: {}, submitId: {}, moduleType: {}, moduleId: {}",
+                    submit.getUserId(), submit.getProblemId(), submit.getSubmitId(),
+                    submit.getModuleType(), submit.getModuleId(), e);
             throw new RuntimeException("处理样本库失败", e);
         }
     }
 
     /**
      * 依赖唯一索引 uk_user_module_problem_lang。
-     * 先按业务 UK update；0 行再 insert；撞 UK 再 update。全程主库。
+     * 先按业务 UK update；0 行再 insert；撞 UK 则 revive 软删后再 update。
      */
     private void processLibraryRecord(Library submit) {
+        if (StrUtil.isBlank(submit.getModuleType()) || StrUtil.isBlank(submit.getModuleId())
+                || StrUtil.isBlank(submit.getUserId()) || StrUtil.isBlank(submit.getProblemId())
+                || StrUtil.isBlank(submit.getLanguage()) || StrUtil.isBlank(submit.getCode())) {
+            throw new IllegalArgumentException(
+                    "样本库缺少必要字段(moduleType/moduleId/userId/problemId/language/code)");
+        }
+
         TokenDetail tokensDetail = codeTokenUtil.getCodeTokensDetail(
                 submit.getLanguage().toLowerCase(), submit.getCode()
         );
@@ -89,7 +99,19 @@ public class LibraryHandleMessage {
             dataLibraryMapper.insert(library);
         } catch (Exception e) {
             if (isDuplicateKeyException(e)) {
-                updateByBusinessKey(submit, tokensDetail, codeLength, now);
+                dataLibraryMapper.reviveByBusinessKey(
+                        submit.getUserId(),
+                        submit.getModuleType(),
+                        submit.getModuleId(),
+                        submit.getProblemId(),
+                        submit.getLanguage()
+                );
+                int again = updateByBusinessKey(submit, tokensDetail, codeLength, now);
+                if (again <= 0) {
+                    throw new IllegalStateException("样本库撞 UK 后仍无法更新: userId="
+                            + submit.getUserId() + ", moduleType=" + submit.getModuleType()
+                            + ", moduleId=" + submit.getModuleId());
+                }
             } else {
                 throw e;
             }

@@ -296,35 +296,28 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
 //    @Transactional(rollbackFor = Exception.class)
     @Override
     public String handleProblemSubmit(DataSubmitExeParam dataSubmitExeParam) {
+        // 复用表按模块隔离：题库强制 PROBLEM + moduleId=problemId
+        dataSubmitExeParam.setModuleType("PROBLEM");
+        dataSubmitExeParam.setModuleId(dataSubmitExeParam.getProblemId());
+
         DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam);
-
         DataProblem problem = dataProblemMapper.selectById(dataSubmit.getProblemId());
-
-        JudgeSubmitDto message = new JudgeSubmitDto();
-
-        message.setId(dataSubmit.getId());
-        message.setUserId(dataSubmit.getUserId());
-        message.setJudgeTaskId(dataSubmitExeParam.getJudgeTaskId());
-        message.setModuleType(dataSubmitExeParam.getModuleType());
-        message.setModuleId(dataSubmitExeParam.getModuleId());
-        message.setMaxTime(problem.getMaxTime());
-        message.setMaxMemory(problem.getMaxMemory());
-        message.setProblemId(dataSubmitExeParam.getProblemId());
-        message.setLanguage(dataSubmitExeParam.getLanguage());
-        message.setSubmitType(dataSubmitExeParam.getSubmitType());
-        message.setCode(dataSubmitExeParam.getCode());
-
-        judgeHandleMessage.sendJudge(message);
-
-        // -- DEBUG --
-//        log.info("提交成功，提交ID：{}", dataSubmit.getId());
-
+        judgeHandleMessage.sendJudge(buildJudgeMessage(dataSubmit, dataSubmitExeParam, problem));
         return dataSubmit.getId();
     }
 
     @Override
     public String handleSetSubmit(DataSubmitExeParam dataSubmitExeParam) {
+        if (StrUtil.isBlank(dataSubmitExeParam.getModuleId())) {
+            throw new BusinessException("题集ID不能为空");
+        }
+        // 复用表按模块隔离：题集强制 SET + moduleId=题集ID
+        dataSubmitExeParam.setModuleType("SET");
+
         DataSet dataSet = dataSetMapper.selectById(dataSubmitExeParam.getModuleId());
+        if (dataSet == null) {
+            throw new BusinessException("题集不存在");
+        }
 
         if (dataSet.getSetType().equals(2)) {
             Date now = new Date();
@@ -340,29 +333,22 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         // 不包事务：先 save 提交到主库，再发 MQ，避免判题回写早于事务 COMMIT 导致 updated=0
         DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam);
         DataProblem problem = dataProblemMapper.selectById(dataSubmitExeParam.getProblemId());
-
-        JudgeSubmitDto message = new JudgeSubmitDto();
-
-        message.setId(dataSubmit.getId());
-        message.setUserId(dataSubmit.getUserId());
-        message.setJudgeTaskId(dataSubmitExeParam.getJudgeTaskId());
-        message.setModuleType(dataSubmitExeParam.getModuleType());
-        message.setModuleId(dataSubmitExeParam.getModuleId());
-        message.setMaxTime(problem.getMaxTime());
-        message.setMaxMemory(problem.getMaxMemory());
-        message.setProblemId(dataSubmitExeParam.getProblemId());
-        message.setLanguage(dataSubmitExeParam.getLanguage());
-        message.setSubmitType(dataSubmitExeParam.getSubmitType());
-        message.setCode(dataSubmitExeParam.getCode());
-
-        judgeHandleMessage.sendJudge(message);
-
+        judgeHandleMessage.sendJudge(buildJudgeMessage(dataSubmit, dataSubmitExeParam, problem));
         return dataSubmit.getId();
     }
 
     @Override
     public String handleContestSubmit(DataSubmitExeParam dataSubmitExeParam) {
+        if (StrUtil.isBlank(dataSubmitExeParam.getModuleId())) {
+            throw new BusinessException("竞赛ID不能为空");
+        }
+        // 复用表按模块隔离：竞赛强制 CONTEST + moduleId=竞赛ID
+        dataSubmitExeParam.setModuleType("CONTEST");
+
         DataContest dataContest = dataContestMapper.selectById(dataSubmitExeParam.getModuleId());
+        if (dataContest == null) {
+            throw new BusinessException("竞赛不存在");
+        }
 
         Date now = new Date();
         if (dataContest.getContestStartTime() != null && dataContest.getContestEndTime() != null) {
@@ -385,24 +371,24 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
 
         DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam);
         DataProblem problem = dataProblemMapper.selectById(dataSubmitExeParam.getProblemId());
+        judgeHandleMessage.sendJudge(buildJudgeMessage(dataSubmit, dataSubmitExeParam, problem));
+        return dataSubmit.getId();
+    }
 
+    private JudgeSubmitDto buildJudgeMessage(DataSubmit dataSubmit, DataSubmitExeParam param, DataProblem problem) {
         JudgeSubmitDto message = new JudgeSubmitDto();
-
         message.setId(dataSubmit.getId());
         message.setUserId(dataSubmit.getUserId());
-        message.setJudgeTaskId(dataSubmitExeParam.getJudgeTaskId());
-        message.setModuleType(dataSubmitExeParam.getModuleType());
-        message.setModuleId(dataSubmitExeParam.getModuleId());
+        message.setJudgeTaskId(param.getJudgeTaskId());
+        message.setModuleType(param.getModuleType());
+        message.setModuleId(param.getModuleId());
         message.setMaxTime(problem.getMaxTime());
         message.setMaxMemory(problem.getMaxMemory());
-        message.setProblemId(dataSubmitExeParam.getProblemId());
-        message.setLanguage(dataSubmitExeParam.getLanguage());
-        message.setSubmitType(dataSubmitExeParam.getSubmitType());
-        message.setCode(dataSubmitExeParam.getCode());
-
-        judgeHandleMessage.sendJudge(message);
-
-        return dataSubmit.getId();
+        message.setProblemId(param.getProblemId());
+        message.setLanguage(param.getLanguage());
+        message.setSubmitType(param.getSubmitType());
+        message.setCode(param.getCode());
+        return message;
     }
 
     @Override

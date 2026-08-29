@@ -1,6 +1,8 @@
 package io.charlie.web.modular.task.judge.handle;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import io.charlie.web.modular.data.ranking.utils.ActivityScoreCalculator;
@@ -20,8 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.CompletableFuture;
 
 /**
  * @author ZhangJiangHu
@@ -54,13 +54,14 @@ public class JudgeHandleMessage {
         );
     }
 
+    @DS("master")
     @RabbitListener(queues = "${oj.mq.judge.result.queue}", containerFactory = "judgeResultContainerFactory")
     public void receiveJudge(JudgeResultDto judgeResultDto) {
         // 1. 更新提交记录（短重试，应对事务刚提交/主从瞬时可见性）
         String submitRecord = updateSubmitRecordWithRetry(judgeResultDto);
         if (submitRecord == null) {
-            log.error("更新提交记录失败，中止 solved/library 下游：id={}", judgeResultDto.getId());
-            return;
+            // 抛错走 listener 重试，避免静默 ACK 导致 submit 卡 PENDING、下游永不写
+            throw new IllegalStateException("更新提交记录失败：id=" + judgeResultDto.getId());
         }
 
         // 2. 根据提交类型处理业务逻辑
@@ -90,8 +91,9 @@ public class JudgeHandleMessage {
     }
 
     /**
-     * 更新提交记录
+     * 更新提交记录（主库）
      */
+    @DS("master")
     public String updateSubmitRecord(JudgeResultDto judgeResultDto) {
         LambdaUpdateWrapper<DataSubmit> lambda = new UpdateWrapper<DataSubmit>().checkSqlInjection().lambda();
         lambda.eq(DataSubmit::getId, judgeResultDto.getId())
@@ -114,11 +116,17 @@ public class JudgeHandleMessage {
     }
 
     /**
-     * 处理业务逻辑
+     * 处理业务逻辑：正式提交同步发 solved/library，保证模块上下文人队
      */
     public void processBusinessLogic(JudgeResultDto judgeResultDto, String id) {
-        if (!judgeResultDto.getSubmitType()) {
+        if (!Boolean.TRUE.equals(judgeResultDto.getSubmitType())) {
             log.info("测试提交，跳过业务处理：id={}", judgeResultDto.getId());
+            return;
+        }
+
+        if (StrUtil.isBlank(judgeResultDto.getModuleType()) || StrUtil.isBlank(judgeResultDto.getModuleId())) {
+            log.error("判题结果缺少模块字段，跳过 solved/library：id={}, moduleType={}, moduleId={}",
+                    judgeResultDto.getId(), judgeResultDto.getModuleType(), judgeResultDto.getModuleId());
             return;
         }
 
@@ -128,35 +136,35 @@ public class JudgeHandleMessage {
         if (JudgeStatus.ACCEPTED.getValue().equals(judgeResultDto.getStatus())) {
             solvedMessage.setSolved(Boolean.TRUE);
 
-            CompletableFuture.runAsync(() -> {
-                try {
-                    Library library = BeanUtil.copyProperties(judgeResultDto, Library.class);
-                    library.setSubmitId(id);
-                    libraryHandleMessage.sendLibrary(library);
-                } catch (Exception e) {
-                    log.error("处理AC提交额外任务失败：userId={}", judgeResultDto.getUserId(), e);
-                }
-            });
+            try {
+                Library library = BeanUtil.copyProperties(judgeResultDto, Library.class);
+                library.setSubmitId(id);
+                libraryHandleMessage.sendLibrary(library);
+            } catch (Exception e) {
+                log.error("发送样本库消息失败：userId={}, moduleType={}, moduleId={}",
+                        judgeResultDto.getUserId(), judgeResultDto.getModuleType(), judgeResultDto.getModuleId(), e);
+                throw e;
+            }
 
-            if (judgeResultDto.getModuleType().equals("PROBLEM")) {
+            if ("PROBLEM".equals(judgeResultDto.getModuleType())) {
                 userActivityService.addActivity(judgeResultDto.getUserId(),
                         ActivityScoreCalculator.SUBMIT, Boolean.TRUE);
             }
         } else {
             solvedMessage.setSolved(Boolean.FALSE);
 
-            if (judgeResultDto.getModuleType().equals("PROBLEM")) {
+            if ("PROBLEM".equals(judgeResultDto.getModuleType())) {
                 userActivityService.addActivity(judgeResultDto.getUserId(),
                         ActivityScoreCalculator.SUBMIT, Boolean.FALSE);
             }
         }
 
-        CompletableFuture.runAsync(() -> {
-            try {
-                solvedHandleMessage.sendSolved(solvedMessage);
-            } catch (Exception e) {
-                log.error("更改解决记录失败：userId={}", judgeResultDto.getUserId(), e);
-            }
-        });
+        try {
+            solvedHandleMessage.sendSolved(solvedMessage);
+        } catch (Exception e) {
+            log.error("发送解题记录消息失败：userId={}, moduleType={}, moduleId={}",
+                    judgeResultDto.getUserId(), judgeResultDto.getModuleType(), judgeResultDto.getModuleId(), e);
+            throw e;
+        }
     }
 }

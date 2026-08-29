@@ -1,12 +1,15 @@
 package io.charlie.web.modular.data.solved.mapper;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import io.charlie.web.modular.data.solved.entity.DataSolved;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +22,35 @@ import java.util.Map;
 @Mapper
 //@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface DataSolvedMapper extends BaseMapper<DataSolved> {
+
+    /**
+     * 忽略逻辑删除：软删行占 UK 时恢复并刷新业务字段
+     */
+    @DS("master")
+    @InterceptorIgnore(logicDelete = "true")
+    @Update("""
+            UPDATE data_solved
+            SET deleted = 0,
+                submit_id = #{submitId},
+                update_time = #{now},
+                solved = CASE WHEN solved = 1 THEN 1 ELSE #{solved} END,
+                first_submit_time = IFNULL(first_submit_time, #{now}),
+                first_solved_time = CASE
+                    WHEN #{solved} = 1 AND first_solved_time IS NULL THEN #{now}
+                    ELSE first_solved_time
+                END
+            WHERE user_id = #{userId}
+              AND problem_id = #{problemId}
+              AND module_type = #{moduleType}
+              AND module_id = #{moduleId}
+            """)
+    int reviveAndUpdate(@Param("userId") String userId,
+                        @Param("problemId") String problemId,
+                        @Param("moduleType") String moduleType,
+                        @Param("moduleId") String moduleId,
+                        @Param("submitId") String submitId,
+                        @Param("solved") boolean solved,
+                        @Param("now") Date now);
     /**
      * 获取全部题目(在解决表中有记录的题目)的详细通过率统计（包含题目数量）
      * 使用总体通过率计算，更准确反映用户整体解题能力
