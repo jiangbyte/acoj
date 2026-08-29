@@ -1,5 +1,6 @@
 package io.charlie.web.modular.sys.auth.param;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
@@ -8,9 +9,10 @@ import lombok.Data;
  * @author Charlie Zhang
  * @version v1.0
  * @date 23/07/2025
- * @description 用户名密码登录参数
+ * @description 用户名密码邮箱注册参数
  */
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UsernamePasswordEmailRegisterParam {
     @Schema(description = "用户名")
     @NotBlank(message = "用户名不能为空")

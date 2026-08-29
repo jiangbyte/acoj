@@ -12,7 +12,6 @@ const formData = ref({
   email: '',
   captchaCode: '',
   uuid: '',
-  platform: 'ADMIN',
 })
 const formRules = {
   username: {
@@ -80,24 +79,32 @@ const isLoading = ref(false)
 async function handleRegister(e: MouseEvent) {
   e.preventDefault()
   formRef.value?.validate((errors) => {
-    if (!errors) {
-      isLoading.value = true
-      useAuthFetch().doRegister(formData.value).then(({ data }) => {
-        if (data) {
-          useToken.setToken(data)
-          isLoading.value = false
-          if (useToken.isLogined) {
-            router.push('/')
-          }
-          getProfileNoe().then(({ data }) => {
-            useUser.setUserId(data.id)
-          })
-        }
-      })
-    }
-    else {
+    if (errors) {
       window.$message.error('请填写完整信息')
+      return
     }
+    isLoading.value = true
+    useAuthFetch().doRegister(formData.value).then((res) => {
+      if (res?.data) {
+        useToken.setToken(res.data)
+        if (useToken.isLogined) {
+          router.push('/')
+        }
+        getProfileNoe().then(({ data: profile }) => {
+          if (profile?.id) {
+            useUser.setUserId(profile.id)
+          }
+        })
+      }
+      else {
+        refreshCaptcha()
+      }
+    }).catch((err) => {
+      window.$message.error(err?.message || '注册失败')
+      refreshCaptcha()
+    }).finally(() => {
+      isLoading.value = false
+    })
   })
 }
 
