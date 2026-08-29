@@ -1,0 +1,50 @@
+package io.charlie.web.modular.data.progress.param;
+
+import com.baomidou.mybatisplus.annotation.TableField;
+
+import java.io.Serializable;
+import java.time.LocalDateTime;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+import java.io.Serial;
+
+/**
+* @author Charlie Zhang
+* @version v1.0
+* @date 2025-09-20
+* @description 题集进度 编辑参数
+*/
+@Data
+@Schema(name = "DataProgress", description = "题集进度 编辑参数")
+public class DataProgressEditParam implements Serializable {
+    @Serial
+    @TableField(exist = false)
+    private static final long serialVersionUID = 1L;
+
+    @Schema(description = "主键")
+    private String id;
+
+    @Schema(description = "用户ID")
+    private String userId;
+
+    @Schema(description = "模块类型")
+    private String moduleType;
+    @Schema(description = "模块ID")
+    private String moduleId;
+
+    @Schema(description = "题目ID")
+    private String problemId;
+
+    @Schema(description = "状态")
+    private String status;
+
+    @Schema(description = "额外信息")
+    private String extraJson;
+
+    @Schema(description = "是否完成")
+    private Boolean completed;
+
+    @Schema(description = "完成时间")
+    private LocalDateTime completedAt;
+
+}

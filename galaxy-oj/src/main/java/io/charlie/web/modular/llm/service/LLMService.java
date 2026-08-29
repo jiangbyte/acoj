@@ -1,0 +1,14 @@
+package io.charlie.web.modular.llm.service;
+
+import io.charlie.web.modular.llm.param.ChatRequest;
+import io.charlie.web.modular.sys.conversation.entity.SysConversation;
+import reactor.core.publisher.Flux;
+
+/**
+ * @author ZhangJiangHu
+ * @version v1.0
+ * @date 20/10/2025
+ */
+public interface LLMService {
+    Flux<SysConversation> streamChat(ChatRequest request);
+}
