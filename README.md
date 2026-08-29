@@ -11,8 +11,6 @@
 
 **Astro Code OJ (AC OJ)** is an online judge platform for programming education and algorithm training. Java / Spring Boot powers the business and admin APIs; Go (go-zero) handles judging and code similarity; Vue 3 provides the admin and user frontends.
 
-> Current version: `1.0.0` · License: [MIT License](LICENSE) · Repo: [jiangbyte/acoj](https://github.com/jiangbyte/acoj)
-
 ## Features
 
 | Feature | Description |
