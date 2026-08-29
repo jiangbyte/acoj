@@ -81,7 +81,7 @@ If the image entrypoint config path differs from local usage, follow the start c
    Check RabbitMQ queue names and routing keys against the `oj` similarity publish config.
 
 3. **Database errors**  
-   Confirm `sql/astro_code.sql` was imported and similarity tables / datasource settings in Nacos are correct.
+   Confirm `sql/acoj.sql` was imported and similarity tables / datasource settings in Nacos are correct.
 
 ## Related Docs
 

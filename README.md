@@ -1,4 +1,4 @@
-# Astro Code OJ (AC OJ)
+# ACOJ
 
 ![JDK](https://img.shields.io/badge/JDK-21-007396?logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F?logo=springboot&logoColor=white)
@@ -9,7 +9,7 @@
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Version](https://img.shields.io/badge/version-1.0.0-orange)
 
-**Astro Code OJ (AC OJ)** is an online judge platform for programming education and algorithm training. Java / Spring Boot powers the business and admin APIs; Go (go-zero) handles judging and code similarity; Vue 3 provides the admin and user frontends.
+**ACOJ** is an online judge platform for programming education and algorithm training. Java / Spring Boot powers the business and admin APIs; Go (go-zero) handles judging and code similarity; Vue 3 provides the admin and user frontends.
 
 ## Features
 
@@ -38,7 +38,7 @@
 ## Project Structure
 
 ```text
-astro-code-oj/
+acoj/
 ├── pom.xml                 # Maven aggregator root (revision 1.0.0)
 ├── oj/                     # Business backend (default port 89)
 ├── judge-service/          # Go judge service (default port 8888)
@@ -97,8 +97,8 @@ Local `dev` default Nacos namespace ID: `8fee08f3-44ea-4e26-a9b5-530c582330a3` (
 ### 2. Initialize the database
 
 ```bash
-mysql -u root -p -e "CREATE DATABASE astro_code DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql -u root -p astro_code < sql/astro_code.sql
+mysql -u root -p -e "CREATE DATABASE acoj DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -p acoj < sql/acoj.sql
 ```
 
 ### 3. Start the business backend `oj`

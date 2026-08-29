@@ -1,6 +1,6 @@
 # oj — Business Backend
 
-Core business service for Astro Code OJ: auth, problems / problem sets / contests, submissions, judge scheduling, similarity tasks, system admin, and optional AI. Listens on port **89** by default; config is loaded from Nacos.
+Core business service for ACOJ: auth, problems / problem sets / contests, submissions, judge scheduling, similarity tasks, system admin, and optional AI. Listens on port **89** by default; config is loaded from Nacos.
 
 ## Role
 
@@ -40,8 +40,8 @@ Before starting, ensure Nacos datasource, Redis, RabbitMQ, MinIO, and Sa-Token s
 Import the script from the repository root:
 
 ```bash
-mysql -u root -p -e "CREATE DATABASE astro_code DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql -u root -p astro_code < ../sql/astro_code.sql
+mysql -u root -p -e "CREATE DATABASE acoj DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -p acoj < ../sql/acoj.sql
 ```
 
 Database name and credentials follow whatever is configured in Nacos.

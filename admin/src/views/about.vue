@@ -27,7 +27,7 @@ const backendTechStack = [
         <n-text>关于</n-text>
         <n-space vertical>
           <n-text depth="1">
-            Astro Code OJ 在线评测系统。
+            ACOJ 在线评测系统。
           </n-text>
           <n-space>
             <n-button

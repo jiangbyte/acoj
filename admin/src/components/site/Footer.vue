@@ -4,7 +4,7 @@ const version = import.meta.env.VITE_VERSION
 
 <template>
   <n-text depth="3">
-    Copyright © 2024-2025 Astro Code Online Judge. All rights reserved. Built with ❤️ by Charlie. Version {{ version }}
+    Copyright © 2024-2026 ACOJ. All rights reserved. Built with ❤️ by Charlie. Version {{ version }}
   </n-text>
 </template>
 

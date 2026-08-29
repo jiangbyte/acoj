@@ -1,9 +1,9 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata from this file."
 type: software
-title: "Astro Code OJ (AC OJ)"
+title: "ACOJ"
 abstract: >-
-  Astro Code OJ is an online judge platform for programming education and
+  ACOJ is an online judge platform for programming education and
   algorithm training. Java / Spring Boot provides business and admin APIs;
   Go (go-zero) handles judging and code similarity; Vue 3 provides the admin
   and user frontends.
@@ -20,6 +20,7 @@ url: "https://github.com/jiangbyte/acoj"
 keywords:
   - online-judge
   - oj
+  - acoj
   - programming-education
   - algorithm
   - spring-boot

@@ -1,14 +1,14 @@
-# Astro Code OJ — Version Manifest
+# ACOJ — Version Manifest
 # Machine- and human-readable release inventory for this repository.
 # Keep in sync with pom.xml revision, module READMEs, and CITATION.cff.
 
-Project: Astro Code OJ (AC OJ)
-Package: astro-code-oj
+Project: ACOJ
+Package: acoj
 GroupId: io.charlie
 Version: 1.0.0
 License: MIT
 Date: 2026-08-29
-Author: Zhang Jianghu
+Author: Zhang Jianghu (张江湖)
 Author-EN: Charlie Zhang
 Author-ID: jiangbyte
 Repository: https://github.com/jiangbyte/acoj

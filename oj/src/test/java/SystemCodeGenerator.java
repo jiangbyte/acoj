@@ -1,4 +1,4 @@
-import com.baomidou.mybatisplus.generator.FastAutoGenerator;
+﻿import com.baomidou.mybatisplus.generator.FastAutoGenerator;
 import com.baomidou.mybatisplus.generator.config.DataSourceConfig;
 import com.baomidou.mybatisplus.generator.config.builder.CustomFile;
 import com.baomidou.mybatisplus.generator.config.rules.NamingStrategy;
@@ -44,8 +44,8 @@ public class SystemCodeGenerator {
 
     public static void main(String[] args) {
         DataSourceConfig.Builder datasourceBuilder = new DataSourceConfig.Builder(
-//                "jdbc:mysql://47.99.236.69:3306/astro_code?serverTimezone=Asia/Shanghai",
-                "jdbc:mysql://localhost:3306/astro_code?serverTimezone=Asia/Shanghai",
+//                "jdbc:mysql://47.99.236.69:3306/acoj?serverTimezone=Asia/Shanghai",
+                "jdbc:mysql://localhost:3306/acoj?serverTimezone=Asia/Shanghai",
                 "root",
 //                "MySql2025@");
                 "123456");

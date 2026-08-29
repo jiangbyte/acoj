@@ -1,11 +1,11 @@
-/*
+﻿/*
  Navicat Premium Dump SQL
 
  Source Server         : mysql-dev
  Source Server Type    : MySQL
  Source Server Version : 90702 (9.7.2)
  Source Host           : 127.0.0.1:3306
- Source Schema         : astro_code
+ Source Schema         : acoj
 
  Target Server Type    : MySQL
  Target Server Version : 90702 (9.7.2)
@@ -598,7 +598,7 @@ INSERT INTO `sys_config` VALUES ('1982136140003225604', 'Web端显示名称', 'A
 INSERT INTO `sys_config` VALUES ('1982136140003225605', '用户默认头像', 'APP_DEFAULT_AVATAR', 'http://120.26.180.149:9000/astro-code-oj/0e1cbf5a2a614929a6e103e57b2c1dbf.png', '6', '', 0, '2025-10-21 12:25:12', '1', '2025-10-30 09:02:14', '1', '5', 3);
 INSERT INTO `sys_config` VALUES ('1982136140003225606', '用户默认背景', 'APP_DEFAULT_USER_BACKGROUND', 'http://120.26.180.149:9000/astro-code-oj/21977c80d7bc4e549e3f67e26e330946.png', '6', '', 0, '2025-10-21 12:25:12', '1', '2025-10-28 20:32:06', '1', '5', 4);
 INSERT INTO `sys_config` VALUES ('1982136140003225607', '应用Logo', 'APP_LOGO', '06a529dcc13e4e98a81d741b7673475f.jpg', '6', '建议 1:1 图片；默认使用前端 public/logo.svg', 0, '2025-10-21 12:25:12', '1', '2026-08-29 20:42:12', '1', '5', 1);
-INSERT INTO `sys_config` VALUES ('1982136140003225608', '应用名称', 'APP_NAME', 'Astro Code', '2', '应用名称', 0, '2025-10-21 12:25:12', '1', '2025-10-28 16:49:22', '1', '5', 2);
+INSERT INTO `sys_config` VALUES ('1982136140003225608', '应用名称', 'APP_NAME', 'ACOJ', '2', '应用名称', 0, '2025-10-21 12:25:12', '1', '2025-10-28 16:49:22', '1', '5', 2);
 INSERT INTO `sys_config` VALUES ('1982136140003225609', 'Admin端显示名称', 'APP_ADMIN_SHOW_APP_NAME', 'false', '1', '', 0, '2025-10-21 12:25:12', '1', '2025-10-28 16:50:16', '1', '5', 9);
 
 -- ----------------------------
@@ -1109,7 +1109,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES ('0', '1', 'default', '$2a$10$CGf0BGdflI3iG6Fl83Vjz.kE.XdhMSu.sstPIeNI.9WFz8FR/lmS.', 'Astro Code', 'http://120.26.180.149:9000/astro-code-oj/843a7d9124af408993d3c2c268065228.png', 'http://120.26.180.149:9000/astro-code-oj/256e801aaa3143cb976f97cb3dd22c67.jpg', '欢迎使用 Astro Code OJ', 0, 'default@163.com', NULL, NULL, NULL, 0, '2025-10-21 12:25:12', '1', '2025-10-29 17:29:53', '1');
+INSERT INTO `sys_user` VALUES ('0', '1', 'default', '$2a$10$CGf0BGdflI3iG6Fl83Vjz.kE.XdhMSu.sstPIeNI.9WFz8FR/lmS.', 'ACOJ', 'http://120.26.180.149:9000/astro-code-oj/843a7d9124af408993d3c2c268065228.png', 'http://120.26.180.149:9000/astro-code-oj/256e801aaa3143cb976f97cb3dd22c67.jpg', '欢迎使用 ACOJ', 0, 'default@163.com', NULL, NULL, NULL, 0, '2025-10-21 12:25:12', '1', '2025-10-29 17:29:53', '1');
 INSERT INTO `sys_user` VALUES ('1', '2', 'superadmin', '$2a$10$hS6E7n8tqGZMX2qOzLyk2.pospgtnLo.8gjXAtfttGruIh9AE2lgG', 'SuperAdmin', 'c41abdfa01624927aa98545f4f94cebc.jpg', 'http://120.26.180.149:9000/astro-code-oj/a6cf5977866e49d78bf4423e7aeda1df.jpg', '你好，世界', 1, 'superadmin@163.com', NULL, NULL, '2026-08-29 20:05:26', 0, '2025-10-21 12:25:12', '1', '2026-08-29 20:05:26', '1');
 INSERT INTO `sys_user` VALUES ('2', '3', 'adminadmin', '$2a$10$hS6E7n8tqGZMX2qOzLyk2.pospgtnLo.8gjXAtfttGruIh9AE2lgG', 'Admin', 'http://120.26.180.149:9000/astro-code-oj/4b3319245b80424b8645b99bf780ffde.jpg', 'http://120.26.180.149:9000/astro-code-oj/ca4196dde3bf44e78f8b219fb6a213a0.jpg', '你好，世界', 0, 'adminadmin@163.com', NULL, NULL, '2025-10-07 13:20:00', 0, '2025-10-21 12:25:12', '1', '2025-10-28 14:48:40', '1');
 INSERT INTO `sys_user` VALUES ('2093673426108153857', '1', 'user', '$2a$10$OknqLC9A5Qga62KWpkrhyuox0lqRla0H3bUe34JapwZIGih/.9o0K', '用户_17978', '1df352b41e4c458ebf85a5d167edd459.jpg', '659aaf8e63a94a2b8fe1d0dc19f8c6f5.jpg', 'Hello World!', 0, 'user@163.com', NULL, NULL, '2026-08-29 20:13:38', 0, '2026-08-29 20:13:38', '0', '2026-08-29 20:13:38', '0');
