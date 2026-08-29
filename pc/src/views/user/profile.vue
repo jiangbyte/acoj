@@ -54,6 +54,7 @@ function updateAvatar(url: string) {
   }).then(({ success }) => {
     if (success) {
       window.$message.success('头像更新成功')
+      loadData()
     }
   })
 }
@@ -64,6 +65,7 @@ function updateBackground(url: string) {
   }).then(({ success }) => {
     if (success) {
       window.$message.success('背景图更新成功')
+      loadData()
     }
   })
 }

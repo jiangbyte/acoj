@@ -137,18 +137,24 @@ const uploadProgress = ref<number>(0)
 const isUploading = ref<boolean>(false)
 const message = useMessage()
 
-// 监听 modelValue 变化，构建回显数据
+// 监听 modelValue 变化，构建回显数据（库中为对象名，接口回显可能是可访问 URL）
 watch(() => props.modelValue, (newVal) => {
   if (newVal) {
+    const isHttp = newVal.startsWith('http://') || newVal.startsWith('https://')
+    const displayUrl = isHttp
+      ? newVal
+      : (fileUrl.value && String(fileUrl.value).includes(newVal) ? fileUrl.value : newVal)
+    fileUrl.value = displayUrl
     fileList.value = [{
       id: Date.now().toString(),
       name: newVal.split('/').pop() || 'file',
       status: 'finished',
-      url: newVal,
+      url: displayUrl,
     }]
   }
   else {
     fileList.value = []
+    fileUrl.value = undefined as any
   }
 }, { immediate: true })
 
@@ -204,13 +210,14 @@ async function FileUploadRequest({
       message.success('上传成功')
     }
 
-    if (!data?.url) {
+    if (!data?.filename && !data?.url) {
       throw new Error('No URL returned from upload')
     }
 
-    fileUrl.value = data.url
-    emit('update:modelValue', data.url)
-    emit('success', data.url)
+    const objectName = data.filename || data.url
+    fileUrl.value = data.url || objectName
+    emit('update:modelValue', objectName)
+    emit('success', objectName)
     onFinish()
   }
   catch (error) {

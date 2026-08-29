@@ -133,18 +133,24 @@ const fileList = ref<UploadFileInfo[]>([])
 const uploadProgress = ref<Record<string, number>>({})
 const uploadingFiles = ref<Set<string>>(new Set())
 
-// 监听 modelValue 变化，构建回显数据
+// 监听 modelValue 变化，构建回显数据（库中为对象名，接口回显可能是可访问 URL）
 watch(() => props.modelValue, (newVal) => {
   if (newVal) {
+    const isHttp = newVal.startsWith('http://') || newVal.startsWith('https://')
+    const displayUrl = isHttp
+      ? newVal
+      : (fileUrl.value && String(fileUrl.value).includes(newVal) ? fileUrl.value : newVal)
+    fileUrl.value = displayUrl
     fileList.value = [{
       id: Date.now().toString(),
       name: newVal.split('/').pop() || 'file',
       status: 'finished',
-      url: newVal,
+      url: displayUrl,
     }]
   }
   else {
     fileList.value = []
+    fileUrl.value = undefined
   }
 }, { immediate: true })
 
@@ -193,11 +199,18 @@ async function FileUploadRequest({
     formData.append('file', file.file as File)
     const { data, success } = await uploadFile(formData)
 
-    if (success && data?.url) {
+    if (success && (data?.filename || data?.url)) {
       window.$message?.success('上传成功')
-      fileUrl.value = data.url
-      emit('update:modelValue', data.url)
-      emit('success', data.url)
+      const objectName = data.filename || data.url
+      fileUrl.value = data.url || objectName
+      fileList.value = [{
+        id: Date.now().toString(),
+        name: objectName.split('/').pop() || 'file',
+        status: 'finished',
+        url: fileUrl.value,
+      }]
+      emit('update:modelValue', objectName)
+      emit('success', objectName)
       onFinish()
     }
     else {
