@@ -1,6 +1,7 @@
 package io.charlie.web.modular.task.library.handle;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.charlie.web.modular.data.library.entity.DataLibrary;
 import io.charlie.web.modular.data.library.mapper.DataLibraryMapper;
 import io.charlie.web.modular.task.library.dto.Library;
@@ -19,7 +20,7 @@ import java.util.Date;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 30/10/2025
- * @description TODO
+ * @description 样本库消息处理（主库 upsert，按业务 UK）
  */
 @Slf4j
 @Component
@@ -40,75 +41,9 @@ public class LibraryHandleMessage {
         log.debug("发送样本库消息成功");
     }
 
-//    @Transactional
+    @DS("master")
     @RabbitListener(queues = "${oj.mq.library.common.queue}", concurrency = "1")
     public void receiveJudge(Library submit) {
-//        ALTER TABLE data_library
-//ADD UNIQUE INDEX uk_user_module_problem_lang (
-//    user_id,
-//    module_type,
-//    module_id,
-//    problem_id,
-//    language
-//);
-
-
-
-//        TokenDetail tokensDetail = codeTokenUtil.getCodeTokensDetail(submit.getLanguage().toLowerCase(), submit.getCode());
-//
-//        LambdaQueryWrapper<DataLibrary> queryWrapper = new LambdaQueryWrapper<DataLibrary>()
-//                .eq(DataLibrary::getUserId, submit.getUserId())
-//                .eq(DataLibrary::getModuleType, submit.getModuleType())
-//                .eq(DataLibrary::getModuleId, submit.getModuleId())
-//                .eq(DataLibrary::getProblemId, submit.getProblemId())
-//                .eq(DataLibrary::getLanguage, submit.getLanguage())
-//                .eq(DataLibrary::getModuleType, submit.getModuleType());
-//
-//        if (dataLibraryMapper.exists(queryWrapper)) {
-//            log.debug("存在记录，执行更新");
-//            DataLibrary library = dataLibraryMapper.selectOne(queryWrapper);
-//            library.setSubmitId(submit.getSubmitId());
-//            library.setSubmitTime(new Date());
-//
-//            // 如果代码长度和原本的代码长度不一致，则更新代码
-//            if (!library.getCodeLength().equals(submit.getCode().length())) {
-//                library.setCodeLength(submit.getCode().length());
-//                library.setCode(submit.getCode());
-//                library.setCodeToken(tokensDetail.getTokens());
-//                library.setCodeTokenName(tokensDetail.getTokenNames());
-//                library.setCodeTokenTexts(tokensDetail.getTokenTexts());
-//                library.setAccessCount(0);// 重置访问次数
-//            }
-//
-//            dataLibraryMapper.updateById(library);
-//        } else {
-//            log.debug("不存在记录，创建新记录");
-//
-//            DataLibrary library = new DataLibrary();
-//
-//            library.setUserId(submit.getUserId());
-//
-//            library.setModuleType(submit.getModuleType());
-//            library.setModuleId(submit.getModuleId());
-//
-//            library.setProblemId(submit.getProblemId());
-//            library.setLanguage(submit.getLanguage());
-//            library.setSubmitId(submit.getSubmitId());
-//            library.setSubmitTime(new Date());
-//            library.setCode(submit.getCode());
-//
-//            library.setCodeToken(tokensDetail.getTokens());
-//            library.setCodeTokenName(tokensDetail.getTokenNames());
-//            library.setCodeTokenTexts(tokensDetail.getTokenTexts());
-//
-//            library.setCodeLength(submit.getCode().length());
-//            library.setAccessCount(0);
-//
-//            dataLibraryMapper.insert(library);
-//        }
-//
-//        log.debug("样本库处理完成");
-
         try {
             processLibraryRecord(submit);
             log.debug("样本库处理完成, userId: {}, problemId: {}", submit.getUserId(), submit.getProblemId());
@@ -119,10 +54,21 @@ public class LibraryHandleMessage {
         }
     }
 
+    /**
+     * 依赖唯一索引 uk_user_module_problem_lang。
+     * 先按业务 UK update；0 行再 insert；撞 UK 再 update。全程主库。
+     */
     private void processLibraryRecord(Library submit) {
         TokenDetail tokensDetail = codeTokenUtil.getCodeTokensDetail(
                 submit.getLanguage().toLowerCase(), submit.getCode()
         );
+        Date now = new Date();
+        int codeLength = submit.getCode().length();
+
+        int updated = updateByBusinessKey(submit, tokensDetail, codeLength, now);
+        if (updated > 0) {
+            return;
+        }
 
         DataLibrary library = new DataLibrary();
         library.setUserId(submit.getUserId());
@@ -131,9 +77,9 @@ public class LibraryHandleMessage {
         library.setProblemId(submit.getProblemId());
         library.setLanguage(submit.getLanguage());
         library.setSubmitId(submit.getSubmitId());
-        library.setSubmitTime(new Date());
+        library.setSubmitTime(now);
         library.setCode(submit.getCode());
-        library.setCodeLength(submit.getCode().length());
+        library.setCodeLength(codeLength);
         library.setCodeToken(tokensDetail.getTokens());
         library.setCodeTokenName(tokensDetail.getTokenNames());
         library.setCodeTokenTexts(tokensDetail.getTokenTexts());
@@ -143,48 +89,46 @@ public class LibraryHandleMessage {
             dataLibraryMapper.insert(library);
         } catch (Exception e) {
             if (isDuplicateKeyException(e)) {
-                // 已存在，执行更新
-                updateExistingLibraryRecord(submit, tokensDetail);
+                updateByBusinessKey(submit, tokensDetail, codeLength, now);
             } else {
                 throw e;
             }
         }
     }
 
-    private void updateExistingLibraryRecord(Library submit, TokenDetail tokensDetail) {
-        LambdaQueryWrapper<DataLibrary> queryWrapper = new LambdaQueryWrapper<DataLibrary>()
+    /**
+     * 按业务 UK 直接 update，避免 select-then-update 空窗。
+     * 使用 entity + wrapper，保证 JSON 字段 TypeHandler 生效。
+     */
+    private int updateByBusinessKey(Library submit, TokenDetail tokensDetail, int codeLength, Date now) {
+        DataLibrary patch = new DataLibrary();
+        patch.setSubmitId(submit.getSubmitId());
+        patch.setSubmitTime(now);
+        patch.setCode(submit.getCode());
+        patch.setCodeLength(codeLength);
+        patch.setCodeToken(tokensDetail.getTokens());
+        patch.setCodeTokenName(tokensDetail.getTokenNames());
+        patch.setCodeTokenTexts(tokensDetail.getTokenTexts());
+        patch.setAccessCount(0);
+
+        return dataLibraryMapper.update(patch, new LambdaUpdateWrapper<DataLibrary>()
                 .eq(DataLibrary::getUserId, submit.getUserId())
                 .eq(DataLibrary::getModuleType, submit.getModuleType())
                 .eq(DataLibrary::getModuleId, submit.getModuleId())
                 .eq(DataLibrary::getProblemId, submit.getProblemId())
-                .eq(DataLibrary::getLanguage, submit.getLanguage());
-
-        DataLibrary existing = dataLibraryMapper.selectOne(queryWrapper);
-        if (existing == null) {
-            // 极端情况：刚被删除？可重试或报错
-            throw new IllegalStateException("记录不存在，无法更新");
-        }
-
-        existing.setSubmitId(submit.getSubmitId());
-        existing.setSubmitTime(new Date());
-
-        // 只有代码长度变化才更新代码和 token
-        if (!existing.getCodeLength().equals(submit.getCode().length())) {
-            existing.setCodeLength(submit.getCode().length());
-            existing.setCode(submit.getCode());
-            existing.setCodeToken(tokensDetail.getTokens());
-            existing.setCodeTokenName(tokensDetail.getTokenNames());
-            existing.setCodeTokenTexts(tokensDetail.getTokenTexts());
-            existing.setAccessCount(0); // 重置访问次数
-        }
-
-        dataLibraryMapper.updateById(existing);
+                .eq(DataLibrary::getLanguage, submit.getLanguage())
+        );
     }
 
     private boolean isDuplicateKeyException(Exception e) {
-        String message = e.getMessage();
-        return message != null &&
-                (message.contains("Duplicate entry") ||
-                        message.contains("1062")); // MySQL 唯一键冲突错误码
+        Throwable cur = e;
+        while (cur != null) {
+            String message = cur.getMessage();
+            if (message != null && (message.contains("Duplicate entry") || message.contains("1062"))) {
+                return true;
+            }
+            cur = cur.getCause();
+        }
+        return false;
     }
 }

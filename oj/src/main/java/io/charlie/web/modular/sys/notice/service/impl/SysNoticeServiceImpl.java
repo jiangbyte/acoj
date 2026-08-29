@@ -21,6 +21,7 @@ import io.charlie.cores.enums.ISortOrderEnum;
 import io.charlie.cores.exception.BusinessException;
 import io.charlie.cores.pojo.CommonPageRequest;
 import io.charlie.cores.result.ResultCode;
+import io.charlie.web.modular.sys.file.util.StoragePathHelper;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +67,9 @@ public class SysNoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice
     @Override
     public void add(SysNoticeAddParam sysNoticeAddParam) {
         SysNotice bean = BeanUtil.toBean(sysNoticeAddParam, SysNotice.class);
+        if (StrUtil.isNotBlank(bean.getCover())) {
+            bean.setCover(StoragePathHelper.toObjectName(bean.getCover()));
+        }
         this.save(bean);
     }
 
@@ -77,6 +81,9 @@ public class SysNoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice
         }
         SysNotice bean = BeanUtil.toBean(sysNoticeEditParam, SysNotice.class);
         BeanUtil.copyProperties(sysNoticeEditParam, bean);
+        if (StrUtil.isNotBlank(bean.getCover())) {
+            bean.setCover(StoragePathHelper.toObjectName(bean.getCover()));
+        }
         this.updateById(bean);
     }
 

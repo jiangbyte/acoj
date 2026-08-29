@@ -3,6 +3,7 @@ package io.charlie.web.modular.sys.banner.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.charlie.cores.pojo.CommonEntity;
+import io.charlie.web.modular.sys.file.config.StorageAccessUrl;
 
 import java.io.Serial;
 
@@ -34,6 +35,7 @@ public class SysBanner extends CommonEntity {
     private String title;
 
     @Schema(description = "横幅")
+    @StorageAccessUrl
     private String banner;
 
     @Schema(description = "按钮文字")

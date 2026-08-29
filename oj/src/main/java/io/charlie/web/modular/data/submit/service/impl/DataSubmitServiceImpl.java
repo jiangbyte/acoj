@@ -99,7 +99,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     }
 
     @Override
-    @DS("slave")
+    @DS("master")
     public Page<DataSubmit> problemPage(DataSubmitPageParam dataSubmitPageParam) {
 
         QueryWrapper<DataSubmit> queryWrapper = new QueryWrapper<DataSubmit>().checkSqlInjection();
@@ -153,7 +153,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     }
 
     @Override
-    @DS("slave")
+    @DS("master")
     public Page<DataSubmit> setPage(DataSubmitPageParam dataSubmitPageParam) {
         QueryWrapper<DataSubmit> queryWrapper = new QueryWrapper<DataSubmit>().checkSqlInjection();
 
@@ -284,7 +284,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     }
 
     @Override
-//    @DS("slave") // 需要立即返回，故去除从库，TODO 这里有一个主从库的一个常见问题：读写分离，数据同步会存在一定的延时，所以立即读会导致错误，找不到这个数据
+    @DS("master") // 提交后立即轮询，必须读主库，避免主从延迟读不到
     public DataSubmit detail(DataSubmitIdParam dataSubmitIdParam) {
         DataSubmit dataSubmit = this.getById(dataSubmitIdParam.getId());
         if (ObjectUtil.isEmpty(dataSubmit)) {
@@ -322,7 +322,6 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         return dataSubmit.getId();
     }
 
-    @Transactional(rollbackFor = Exception.class)
     @Override
     public String handleSetSubmit(DataSubmitExeParam dataSubmitExeParam) {
         DataSet dataSet = dataSetMapper.selectById(dataSubmitExeParam.getModuleId());
@@ -338,6 +337,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
             }
         }
 
+        // 不包事务：先 save 提交到主库，再发 MQ，避免判题回写早于事务 COMMIT 导致 updated=0
         DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam);
         DataProblem problem = dataProblemMapper.selectById(dataSubmitExeParam.getProblemId());
 

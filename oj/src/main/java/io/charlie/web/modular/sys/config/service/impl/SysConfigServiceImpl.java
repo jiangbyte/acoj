@@ -19,6 +19,7 @@ import io.charlie.cores.enums.ISortOrderEnum;
 import io.charlie.cores.exception.BusinessException;
 import io.charlie.cores.pojo.CommonPageRequest;
 import io.charlie.cores.result.ResultCode;
+import io.charlie.web.modular.sys.file.util.StoragePathHelper;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -84,6 +85,9 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
     @Override
     public void add(SysConfigAddParam sysConfigAddParam) {
         SysConfig bean = BeanUtil.toBean(sysConfigAddParam, SysConfig.class);
+        if (StrUtil.isNotBlank(bean.getValue())) {
+            bean.setValue(StoragePathHelper.toObjectName(bean.getValue()));
+        }
         this.save(bean);
     }
 
@@ -95,6 +99,9 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
         }
         SysConfig bean = BeanUtil.toBean(sysConfigEditParam, SysConfig.class);
         BeanUtil.copyProperties(sysConfigEditParam, bean);
+        if (StrUtil.isNotBlank(bean.getValue())) {
+            bean.setValue(StoragePathHelper.toObjectName(bean.getValue()));
+        }
         this.updateById(bean);
     }
 

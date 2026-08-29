@@ -32,6 +32,8 @@ import io.charlie.cores.exception.BusinessException;
 import io.charlie.cores.pojo.CommonPageRequest;
 import io.charlie.cores.result.ResultCode;
 import io.charlie.web.modular.data.set.utils.SetBuildTool;
+import io.charlie.web.modular.sys.file.util.StoragePathHelper;
+import io.charlie.web.modular.sys.file.util.StoragePathHelper;
 import io.charlie.web.modular.data.similarity.mapper.TaskSimilarityMapper;
 import io.charlie.web.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.modular.data.submit.entity.DataSubmit;
@@ -152,6 +154,9 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     @Override
     public void add(DataSetAddParam dataSetAddParam) {
         DataSet bean = BeanUtil.toBean(dataSetAddParam, DataSet.class);
+        if (StrUtil.isNotBlank(bean.getCover())) {
+            bean.setCover(StoragePathHelper.toObjectName(bean.getCover()));
+        }
         this.save(bean);
 
 //        dataSetProblemService.addOrUpdate(bean.getId(), dataSetAddParam.getProblemIds());
@@ -165,6 +170,9 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         }
         DataSet bean = BeanUtil.toBean(dataSetEditParam, DataSet.class);
         BeanUtil.copyProperties(dataSetEditParam, bean);
+        if (StrUtil.isNotBlank(bean.getCover())) {
+            bean.setCover(StoragePathHelper.toObjectName(bean.getCover()));
+        }
         this.updateById(bean);
 
 //        dataSetProblemService.addOrUpdate(bean.getId(), dataSetEditParam.getProblemIds());

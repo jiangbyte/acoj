@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.charlie.cores.config.timestamp.DateToTimestampSerializer;
 import io.charlie.cores.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.cores.pojo.CommonEntity;
+import io.charlie.web.modular.sys.file.config.StorageAccessUrl;
 
 import java.io.Serial;
 import java.util.Date;
@@ -54,6 +55,7 @@ public class DataContest extends CommonEntity {
     private String category;
 
     @Schema(description = "封面")
+    @StorageAccessUrl
     private String cover;
 
     @Schema(description = "最大团队成员数")

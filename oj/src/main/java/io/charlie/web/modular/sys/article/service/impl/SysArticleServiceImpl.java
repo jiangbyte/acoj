@@ -21,6 +21,7 @@ import io.charlie.cores.enums.ISortOrderEnum;
 import io.charlie.cores.exception.BusinessException;
 import io.charlie.cores.pojo.CommonPageRequest;
 import io.charlie.cores.result.ResultCode;
+import io.charlie.web.modular.sys.file.util.StoragePathHelper;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +69,9 @@ public class SysArticleServiceImpl extends ServiceImpl<SysArticleMapper, SysArti
     @Override
     public void add(SysArticleAddParam sysArticleAddParam) {
         SysArticle bean = BeanUtil.toBean(sysArticleAddParam, SysArticle.class);
+        if (StrUtil.isNotBlank(bean.getCover())) {
+            bean.setCover(StoragePathHelper.toObjectName(bean.getCover()));
+        }
         this.save(bean);
     }
 
@@ -79,6 +83,9 @@ public class SysArticleServiceImpl extends ServiceImpl<SysArticleMapper, SysArti
         }
         SysArticle bean = BeanUtil.toBean(sysArticleEditParam, SysArticle.class);
         BeanUtil.copyProperties(sysArticleEditParam, bean);
+        if (StrUtil.isNotBlank(bean.getCover())) {
+            bean.setCover(StoragePathHelper.toObjectName(bean.getCover()));
+        }
         this.updateById(bean);
     }
 

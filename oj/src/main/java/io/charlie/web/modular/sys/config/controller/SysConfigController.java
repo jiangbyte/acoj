@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import io.charlie.web.modular.sys.config.service.SysConfigService;
+import io.charlie.web.modular.sys.file.util.StoragePathHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -88,6 +89,7 @@ public class SysConfigController {
     @GetMapping("/sys/config/code")
     @DS("slave")
     public Result<?> getValueByCode(@RequestParam @NotBlank(message = "系统配置编码不能为空") String code) {
-        return Result.success(sysConfigService.getValueByCode(code));
+        // 图片类配置值对外转为可访问 URL；纯文本配置保持原样
+        return Result.success(StoragePathHelper.toAccessUrl(sysConfigService.getValueByCode(code)));
     }
 }

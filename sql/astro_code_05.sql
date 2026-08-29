@@ -448,6 +448,7 @@ CREATE TABLE `data_solved`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
   PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_problem_module` (`user_id`, `problem_id`, `module_type`, `module_id`),
     INDEX `idx_module_type_module_id` (
                                        `module_type`,
                                        `module_id`

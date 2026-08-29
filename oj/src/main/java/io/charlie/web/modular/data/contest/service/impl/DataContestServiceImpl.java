@@ -23,6 +23,7 @@ import io.charlie.cores.exception.BusinessException;
 import io.charlie.cores.pojo.CommonPageRequest;
 import io.charlie.cores.result.ResultCode;
 import io.charlie.web.modular.data.contest.utils.ContestAuthTool;
+import io.charlie.web.modular.sys.file.util.StoragePathHelper;
 import io.charlie.web.modular.data.contest.utils.ContestBuildTool;
 import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Service;
@@ -80,11 +81,9 @@ public class DataContestServiceImpl extends ServiceImpl<DataContestMapper, DataC
     @Override
     public void add(DataContestAddParam dataContestAddParam) {
         DataContest bean = BeanUtil.toBean(dataContestAddParam, DataContest.class);
-
-//        // 加密密码
-//        String encodePassword = BCrypt.hashpw(bean.getPassword());
-//        bean.setPassword(encodePassword);
-
+        if (StrUtil.isNotBlank(bean.getCover())) {
+            bean.setCover(StoragePathHelper.toObjectName(bean.getCover()));
+        }
         this.save(bean);
     }
 
@@ -96,6 +95,9 @@ public class DataContestServiceImpl extends ServiceImpl<DataContestMapper, DataC
         }
         DataContest bean = BeanUtil.toBean(dataContestEditParam, DataContest.class);
         BeanUtil.copyProperties(dataContestEditParam, bean);
+        if (StrUtil.isNotBlank(bean.getCover())) {
+            bean.setCover(StoragePathHelper.toObjectName(bean.getCover()));
+        }
         this.updateById(bean);
     }
 

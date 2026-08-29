@@ -3,6 +3,7 @@ package io.charlie.web.modular.sys.file.service.impl;
 import io.charlie.cores.file.FileInfo;
 import io.charlie.web.modular.sys.file.config.properties.StorageProperties;
 import io.charlie.web.modular.sys.file.service.StorageService;
+import io.charlie.web.modular.sys.file.util.StorageObjectNames;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -143,19 +144,30 @@ public class LocalStorageService implements StorageService {
 
     @Override
     public String getUrl(String filename) {
-        if (filename != null && (filename.startsWith("http://") || filename.startsWith("https://"))) {
-            return filename;
+        if (!StringUtils.hasText(filename)) {
+            return "";
+        }
+        String objectName = toObjectName(filename);
+        if (StorageObjectNames.isHttpUrl(objectName) && !StorageObjectNames.looksLikeStoredFile(objectName)) {
+            return objectName;
+        }
+        if (StorageObjectNames.isHttpUrl(objectName)) {
+            objectName = StorageObjectNames.extractFileName(objectName);
         }
         String accessUrl = storageProperties.getLocal().getAccessUrl();
         if (!accessUrl.endsWith("/")) {
             accessUrl += "/";
         }
-        return accessUrl + filename;
+        return accessUrl + objectName;
     }
 
     @Override
     public String toAccessUrl(String stored) {
-        if (stored == null || stored.isBlank()) {
+        if (!StringUtils.hasText(stored)) {
+            return stored;
+        }
+        String cleaned = StorageObjectNames.stripQuery(stored);
+        if (!isOurLocalUrl(cleaned) && !StorageObjectNames.looksLikeStoredFile(cleaned)) {
             return stored;
         }
         return getUrl(toObjectName(stored));
@@ -163,14 +175,10 @@ public class LocalStorageService implements StorageService {
 
     @Override
     public String toObjectName(String storedOrUrl) {
-        if (storedOrUrl == null || storedOrUrl.isBlank()) {
+        if (!StringUtils.hasText(storedOrUrl)) {
             return storedOrUrl;
         }
-        String cleaned = storedOrUrl;
-        int q = cleaned.indexOf('?');
-        if (q >= 0) {
-            cleaned = cleaned.substring(0, q);
-        }
+        String cleaned = StorageObjectNames.stripQuery(storedOrUrl);
         String accessUrl = storageProperties.getLocal().getAccessUrl();
         if (accessUrl != null && !accessUrl.endsWith("/")) {
             accessUrl = accessUrl + "/";
@@ -178,10 +186,22 @@ public class LocalStorageService implements StorageService {
         if (accessUrl != null && cleaned.startsWith(accessUrl)) {
             return cleaned.substring(accessUrl.length());
         }
-        if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) {
+        if (StorageObjectNames.looksLikeStoredFile(cleaned)) {
+            return StorageObjectNames.extractFileName(cleaned);
+        }
+        if (StorageObjectNames.isHttpUrl(cleaned)) {
             return cleaned;
         }
         return cleaned;
+    }
+
+    private boolean isOurLocalUrl(String value) {
+        String accessUrl = storageProperties.getLocal().getAccessUrl();
+        if (!StringUtils.hasText(accessUrl) || !StringUtils.hasText(value)) {
+            return false;
+        }
+        String prefix = accessUrl.endsWith("/") ? accessUrl : accessUrl + "/";
+        return value.startsWith(prefix) || value.startsWith(accessUrl);
     }
 
     @Override

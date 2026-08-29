@@ -24,6 +24,7 @@ import io.charlie.cores.enums.ISortOrderEnum;
 import io.charlie.cores.exception.BusinessException;
 import io.charlie.cores.pojo.CommonPageRequest;
 import io.charlie.cores.result.ResultCode;
+import io.charlie.web.modular.sys.file.util.StoragePathHelper;
 import io.charlie.web.modular.sys.notice.entity.SysNotice;
 import io.charlie.web.modular.sys.notice.mapper.SysNoticeMapper;
 import io.charlie.web.modular.sys.user.entity.SysUser;
@@ -77,6 +78,9 @@ public class SysBannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner
     @Override
     public void add(SysBannerAddParam sysBannerAddParam) {
         SysBanner bean = BeanUtil.toBean(sysBannerAddParam, SysBanner.class);
+        if (StrUtil.isNotBlank(bean.getBanner())) {
+            bean.setBanner(StoragePathHelper.toObjectName(bean.getBanner()));
+        }
         this.save(bean);
     }
 
@@ -88,6 +92,9 @@ public class SysBannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner
         }
         SysBanner bean = BeanUtil.toBean(sysBannerEditParam, SysBanner.class);
         BeanUtil.copyProperties(sysBannerEditParam, bean);
+        if (StrUtil.isNotBlank(bean.getBanner())) {
+            bean.setBanner(StoragePathHelper.toObjectName(bean.getBanner()));
+        }
         this.updateById(bean);
     }
 

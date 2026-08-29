@@ -1,5 +1,6 @@
 package io.charlie.web.modular.task.solved.handle;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.charlie.web.modular.data.solved.entity.DataSolved;
 import io.charlie.web.modular.data.solved.mapper.DataSolvedMapper;
@@ -18,7 +19,7 @@ import java.util.Date;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 30/10/2025
- * @description TODO
+ * @description 解题记录消息处理（主库 upsert）
  */
 @Slf4j
 @Component
@@ -34,9 +35,10 @@ public class SolvedHandleMessage {
                 solvedQueueProperties.getCommon().getRoutingKey(),
                 dataSubmit
         );
-        log.debug("发送样本库消息成功");
+        log.debug("发送解题记录消息成功");
     }
 
+    @DS("master")
     @Transactional
     @RabbitListener(queues = "${oj.mq.solved.common.queue}", concurrency = "1")
     public void receiveSolved(SolvedMessage submit) {
@@ -45,21 +47,29 @@ public class SolvedHandleMessage {
             log.debug("处理解题记录成功, userId: {}, problemId: {}", submit.getUserId(), submit.getProblemId());
         } catch (Exception e) {
             log.error("处理解题记录失败, userId: {}, problemId: {}, submitId: {}", submit.getUserId(), submit.getProblemId(), submit.getSubmitId(), e);
-            throw new RuntimeException("处理解题记录失败", e); // 必须抛出异常
+            throw new RuntimeException("处理解题记录失败", e);
         }
     }
 
+    /**
+     * 可靠 upsert：先 update，0 行再 insert，撞 UK 再 update。
+     * AC 单调：已 solved=1 不再降为 0。
+     * 依赖唯一索引 uk_user_problem_module (user_id, problem_id, module_type, module_id)
+     */
     @Transactional(rollbackFor = Exception.class)
     public void processSolvedRecord(SolvedMessage submit) {
-//        ALTER TABLE data_solved
-//    ADD UNIQUE INDEX uk_user_problem_module (user_id, problem_id, module_type, module_id);
-
         String userId = submit.getUserId();
         String problemId = submit.getProblemId();
         String submitId = submit.getSubmitId();
         String moduleType = submit.getModuleType();
         String moduleId = submit.getModuleId();
-        Boolean solved = submit.getSolved();
+        boolean solved = Boolean.TRUE.equals(submit.getSolved());
+        Date now = new Date();
+
+        int updated = updateSolvedRecord(userId, problemId, moduleType, moduleId, submitId, solved, now);
+        if (updated > 0) {
+            return;
+        }
 
         DataSolved dataSolved = new DataSolved();
         dataSolved.setUserId(userId);
@@ -68,66 +78,43 @@ public class SolvedHandleMessage {
         dataSolved.setSolved(solved);
         dataSolved.setModuleType(moduleType);
         dataSolved.setModuleId(moduleId);
-        dataSolved.setCreateTime(new Date());
-        dataSolved.setUpdateTime(new Date());
-
-//        // 检查记录是否存在
-//        LambdaQueryWrapper<DataSolved> eq = new LambdaQueryWrapper<DataSolved>()
-//                .eq(DataSolved::getUserId, userId)
-//                .eq(DataSolved::getProblemId, problemId)
-//                .eq(DataSolved::getModuleType, moduleType)
-//                .eq(DataSolved::getModuleId, moduleId);
-//
-//        DataSolved dataSolved1 = dataSolvedMapper.selectOne(eq);
-//
-//        if (dataSolved1 != null) {
-//            // 更新现有记录
-//            dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
-//                    .eq(DataSolved::getUserId, userId)
-//                    .eq(DataSolved::getProblemId, problemId)
-//                    .eq(DataSolved::getModuleType, moduleType)
-//                    .eq(DataSolved::getModuleId, moduleId)
-//                    .set(DataSolved::getSubmitId, submitId)
-//                    .set(DataSolved::getUpdateTime, new Date())
-//                    .set(!dataSolved1.getSolved(), DataSolved::getSolved, solved) // 如果已解决，则不更新
-//            );
-//        } else {
-//            // 插入新记录
-//            DataSolved dataSolved = new DataSolved();
-//            dataSolved.setUserId(userId);
-//            dataSolved.setProblemId(problemId);
-//            dataSolved.setSubmitId(submitId);
-//            dataSolved.setSolved(solved);
-//            dataSolved.setModuleType(moduleType);
-//            dataSolved.setModuleId(moduleId);
-//            dataSolved.setCreateTime(new Date());
-//            dataSolved.setUpdateTime(new Date());
-//            dataSolvedMapper.insert(dataSolved);
-//        }
+        dataSolved.setCreateTime(now);
+        dataSolved.setUpdateTime(now);
 
         try {
             dataSolvedMapper.insert(dataSolved);
         } catch (Exception e) {
             if (isDuplicateKeyException(e)) {
-                // 插入失败，说明已存在，执行更新
-                dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
-                        .eq(DataSolved::getUserId, userId)
-                        .eq(DataSolved::getProblemId, problemId)
-                        .eq(DataSolved::getModuleType, moduleType)
-                        .eq(DataSolved::getModuleId, moduleId)
-                        .set(DataSolved::getSubmitId, submitId)
-                        .set(DataSolved::getUpdateTime, new Date())
-                        .setSql("solved = CASE WHEN solved = 1 THEN 1 ELSE " + (solved ? 1 : 0) + " END")
-                );
+                updateSolvedRecord(userId, problemId, moduleType, moduleId, submitId, solved, now);
             } else {
                 throw e;
             }
         }
     }
 
+    private int updateSolvedRecord(String userId, String problemId, String moduleType, String moduleId,
+                                   String submitId, boolean solved, Date now) {
+        return dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+                .eq(DataSolved::getUserId, userId)
+                .eq(DataSolved::getProblemId, problemId)
+                .eq(DataSolved::getModuleType, moduleType)
+                .eq(DataSolved::getModuleId, moduleId)
+                .set(DataSolved::getSubmitId, submitId)
+                .set(DataSolved::getUpdateTime, now)
+                // 已 AC 则保持 solved=1，否则按本次结果更新
+                .setSql("solved = CASE WHEN solved = 1 THEN 1 ELSE " + (solved ? 1 : 0) + " END")
+        );
+    }
+
     private boolean isDuplicateKeyException(Exception e) {
-        // 根据数据库类型判断，例如 MySQL 的 error code 1062
-        return e.getMessage().contains("Duplicate entry") ||
-                (e.getCause() != null && e.getCause().getMessage().contains("1062"));
+        Throwable cur = e;
+        while (cur != null) {
+            String message = cur.getMessage();
+            if (message != null && (message.contains("Duplicate entry") || message.contains("1062"))) {
+                return true;
+            }
+            cur = cur.getCause();
+        }
+        return false;
     }
 }

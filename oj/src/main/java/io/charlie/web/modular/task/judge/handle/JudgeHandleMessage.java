@@ -33,6 +33,9 @@ import java.util.concurrent.CompletableFuture;
 @Component
 @RequiredArgsConstructor
 public class JudgeHandleMessage {
+    private static final int UPDATE_MAX_ATTEMPTS = 3;
+    private static final long UPDATE_RETRY_DELAY_MS = 100L;
+
     private final RabbitTemplate rabbitTemplate;
     private final DataSubmitMapper dataSubmitMapper;
     private final LibraryHandleMessage libraryHandleMessage;
@@ -44,25 +47,46 @@ public class JudgeHandleMessage {
     private final SolvedHandleMessage solvedHandleMessage;
 
     public void sendJudge(JudgeSubmitDto judgeSubmitDto) {
-//        log.info("发送判题消息：{}", JSONUtil.toJsonStr(judgeSubmitDto));
         rabbitTemplate.convertAndSend(
                 judgeQueueProperties.getCommon().getExchange(),
                 judgeQueueProperties.getCommon().getRoutingKey(),
                 judgeSubmitDto
         );
-//        log.info("发送消息成功");
     }
 
-//    @Transactional
     @RabbitListener(queues = "${oj.mq.judge.result.queue}", containerFactory = "judgeResultContainerFactory")
     public void receiveJudge(JudgeResultDto judgeResultDto) {
-//        log.info("接收到判题结果消息：id={}, status={}", judgeResultDto.getId(), judgeResultDto.getStatus());
-
-        // 1. 更新提交记录
-        String submitRecord = updateSubmitRecord(judgeResultDto);
+        // 1. 更新提交记录（短重试，应对事务刚提交/主从瞬时可见性）
+        String submitRecord = updateSubmitRecordWithRetry(judgeResultDto);
+        if (submitRecord == null) {
+            log.error("更新提交记录失败，中止 solved/library 下游：id={}", judgeResultDto.getId());
+            return;
+        }
 
         // 2. 根据提交类型处理业务逻辑
         processBusinessLogic(judgeResultDto, submitRecord);
+    }
+
+    /**
+     * 带短重试的提交记录更新
+     */
+    private String updateSubmitRecordWithRetry(JudgeResultDto judgeResultDto) {
+        for (int attempt = 1; attempt <= UPDATE_MAX_ATTEMPTS; attempt++) {
+            String submitId = updateSubmitRecord(judgeResultDto);
+            if (submitId != null) {
+                return submitId;
+            }
+            if (attempt < UPDATE_MAX_ATTEMPTS) {
+                try {
+                    Thread.sleep(UPDATE_RETRY_DELAY_MS * attempt);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return null;
+                }
+                log.warn("提交记录未找到，重试 {}/{}：id={}", attempt, UPDATE_MAX_ATTEMPTS, judgeResultDto.getId());
+            }
+        }
+        return null;
     }
 
     /**
@@ -82,7 +106,6 @@ public class JudgeHandleMessage {
         int updated = dataSubmitMapper.update(lambda);
 
         if (updated > 0) {
-//            log.info("更新提交记录成功：id={}", judgeResultDto.getId());
             return judgeResultDto.getId();
         } else {
             log.warn("未找到对应的提交记录：id={}", judgeResultDto.getId());
@@ -103,32 +126,26 @@ public class JudgeHandleMessage {
         solvedMessage.setSubmitId(id);
 
         if (JudgeStatus.ACCEPTED.getValue().equals(judgeResultDto.getStatus())) {
-//            log.info("正式提交 AC，进行额外处理：id={}", judgeResultDto.getId());
             solvedMessage.setSolved(Boolean.TRUE);
 
             CompletableFuture.runAsync(() -> {
                 try {
-                    if (id != null) {
-                        Library library = BeanUtil.copyProperties(judgeResultDto, Library.class);
-                        library.setSubmitId(id);
-                        libraryHandleMessage.sendLibrary(library);
-                    }
+                    Library library = BeanUtil.copyProperties(judgeResultDto, Library.class);
+                    library.setSubmitId(id);
+                    libraryHandleMessage.sendLibrary(library);
                 } catch (Exception e) {
                     log.error("处理AC提交额外任务失败：userId={}", judgeResultDto.getUserId(), e);
                 }
             });
 
             if (judgeResultDto.getModuleType().equals("PROBLEM")) {
-                // 添加用户活动
                 userActivityService.addActivity(judgeResultDto.getUserId(),
                         ActivityScoreCalculator.SUBMIT, Boolean.TRUE);
             }
         } else {
-//            log.info("非AC正式提交：id={}, status={}", judgeResultDto.getId(), judgeResultDto.getStatus());
             solvedMessage.setSolved(Boolean.FALSE);
 
             if (judgeResultDto.getModuleType().equals("PROBLEM")) {
-                // 添加用户活动
                 userActivityService.addActivity(judgeResultDto.getUserId(),
                         ActivityScoreCalculator.SUBMIT, Boolean.FALSE);
             }

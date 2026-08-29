@@ -3,6 +3,7 @@ package io.charlie.web.modular.sys.notice.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.charlie.cores.pojo.CommonEntity;
+import io.charlie.web.modular.sys.file.config.StorageAccessUrl;
 
 import java.io.Serial;
 
@@ -34,6 +35,7 @@ public class SysNotice extends CommonEntity {
     private String title;
 
     @Schema(description = "封面")
+    @StorageAccessUrl
     private String cover;
 
     @Schema(description = "链接")

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.charlie.cores.file.FileInfo;
 import io.charlie.web.modular.sys.file.config.properties.StorageProperties;
 import io.charlie.web.modular.sys.file.service.StorageService;
+import io.charlie.web.modular.sys.file.util.StorageObjectNames;
 import io.minio.*;
 import io.minio.errors.*;
 import io.minio.http.Method;
@@ -217,12 +218,15 @@ public class MinioStorageService implements StorageService {
             if (!StringUtils.hasText(objectName)) {
                 return "";
             }
-            String cleaned = stripQuery(objectName);
-            // 非本桶外链不处理
-            if (isExternalUrl(cleaned) && !isOurMinioUrl(cleaned)) {
+            String cleaned = StorageObjectNames.stripQuery(objectName);
+            // 非本桶且不像本地上传文件的外链原样返回
+            if (isExternalUrl(cleaned) && !isOurMinioUrl(cleaned) && !StorageObjectNames.looksLikeStoredFile(cleaned)) {
                 return cleaned;
             }
             String filename = toObjectName(objectName);
+            if (!StringUtils.hasText(filename) || isExternalUrl(filename)) {
+                return filename;
+            }
             if (isBucketPublic()) {
                 return buildPublicUrl(filename);
             }
@@ -238,8 +242,10 @@ public class MinioStorageService implements StorageService {
         if (!StringUtils.hasText(stored)) {
             return stored;
         }
-        if (isExternalUrl(stripQuery(stored))) {
-            return stripQuery(stored);
+        String cleaned = StorageObjectNames.stripQuery(stored);
+        // 纯文本配置（如 APP_NAME）不转换
+        if (!isOurMinioUrl(cleaned) && !StorageObjectNames.looksLikeStoredFile(cleaned)) {
+            return stored;
         }
         return getUrl(toObjectName(stored));
     }
@@ -249,21 +255,29 @@ public class MinioStorageService implements StorageService {
         if (!StringUtils.hasText(storedOrUrl)) {
             return storedOrUrl;
         }
-        String cleaned = stripQuery(storedOrUrl);
-        if (isExternalUrl(cleaned) && !isOurMinioUrl(cleaned)) {
-            // 外链（如默认头像）原样保留
-            return cleaned;
-        }
+        String cleaned = StorageObjectNames.stripQuery(storedOrUrl);
         if (isOurMinioUrl(cleaned)) {
             String prefix = buildPublicUrlPrefix();
-            if (cleaned.startsWith(prefix)) {
-                return cleaned.substring(prefix.length());
+            if (cleaned.startsWith(prefix)
+                    || cleaned.startsWith(prefix.replace("https://", "http://"))
+                    || cleaned.startsWith(prefix.replace("http://", "https://"))) {
+                String after = cleaned;
+                if (cleaned.startsWith(prefix)) {
+                    after = cleaned.substring(prefix.length());
+                } else if (cleaned.startsWith(prefix.replace("https://", "http://"))) {
+                    after = cleaned.substring(prefix.replace("https://", "http://").length());
+                } else {
+                    after = cleaned.substring(prefix.replace("http://", "https://").length());
+                }
+                return after.contains("/") ? StorageObjectNames.extractFileName(after) : after;
             }
-            // 兜底：取最后一段路径
-            int idx = cleaned.lastIndexOf('/');
-            return idx >= 0 ? cleaned.substring(idx + 1) : cleaned;
+            return StorageObjectNames.extractFileName(cleaned);
         }
-        // 已是对象名
+        // 历史错误相对路径 /content/xxx.jpg、完整网关 URL 等：抽文件名入库
+        if (StorageObjectNames.looksLikeStoredFile(cleaned)) {
+            return StorageObjectNames.extractFileName(cleaned);
+        }
+        // 外链（picsum 等）原样保留
         return cleaned;
     }
 
@@ -291,11 +305,6 @@ public class MinioStorageService implements StorageService {
 
     private boolean isExternalUrl(String value) {
         return value.startsWith("http://") || value.startsWith("https://");
-    }
-
-    private String stripQuery(String value) {
-        int q = value.indexOf('?');
-        return q >= 0 ? value.substring(0, q) : value;
     }
 
     private boolean isBucketPublic() {

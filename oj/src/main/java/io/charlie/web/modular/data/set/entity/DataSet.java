@@ -7,18 +7,18 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.charlie.cores.config.timestamp.DateToTimestampSerializer;
 import io.charlie.cores.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.cores.pojo.CommonEntity;
-
-import java.math.BigDecimal;
-import java.io.Serial;
-import java.util.Date;
-import java.util.List;
-
 import io.charlie.web.modular.sys.category.entity.SysCategory;
+import io.charlie.web.modular.sys.file.config.StorageAccessUrl;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.dromara.core.trans.anno.Trans;
 import org.dromara.core.trans.constant.TransType;
+
+import java.io.Serial;
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
 
 /**
 * @author Charlie Zhang
@@ -50,6 +50,7 @@ public class DataSet extends CommonEntity {
     private String title;
 
     @Schema(description = "封面")
+    @StorageAccessUrl
     private String cover;
 
     @Schema(description = "描述")

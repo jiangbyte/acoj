@@ -3,6 +3,7 @@ package io.charlie.web.modular.sys.config.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.charlie.cores.pojo.CommonEntity;
+import io.charlie.web.modular.sys.file.config.StorageAccessUrl;
 
 import java.io.Serial;
 
@@ -41,6 +42,7 @@ public class SysConfig extends CommonEntity {
     private String code;
 
     @Schema(description = "值")
+    @StorageAccessUrl
     private String value;
 
 
