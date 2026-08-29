@@ -32,7 +32,7 @@ const backendTechStack = [
           <n-space>
             <n-button
               tag="a"
-              href="https://github.com/jiangbyte/astro-code-oj"
+              href="https://github.com/jiangbyte/acoj"
               target="_blank"
               type="primary"
               ghost
@@ -42,7 +42,7 @@ const backendTechStack = [
 
             <n-button
               tag="a"
-              href="https://gitee.com/jiangbyte/astro-code-oj"
+              href="https://gitee.com/jiangbyte/acoj"
               type="error"
               target="_blank"
               ghost

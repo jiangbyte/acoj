@@ -74,24 +74,34 @@ const isLoading = ref(false)
 async function handleLogin(e: MouseEvent) {
   e.preventDefault()
   formRef.value?.validate((errors) => {
-    if (!errors) {
-      isLoading.value = true
-      useAuthFetch().doLogin(formData.value).then(({ data }) => {
-        if (data) {
-          useToken.setToken(data)
-          if (useToken.isLogined) {
-            isLoading.value = false
-            router.push('/')
-          }
-          getProfileNoe().then(({ data }) => {
-            useUser.setUserId(data.id)
-          })
-        }
-      })
-    }
-    else {
+    if (errors) {
       window.$message.error('请填写完整信息')
+      return
     }
+    isLoading.value = true
+    useAuthFetch().doLogin(formData.value).then((res) => {
+      if (res?.data) {
+        useToken.setToken(res.data)
+        if (useToken.isLogined) {
+          router.push('/')
+        }
+        getProfileNoe().then(({ data: profile }) => {
+          if (profile?.id) {
+            useUser.setUserId(profile.id)
+          }
+        })
+      }
+      else {
+        // 拦截器已弹过后端 message；失败时刷新验证码
+        refreshCaptcha()
+      }
+    }).catch((err) => {
+      const msg = err?.message || '登录失败'
+      window.$message.error(msg)
+      refreshCaptcha()
+    }).finally(() => {
+      isLoading.value = false
+    })
   })
 }
 
@@ -190,6 +200,7 @@ const version = import.meta.env.VITE_VERSION
           block
           type="primary"
           data-testid="login-execute"
+          :loading="isLoading"
           @click="handleLogin"
         >
           登录

@@ -52,25 +52,12 @@ const { onAuthRequired, onResponseRefreshToken } = createServerTokenAuthenticati
 })
 
 function showErrorMessage(jsonData: Record<string, any>) {
+  const text = jsonData.message || jsonData.error || '请求失败'
   if (jsonData.code) {
-    if (jsonData.message) {
-      // console.error(`${jsonData.message} (${jsonData.code})`)
-      message.warning(`${jsonData.message} (${jsonData.code})`)
-    }
-    if (jsonData.error) {
-      // console.error(`${jsonData.error} (${jsonData.code})`)
-      message.error(`${jsonData.error} (${jsonData.code})`)
-    }
+    message.error(`${text} (${jsonData.code})`)
   }
   else {
-    if (jsonData.message) {
-      // console.error(`${jsonData.message}`)
-      message.warning(`${jsonData.message}`)
-    }
-    if (jsonData.error) {
-      // console.error(`${jsonData.error}`)
-      message.error(`${jsonData.error}`)
-    }
+    message.error(text)
   }
 }
 
@@ -105,13 +92,7 @@ const alovaInstance = createAlova({
       const { status } = response
 
       // 获取json数据
-      // const jsonData = await response.clone().json()
       const jsonData = await response.clone().json()
-
-      // 如果 jsonData 为空或者里面没有 data 字段，则返回一个包含默认 data 的对象
-      if (!jsonData || !jsonData.data) {
-        return { data: null }
-      }
 
       if (status === 200) {
         if (method.meta?.isBlob) {
@@ -120,19 +101,19 @@ const alovaInstance = createAlova({
 
         // 如果code 是 401 马上执行本地登出
         if (jsonData.code === '401') {
-          message.error('登录过期，请重新登录')
+          message.error(jsonData.message || '登录过期，请重新登录')
           // 登出
           const tokenStore = useTokenStore()
           tokenStore.resetToken()
-          return
-        }
-
-        // 获取json数据中的code字段，判断是否为成功状态，默认为"200"
-        if (jsonData.code === '200') {
           return jsonData
         }
 
-        // 业务请求失败
+        // 获取json数据中的code字段，判断是否为成功状态，默认为"200"
+        if (jsonData.code === '200' || jsonData.success === true) {
+          return jsonData
+        }
+
+        // 业务请求失败：展示后端 message（即使 data 为 null）
         showErrorMessage(jsonData)
         return jsonData
       }
@@ -143,7 +124,7 @@ const alovaInstance = createAlova({
     },
 
     onError: async (error, _method) => {
-      message.error(error.message)
+      message.error(error?.message || '网络异常，请稍后重试')
     },
 
     onComplete: async (_method) => {},
