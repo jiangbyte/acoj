@@ -129,6 +129,9 @@ func SetCgroupForProcess(cgroupPath string, pid int) error {
 
 // cleanupCgroup 清理cgroup
 func CleanupCgroup(cgroupPath string) {
+	if cgroupPath == "" {
+		return
+	}
 	if err := os.RemoveAll(cgroupPath); err != nil {
 		logx.Errorf("清理cgroup失败: %v", err)
 	} else {

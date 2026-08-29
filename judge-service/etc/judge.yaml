@@ -6,6 +6,10 @@ Port: 8888
 # 工作空间
 # Workspace: "/tmp/judge_workspace"
 
+# 沙箱：auto=探测 cgroup；cgroup=强制；soft=/proc 轮询内存（适合本地 WSL）
+Sandbox:
+  Mode: auto
+
 # Nacos 配置
 Nacos:
 #  ServerAddr: "120.26.180.149:8848"

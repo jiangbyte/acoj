@@ -1,143 +1,90 @@
-## 运行
+# similarity-service — Code Similarity Service
 
-go build -o JudgeService main.go
+Go (go-zero) similarity worker: consumes plagiarism / similarity tasks, compares code, and writes results back. Default port **8882**. Start only if you need this feature.
 
-docker run -itd --privileged --name ubuntu_golang --hostname ubuntu_golang ubuntu:latest
+## Role
 
-wget https://mirrors.aliyun.com/golang/go1.24.4.linux-amd64.tar.gz
+- Consumes similarity analysis tasks from RabbitMQ
+- Reads/writes related business data (e.g. code library, similarity task tables)
+- Optional Nacos registration to work with the business backend
 
-tar -C /usr/local -xzf go1.24.4.linux-amd64.tar.gz
+## Prerequisites
 
-vi /etc/profile
+- Go **1.24+**
+- Running MySQL, RabbitMQ, Nacos (same environment as `oj`)
+- Runtime config prepared in Nacos (`similarity-service.yaml`)
 
-export PATH=$PATH:/usr/local/go/bin
+## Configuration
 
-rm -rf /usr/local/go && tar -C /usr/local -xzf go1.24.4.linux-amd64.tar.gz
+Local bootstrap: `etc/similar.yaml`.
 
+| Item | Default / notes |
+| --- | --- |
+| Host / Port | `0.0.0.0:8882` |
+| Nacos | Address, namespace, `DataId: similarity-service.yaml` |
 
-// 其他服务中可以通过服务名发现判题服务
-instances, err := serviceRegistry.GetServiceInstances("judge-service")
+With `-nacos`, full runtime config (database, MQ, etc.) is loaded from Nacos. Keep the namespace aligned with the business backend.
 
-
----
-
-## 1. 构建初始镜像
-
-```bash
-# 构建初始镜像
-docker build -t my-go-app:initial .
-```
-
-## 2. 创建并运行容器
+## Start
 
 ```bash
-# 创建并运行容器（使用交互模式，特权模式）
-docker run -it --privileged --name my-go-container my-go-app:initial
+cd similarity-service
+
+# Recommended
+go run main.go -f etc/similar.yaml -nacos
+
+# Local yaml only (must include full runtime settings)
+go run main.go -f etc/similar.yaml
 ```
 
-## 3. 在容器内进行修改
+Build a binary:
 
 ```bash
-docker exec -it my-go-container /bin/bash
+go build -o similarity-service main.go
+./similarity-service -f etc/similar.yaml -nacos
 ```
 
-## 4. 基于修改后的容器创建新镜像
+> Always use `-f etc/similar.yaml`. Do not point at the judge service config path by mistake.
+
+## Docker
 
 ```bash
-# 基于修改后的容器创建新镜像
-docker commit my-go-container my-go-app:modified
+cd similarity-service
+DOCKER_BUILDKIT=1 docker build -t similarity-service:1.0.0 .
 
-
-docker commit my-ubuntu-02 registry.cn-beijing.aliyuncs.com/jiangbyte/ubuntu_sub_cgroup:1.0.0
-
+docker run -d --name similarity-service \
+  -p 8882:8882 \
+  similarity-service:1.0.0
 ```
 
-## 5. 验证新镜像
+The container must reach Nacos / MySQL / RabbitMQ. Resource limits via env (see `entrypoint.sh`):
 
-```bash
-# 查看新创建的镜像
-docker images
+| Variable | Default |
+| --- | --- |
+| `GOMAXPROCS` | `1` |
+| `GOMEMLIMIT` | `384MiB` |
 
-# 测试新镜像
-docker run -it --rm my-go-app:modified
-```
+If the image entrypoint config path differs from local usage, follow the start commands in this README or override the process args at runtime.
 
----
+## Verify
 
+- Process stays healthy; consumer starts successfully
+- Nacos shows `similarity-service` (if registration is enabled)
+- Similarity tasks created from admin / business APIs update status correctly
 
-cgroup v2 采用“**子树控制（subtree control）**”机制：父 cgroup 必须通过 `cgroup.subtree_control` 文件明确“下放”某个控制器的权限，子 cgroup 才能使用该控制器并生成对应的配置/统计文件（如 `memory.peak`、`cpu.max` 等）。
+## Troubleshooting
 
-1. **父 cgroup 未启用 `memory` 控制器**：  
-   父目录（通常是 `/sys/fs/cgroup`）的 `cgroup.subtree_control` 文件中，没有包含 `memory` 控制器，导致子 cgroup 无法使用内存相关功能，因此不会生成 `memory.peak`、`memory.max` 等文件。
+1. **Fails immediately on config load**  
+   Confirm `-f` points to `etc/similar.yaml` and the Nacos DataId exists.
 
-2. **其他控制器（如 `cpu`、`io`）可能也未完全启用**：  
-   从子 cgroup 的文件列表看，只有 `cpu.pressure`、`io.pressure` 等基础文件，缺少 `cpu.max`、`io.stat` 等，说明这些控制器也未在父级启用。
+2. **Backlog / no consumption**  
+   Check RabbitMQ queue names and routing keys against the `oj` similarity publish config.
 
+3. **Database errors**  
+   Confirm `sql/astro_code.sql` was imported and similarity tables / datasource settings in Nacos are correct.
 
-### 在父 cgroup 中启用控制器
-要让子 cgroup 生成 `memory.peak` 等文件，需先在父 cgroup 中启用对应的控制器（以 `memory` 为例）：
+## Related Docs
 
-#### 1. 查看父 cgroup 当前启用的控制器
-```bash
-# 查看根 cgroup（父级）的控制器状态
-cat /sys/fs/cgroup/cgroup.subtree_control
-```
-- 输出为空或不含 `memory`、`cpu` 等，说明这些控制器未启用。
-
-
-#### 2. 在父 cgroup 中启用所需控制器
-通过 `cgroup.subtree_control` 文件添加控制器（需 root 权限）：
-```bash
-# 启用 memory 控制器（允许子 cgroup 使用内存相关功能）
-sudo echo "+memory" | tee /sys/fs/cgroup/cgroup.subtree_control
-
-# 同时启用 cpu、io 控制器（按需添加）
-sudo echo "+cpu +io" | tee -a /sys/fs/cgroup/cgroup.subtree_control
-```
-- `+` 表示启用控制器，`-` 表示禁用。
-
----
-
-### 清空父 cgroup 再修改
-需先确保父 cgroup（`/sys/fs/cgroup`）中没有进程，且子 cgroup 未占用控制器，步骤如下：
-
-#### 1. 迁移父 cgroup 中的进程到临时 cgroup
-```bash
-# 1. 创建一个临时 cgroup（用于临时存放进程）
-mkdir /sys/fs/cgroup/temp
-
-# 2. 将父 cgroup 中的所有进程迁移到临时 cgroup
-# 注意：替换 $(cat /sys/fs/cgroup/cgroup.procs) 为实际 PID 列表
-for pid in $(cat /sys/fs/cgroup/cgroup.procs); do
-  echo $pid | tee /sys/fs/cgroup/temp/cgroup.procs
-done
-
-# 3. 确认父 cgroup 已无进程（输出为空）
-cat /sys/fs/cgroup/cgroup.procs
-```
-
-#### 3. 再次尝试启用父 cgroup 的控制器
-```bash
-# 启用 memory 控制器（允许子 cgroup 使用内存相关功能）
-sudo echo "+memory" | tee /sys/fs/cgroup/cgroup.subtree_control
-
-# 同时启用 cpu、io 控制器（按需添加）
-sudo echo "+cpu +io" | tee -a /sys/fs/cgroup/cgroup.subtree_control
-```
-
-#### 4. 恢复进程
-若需将临时 cgroup 中的进程迁回父 cgroup：
-```bash
-for pid in $(cat /sys/fs/cgroup/temp/cgroup.procs); do
-  echo $pid | tee /sys/fs/cgroup/cgroup.procs
-done
-
-# 删除临时 cgroup
-rmdir /sys/fs/cgroup/temp
-```
-
-
-
-
-
-
+- Overview: [../README.md](../README.md)
+- Business backend: [../oj/README.md](../oj/README.md)
+- Judge: [../judge-service/Readme.md](../judge-service/Readme.md)

@@ -1,0 +1,22 @@
+     ✓ code submission successful
+     ✓ submission returns ID
+     ✓ get judge result successful
+     ✓ judge completed successfully
+
+     checks.........................: 100.00% ✓ 10909     ✗ 0    
+     data_received..................: 8.8 MB  27 kB/s
+     data_sent......................: 2.0 MB  6.1 kB/s
+     http_req_blocked...............: avg=3.28ms  min=0s      med=0s      max=653.38ms p(90)=0s      p(95)=0s     
+     http_req_connecting............: avg=3.27ms  min=0s      med=0s      max=653.38ms p(90)=0s      p(95)=0s     
+     http_req_duration..............: avg=4.46s   min=77.95ms med=3.28s   max=34.34s   p(90)=9.82s   p(95)=12.37s 
+       { expected_response:true }...: avg=4.46s   min=77.95ms med=3.28s   max=34.34s   p(90)=9.82s   p(95)=12.37s 
+     http_req_failed................: 0.00%   ✓ 0         ✗ 6713 
+     http_req_receiving.............: avg=6.33ms  min=0s      med=648.8µs max=1.39s    p(90)=13.52ms p(95)=33.06ms
+     http_req_sending...............: avg=25.28µs min=0s      med=0s      max=2.96ms   p(90)=0s      p(95)=0s     
+     http_req_tls_handshaking.......: avg=0s      min=0s      med=0s      max=0s       p(90)=0s      p(95)=0s     
+     http_req_waiting...............: avg=4.45s   min=77.62ms med=3.27s   max=34.34s   p(90)=9.8s    p(95)=12.36s 
+     http_reqs......................: 6713    20.639239/s
+     iteration_duration.............: avg=21.21s  min=4.76s   med=20.18s  max=51.6s    p(90)=31.65s  p(95)=35.39s 
+     iterations.....................: 2097    6.447264/s
+     vus............................: 1       min=1       max=180
+     vus_max........................: 180     min=180     max=180

@@ -1,0 +1,271 @@
+{
+  "k6OriginalMetrics": {
+    "metrics": {
+      "checks": {
+        "type": "rate",
+        "contains": "default",
+        "values": {
+          "rate": 1,
+          "passes": 10575,
+          "fails": 0
+        }
+      },
+      "iteration_duration": {
+        "type": "trend",
+        "contains": "time",
+        "values": {
+          "avg": 21576.073723922505,
+          "min": 4541.684,
+          "med": 20752.1827,
+          "max": 49342.9871,
+          "p(90)": 31882.94424,
+          "p(95)": 34890.33538
+        }
+      },
+      "http_req_duration{expected_response:true}": {
+        "type": "trend",
+        "contains": "time",
+        "values": {
+          "avg": 4748.811469103031,
+          "min": 79.0948,
+          "med": 3571.75415,
+          "max": 29563.3796,
+          "p(90)": 10302.51187,
+          "p(95)": 13034.026324999995
+        }
+      },
+      "http_req_blocked": {
+        "type": "trend",
+        "contains": "time",
+        "values": {
+          "p(90)": 0,
+          "p(95)": 0,
+          "avg": 3.334077188081936,
+          "min": 0,
+          "med": 0,
+          "max": 531.4145
+        }
+      },
+      "data_sent": {
+        "values": {
+          "rate": 5868.239125470106,
+          "count": 1903747
+        },
+        "type": "counter",
+        "contains": "data"
+      },
+      "vus": {
+        "type": "gauge",
+        "contains": "default",
+        "values": {
+          "value": 2,
+          "min": 2,
+          "max": 180
+        }
+      },
+      "iterations": {
+        "type": "counter",
+        "contains": "default",
+        "values": {
+          "count": 2065,
+          "rate": 6.3652963309178
+        }
+      },
+      "http_reqs": {
+        "type": "counter",
+        "contains": "default",
+        "values": {
+          "count": 6444,
+          "rate": 19.863423514011767
+        }
+      },
+      "http_req_sending": {
+        "type": "trend",
+        "contains": "time",
+        "values": {
+          "avg": 0.022088112973308514,
+          "min": 0,
+          "med": 0,
+          "max": 1.012,
+          "p(90)": 0,
+          "p(95)": 0
+        }
+      },
+      "http_req_failed": {
+        "type": "rate",
+        "contains": "default",
+        "values": {
+          "rate": 0,
+          "passes": 0,
+          "fails": 6444
+        }
+      },
+      "http_req_tls_handshaking": {
+        "type": "trend",
+        "contains": "time",
+        "values": {
+          "p(90)": 0,
+          "p(95)": 0,
+          "avg": 0,
+          "min": 0,
+          "med": 0,
+          "max": 0
+        }
+      },
+      "http_req_duration": {
+        "contains": "time",
+        "values": {
+          "med": 3571.75415,
+          "max": 29563.3796,
+          "p(90)": 10302.51187,
+          "p(95)": 13034.026324999995,
+          "avg": 4748.811469103031,
+          "min": 79.0948
+        },
+        "type": "trend"
+      },
+      "http_req_waiting": {
+        "type": "trend",
+        "contains": "time",
+        "values": {
+          "avg": 4742.084394428921,
+          "min": 78.1913,
+          "med": 3570.01695,
+          "max": 29562.7126,
+          "p(90)": 10294.58982,
+          "p(95)": 13030.386734999995
+        }
+      },
+      "http_req_receiving": {
+        "type": "trend",
+        "contains": "time",
+        "values": {
+          "max": 590.947,
+          "p(90)": 14.228339999999994,
+          "p(95)": 43.33779499999995,
+          "avg": 6.70498656114214,
+          "min": 0,
+          "med": 0.4813
+        }
+      },
+      "vus_max": {
+        "values": {
+          "value": 180,
+          "min": 180,
+          "max": 180
+        },
+        "type": "gauge",
+        "contains": "default"
+      },
+      "data_received": {
+        "type": "counter",
+        "contains": "data",
+        "values": {
+          "count": 8407788,
+          "rate": 25916.73709807976
+        }
+      },
+      "http_req_connecting": {
+        "type": "trend",
+        "contains": "time",
+        "values": {
+          "avg": 3.325721865301056,
+          "min": 0,
+          "med": 0,
+          "max": 531.4145,
+          "p(90)": 0,
+          "p(95)": 0
+        }
+      }
+    },
+    "root_group": {
+      "id": "d41d8cd98f00b204e9800998ecf8427e",
+      "groups": [],
+      "checks": [
+          {
+            "id": "5ce6faf28f1411ba92c3742c498c9810",
+            "passes": 2066,
+            "fails": 0,
+            "name": "code submission successful",
+            "path": "::code submission successful"
+          },
+          {
+            "path": "::submission returns ID",
+            "id": "12c5d3b258cbbea5af582451e9e60952",
+            "passes": 2066,
+            "fails": 0,
+            "name": "submission returns ID"
+          },
+          {
+            "name": "get judge result successful",
+            "path": "::get judge result successful",
+            "id": "76e94f457aa290801105854ed2387f0e",
+            "passes": 4378,
+            "fails": 0
+          },
+          {
+            "name": "judge completed successfully",
+            "path": "::judge completed successfully",
+            "id": "aa1cbd33ab003c3a3f2a03b07774d85a",
+            "passes": 2065,
+            "fails": 0
+          }
+        ],
+      "name": "",
+      "path": ""
+    },
+    "options": {
+      "summaryTrendStats": [
+        "avg",
+        "min",
+        "med",
+        "max",
+        "p(90)",
+        "p(95)"
+      ],
+      "summaryTimeUnit": "",
+      "noColor": false
+    },
+    "state": {
+      "isStdOutTTY": true,
+      "isStdErrTTY": true,
+      "testRunDurationMs": 324415.3756
+    }
+  },
+  "customMetrics": {
+    "performanceMetrics": {
+      "submissionTimes": [],
+      "judgeTimes": [],
+      "successSubmissions": 0,
+      "failedSubmissions": 0,
+      "totalJudgmentTime": 0,
+      "userSessions": 0,
+      "failedSessions": 0,
+      "judgmentResults": {
+            "ACCEPTED": 0,
+            "SUCCESS": 0,
+            "CORRECT": 0,
+            "TIMEOUT": 0,
+            "OTHER": 0
+          }
+    },
+    "submissionStats": {
+      "avg": 0,
+      "min": 0,
+      "max": 0,
+      "p95": 0,
+      "count": 0
+    },
+    "judgeStats": {
+      "avg": 0,
+      "min": 0,
+      "max": 0,
+      "p95": 0,
+      "count": 0
+    },
+    "totalSubmissions": 0,
+    "submissionSuccessRate": 0,
+    "sessionSuccessRate": 0
+  },
+  "textSummary": "     ✓ code submission successful\n     ✓ submission returns ID\n     ✓ get judge result successful\n     ✓ judge completed successfully\n\n     checks.........................: 100.00% ✓ 10575     ✗ 0    \n     data_received..................: 8.4 MB  26 kB/s\n     data_sent......................: 1.9 MB  5.9 kB/s\n     http_req_blocked...............: avg=3.33ms  min=0s      med=0s      max=531.41ms p(90)=0s      p(95)=0s     \n     http_req_connecting............: avg=3.32ms  min=0s      med=0s      max=531.41ms p(90)=0s      p(95)=0s     \n     http_req_duration..............: avg=4.74s   min=79.09ms med=3.57s   max=29.56s   p(90)=10.3s   p(95)=13.03s \n       { expected_response:true }...: avg=4.74s   min=79.09ms med=3.57s   max=29.56s   p(90)=10.3s   p(95)=13.03s \n     http_req_failed................: 0.00%   ✓ 0         ✗ 6444 \n     http_req_receiving.............: avg=6.7ms   min=0s      med=481.3µs max=590.94ms p(90)=14.22ms p(95)=43.33ms\n     http_req_sending...............: avg=22.08µs min=0s      med=0s      max=1.01ms   p(90)=0s      p(95)=0s     \n     http_req_tls_handshaking.......: avg=0s      min=0s      med=0s      max=0s       p(90)=0s      p(95)=0s     \n     http_req_waiting...............: avg=4.74s   min=78.19ms med=3.57s   max=29.56s   p(90)=10.29s  p(95)=13.03s \n     http_reqs......................: 6444    19.863424/s\n     iteration_duration.............: avg=21.57s  min=4.54s   med=20.75s  max=49.34s   p(90)=31.88s  p(95)=34.89s \n     iterations.....................: 2065    6.365296/s\n     vus............................: 2       min=2       max=180\n     vus_max........................: 180     min=180     max=180"
+}

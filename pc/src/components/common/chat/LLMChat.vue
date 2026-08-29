@@ -124,11 +124,12 @@ function sendMessage(messageType: string = 'DailyConversation') {
     onopen: async (response) => {
       if (response.ok) {
         console.log('SSE连接已建立')
+        return
       }
-      else {
-        window.$message?.error(`连接失败: ${response.status}`)
-        handleRequestEnd(false)
-      }
+      window.$message?.error(`连接失败: ${response.status}`)
+      handleRequestEnd(false)
+      // 非 2xx 必须抛出，否则会进入重试循环
+      throw new Error(`SSE connection failed: ${response.status}`)
     },
     // onmessage: (event) => {
     //   try {
@@ -211,6 +212,8 @@ function sendMessage(messageType: string = 'DailyConversation') {
         window.$message?.error('连接错误，已停止接收消息')
       }
       handleRequestEnd(true)
+      // fetch-event-source：onerror 未抛出时会自动无限重试
+      throw error
     },
     onclose: () => {
       console.log('SSE连接关闭')

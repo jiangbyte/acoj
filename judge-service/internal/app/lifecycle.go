@@ -5,6 +5,7 @@ import (
 	"judge-service/internal/config"
 	"judge-service/internal/logic"
 	"judge-service/internal/svc"
+	"judge-service/internal/utils"
 	"sync"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -34,6 +35,9 @@ func (lm *LifecycleManager) InitializeServices(c config.Config) error {
 	if lm.serviceCtx != nil {
 		lm.shutdownServices()
 	}
+
+	// 解析沙箱模式（cgroup / soft）
+	utils.InitSandboxMode(c.Sandbox.Mode)
 
 	// 创建新的服务实例
 	lm.serviceCtx = svc.NewServiceContext(c)

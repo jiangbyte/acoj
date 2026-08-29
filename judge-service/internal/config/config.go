@@ -58,6 +58,13 @@ type RedisConfig struct {
 	PoolSize int    `json:",default=10"`
 }
 
+// SandboxConfig 沙箱资源限制模式
+type SandboxConfig struct {
+	// Mode: auto | cgroup | soft
+	// auto：可写 cgroup v2 则用 cgroup，否则降级 soft（/proc 轮询内存）
+	Mode string `json:",default=auto"`
+}
+
 // 配置队列
 type Config struct {
 	rest.RestConf
@@ -67,4 +74,5 @@ type Config struct {
 	Languages []LanguageConfig `json:",optional"` // 支持的语言配置，设为可选
 	RabbitMQ  RabbitMQConfig   `json:",optional"`
 	Redis     RedisConfig      `json:",optional"` // 新增 Redis 配置
+	Sandbox   SandboxConfig    `json:",optional"` // 沙箱模式
 }

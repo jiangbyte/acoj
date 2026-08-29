@@ -16,23 +16,23 @@ import (
 
 // CompilerManager 编译器管理器，管理编译器实例
 type CompilerManager struct {
-    compilers sync.Pool
+	compilers sync.Pool
 }
 
 var compilerManager = &CompilerManager{
-    compilers: sync.Pool{
-        New: func() interface{} {
-            return &DefaultCompiler{}
-        },
-    },
+	compilers: sync.Pool{
+		New: func() interface{} {
+			return &DefaultCompiler{}
+		},
+	},
 }
 
 func GetCompiler() *DefaultCompiler {
-    return compilerManager.compilers.Get().(*DefaultCompiler)
+	return compilerManager.compilers.Get().(*DefaultCompiler)
 }
 
 func ReleaseCompiler(compiler *DefaultCompiler) {
-    compilerManager.compilers.Put(compiler)
+	compilerManager.compilers.Put(compiler)
 }
 
 type CompileResult struct {
@@ -60,17 +60,22 @@ func (c *DefaultCompiler) Compile(workspace *Workspace) (*CompileResult, error) 
 		MaxTime: float64(time.Since(startTime).Milliseconds()),
 	}
 
-	cgroupPath, err := utils.CreateCgroupNoMemory()
-	if err != nil {
-		return c.handleError(result, fmt.Sprintf("创建cgroup失败: %v", err), 1, err)
+	soft := utils.IsSoftSandbox()
+	var cgroupPath string
+	if !soft {
+		path, err := utils.CreateCgroupNoMemory()
+		if err != nil {
+			return c.handleError(result, fmt.Sprintf("创建cgroup失败: %v", err), 1, err)
+		}
+		cgroupPath = path
+		defer utils.CleanupCgroup(cgroupPath)
 	}
-	defer utils.CleanupCgroup(cgroupPath) // 使用defer确保资源清理
 
 	ctx, cancel := context.WithTimeout(context.Background(), compileTimeout)
 	defer cancel()
 
 	compilerCmd := utils.GetCompileCommand(workspace.langConfig, workspace.SourceFile, workspace.BuildFile)
-	cmd := c.createCommand(ctx, compilerCmd, workspace.BuildPath)
+	cmd := c.createCommand(ctx, compilerCmd, workspace.BuildPath, soft)
 
 	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd.Stdout = &stdoutBuf
@@ -80,39 +85,28 @@ func (c *DefaultCompiler) Compile(workspace *Workspace) (*CompileResult, error) 
 		return c.handleError(result, fmt.Sprintf("启动进程失败: %v", err), 1, err)
 	}
 
-	// 进程控制逻辑
-	pgid, err := c.controlProcess(cmd, cgroupPath, result)
-	if err != nil {
-		return result, err
+	pgid := cmd.Process.Pid
+	if !soft {
+		var err error
+		pgid, err = c.controlProcess(cmd, cgroupPath, result)
+		if err != nil {
+			return result, err
+		}
 	}
 
-	return c.waitForCompletion(cmd, ctx, pgid, cgroupPath, &stdoutBuf, &stderrBuf, startTime, result)
+	return c.waitForCompletion(cmd, ctx, pgid, cgroupPath, soft, &stdoutBuf, &stderrBuf, startTime, result)
 }
 
 // 创建命令实例
-func (c *DefaultCompiler) createCommand(ctx context.Context, compilerCmd []string, dir string) *exec.Cmd {
+func (c *DefaultCompiler) createCommand(ctx context.Context, compilerCmd []string, dir string, soft bool) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, compilerCmd[0], compilerCmd[1:]...)
 	cmd.Dir = dir
-
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-		Cloneflags: syscall.CLONE_NEWNS |
-			syscall.CLONE_NEWUTS |
-			syscall.CLONE_NEWPID |
-			syscall.CLONE_NEWNET |
-			syscall.CLONE_NEWIPC,
-		Unshareflags: syscall.CLONE_NEWNS,
-	}
-
+	cmd.SysProcAttr = buildSysProcAttr(soft)
 	return cmd
 }
 
 // 进程控制：暂停、设置cgroup、恢复
 func (c *DefaultCompiler) controlProcess(cmd *exec.Cmd, cgroupPath string, result *CompileResult) (int, error) {
-	// c.mu.Lock()
-	// defer c.mu.Unlock()
-
-	// 立即暂停进程
 	if err := syscall.Kill(cmd.Process.Pid, syscall.SIGSTOP); err != nil {
 		return 0, fmt.Errorf("暂停进程失败: %v", err)
 	}
@@ -123,7 +117,6 @@ func (c *DefaultCompiler) controlProcess(cmd *exec.Cmd, cgroupPath string, resul
 		return 0, fmt.Errorf("设置cgroup失败: %v", err)
 	}
 
-	// 恢复进程执行
 	if err := syscall.Kill(cmd.Process.Pid, syscall.SIGCONT); err != nil {
 		return 0, fmt.Errorf("恢复进程失败: %v", err)
 	}
@@ -133,7 +126,7 @@ func (c *DefaultCompiler) controlProcess(cmd *exec.Cmd, cgroupPath string, resul
 
 // 等待命令完成并处理结果
 func (c *DefaultCompiler) waitForCompletion(cmd *exec.Cmd, ctx context.Context, pgid int,
-	cgroupPath string, stdoutBuf, stderrBuf *bytes.Buffer, startTime time.Time, result *CompileResult) (*CompileResult, error) {
+	cgroupPath string, soft bool, stdoutBuf, stderrBuf *bytes.Buffer, startTime time.Time, result *CompileResult) (*CompileResult, error) {
 
 	done := make(chan error, 1)
 	go func() {
@@ -142,21 +135,23 @@ func (c *DefaultCompiler) waitForCompletion(cmd *exec.Cmd, ctx context.Context, 
 
 	select {
 	case <-ctx.Done():
-		return c.handleTimeout(pgid, cgroupPath, stderrBuf, startTime, result)
+		return c.handleTimeout(pgid, cgroupPath, soft, stderrBuf, startTime, result)
 	case err := <-done:
-		return c.handleCompletion(err, cgroupPath, stdoutBuf, stderrBuf, startTime, result)
+		return c.handleCompletion(err, cgroupPath, soft, stdoutBuf, stderrBuf, startTime, result)
 	}
 }
 
 // 处理超时情况
-func (c *DefaultCompiler) handleTimeout(pgid int, cgroupPath string, stderrBuf *bytes.Buffer,
+func (c *DefaultCompiler) handleTimeout(pgid int, cgroupPath string, soft bool, stderrBuf *bytes.Buffer,
 	startTime time.Time, result *CompileResult) (*CompileResult, error) {
 
 	syscall.Kill(-pgid, syscall.SIGKILL)
 	elapsed := time.Since(startTime)
 
-	memoryUsed, _ := utils.GetMemoryUsage(cgroupPath)
-	result.MaxMemory = utils.FormatBytesKB(memoryUsed)
+	if !soft {
+		memoryUsed, _ := utils.GetMemoryUsage(cgroupPath)
+		result.MaxMemory = utils.FormatBytesKB(memoryUsed)
+	}
 	result.MaxTime = float64(elapsed.Milliseconds())
 
 	stderr := strings.TrimSpace(stderrBuf.String())
@@ -171,12 +166,15 @@ func (c *DefaultCompiler) handleTimeout(pgid int, cgroupPath string, stderrBuf *
 }
 
 // 处理正常完成情况
-func (c *DefaultCompiler) handleCompletion(err error, cgroupPath string, stdoutBuf, stderrBuf *bytes.Buffer,
+func (c *DefaultCompiler) handleCompletion(err error, cgroupPath string, soft bool, stdoutBuf, stderrBuf *bytes.Buffer,
 	startTime time.Time, result *CompileResult) (*CompileResult, error) {
 
 	elapsed := time.Since(startTime)
-	memoryUsed, _ := utils.GetMemoryUsage(cgroupPath)
-	result.MaxMemory = utils.FormatBytesKB(memoryUsed)
+	var memoryUsed uint64
+	if !soft {
+		memoryUsed, _ = utils.GetMemoryUsage(cgroupPath)
+		result.MaxMemory = utils.FormatBytesKB(memoryUsed)
+	}
 	result.MaxTime = float64(elapsed.Milliseconds())
 
 	stderr := strings.TrimSpace(stderrBuf.String())

@@ -1,145 +1,111 @@
-## 运行
+# judge-service — Judge Service
 
+Go (go-zero) judge worker: consumes judge tasks from RabbitMQ, compiles and runs user code in a sandbox, compares test cases, and writes results back. Default port **8888**.
+
+## Role
+
+- Consumes judge messages published by the business backend
+- Multi-language compile & run (C/C++, Java, Python, Go, etc.; per actual config)
+- Resource limits via cgroup or soft mode
+- Optional Nacos registration for service discovery
+
+## Prerequisites
+
+- Go **1.24+**
+- Running MySQL, Redis, RabbitMQ, Nacos (same environment as the business side)
+- Compilers / runtimes installed on the host, e.g.:
+  - `g++` / `gcc`
+  - JDK (OpenJDK 17 in the Docker image)
+  - `python3`
+  - Go
+
+For full judging on Linux / containers, prefer **privileged** mode or writable cgroup v2. On local WSL, use soft sandbox mode.
+
+## Configuration
+
+Local bootstrap: `etc/judge.yaml`.
+
+| Item | Default / notes |
+| --- | --- |
+| Host / Port | `0.0.0.0:8888` |
+| Sandbox.Mode | `auto`: use cgroup if writable, else fall back to `soft`; or force `cgroup` / `soft` |
+| Nacos | Address, namespace, `DataId: judge-service.yaml` |
+
+With `-nacos`, runtime config is loaded from Nacos `judge-service.yaml` (MySQL, Redis, RabbitMQ, language commands, etc.). Keep the namespace aligned with `oj`.
+
+Local WSL example:
+
+```yaml
+Sandbox:
+  Mode: soft
+```
+
+## Start
+
+```bash
+cd judge-service
+
+# Recommended: local yaml + Nacos runtime config
 go run main.go -f etc/judge.yaml -nacos
 
-go build -o SService main.go
-
-docker run -itd --privileged --name ubuntu_golang --hostname ubuntu_golang ubuntu:latest
-
-wget https://mirrors.aliyun.com/golang/go1.24.4.linux-amd64.tar.gz
-
-tar -C /usr/local -xzf go1.24.4.linux-amd64.tar.gz
-
-vi /etc/profile
-
-export PATH=$PATH:/usr/local/go/bin
-
-rm -rf /usr/local/go && tar -C /usr/local -xzf go1.24.4.linux-amd64.tar.gz
-
-
-// 其他服务中可以通过服务名发现判题服务
-instances, err := serviceRegistry.GetServiceInstances("judge-service")
-
-
----
-
-## 1. 构建初始镜像
-
-```bash
-# 构建初始镜像
-docker build -t my-go-app:initial .
+# Local yaml only (must contain full runtime settings)
+go run main.go -f etc/judge.yaml
 ```
 
-## 2. 创建并运行容器
+Build a binary:
 
 ```bash
-# 创建并运行容器（使用交互模式，特权模式）
-docker run -it --privileged --name my-go-container my-go-app:initial
+go build -o judge-service main.go
+./judge-service -f etc/judge.yaml -nacos
 ```
 
-## 3. 在容器内进行修改
+## Docker
+
+The image includes multi-language runtimes and enables cgroup under privilege (see `entrypoint.sh`).
 
 ```bash
-docker exec -it my-go-container /bin/bash
+cd judge-service
+
+# BuildKit recommended
+DOCKER_BUILDKIT=1 docker build -t judge-service:1.0.0 .
+
+docker run -d --privileged --name judge-service \
+  -p 8888:8888 \
+  judge-service:1.0.0
 ```
 
-## 4. 基于修改后的容器创建新镜像
+The container must reach Nacos / MySQL / Redis / RabbitMQ. The entrypoint runs:
 
-```bash
-# 基于修改后的容器创建新镜像
-docker commit my-go-container my-go-app:modified
-
-
-docker commit my-ubuntu-02 registry.cn-beijing.aliyuncs.com/jiangbyte/ubuntu_sub_cgroup:1.0.0
-
+```text
+./judge-service -f etc/judge.yaml -nacos
 ```
 
-## 5. 验证新镜像
+Optional Go runtime limits (defaults in entrypoint):
 
-```bash
-# 查看新创建的镜像
-docker images
+| Variable | Default |
+| --- | --- |
+| `GOMAXPROCS` | `2` |
+| `GOMEMLIMIT` | `512MiB` |
 
-# 测试新镜像
-docker run -it --rm my-go-app:modified
-```
+## Verify
 
----
+- Process stays up; logs show the consumer started
+- Nacos shows instance `judge-service` (if registration is enabled)
+- User submissions receive judge results in a reasonable time
 
+## Troubleshooting
 
-cgroup v2 采用“**子树控制（subtree control）**”机制：父 cgroup 必须通过 `cgroup.subtree_control` 文件明确“下放”某个控制器的权限，子 cgroup 才能使用该控制器并生成对应的配置/统计文件（如 `memory.peak`、`cpu.max` 等）。
+1. **Missing memory limit files / cgroup errors**  
+   Parent cgroup did not delegate `memory`/`cpu`, or the process lacks privilege. Use `Sandbox.Mode: soft`, or run with `--privileged` and initialize subtree control as in `entrypoint.sh`.
 
-1. **父 cgroup 未启用 `memory` 控制器**：  
-   父目录（通常是 `/sys/fs/cgroup`）的 `cgroup.subtree_control` 文件中，没有包含 `memory` 控制器，导致子 cgroup 无法使用内存相关功能，因此不会生成 `memory.peak`、`memory.max` 等文件。
+2. **A language fails to compile**  
+   Confirm the toolchain is installed on the host/image and language commands in Nacos are correct.
 
-2. **其他控制器（如 `cpu`、`io`）可能也未完全启用**：  
-   从子 cgroup 的文件列表看，只有 `cpu.pressure`、`io.pressure` 等基础文件，缺少 `cpu.max`、`io.stat` 等，说明这些控制器也未在父级启用。
+3. **No tasks consumed**  
+   Check RabbitMQ connectivity and that queue / routing keys match the `oj` side.
 
+## Related Docs
 
-### 在父 cgroup 中启用控制器
-要让子 cgroup 生成 `memory.peak` 等文件，需先在父 cgroup 中启用对应的控制器（以 `memory` 为例）：
-
-#### 1. 查看父 cgroup 当前启用的控制器
-```bash
-# 查看根 cgroup（父级）的控制器状态
-cat /sys/fs/cgroup/cgroup.subtree_control
-```
-- 输出为空或不含 `memory`、`cpu` 等，说明这些控制器未启用。
-
-
-#### 2. 在父 cgroup 中启用所需控制器
-通过 `cgroup.subtree_control` 文件添加控制器（需 root 权限）：
-```bash
-# 启用 memory 控制器（允许子 cgroup 使用内存相关功能）
-sudo echo "+memory" | tee /sys/fs/cgroup/cgroup.subtree_control
-
-# 同时启用 cpu、io 控制器（按需添加）
-sudo echo "+cpu +io" | tee -a /sys/fs/cgroup/cgroup.subtree_control
-```
-- `+` 表示启用控制器，`-` 表示禁用。
-
----
-
-### 清空父 cgroup 再修改
-需先确保父 cgroup（`/sys/fs/cgroup`）中没有进程，且子 cgroup 未占用控制器，步骤如下：
-
-#### 1. 迁移父 cgroup 中的进程到临时 cgroup
-```bash
-# 1. 创建一个临时 cgroup（用于临时存放进程）
-mkdir /sys/fs/cgroup/temp
-
-# 2. 将父 cgroup 中的所有进程迁移到临时 cgroup
-# 注意：替换 $(cat /sys/fs/cgroup/cgroup.procs) 为实际 PID 列表
-for pid in $(cat /sys/fs/cgroup/cgroup.procs); do
-  echo $pid | tee /sys/fs/cgroup/temp/cgroup.procs
-done
-
-# 3. 确认父 cgroup 已无进程（输出为空）
-cat /sys/fs/cgroup/cgroup.procs
-```
-
-#### 3. 再次尝试启用父 cgroup 的控制器
-```bash
-# 启用 memory 控制器（允许子 cgroup 使用内存相关功能）
-sudo echo "+memory" | tee /sys/fs/cgroup/cgroup.subtree_control
-
-# 同时启用 cpu、io 控制器（按需添加）
-sudo echo "+cpu +io" | tee -a /sys/fs/cgroup/cgroup.subtree_control
-```
-
-#### 4. 恢复进程
-若需将临时 cgroup 中的进程迁回父 cgroup：
-```bash
-for pid in $(cat /sys/fs/cgroup/temp/cgroup.procs); do
-  echo $pid | tee /sys/fs/cgroup/cgroup.procs
-done
-
-# 删除临时 cgroup
-rmdir /sys/fs/cgroup/temp
-```
-
-
-
-
-
-
+- Overview: [../README.md](../README.md)
+- Business backend: [../oj/README.md](../oj/README.md)
+- Similarity: [../similarity-service/Readme.md](../similarity-service/Readme.md)

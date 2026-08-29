@@ -1,7 +1,7 @@
 # Astro Code OJ (AC OJ)
 
 ![JDK](https://img.shields.io/badge/JDK-21-007396?logo=openjdk&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-6DB33F?logo=springboot&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F?logo=springboot&logoColor=white)
 ![Go](https://img.shields.io/badge/Go-1.24-00ADD8?logo=go&logoColor=white)
 ![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-Supported-4479A1?logo=mysql&logoColor=white)
@@ -9,139 +9,173 @@
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Version](https://img.shields.io/badge/version-1.0.0-orange)
 
-**Astro Code OJ (AC OJ)** is an online judge platform for programming education and algorithm training. Java / Spring Cloud powers the business and admin APIs; Go (go-zero) handles judging and code similarity; Vue 3 provides the admin and user frontends. It supports multi-language judging, problem sets and contests, async judge scheduling, and optional AI-assisted features.
+**Astro Code OJ (AC OJ)** is an online judge platform for programming education and algorithm training. Java / Spring Boot powers the business and admin APIs; Go (go-zero) handles judging and code similarity; Vue 3 provides the admin and user frontends.
 
 > Current version: `1.0.0` · License: [MIT License](LICENSE) · Repo: [jiangbyte/acoj](https://github.com/jiangbyte/acoj)
 
-## Table of Contents
-
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Quick Start](#quick-start)
-- [Performance Testing](#performance-testing)
-- [License](#license)
-
 ## Features
 
-| Module | Description |
+| Feature | Description |
 | --- | --- |
-| Problem system | CRUD for problems, tags, samples / test cases, difficulty levels |
-| Multi-language judging | C / C++, Java, Python, Go, and more; executed by the Go judge service |
-| Users & permissions | Roles, leaderboards, learning progress, and submission stats |
-| Problem sets / contests | Custom problem sets, progress tracking, contest-related data models |
-| Async judging | RabbitMQ task delivery for high-concurrency submissions |
-| Similarity detection | Standalone similarity-service for plagiarism analysis |
-| AI assistance | Optional LLM integration for problem explanations and code suggestions (enabled by deployment config) |
-| Dual frontends | `admin` console + `pc` user app (Vue 3 / Naive UI / Monaco) |
+| Problems & problem sets | Problems, tags, samples / test cases, difficulty levels |
+| Multi-language judging | C / C++, Java, Python, Go, and more; sandboxed by `judge-service` |
+| Users & permissions | Sign-up / login, roles, leaderboards, submission stats |
+| Problem sets / contests | Custom sets, progress tracking, contest-related features |
+| Async judging | Judge tasks via RabbitMQ for high-concurrency submissions |
+| Plagiarism detection | Standalone `similarity-service` for similarity analysis |
+| AI assistance | Optional LLM integration (explanations, suggestions; depends on deployment) |
+| Dual frontends | `admin` console + `pc` user app |
 
 ## Tech Stack
 
 | Layer | Technologies |
 | --- | --- |
-| Business backend | JDK 21 · Spring Boot 3.2 · Spring Cloud · Maven multi-module |
-| Persistence / cache | MySQL · MyBatis-Plus · Redis / Redisson · Sa-Token |
-| Middleware | Nacos (config & discovery) · RabbitMQ · MinIO (object storage) |
-| Judge / similarity | Go 1.24 · go-zero · ANTLR grammars (`antlrv4/`) |
+| Business backend | JDK 21 · Spring Boot 3.5 · Spring Cloud Alibaba · Maven |
+| Storage / cache | MySQL · MyBatis-Plus · Redis / Redisson · Sa-Token |
+| Middleware | Nacos (config & discovery) · RabbitMQ · MinIO |
+| Judge / similarity | Go 1.24 · go-zero |
 | Frontend | Vue 3 · TypeScript · Vite · Naive UI · Pinia · Monaco Editor |
-| Docs | Knife4j |
+| API docs | Knife4j |
 
 ## Project Structure
 
 ```text
 astro-code-oj/
 ├── pom.xml                 # Maven aggregator root (revision 1.0.0)
-├── galaxy-dependencies/    # Dependency BOM
-├── galaxy-common/          # Shared framework (base-framework)
-├── galaxy-oj/              # Main business service (default port 89)
-├── judge-service/          # Go judge service
-├── similarity-service/     # Go similarity service
-├── admin/                  # Vue 3 admin frontend
-├── pc/                     # Vue 3 user frontend
+├── oj/                     # Business backend (default port 89)
+├── judge-service/          # Go judge service (default port 8888)
+├── similarity-service/     # Go similarity service (default port 8882)
+├── admin/                  # Admin frontend (dev port 81)
+├── pc/                     # User frontend (dev port 80)
 ├── sql/                    # Database scripts
-├── antlrv4/                # Multi-language ANTLR grammars
-├── test/                   # Load testing and user data generation
-│   ├── User Generate/      # Generate / register / fill tokens
-│   └── ojtest/             # k6 load tests and summary charts
-└── depoloy/                # Deployment assets (local/private, gitignored by default)
+├── antlrv4/                # Multi-language ANTLR-related resources
+├── test/                   # Load tests and test-user generation
+└── depoloy/                # Private deployment assets
 ```
 
-## Quick Start
+See each module’s README for startup details.
 
-### Prerequisites
+## Prerequisites
 
-- JDK **21**, Maven **3.8+**
-- MySQL **8+**, Redis, RabbitMQ, Nacos
-- Go **1.24+** (judge / similarity services)
-- Node.js **18+**, pnpm (frontends)
+| Component | Suggested version |
+| --- | --- |
+| JDK | 21 |
+| Maven | 3.8+ |
+| Go | 1.24+ |
+| Node.js | 18+ (pnpm recommended) |
+| MySQL | 8+ |
+| Redis | Any working instance |
+| RabbitMQ | Any working instance |
+| Nacos | 2.x (config + discovery) |
+| MinIO | Enable as required by your config |
 
-### 1. Initialize the database
+The judge host also needs language runtimes (e.g. `g++`, JDK, Python3, Go). See `judge-service/Dockerfile` for a full judge image.
 
-Import a script from `sql/` (pick the latest available for your environment, e.g. `sql/astro_code_05.sql`):
+## Quick Start (local)
+
+Recommended order: **infrastructure → business backend → judge / similarity → frontends**.
+
+### 1. Prepare infrastructure
+
+Ensure these are up and reachable:
+
+- MySQL
+- Redis
+- RabbitMQ
+- Nacos (default `localhost:8848`)
+- MinIO (if object storage is enabled)
+
+Publish configs in the matching Nacos namespace (local default profile: `dev`):
+
+| DataId | Purpose |
+| --- | --- |
+| `common.yaml` | Shared config (datasource, Redis, MQ, MinIO, etc.) |
+| `oj.yaml` | Business service config |
+| `judge-service.yaml` | Judge runtime config (optional; local yaml alone is possible) |
+| `similarity-service.yaml` | Similarity runtime config (optional) |
+
+Local `dev` default Nacos namespace ID: `8fee08f3-44ea-4e26-a9b5-530c582330a3` (credentials are in the root `pom.xml` `dev` profile; default `nacos` / `123456`). Adjust for your environment.
+
+### 2. Initialize the database
 
 ```bash
 mysql -u root -p -e "CREATE DATABASE astro_code DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql -u root -p astro_code < sql/astro_code_05.sql
+mysql -u root -p astro_code < sql/astro_code.sql
 ```
 
-### 2. Configure and start the business backend
-
-`galaxy-oj` loads `astro-code-common.yaml` and `galaxy-oj.yaml` from Nacos (see `galaxy-oj/src/main/resources/application.yaml`). The local default Maven profile is `dev`; the default Nacos address is `localhost:8848`.
+### 3. Start the business backend `oj`
 
 ```bash
 # From the repository root
-mvn -pl galaxy-oj -am clean package -DskipTests
-mvn -pl galaxy-oj spring-boot:run
+mvn -pl oj -am clean package -DskipTests
+mvn -pl oj spring-boot:run
+```
+
+Or:
+
+```bash
+java -jar oj/target/oj-1.0.0.jar
 ```
 
 | Item | Default |
 | --- | --- |
-| API | http://127.0.0.1:89 |
-| Profile | `dev` (see root `pom.xml`) |
+| URL | http://127.0.0.1:89 |
+| Maven profile | `dev` (use `prod`: `mvn -Pprod ...`) |
+| Nacos configs | `common.yaml` + `oj.yaml` |
 
-### 3. Start judge / similarity services
+More detail: [oj/README.md](oj/README.md).
+
+### 4. Start judge / similarity services
 
 ```bash
-# Judge
+# Judge (separate terminal)
 cd judge-service
 go run main.go -f etc/judge.yaml -nacos
 
-# Similarity (separate terminal)
+# Similarity (separate terminal, optional)
 cd similarity-service
-go run main.go -f etc/similar.yaml
+go run main.go -f etc/similar.yaml -nacos
 ```
 
-See each service's `etc/*.yaml` for config (adjust Nacos address, namespace, etc. for your environment).
+| Service | Default port | Docs |
+| --- | --- | --- |
+| judge-service | 8888 | [judge-service/Readme.md](judge-service/Readme.md) |
+| similarity-service | 8882 | [similarity-service/Readme.md](similarity-service/Readme.md) |
 
-### 4. Start the frontends
+On local WSL or without full cgroup permissions, set `Sandbox.Mode` to `soft` in `judge-service/etc/judge.yaml`.
+
+### 5. Start the frontends
 
 ```bash
-# Admin
+# Admin → http://localhost:81
 cd admin
 pnpm install
-pnpm dev          # reads VITE_GATEWAY from .env.dev by default
+pnpm dev
 
-# User app
+# User app → http://localhost:80
 cd pc
 pnpm install
 pnpm dev
 ```
 
-Point `VITE_GATEWAY` in `admin/.env.dev` / `pc/.env.dev` to your local gateway or `galaxy-oj` address (e.g. `http://localhost:89`).
+Point `VITE_GATEWAY` in `admin/.env.dev` and `pc/.env.dev` at the business API (locally usually `http://localhost:89`).
 
-## Performance Testing
+See: [admin/README.md](admin/README.md), [pc/README.md](pc/README.md).
 
-The repo includes a k6 load-testing pipeline under `test/`:
+## Default Ports
 
-| Path | Purpose |
+| Service | Port |
 | --- | --- |
-| `test/User Generate/user_gen.py` | Generate `测试用户数据_1000个.csv` |
-| `test/User Generate/register.py` | Batch registration |
-| `test/User Generate/login.py` | Log in and write tokens back to the CSV |
-| `test/ojtest/{100..250}/` | Per-concurrency k6 scripts and raw results |
-| `test/ojtest/analyze_k6_batch.py` | Aggregate CSVs and trend charts |
+| oj (business API) | 89 |
+| admin (dev) | 81 |
+| pc (dev) | 80 |
+| judge-service | 8888 |
+| similarity-service | 8882 |
+| Nacos | 8848 |
 
-Run `run-k6-tests.ps1` in the target concurrency directory (the script locates `optimized-oj-test.js` via `$PSScriptRoot`). For summaries, run the analysis script under `test/ojtest`.
+## Load Testing & Test Data
+
+`test/` includes test-user generation, batch register/login, and k6 concurrency scripts. See [test/README.md](test/README.md).
 
 ## License
 
