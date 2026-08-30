@@ -1,7 +1,6 @@
 package io.charlie.web.modular.data.library.mapper;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
-import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import io.charlie.web.modular.data.library.entity.DataLibrary;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
@@ -19,10 +18,10 @@ import org.apache.ibatis.annotations.Update;
 public interface DataLibraryMapper extends BaseMapper<DataLibrary> {
 
     /**
-     * 忽略逻辑删除：仅恢复软删行，业务字段由后续常规 update 刷新（保证 JSON TypeHandler）
+     * 仅恢复软删行，业务字段由后续常规 update 刷新（保证 JSON TypeHandler）。
+     * 使用完整自定义 SQL（不经 Wrapper），不会自动追加 deleted=0。
      */
     @DS("master")
-    @InterceptorIgnore(logicDelete = "true")
     @Update("""
             UPDATE data_library
             SET deleted = 0

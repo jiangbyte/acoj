@@ -1,7 +1,6 @@
 package io.charlie.web.modular.data.solved.mapper;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
-import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import io.charlie.web.modular.data.solved.entity.DataSolved;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
@@ -24,10 +23,10 @@ import java.util.Map;
 public interface DataSolvedMapper extends BaseMapper<DataSolved> {
 
     /**
-     * 忽略逻辑删除：软删行占 UK 时恢复并刷新业务字段
+     * 软删行占 UK 时恢复并刷新业务字段。
+     * 使用完整自定义 SQL（不经 Wrapper），不会自动追加 deleted=0。
      */
     @DS("master")
-    @InterceptorIgnore(logicDelete = "true")
     @Update("""
             UPDATE data_solved
             SET deleted = 0,
