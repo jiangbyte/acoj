@@ -9,6 +9,6 @@ Nacos:
   ServerAddr: "nacos:8848"
   Username: "nacos"
   Password: "nacos"
-  Namespace: ""
+  Namespace: "8fee08f3-44ea-4e26-a9b5-530c582330a3"
   Group: "DEFAULT_GROUP"
   DataId: "judge-service.yaml"

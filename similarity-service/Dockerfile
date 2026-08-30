@@ -242,14 +242,14 @@
 FROM ubuntu:22.04
 LABEL authors="Charlie"
 
-# 启用 BuildKit 缓存挂载（需要 DOCKER_BUILDKIT=1）
-RUN --mount=type=cache,target=/var/cache/apt \
-    --mount=type=cache,target=/var/lib/apt \
-    sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
-    sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
-    apt-get update && apt-get install -y --no-install-recommends \
+# apt install — use Aliyun mirror; ensure lists exist before update
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    sed -i 's|//.*archive.ubuntu.com|//mirrors.aliyun.com|g; s|//.*security.ubuntu.com|//mirrors.aliyun.com|g' /etc/apt/sources.list && \
+    rm -rf /var/lib/apt/lists/* && mkdir -p /var/lib/apt/lists/partial && \
+    apt-get -o Acquire::Retries=5 update && \
+    apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
     wget ca-certificates pkg-config build-essential gcc && \
-    apt-get clean
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 设置环境变量
 ENV GOPATH=/go \

@@ -166,6 +166,7 @@ services:
       NACOS_USER: ${NACOS_USERNAME:-nacos}
       NACOS_PASS: ${NACOS_PASSWORD:-nacos}
       NACOS_GROUP: DEFAULT_GROUP
+      NACOS_NAMESPACE: ${NACOS_NAMESPACE:-}
     restart: "no"
     networks: [acoj]
 
@@ -217,7 +218,6 @@ services:
       SPRING_CLOUD_NACOS_CONFIG_NAMESPACE: ${NACOS_NAMESPACE:-}
       SPRING_CLOUD_NACOS_DISCOVERY_GROUP: DEFAULT_GROUP
       SPRING_CLOUD_NACOS_CONFIG_GROUP: DEFAULT_GROUP
-      SPRING_AI_DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
     ports:
       - "${OJ_PORT:-89}:89"
     volumes:
@@ -259,7 +259,7 @@ services:
       SNOWFLAKE_WORKER_ID: "1"
       SNOWFLAKE_DATACENTER_ID: "1"
     volumes:
-      # For WSL / no-cgroup hosts, switch mount to ./deploy/docker/judge/judge-soft.yaml
+      # Soft sandbox (no cgroup): ./deploy/docker/judge/judge-soft.yaml
       - ./deploy/docker/judge/judge.yaml:/app/etc/judge.yaml:ro
       - acoj_judge_tmp:/tmp/judgespace
     ports:
@@ -307,6 +307,7 @@ services:
     build:
       context: ./pc
       dockerfile: Dockerfile
+      network: host
     image: ${PC_IMAGE:-acoj/pc:local}
     container_name: acoj-pc
     restart: unless-stopped
@@ -327,6 +328,7 @@ services:
     build:
       context: ./admin
       dockerfile: Dockerfile
+      network: host
     image: ${ADMIN_IMAGE:-acoj/admin:local}
     container_name: acoj-admin
     restart: unless-stopped
@@ -347,8 +349,7 @@ networks:
   acoj:
     driver: bridge
 
-# Explicit names avoid colliding with existing WSL volumes
-# (mysql_data / redis_data / rabbitmq_data / minio_data / ...).
+# Named volumes (prefixed to avoid colliding with other local stacks)
 volumes:
   acoj_mysql_data:
     name: acoj-compose-mysql
