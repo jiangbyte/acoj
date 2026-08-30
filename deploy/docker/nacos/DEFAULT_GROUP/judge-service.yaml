@@ -1,0 +1,83 @@
+Name: judge-service
+Host: 0.0.0.0
+Port: 8888
+
+# 工作空间
+Workspace: "/tmp/judgespace"
+
+# 沙箱：auto=探测 cgroup；cgroup=强制；soft=/proc 轮询内存（适合本地 WSL）
+Sandbox:
+  Mode: auto
+
+# MySQL 配置
+MySQL:
+  Host: mysql:3306
+  Username: root
+  Password: "infra@123"
+  Database: astro_code
+  Charset: utf8mb4
+  ParseTime: true
+  Loc: Local
+  MaxIdleConns: 10
+  MaxOpenConns: 100
+  ConnMaxLifetime: "1h"
+
+Redis:
+  Host: "redis:6379"
+  Password: "infra@123"   # 与 redis.conf 的 requirepass 一致
+  DB: 0
+  PoolSize: 10
+
+# RabbitMQ 配置
+RabbitMQ:
+  Host: "amqp://admin:infra%40123@rabbitmq:5672/"
+  VirtualHost: "/"
+  Common:
+    JudgeExchange: "common.judge.exchange"
+    JudgeQueue: "common.judge.queue"
+    JudgeRoutingKey: "common.judge.routing"
+    ResultExchange: "common.judge.result.exchange"
+    ResultQueue: "common.judge.result.queue"
+    ResultRoutingKey: "common.judge.result.routing"
+
+# 语言配置
+Languages:
+  - name: "go"
+    sourceFile: "main"
+    compileFile: "main"
+    extension: ".go"
+    compileCmd: ["go", "build", "-o", "{exec}", "{source}"]
+    runCmd: ["{exec}"]
+    needCompile: true
+
+  - name: "java"
+    sourceFile: "Main"
+    compileFile: "Main"
+    extension: ".java"
+    compileCmd: ["javac", "-d", "{exec}", "{source}"]
+    runCmd: ["java", "-cp", "{exec}", "Main"]
+    needCompile: true
+
+  - name: "c"
+    sourceFile: "main"
+    compileFile: "main"
+    extension: ".c"
+    compileCmd: ["gcc", "{source}", "-o", "{exec}"]
+    runCmd: ["{exec}"]
+    needCompile: true
+
+  - name: "cpp"
+    sourceFile: "main"
+    compileFile: "main"
+    extension: ".cpp"
+    compileCmd: ["g++", "{source}", "-o", "{exec}"]
+    runCmd: ["{exec}"]
+    needCompile: true
+
+  - name: "python"
+    sourceFile: "main"
+    compileFile: "main"
+    extension: ".py"
+    compileCmd: []
+    runCmd: ["python3", "{source}"]
+    needCompile: false

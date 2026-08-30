@@ -6,7 +6,7 @@ export GOMAXPROCS="${GOMAXPROCS:-1}"
 export GOMEMLIMIT="${GOMEMLIMIT:-384MiB}"
 
 # 启动应用
-exec ./similarity-service -f etc/judge.yaml -nacos
+exec ./similarity-service -f etc/similar.yaml -nacos
 
 # 启动bash
 #exec /bin/bash

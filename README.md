@@ -63,11 +63,13 @@ See each module’s README for startup details.
 | Node.js | 18+ (pnpm recommended) |
 | MySQL | 8+ |
 | Redis | Any working instance |
-| RabbitMQ | Any working instance |
+| RabbitMQ | Any working instance (management plugin recommended) |
 | Nacos | 2.x (config + discovery) |
 | MinIO | Enable as required by your config |
 
 The judge host also needs language runtimes (e.g. `g++`, JDK, Python3, Go). See `judge-service/Dockerfile` for a full judge image.
+
+Exact image tags for Docker Compose are listed in `deploy/docker/README.md`.
 
 ## Quick Start (local)
 

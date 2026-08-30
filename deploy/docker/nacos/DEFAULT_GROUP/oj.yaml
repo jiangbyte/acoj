@@ -1,0 +1,180 @@
+spring:
+  ai:
+#    ollama:
+#      base-url: http://localhost:11434
+#      chat:
+#        options:
+#          temperature: 0.4
+#          model: gemma3:1b
+    dashscope:
+      api-key: sk-657727dba46b44cbb76e5c3369045e85
+      chat:
+        options:
+          model: qwen-plus
+          temperature: 0.4
+    
+    nacos:
+      prompt:
+        template:
+          enabled: true
+    chat:
+      memory:
+        repository:
+          jdbc:
+            mysql:
+              initialize-schema: true
+              jdbc-url: ${spring.datasource.dynamic.datasource.master.url}
+              username: ${spring.datasource.dynamic.datasource.master.username}
+              password: ${spring.datasource.dynamic.datasource.master.password}
+              driver-class-name: ${spring.datasource.dynamic.datasource.master.driver-class-name}
+      
+oj:
+  similarity:
+    config:
+      single-problem-library-size: 50
+      single-set-problem-library-size: 50
+      
+      # 题目单提交检测配置
+      problem-single-submit-batch-size: 100
+      problem-single-submit-sensitivity: 5
+      problem-single-submit-batch-end-size: 1
+      
+      # 题目集内单提交检测配置
+      set-single-submit-batch-size: 100
+      set-single-submit-sensitivity: 5
+      
+      # 自定义检测配置
+      custom-detection-batch-size: 100
+      custom-detection-sensitivity: 5
+  llm:
+    prompts:
+      # 基础角色定义 - 所有专业角色的基础
+      default-prompt: |
+        You are "Xiao E", a programming problem-solving assistant for the AC OJ platform, dedicated to helping students understand and solve programming problems.
+        Core Identity:
+        - Identity: Professional OJ problem-solving assistant
+        - Style: Friendly, approachable, professional, meticulous, and encouraging in teaching
+        - Goal: Help students grasp the essence of problems, master problem-solving approaches, and improve programming skills
+        Basic Principles:
+        1. Always provide targeted guidance based on a specific problem ID. If no problem ID or problem text is present in the context, ask the user to provide it first.
+        2. Keep explanations clear and easy to understand, avoiding excessive technical jargon.
+        3. Be patient with beginners while providing in-depth analysis for experienced users.
+        4. Encourage students to think independently rather than giving answers directly.
+        5. Only respond to programming problem-related queries. For requests such as generating stories or writing unrelated content, politely decline and guide the user back to the programming problem-solving context.
+        Please provide professional and accurate assistance based on the user's specific needs.
+        
+    external-knowledge-base:
+      index-name: "astro-oj-knowledge"
+  mq:
+    judge:
+      # 判题队列配置
+      common:
+        exchange: "common.judge.exchange"
+        queue: "common.judge.queue"
+        routing-key: "common.judge.routing"
+      # 判题结果队列配置
+      result:
+        exchange: "common.judge.result.exchange"
+        queue: "common.judge.result.queue"
+        routing-key: "common.judge.result.routing"
+    # 相似度计算队列配置
+    similarity:
+      single:
+        exchange: "common.similarity.exchange"
+        queue: "common.similarity.queue"
+        routing-key: "common.similarity.routing"
+      batch:
+        exchange: "common.similarity.batch.exchange"
+        queue: "common.similarity.batch.queue"
+        routing-key: "common.similarity.batch.routing"
+      common:
+        exchange: "common.sim.exchange"
+        queue: "common.sim.queue"
+        routing-key: "common.sim.routing"
+      result:
+        exchange: "common.sim.result.exchange"
+        queue: "common.sim.result.queue"
+        routing-key: "common.sim.result.routing"
+    # 代码库
+    library:
+      common:
+        exchange: "common.library.exchange"
+        queue: "common.library.queue"
+        routing-key: "common.library.routing"
+    
+    solved:
+      common:
+        exchange: "common.solved.exchange"
+        queue: "common.solved.queue"
+        routing-key: "common.solved.routing"
+
+
+
+security:
+  ignore:
+    urls:
+      - /webjars/**
+      - /doc.html
+      - /swagger-resources/**
+      - /v3/api-docs/**
+      - /swagger-ui/**
+
+      - /webjars/**
+      - /doc.html
+      - /swagger-resources/**
+      - /v3/api-docs/**
+      - /swagger-ui/**
+
+      - /api/v1/sys/config/code/**
+      - /api/v1/sys/banner/latest
+      - /api/v1/sys/notice/latest
+      - /api/v1/sys/notice/lists
+      - /api/v1/sys/notice/detail
+      - /api/v1/data/set/detail
+      - /api/v1/data/set/problem
+      - /api/v1/data/set/user
+      - /api/v1/data/submit/set/page
+      - /api/v1/data/submit/detail
+      - /api/v1/sys/category/options
+      - /api/v1/sys/dict/options/**
+      - /api/v1/sys/tag/options
+      - /api/v1/sys/auth/captcha
+      - /api/v1/sys/auth/login
+      - /api/v1/sys/auth/register
+      - /api/v1/sys/file/**
+      - /ws/judge/status/**
+      - /api/v1/sys/file/**
+      - /api/v1/sys/user/detail/client
+
+      - /api/v1/data/problem/latest
+      - /api/v1/data/set/latest
+      - /api/v1/data/problem/user/ranking/top
+      - /api/v1/data/problem/problem/ranking/top
+      - /api/v1/data/set/set/ranking/top
+      - /api/v1/data/problem/page/client/**
+      - /api/v1/data/solved/averagepassrate
+      - /api/v1/data/problem/today/problemcount
+      - /api/v1/data/solved/usersolvedproblem
+      - /api/v1/data/problem/difficulty/distribution
+      - /api/v1/data/set/difficulty/distribution
+      - /api/v1/data/problem/problemcountandpercentage
+      - /api/v1/data/set/page/**
+      - /api/v1/data/set/latest
+      - /api/v1/data/set/set/ranking/top
+      - /api/v1/data/problem/user/ranking/page/total/**
+      - /api/v1/data/problem/user/ranking/active/top10
+      - /api/v1/data/submit/page/**
+      - /api/v1/data/submit/status/count
+
+      - /api/v1/data/user/rank/top
+      - /api/v1/data/problem/hot
+      - /api/v1/data/set/hot
+      - /api/v1/data/problem/page
+      - /api/v1/data/problem/count
+
+      - /api/v1/data/user/rank/page
+      - /api/v1/data/user/rank/active/top
+
+      - /api/v1/data/submit/problem/page
+
+      # - /api/v1/chat/stream

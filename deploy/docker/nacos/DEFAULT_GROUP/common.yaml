@@ -1,0 +1,166 @@
+spring:
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+      
+  main:
+    banner-mode: off
+    allow-bean-definition-overriding: true
+    # lazy-initialization: true
+  datasource:
+    dynamic:
+      primary: master          # 必须有
+      strict: true
+      datasource:
+        master:
+          url: jdbc:mysql://mysql:3306/astro_code?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+          type: com.alibaba.druid.pool.DruidDataSource
+          username: root
+          password: infra@123
+          driver-class-name: com.mysql.cj.jdbc.Driver
+        slave:
+          url: jdbc:mysql://mysql:3306/astro_code?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+          type: com.alibaba.druid.pool.DruidDataSource
+          username: root
+          password: infra@123
+          driver-class-name: com.mysql.cj.jdbc.Driver
+
+  data:
+    redis:
+      database: 1
+      host: redis
+      port: 6379
+      password: infra@123
+      timeout: 10s
+      lettuce:
+        pool:
+          max-active: 200
+          max-wait: -1ms
+          max-idle: 10
+          min-idle: 0
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+      cache-null-values: true
+
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: admin
+    password: infra@123
+    virtual-host: /
+
+sa-token:
+  token-name: Authorization
+  timeout: 2592000
+  active-timeout: -1
+  is-concurrent: true
+  is-share: false
+  token-style: random-64
+  is-log: true
+  is-read-cookie: false
+  is-print: false
+  alone-redis: 
+    database: 2
+    host: redis
+    port: 6379
+    password: infra@123
+    timeout: 10s
+
+mybatis-plus:
+  mapper-locations: classpath*:io/charlie/web/**/xml/*.xml
+  # mapper-locations: classpath:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    # log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    default-enum-type-handler: org.apache.ibatis.type.EnumOrdinalTypeHandler
+    # 一级缓存配置 一级缓存是本地或者说局部缓存，它不能被关闭，只能配置缓存范围。SESSION 或者 STATEMENT。
+    local-cache-scope: session
+    # 二级缓存总开关
+    cache-enabled: true
+  global-config:
+    db-config:
+      id-type: assign_id
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+    banner: false
+
+dubbo:
+  application:
+    qos-enable: false
+  protocol:
+    name: dubbo
+    port: -1
+    serialization: fastjson2
+  consumer:
+    timeout: 3000
+    check: false
+
+easy-trans:
+  is-enable-redis: true
+  is-enable-global: true
+  is-enable-tile: true
+  dict-use-redis: true
+  is-enable-custom-rpc: false
+  is-enable-map-result: false
+  db-type: mysql
+  mp-new: true
+
+# 临时文件目录
+java:
+  io:
+    tmpdir=/tmp
+
+oj:
+  storage:
+    type: MINIO  # 存储类型：LOCAL, MINIO, OSS
+    
+    # 文件大小限制
+    max-file-size: 10MB
+    max-request-size: 50MB
+    
+    # 允许的文件扩展名
+    allowed-extensions:
+      - jpg
+      - jpeg
+      - png
+      - gif
+      - pdf
+      - doc
+      - docx
+      - xls
+      - xlsx
+      - txt
+    
+    # 支持预览的文件扩展名
+    preview-extensions:
+      - jpg
+      - jpeg
+      - png
+      - gif
+      - pdf
+      - txt
+    
+    # 本地存储配置
+    local:
+      base-path: /data/uploads
+      access-url: http://localhost:89/api/v1/sys/file/download/
+    
+    # MinIO 存储配置
+    minio:
+      endpoint: http://minio:9000
+      access-key: admin
+      secret-key: infra@123
+      bucket-name: astro-code-oj
+      region: us-east-1
+    
+    # 阿里云 OSS 配置
+    oss:
+      endpoint: https://oss-cn-hangzhou.aliyuncs.com
+      access-key: your-oss-access-key-id
+      secret-key: your-oss-access-key-secret
+      bucket-name: my-bucket
+      region: oss-cn-hangzhou

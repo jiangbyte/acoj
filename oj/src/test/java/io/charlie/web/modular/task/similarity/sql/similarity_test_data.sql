@@ -114,9 +114,10 @@ INSERT INTO `data_test_case` (
  NULL, 0, NULL, 0, 0, 100, 0, NOW(3), 'junit_sim_user', NOW(3), 'junit_sim_user');
 
 -- ----------------------------
--- Library samples (code_token may be null; filled at runtime / ingest)
+-- Library samples (code_token filled by SimilarityModuleTest @BeforeAll via CodeTokenUtil,
+-- same tokenizer used when samples are ingested in production)
 -- UNIQUE(user_id, module_type, module_id, problem_id, language) → one row per user
--- ----------------------------
+-- Pairwise full-pipeline tests use MULTI_BY_MULTI with BASE user + one C_0x user.
 
 -- BASE: baseline code
 INSERT INTO `data_library` (

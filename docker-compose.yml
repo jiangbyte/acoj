@@ -1,0 +1,368 @@
+# ACOJ Docker Compose — tuned for 4 vCPU / 8 GiB
+#
+# Default stack (~6–7 GiB peak):
+#   mysql + redis + rabbitmq + nacos + minio + oj + judge-service + similarity-service
+#
+# Optional:
+#   --profile frontend   → pc + admin
+#   Soft sandbox: change judge volume to deploy/docker/judge/judge-soft.yaml
+
+name: acoj
+
+services:
+  # ───────────────────────── Infrastructure ─────────────────────────
+  mysql:
+    image: mysql:9.2.0
+    container_name: acoj-mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max-connections=200
+      - --innodb-buffer-pool-size=384M
+      - --performance-schema=OFF
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-infra@123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-astro_code}
+      TZ: Asia/Shanghai
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - acoj_mysql_data:/var/lib/mysql
+      - ./sql/acoj.sql:/docker-entrypoint-initdb.d/01-acoj.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-infra@123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 768M
+        reservations:
+          memory: 384M
+    networks: [acoj]
+
+  redis:
+    image: redis:7.4.2
+    container_name: acoj-redis
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-infra@123}", "--maxmemory", "96mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - acoj_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-infra@123}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+    networks: [acoj]
+
+  rabbitmq:
+    image: rabbitmq:4.0.6-management
+    container_name: acoj-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-infra@123}
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    volumes:
+      - acoj_rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 320M
+    networks: [acoj]
+
+  nacos:
+    image: nacos/nacos-server:v2.5.0
+    container_name: acoj-nacos
+    restart: unless-stopped
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+      JVM_XMS: 256m
+      JVM_XMX: 256m
+      JVM_XMN: 128m
+      NACOS_AUTH_ENABLE: "true"
+      NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN:-SecretKey012345678901234567890123456789012345678901234567890123456789}
+      NACOS_AUTH_IDENTITY_KEY: serverIdentity
+      NACOS_AUTH_IDENTITY_VALUE: security
+      TZ: Asia/Shanghai
+    ports:
+      - "${NACOS_PORT:-8848}:8848"
+      - "9848:9848"
+    volumes:
+      - acoj_nacos_data:/home/nacos/data
+      - acoj_nacos_logs:/home/nacos/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8848/nacos/v1/console/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 50s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 640M
+    networks: [acoj]
+
+  minio:
+    image: minio/minio:RELEASE.2024-04-18T19-09-19Z
+    container_name: acoj-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-infra@123}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - acoj_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
+    networks: [acoj]
+
+  nacos-init:
+    image: curlimages/curl:8.5.0
+    container_name: acoj-nacos-init
+    depends_on:
+      nacos:
+        condition: service_healthy
+    volumes:
+      - ./deploy/docker/nacos:/configs:ro
+      - ./deploy/docker/scripts/nacos-init.sh:/nacos-init.sh:ro
+    entrypoint: ["/bin/sh", "/nacos-init.sh"]
+    environment:
+      NACOS_ADDR: nacos:8848
+      NACOS_USER: ${NACOS_USERNAME:-nacos}
+      NACOS_PASS: ${NACOS_PASSWORD:-nacos}
+      NACOS_GROUP: DEFAULT_GROUP
+    restart: "no"
+    networks: [acoj]
+
+  minio-init:
+    image: minio/mc:RELEASE.2024-04-18T16-45-29Z
+    container_name: acoj-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+      mc mb -p local/${MINIO_BUCKET:-astro-code-oj} || true;
+      mc anonymous set download local/${MINIO_BUCKET:-astro-code-oj} || true;
+      echo minio bucket ready
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-infra@123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-astro-code-oj}
+    restart: "no"
+    networks: [acoj]
+
+  # ───────────────────────── Application ─────────────────────────
+  oj:
+    build:
+      context: ./oj
+      dockerfile: Dockerfile
+    image: ${OJ_IMAGE:-acoj/oj:local}
+    container_name: acoj-oj
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      nacos-init:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      TZ: Asia/Shanghai
+      SPRING_CLOUD_NACOS_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_USERNAME: ${NACOS_USERNAME:-nacos}
+      SPRING_CLOUD_NACOS_PASSWORD: ${NACOS_PASSWORD:-nacos}
+      SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: ${NACOS_NAMESPACE:-}
+      SPRING_CLOUD_NACOS_CONFIG_NAMESPACE: ${NACOS_NAMESPACE:-}
+      SPRING_CLOUD_NACOS_DISCOVERY_GROUP: DEFAULT_GROUP
+      SPRING_CLOUD_NACOS_CONFIG_GROUP: DEFAULT_GROUP
+      SPRING_AI_DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+    ports:
+      - "${OJ_PORT:-89}:89"
+    volumes:
+      - acoj_oj_logs:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/89 && exit 0' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 40
+      start_period: 120s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 2304M
+        reservations:
+          memory: 1536M
+    networks: [acoj]
+
+  judge-service:
+    build:
+      context: ./judge-service
+      dockerfile: Dockerfile
+    image: ${JUDGE_IMAGE:-acoj/judge-service:local}
+    container_name: acoj-judge
+    restart: unless-stopped
+    privileged: true
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      nacos-init:
+        condition: service_completed_successfully
+    environment:
+      TZ: Asia/Shanghai
+      GOMAXPROCS: ${JUDGE_GOMAXPROCS:-2}
+      GOMEMLIMIT: ${JUDGE_GOMEMLIMIT:-512MiB}
+      SNOWFLAKE_WORKER_ID: "1"
+      SNOWFLAKE_DATACENTER_ID: "1"
+    volumes:
+      # For WSL / no-cgroup hosts, switch mount to ./deploy/docker/judge/judge-soft.yaml
+      - ./deploy/docker/judge/judge.yaml:/app/etc/judge.yaml:ro
+      - acoj_judge_tmp:/tmp/judgespace
+    ports:
+      - "${JUDGE_PORT:-8888}:8888"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 1024M
+        reservations:
+          memory: 512M
+    networks: [acoj]
+
+  similarity-service:
+    build:
+      context: ./similarity-service
+      dockerfile: Dockerfile
+    image: ${SIM_IMAGE:-acoj/similarity-service:local}
+    container_name: acoj-similarity
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      nacos-init:
+        condition: service_completed_successfully
+    environment:
+      TZ: Asia/Shanghai
+      GOMAXPROCS: ${SIM_GOMAXPROCS:-1}
+      GOMEMLIMIT: ${SIM_GOMEMLIMIT:-384MiB}
+    volumes:
+      - ./deploy/docker/similarity/similar.yaml:/app/etc/similar.yaml:ro
+    ports:
+      - "${SIM_PORT:-8882}:8882"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 512M
+    networks: [acoj]
+
+  # ───────────────────────── Frontends (optional) ─────────────────────────
+  pc:
+    build:
+      context: ./pc
+      dockerfile: Dockerfile
+    image: ${PC_IMAGE:-acoj/pc:local}
+    container_name: acoj-pc
+    restart: unless-stopped
+    depends_on:
+      oj:
+        condition: service_started
+    ports:
+      - "${PC_PORT:-80}:80"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+    networks: [acoj]
+    profiles: ["frontend"]
+
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    image: ${ADMIN_IMAGE:-acoj/admin:local}
+    container_name: acoj-admin
+    restart: unless-stopped
+    depends_on:
+      oj:
+        condition: service_started
+    ports:
+      - "${ADMIN_PORT:-81}:81"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+    networks: [acoj]
+    profiles: ["frontend"]
+
+networks:
+  acoj:
+    driver: bridge
+
+# Explicit names avoid colliding with existing WSL volumes
+# (mysql_data / redis_data / rabbitmq_data / minio_data / ...).
+volumes:
+  acoj_mysql_data:
+    name: acoj-compose-mysql
+  acoj_redis_data:
+    name: acoj-compose-redis
+  acoj_rabbitmq_data:
+    name: acoj-compose-rabbitmq
+  acoj_nacos_data:
+    name: acoj-compose-nacos
+  acoj_nacos_logs:
+    name: acoj-compose-nacos-logs
+  acoj_minio_data:
+    name: acoj-compose-minio
+  acoj_oj_logs:
+    name: acoj-compose-oj-logs
+  acoj_judge_tmp:
+    name: acoj-compose-judge-tmp

@@ -1,0 +1,25 @@
+metadata:
+- appName: ''
+  dataId: judge-service.yaml
+  desc: ''
+  group: DEFAULT_GROUP
+  type: yaml
+- appName: ''
+  dataId: spring.ai.alibaba.configurable.prompt
+  desc: ''
+  group: DEFAULT_GROUP
+  type: json
+- appName: ''
+  dataId: similarity-service.yaml
+  desc: ''
+  group: DEFAULT_GROUP
+  type: yaml
+- appName: ''
+  dataId: common.yaml
+  group: DEFAULT_GROUP
+  type: yaml
+- appName: ''
+  dataId: oj.yaml
+  desc: ''
+  group: DEFAULT_GROUP
+  type: yaml

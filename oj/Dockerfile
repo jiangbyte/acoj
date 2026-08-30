@@ -15,9 +15,10 @@
 
 #FROM openjdk:21
 #FROM bellsoft/liberica-openjdk-rocky:21
-FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/openjdk:21
+FROM bellsoft/liberica-openjdk-rocky:21.0.5
 #FROM docker.xuanyuan.run/bellsoft/liberica-openjdk-alpine:21.0.8-cds
 #FROM  docker.1ms.run/astita/openjdk21-alpine:latest
+#FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/openjdk:21
 
 WORKDIR /app
 
@@ -143,4 +144,4 @@ ENTRYPOINT ["java", \
     "-Djava.util.concurrent.ForkJoinPool.common.parallelism=2", \
     "-Dorg.jboss.threads.enqueue-batching=true", \
     "-Dio.netty.leakDetectionLevel=disabled", \
-    "-jar", "galaxy-oj-1.0.0.jar"]
+    "-jar", "oj-1.0.0.jar"]
