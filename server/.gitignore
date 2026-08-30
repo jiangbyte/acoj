@@ -1,0 +1,27 @@
+target/
+.flattened-pom.xml
+.m2/
+logs/
+*.log
+.idea/
+*.iml
+.vscode/
+.DS_Store
+# 本地 OSS 上传目录（hei.storage.local.base-path 默认 ./storage）
+/storage/
+*.jar
+*.war
+
+# IDE/工具缓存目录
+.zcode/
+__pycache__/
+*.pyc
+
+# 部署环境变量与本地密钥（勿提交）
+.env
+.env.*
+!.env.example
+scripts/docker/.env
+scripts/docker/.env.*
+!scripts/docker/.env.example
+scripts/docker/deploy/

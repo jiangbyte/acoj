@@ -1,0 +1,241 @@
+img,
+svg,
+video,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+img {
+  height: auto;
+  border-style: none;
+  vertical-align: middle;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  line-height: inherit;
+}
+
+button:focus-visible {
+  outline: none;
+}
+
+:root {
+  color-scheme: light;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --app-scrollbar-size: 8px;
+  --app-scrollbar-track-color: transparent;
+  --app-scrollbar-thumb-color: rgba(0, 0, 0, 0.24);
+  --app-scrollbar-thumb-color-hover: rgba(0, 0, 0, 0.38);
+}
+
+html.dark {
+  color-scheme: dark;
+  --app-scrollbar-thumb-color: rgba(255, 255, 255, 0.24);
+  --app-scrollbar-thumb-color-hover: rgba(255, 255, 255, 0.38);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-scrollbar-thumb-color) var(--app-scrollbar-track-color);
+}
+
+*::-webkit-scrollbar {
+  width: var(--app-scrollbar-size);
+  height: var(--app-scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--app-scrollbar-track-color);
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--app-scrollbar-thumb-color);
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--app-scrollbar-thumb-color-hover);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  background: var(--ant-color-bg-layout, #f5f5f5);
+  color: var(--ant-color-text, #1f2328);
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active,
+.fade-bottom-enter-active,
+.fade-bottom-leave-active,
+.fade-scale-enter-active,
+.fade-scale-leave-active,
+.zoom-fade-enter-active,
+.zoom-fade-leave-active,
+.zoom-out-enter-active,
+.zoom-out-leave-active,
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateX(16px);
+}
+
+.fade-bottom-enter-from,
+.fade-bottom-leave-to {
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+.fade-scale-enter-from,
+.fade-scale-leave-to,
+.zoom-fade-enter-from,
+.zoom-fade-leave-to,
+.zoom-out-enter-from,
+.zoom-out-leave-to {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.usercenter-layout {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  min-height: min(720px, calc(100vh - 160px));
+}
+
+.usercenter-page {
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.usercenter-summary-card,
+.usercenter-content-card {
+  height: 100%;
+}
+
+.usercenter-summary-card .ant-card-body,
+.usercenter-content-card .ant-card-body {
+  height: 100%;
+}
+
+.usercenter-summary-card {
+  flex: 0 0 280px;
+  width: 280px;
+  max-width: 280px;
+}
+
+.usercenter-content-card {
+  flex: 1;
+  min-width: 0;
+}
+
+.usercenter-content-card .ant-tabs {
+  height: 100%;
+}
+
+.usercenter-content-card .ant-tabs-content {
+  height: 100%;
+}
+
+.usercenter-content-card .ant-tabs-tabpane {
+  height: 100%;
+  overflow: auto;
+}
+
+.usercenter-main-tabs .ant-tabs-content {
+  min-height: 0;
+}
+
+.usercenter-security-tabs {
+  min-height: 360px;
+}
+
+.usercenter-security-tabs .ant-tabs-content-holder {
+  min-height: 320px;
+}
+
+.usercenter-security-tabs .ant-tabs-tabpane {
+  padding-left: 8px;
+}
+
+.identity-wizard__steps--vertical {
+  max-width: 280px;
+  margin-inline: auto;
+}
+
+.identity-wizard__steps:not(.identity-wizard__steps--vertical) .ant-steps-item-title {
+  white-space: normal;
+  line-height: 1.35;
+}
+
+@media (max-width: 960px) {
+  .usercenter-layout {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .usercenter-summary-card {
+    flex: none;
+    width: 100%;
+    max-width: none;
+  }
+}

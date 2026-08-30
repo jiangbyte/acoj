@@ -1,0 +1,121 @@
+logging:
+  level:
+    root: ${LOGGING_LEVEL_ROOT:info}
+    github.jiangbyte.io: ${LOGGING_LEVEL_HEI:warn}
+    org.springframework.web: ${LOGGING_LEVEL_SPRING_WEB:warn}
+
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      stat-view-servlet:
+        enabled: false
+        url-pattern: /druid/*
+        login-username: ${DRUID_STAT_USER:druid}
+        login-password: ${DRUID_STAT_PASSWORD:druid}
+      web-stat-filter:
+        enabled: true
+    dynamic:
+      primary: master
+      strict: true
+      druid:
+        initial-size: ${DB_POOL_INITIAL_SIZE:5}
+        min-idle: ${DB_POOL_MIN_IDLE:5}
+        max-active: ${DB_POOL_MAX_ACTIVE:50}
+        max-wait: ${DB_POOL_MAX_WAIT:60000}
+        validation-query: select 1
+        test-while-idle: true
+        test-on-borrow: false
+        test-on-return: false
+        filters: stat,wall,slf4j
+        connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=2000
+      datasource:
+        master:
+          type: ${spring.datasource.type}
+          driver-class-name: ${DB_WRITE_DRIVER:com.mysql.cj.jdbc.Driver}
+          url: ${DB_WRITE_URL:${DB_URL:jdbc:mysql://127.0.0.1:3306/hei_boot?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC}}
+          username: ${DB_WRITE_USERNAME:${DB_USERNAME:root}}
+          password: ${DB_WRITE_PASSWORD:${DB_PASSWORD}}
+          # --- PostgreSQL 示例 ---
+          # driver-class-name: org.postgresql.Driver
+          # url: ${DB_WRITE_URL:${DB_URL}}
+          # username: ${DB_WRITE_USERNAME:${DB_USERNAME}}
+          # password: ${DB_WRITE_PASSWORD:${DB_PASSWORD}}
+        slave:
+          type: ${spring.datasource.type}
+          driver-class-name: ${DB_READ_DRIVER:${DB_WRITE_DRIVER:com.mysql.cj.jdbc.Driver}}
+          url: ${DB_READ_URL:${DB_WRITE_URL:${DB_URL:jdbc:mysql://127.0.0.1:3306/hei_boot?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC}}}
+          username: ${DB_READ_USERNAME:${DB_WRITE_USERNAME:${DB_USERNAME:root}}}
+          password: ${DB_READ_PASSWORD:${DB_WRITE_PASSWORD:${DB_PASSWORD}}}
+          # --- PostgreSQL 示例 ---
+          # driver-class-name: org.postgresql.Driver
+          # url: ${DB_READ_URL:${DB_WRITE_URL:${DB_URL}}}
+          # username: ${DB_READ_USERNAME:${DB_WRITE_USERNAME:${DB_USERNAME}}}
+          # password: ${DB_READ_PASSWORD:${DB_WRITE_PASSWORD:${DB_PASSWORD}}}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+knife4j:
+  enable: false
+  production: true
+
+sa-token:
+  # 同域 SPA + nginx：由 Sa-Token 管理 httpOnly Authorization Cookie
+  is-read-cookie: ${SA_TOKEN_IS_READ_COOKIE:true}
+  cookie:
+    secure: ${SA_TOKEN_COOKIE_SECURE:true}
+    sameSite: ${SA_TOKEN_COOKIE_SAME_SITE:Lax}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+# 生产：内置任务调度随应用进程运行（依赖 Redis 锁防多实例重复执行）
+hei:
+  codegen:
+    enabled: false
+  logging:
+    json: ${LOG_JSON:true}
+  security:
+    expose-docs: false
+    expose-actuator: false
+    expose-druid: false
+    # 仅在可信反向代理会改写 X-Forwarded-For / X-Real-IP 时开启
+    trust-forwarded-headers: ${HEI_SECURITY_TRUST_FORWARDED_HEADERS:true}
+    # 边缘终止 TLS 时设置（如 31536000）。若 API 仅在内部网格走 HTTP，保持 0；优先在 Ingress 配 HSTS
+    hsts-max-age-seconds: ${HEI_SECURITY_HSTS_MAX_AGE:0}
+    hsts-include-sub-domains: ${HEI_SECURITY_HSTS_INCLUDE_SUBDOMAINS:true}
+    hsts-preload: ${HEI_SECURITY_HSTS_PRELOAD:false}
+  log:
+    audit:
+      consume-enabled: ${HEI_LOG_AUDIT_CONSUME_ENABLED:${HEI_MQ_AUDIT_CONSUME_ENABLED:true}}
+  observability:
+    tracing-enabled: ${HEI_OBSERVABILITY_TRACING_ENABLED:false}
+    metrics-otlp-enabled: ${HEI_OBSERVABILITY_METRICS_OTLP_ENABLED:false}
+    otlp-endpoint: ${HEI_OBSERVABILITY_OTLP_ENDPOINT:}
+    otlp-metrics-endpoint: ${HEI_OBSERVABILITY_OTLP_METRICS_ENDPOINT:}
+  vault:
+    enabled: ${HEI_VAULT_ENABLED:false}
+    uri: ${VAULT_ADDR:}
+    token: ${VAULT_TOKEN:}
+    role-id: ${VAULT_ROLE_ID:}
+    secret-id: ${VAULT_SECRET_ID:}
+    kv-mount: ${HEI_VAULT_KV_MOUNT:secret}
+    kv-path: ${HEI_VAULT_KV_PATH:hei/boot}
+    namespace: ${VAULT_NAMESPACE:}
+    fail-fast: ${HEI_VAULT_FAIL_FAST:true}

@@ -1,0 +1,2 @@
+github.jiangbyte.io.common.log.config.LogAutoConfiguration
+github.jiangbyte.io.common.log.config.RedisAuditAutoConfiguration

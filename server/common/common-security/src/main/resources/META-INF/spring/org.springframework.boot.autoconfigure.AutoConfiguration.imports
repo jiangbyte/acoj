@@ -1,0 +1,4 @@
+github.jiangbyte.io.common.security.config.SaTokenSecurityConfig
+github.jiangbyte.io.common.security.config.SaTokenCorsAutoConfiguration
+github.jiangbyte.io.common.security.config.PasswordEncoderConfig
+github.jiangbyte.io.common.security.config.RateLimitAutoConfiguration

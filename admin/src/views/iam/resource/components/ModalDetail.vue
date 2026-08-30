@@ -1,0 +1,156 @@
+<!-- Author: Charlie -->
+
+<script setup lang="ts">
+import { resourceApi } from '@/api'
+import { resourceLayoutLabel } from '@/constants/resourceLayout'
+import { createTagColor, displayValue, formatDateTime, wireBool } from '@/utils'
+import { reactive } from 'vue'
+import { dictTypeData, dictTypeColor } from '@/utils/dict'
+
+const state = reactive({
+  showModal: false,
+  loading: false,
+  resource: {} as any,
+})
+
+async function openModal(id: string) {
+  state.resource = {}
+  state.showModal = true
+  await fetchDetail(id)
+}
+
+async function fetchDetail(id: string) {
+  state.loading = true
+  try {
+    const response = await resourceApi.detail({ id })
+    state.resource = response.data ?? {}
+  } finally {
+    state.loading = false
+  }
+}
+
+defineExpose({
+  openModal,
+})
+</script>
+
+<template>
+  <HeiDetailContainer
+    v-model:show="state.showModal"
+    :title="'资源详情'"
+    :width="720"
+    :mask-closable="false"
+  >
+      <NSpin :show="state.loading">
+        <NDescriptions
+          label-placement="left"
+          bordered
+          :column="1"
+        >
+          <NDescriptionsItem :label="'资源ID'">
+            {{ displayValue(state.resource.id) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'资源名称'">
+            {{ displayValue(state.resource.name) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'资源编码'">
+            {{ displayValue(state.resource.code) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'资源类型'">
+            {{
+              dictTypeData('RESOURCE_TYPE', state.resource.resource_type) ||
+                displayValue(state.resource.resource_type)
+            }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'父级资源ID'">
+            {{ displayValue(state.resource.parent_id) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'资源模块'">
+            {{ displayValue(state.resource.module_id_name || state.resource.module_id) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'路由路径'">
+            {{ displayValue(state.resource.path) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'组件'">
+            {{ displayValue(state.resource.component) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'重定向'">
+            {{ displayValue(state.resource.redirect) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'图标'">
+            <span
+              v-if="state.resource.icon"
+              class="icon-detail-preview"
+              :title="state.resource.icon"
+            >
+              <NovaIcon
+                :icon="state.resource.icon"
+                :size="22"
+              />
+            </span>
+            <template v-else>
+              -
+            </template>
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'颜色'">
+            <NTag
+              v-if="state.resource.color"
+              :color="createTagColor(state.resource.color)"
+              :bordered="false"
+            >
+              {{ state.resource.color }}
+            </NTag>
+            <span v-else>{{ displayValue(state.resource.color) }}</span>
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'外链'">
+            {{ displayValue(state.resource.href) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'排序'">
+            {{ displayValue(state.resource.sort) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'可见'">
+            {{ wireBool(state.resource.is_visible) ? '是' : '否' }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'缓存'">
+            {{ wireBool(state.resource.is_cache) ? '是' : '否' }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'固定标签'">
+            {{ wireBool(state.resource.is_affix) ? '是' : '否' }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'状态'">
+            <NTag
+              :color="createTagColor(dictTypeColor('COMMON_STATUS', state.resource.status))"
+              :bordered="false"
+            >
+              {{
+                dictTypeData('COMMON_STATUS', state.resource.status) ||
+                  displayValue(state.resource.status)
+              }}
+            </NTag>
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'描述'">
+            {{ displayValue(state.resource.description) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'布局'">
+            {{ resourceLayoutLabel(state.resource.layout) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'创建时间'">
+            {{ formatDateTime(state.resource.created_at) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="'更新时间'">
+            {{ formatDateTime(state.resource.updated_at) }}
+          </NDescriptionsItem>
+        </NDescriptions>
+      </NSpin>
+  </HeiDetailContainer>
+</template>
+
+<style scoped>
+.icon-detail-preview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+</style>

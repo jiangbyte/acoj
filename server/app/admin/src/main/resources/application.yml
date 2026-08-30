@@ -1,0 +1,265 @@
+server:
+  port: 8000
+
+spring:
+  application:
+    name: hei-boot-admin
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  threads:
+    virtual:
+      enabled: true
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    serialization:
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+    # HTTP JSON 标量：bool/number 一律以字符串收发（见 StringlyTypedJacksonModule）
+  mvc:
+    format:
+      date-time: yyyy-MM-dd HH:mm:ss
+  flyway:
+    # 库表由 scripts/db.sql 重建；保留依赖但默认关闭（如需迁移：放回 resources/db/migration 并置 true）
+    enabled: false
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  servlet:
+    multipart:
+      max-file-size: ${HEI_MULTIPART_MAX_FILE_SIZE:20MB}
+      max-request-size: ${HEI_MULTIPART_MAX_REQUEST_SIZE:25MB}
+  data:
+    redis:
+      timeout: 3s
+      connect-timeout: 10s
+
+# Boot 原生 structured logging。默认 Logstash JSON；profile 可切到键值 formatter。
+logging:
+  file:
+    name: ${LOGGING_FILE_NAME:./logs/${spring.application.name}.log}
+  logback:
+    rollingpolicy:
+      max-file-size: ${LOGGING_MAX_FILE_SIZE:50MB}
+      max-history: ${LOGGING_MAX_HISTORY:30}
+      total-size-cap: ${LOGGING_TOTAL_SIZE_CAP:3GB}
+  structured:
+    format:
+      console: ${LOGGING_STRUCTURED_CONSOLE:logstash}
+      file: ${LOGGING_STRUCTURED_FILE:logstash}
+    json:
+      context:
+        include: true
+  level:
+    root: ${LOGGING_LEVEL_ROOT:info}
+    github.jiangbyte.io: ${LOGGING_LEVEL_HEI:info}
+    access: ${LOGGING_LEVEL_ACCESS:info}
+    # 降噪：框架默认 INFO 过碎的部分压到 WARN
+    org.apache.ibatis: ${LOGGING_LEVEL_IBATIS:warn}
+    com.baomidou.mybatisplus: ${LOGGING_LEVEL_MP:warn}
+    com.alibaba.druid: ${LOGGING_LEVEL_DRUID:warn}
+    org.redisson: ${LOGGING_LEVEL_REDISSON:warn}
+    org.springframework.web: ${LOGGING_LEVEL_SPRING_WEB:info}
+    org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/]: warn
+    org.apache.coyote.http11.Http11InputBuffer: warn
+
+sa-token:
+  # Cookie/Header 名均为 Authorization；opaque 随机串（非 UUID）。
+  # 双通道：Cookie（SA_TOKEN_IS_READ_COOKIE，对齐 fastapi AUTH__SESSION_COOKIE_ENABLED）+ Header（始终可读）。
+  # admin/portal/uniapp 均可带 Authorization 头；Cookie 开时优先 Cookie，Path 由 SessionCookiePathFilter 按端改写。
+  token-name: Authorization
+  token-style: random-32
+  is-concurrent: true
+  is-share: false
+  is-read-header: true
+  is-read-cookie: ${SA_TOKEN_IS_READ_COOKIE:true}
+  cookie:
+    httpOnly: true
+    # 全局 path 占位；实际 Set-Cookie Path 改写为 /api/{ver}/{admin|portal}
+    path: /
+    secure: ${SA_TOKEN_COOKIE_SECURE:false}
+    sameSite: ${SA_TOKEN_COOKIE_SAME_SITE:Lax}
+
+hei:
+  app:
+    name: ${HEI_APP_NAME:HEI}
+    frontend-base-url: ${HEI_FRONTEND_BASE_URL:http://localhost:5173}
+    portal-frontend-base-url: ${HEI_PORTAL_FRONTEND_BASE_URL:http://localhost:5174}
+    password-reset-expire-minutes: ${HEI_PASSWORD_RESET_EXPIRE_MINUTES:30}
+  security:
+    expose-docs: ${HEI_SECURITY_EXPOSE_DOCS:true}
+    expose-actuator: ${HEI_SECURITY_EXPOSE_ACTUATOR:true}
+    expose-druid: ${HEI_SECURITY_EXPOSE_DRUID:true}
+    trust-forwarded-headers: ${HEI_SECURITY_TRUST_FORWARDED_HEADERS:false}
+    # CORS 由 Sa-Token SaStrategy.corsHandle 处理。空=本地默认端口；单项 "*"=通配且关 credentials
+    # cors-allowed-origins:
+    #   - "*"
+    # Cookie CSRF 请用 sa-token.cookie.sameSite/httpOnly/secure，不另设开关
+    # 仅在 HTTPS（边缘 TLS）后开启。生产示例：31536000
+    hsts-max-age-seconds: ${HEI_SECURITY_HSTS_MAX_AGE:0}
+    hsts-include-sub-domains: ${HEI_SECURITY_HSTS_INCLUDE_SUBDOMAINS:true}
+    hsts-preload: ${HEI_SECURITY_HSTS_PRELOAD:false}
+    ignore-urls:
+      - /api/v1/public/**
+      - /api/v1/admin/captcha
+      - /api/v1/admin/password-key
+      - /api/v1/admin/login
+      - /api/v1/admin/send-login-code
+      - /api/v1/admin/forgot-password
+      - /api/v1/admin/reset-password
+      - /api/v1/admin/oauth/*/authorize
+      - /api/v1/admin/oauth/*/callback
+      - /api/v1/admin/oauth/exchange
+      - /api/v1/admin/public/**
+      - /api/v1/portal/captcha
+      - /api/v1/portal/password-key
+      - /api/v1/portal/login
+      - /api/v1/portal/send-login-code
+      - /api/v1/portal/register
+      - /api/v1/portal/register/send-code
+      - /api/v1/portal/forgot-password
+      - /api/v1/portal/reset-password
+      - /api/v1/portal/oauth/*/authorize
+      - /api/v1/portal/oauth/*/callback
+      - /api/v1/portal/oauth/exchange
+      - /api/v1/portal/oauth/wechat-mp/login
+      - /api/v1/portal/public/**
+      # 门户匿名可读（对齐 hei-fastapi auth_whitelist._builtin_portal_public_paths）
+      - /api/v1/portal/sys/banners/list
+      - /api/v1/portal/sys/banners/interaction
+      - /api/v1/portal/sys/dicts/tree
+      - /api/v1/portal/sys/resources/current
+      - /api/v1/portal/sys/notices/list
+      - /api/*/internal/**
+  rate-limit:
+    enabled: ${HEI_RATE_LIMIT_ENABLED:true}
+    default-permits: ${HEI_RATE_LIMIT_DEFAULT_PERMITS:60}
+    default-window-seconds: ${HEI_RATE_LIMIT_DEFAULT_WINDOW_SECONDS:60}
+  # 与 hei-fastapi 共享的 Fernet 密钥（APP__CONFIG_CRYPTO_KEY）；解密 STORAGE_*/MAIL_*/SMS_* 敏感配置
+  config:
+    crypto-key: ${HEI_CONFIG_CRYPTO_KEY:${APP__CONFIG_CRYPTO_KEY:}}
+  profile:
+    identity:
+      crypto-key: ${HEI_PROFILE_IDENTITY_CRYPTO_KEY:${hei.config.crypto-key:}}
+  logging:
+    # true → Logstash JSON；false → 键值控制台（对齐 hei-fastapi LOG_JSON）
+    json: ${LOG_JSON:true}
+    service: ${HEI_LOGGING_SERVICE:${spring.application.name}}
+    service-version: ${HEI_LOGGING_SERVICE_VERSION:1.1.0-beta}
+    redact-keys: ${HEI_LOGGING_REDACT_KEYS:password,secret,cryptoKey,crypto-key,accessKey,access-key,privateKey,private-key,accessToken,refreshToken,idToken,apiToken,authToken}
+  log:
+    audit:
+      async-enabled: ${HEI_LOG_AUDIT_ASYNC_ENABLED:true}
+      stream-key: ${HEI_LOG_AUDIT_STREAM_KEY:hei:audit:stream}
+      group-name: ${HEI_LOG_AUDIT_GROUP_NAME:hei-audit-group}
+      max-len: ${HEI_LOG_AUDIT_MAX_LEN:100000}
+      consume-enabled: ${HEI_LOG_AUDIT_CONSUME_ENABLED:${HEI_MQ_AUDIT_CONSUME_ENABLED:true}}
+      trim-enabled: ${HEI_LOG_AUDIT_TRIM_ENABLED:false}
+      trim-interval-ms: ${HEI_LOG_AUDIT_TRIM_INTERVAL_MS:60000}
+      reclaim-idle-ms: ${HEI_LOG_AUDIT_RECLAIM_IDLE_MS:60000}
+      reclaim-interval-ms: ${HEI_LOG_AUDIT_RECLAIM_INTERVAL_MS:30000}
+      outbox-relay-interval-ms: ${HEI_LOG_AUDIT_OUTBOX_RELAY_INTERVAL_MS:2000}
+      outbox-relay-batch-size: ${HEI_LOG_AUDIT_OUTBOX_RELAY_BATCH_SIZE:50}
+      outbox-max-attempts: ${HEI_LOG_AUDIT_OUTBOX_MAX_ATTEMPTS:10}
+      outbox-claim-stale-ms: ${HEI_LOG_AUDIT_OUTBOX_CLAIM_STALE_MS:120000}
+      # 登录/登出审计保留天数；小于等于 0 表示跳过清理
+      login-retention-days: ${HEI_LOG_AUDIT_LOGIN_RETENTION_DAYS:180}
+      # 操作审计保留天数（不含 login/logout）；小于等于 0 表示跳过清理
+      operation-retention-days: ${HEI_LOG_AUDIT_OPERATION_RETENTION_DAYS:365}
+      # 审计日志清理单次删除上限
+      cleanup-batch-size: ${HEI_LOG_AUDIT_CLEANUP_BATCH_SIZE:1000}
+  observability:
+    tracing-enabled: ${HEI_OBSERVABILITY_TRACING_ENABLED:false}
+    # OTLP 指标推送（OtlpMeterRegistry）。默认关闭——本地无 collector；可用 Prometheus 抓取。
+    metrics-otlp-enabled: ${HEI_OBSERVABILITY_METRICS_OTLP_ENABLED:false}
+    otlp-endpoint: ${HEI_OBSERVABILITY_OTLP_ENDPOINT:http://127.0.0.1:4318/v1/traces}
+    otlp-metrics-endpoint: ${HEI_OBSERVABILITY_OTLP_METRICS_ENDPOINT:http://127.0.0.1:4318/v1/metrics}
+  vault:
+    enabled: ${HEI_VAULT_ENABLED:false}
+    uri: ${VAULT_ADDR:}
+    token: ${VAULT_TOKEN:}
+    role-id: ${VAULT_ROLE_ID:}
+    secret-id: ${VAULT_SECRET_ID:}
+    kv-mount: ${HEI_VAULT_KV_MOUNT:secret}
+    kv-path: ${HEI_VAULT_KV_PATH:hei/boot}
+    namespace: ${VAULT_NAMESPACE:}
+    fail-fast: ${HEI_VAULT_FAIL_FAST:true}
+  # 内置单体任务调度（sys 模块）：扫描间隔 / 执行线程池大小
+  job:
+    scan-interval-ms: ${HEI_JOB_SCAN_INTERVAL_MS:1000}
+    pool-size: ${HEI_JOB_POOL_SIZE:4}
+    log:
+      # 保留天数；小于等于 0 表示跳过清理
+      retention-days: ${HEI_JOB_LOG_RETENTION_DAYS:30}
+      # 单次删除上限，避免大表一次 DELETE 过久
+      batch-size: ${HEI_JOB_LOG_BATCH_SIZE:1000}
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*Mapper.xml
+  type-aliases-package: github.jiangbyte.io.**.entity
+  global-config:
+    db-config:
+      id-type: ASSIGN_ID
+
+# easy-trans 3.1.4 官方 TransServiceConfig 在 Spring Boot 4 下会因
+# org.springframework.boot.web.client.RestTemplateBuilder 包迁移而 ClassNotFoundException。
+# 已由 common-mybatis 的 EasyTransBoot4ImportFilter + EasyTransBoot4AutoConfiguration 接管，无需再配 exclude。
+# 全局 Advice 仅翻译 TransPojo/VO（TransPojoOnlyResponseBodyAdvice）；Result DTO 不实现 TransPojo，应翻译 entity 后再填充。
+easy-trans:
+  is-enable-global: true
+  is-enable-tile: true
+  is-enable-redis: true
+  is-enable-cloud: false
+  mp-new: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+  health:
+    mail:
+      enabled: false
+    db:
+      enabled: true
+    redis:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  otlp:
+    metrics:
+      export:
+        enabled: ${hei.observability.metrics-otlp-enabled:false}
+        url: ${hei.observability.otlp-metrics-endpoint}
+  tracing:
+    sampling:
+      probability: ${HEI_TRACING_SAMPLING_PROBABILITY:1.0}
+    export:
+      enabled: ${hei.observability.tracing-enabled:false}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${hei.observability.otlp-endpoint}
+          transport: http
+
+# OpenAPI 由 springdoc 生成 JSON，UI 统一走 Knife4j（/doc.html），不使用原生 swagger-ui。
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: false
+  group-configs:
+    - group: default
+      paths-to-match: /api/**
+      packages-to-scan: github.jiangbyte.io
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+  production: false

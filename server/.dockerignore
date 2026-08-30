@@ -1,0 +1,17 @@
+.git
+.github
+.idea
+.vscode
+*.iml
+target/
+logs/
+storage/
+.m2/
+.flattened-pom.xml
+**/__pycache__/
+*.pyc
+*.log
+*.jar
+*.war
+.DS_Store
+.zcode/

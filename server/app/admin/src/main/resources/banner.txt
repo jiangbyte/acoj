@@ -1,0 +1,1 @@
+HEI Boot :: ${spring.application.name:} :: Spring Boot ${spring-boot.formatted-version:} :: JDK ${java.version:}

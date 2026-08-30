@@ -1,0 +1,164 @@
+/* Author: Charlie — 系统配置页布局与共享规则（避免各表单自造 BEM） */
+
+.sys-config {
+  color: var(--text-color-1);
+  height: 100%;
+  min-height: 0;
+}
+
+.sys-config__main {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sys-config__main.n-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.sys-config__main .n-card__content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sys-config__main-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 12px !important;
+}
+
+.sys-config__tabs {
+  flex-shrink: 0;
+}
+
+.sys-config__panel {
+  padding-top: 12px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.sys-config__hint {
+  margin: 0;
+  color: var(--text-color-3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.sys-config-form {
+  min-width: 0;
+  max-width: 720px;
+}
+
+.sys-config-form--wide {
+  max-width: 960px;
+}
+
+.sys-config-form .n-form-item {
+  min-width: 0;
+}
+
+.sys-config-form .n-form-item-feedback-wrapper {
+  min-height: 10px !important;
+  height: 10px;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.sys-config-form .n-form-item-feedback-wrapper:not(:empty) {
+  height: auto;
+  min-height: var(--n-feedback-height, 24px) !important;
+  overflow: visible;
+}
+
+.sys-config-form .n-card {
+  background: var(--card-color);
+  border: 1px solid color-mix(in srgb, #000 6%, transparent);
+}
+
+html.dark .sys-config-form .n-card {
+  border-color: color-mix(in srgb, #fff 8%, transparent);
+}
+
+/* 配置子页内纵向 Tab */
+.sys-config-subnav {
+  min-height: 280px;
+}
+
+.sys-config-provider-layout {
+  margin-top: 8px;
+}
+
+.sys-config-section__footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, #000 6%, transparent);
+}
+
+html.dark .sys-config-section__footer {
+  border-top-color: color-mix(in srgb, #fff 8%, transparent);
+}
+
+/* 开关/规则行：一套类覆盖密码/登录/告警，禁止再造 pwd-rule__* 修饰符 */
+.config-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.config-rows > .config-row + .config-row {
+  border-top: 1px solid color-mix(in srgb, #000 6%, transparent);
+}
+
+html.dark .config-rows > .config-row + .config-row {
+  border-top-color: color-mix(in srgb, #fff 8%, transparent);
+}
+
+.config-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 10px 0;
+}
+
+.config-row > span {
+  flex: 0 1 160px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.config-row .n-form-item {
+  flex: 1 1 200px;
+  max-width: 280px;
+  margin-bottom: 0 !important;
+}
+
+.config-row .config-row-field {
+  flex: 1 1 100%;
+  max-width: 420px;
+}
+
+@media (max-width: 960px) {
+  .sys-config__main {
+    height: auto;
+  }
+
+  .sys-config__main-body {
+    height: auto;
+    overflow: visible;
+  }
+
+  .sys-config-provider-layout {
+    flex-direction: column;
+  }
+}
