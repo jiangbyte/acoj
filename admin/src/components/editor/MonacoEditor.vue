@@ -18,7 +18,7 @@ const props = withDefaults(
   {
     value: '',
     language: 'typescript',
-    theme: 'vs',
+    theme: 'vs-dark',
     height: 360,
     readOnly: false,
     options: () => ({}),
@@ -118,6 +118,13 @@ watch(
   () => props.options,
   (options) => {
     editorRef.value?.updateOptions(options)
+  },
+)
+
+watch(
+  () => props.height,
+  () => {
+    editorRef.value?.layout()
   },
 )
 

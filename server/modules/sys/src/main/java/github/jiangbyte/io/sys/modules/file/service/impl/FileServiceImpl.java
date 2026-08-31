@@ -166,7 +166,7 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
         if (objectKey == null) {
             throw new BizException(404, "File not found");
         }
-        return new SysFileUrlResult(objectKey, storageFor(file).publicUrl(objectKey));
+        return SysFileUrlResult.of(objectKey, storageFor(file).publicUrl(objectKey), file);
     }
 
     @Override
@@ -182,7 +182,7 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
         if (objectKey == null) {
             throw new BizException(404, "File not found");
         }
-        return new SysFileUrlResult(objectKey, storageFor(file).presignedUrl(objectKey, ttl));
+        return SysFileUrlResult.of(objectKey, storageFor(file).presignedUrl(objectKey, ttl), file);
     }
 
     @Override
@@ -294,7 +294,7 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
     }
 
     private SysFile doUpload(MultipartFile file, String storageProvider) {
-        if (file == null || file.isEmpty()) {
+        if (file == null || !StringUtils.hasText(file.getOriginalFilename())) {
             throw new BizException("File is required");
         }
         // 解析存储配置并校验上传
@@ -353,19 +353,19 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
         String ext = extensionOf(originalName);
         List<String> denied = readJsonStringList(settings.get("STORAGE_UPLOAD_DENIED_EXTENSIONS", "[]"));
         if (!denied.isEmpty() && denied.stream().anyMatch(e -> normalizeExt(e).equals(ext))) {
-            throw new BizException(400, "File extension not allowed");
+            throw new BizException(400, "File extension not allowed: " + ext);
         }
         List<String> allowedExt = readJsonStringList(settings.get("STORAGE_UPLOAD_ALLOWED_EXTENSIONS", "[]"));
         if (!allowedExt.isEmpty() && allowedExt.stream().noneMatch(e -> normalizeExt(e).equals(ext))) {
-            throw new BizException(400, "File extension not allowed");
+            throw new BizException(400, "File extension not allowed: " + ext);
         }
         // 校验 Content-Type
         String contentType = file.getContentType();
         List<String> allowedTypes = readJsonStringList(settings.get("STORAGE_UPLOAD_ALLOWED_CONTENT_TYPES", "[]"));
         if (StringUtils.hasText(contentType)
                 && !allowedTypes.isEmpty()
-                && allowedTypes.stream().noneMatch(t -> t.equalsIgnoreCase(contentType))) {
-            throw new BizException(400, "Content type not allowed");
+                && allowedTypes.stream().noneMatch(t -> matchesContentType(contentType, t))) {
+            throw new BizException(400, "Content type not allowed: " + contentType);
         }
     }
 
@@ -382,6 +382,19 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
         }
         String value = ext.trim().toLowerCase(Locale.ROOT);
         return value.startsWith(".") ? value : "." + value;
+    }
+
+    private static boolean matchesContentType(String contentType, String allowed) {
+        if (!StringUtils.hasText(contentType) || !StringUtils.hasText(allowed)) {
+            return false;
+        }
+        String normalizedType = contentType.trim();
+        String normalizedAllowed = allowed.trim();
+        if (normalizedAllowed.endsWith("/*")) {
+            String prefix = normalizedAllowed.substring(0, normalizedAllowed.length() - 1);
+            return normalizedType.regionMatches(true, 0, prefix, 0, prefix.length());
+        }
+        return normalizedAllowed.equalsIgnoreCase(normalizedType);
     }
 
     private static List<String> readJsonStringList(String json) {

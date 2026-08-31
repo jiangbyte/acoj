@@ -40,27 +40,40 @@ spring:
         master:
           type: ${spring.datasource.type}
           driver-class-name: ${DB_WRITE_DRIVER:com.mysql.cj.jdbc.Driver}
-          url: ${DB_WRITE_URL:jdbc:mysql://127.0.0.1:3306/hei_boot?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC}
+          url: ${DB_WRITE_URL:jdbc:mysql://127.0.0.1:3306/acoj?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC}
           username: ${DB_WRITE_USERNAME:root}
-          password: ${DB_WRITE_PASSWORD:123456}
+          password: ${DB_WRITE_PASSWORD:infra@123}
           # --- 如需切换 PostgreSQL，请自行调整 JDBC 驱动与连接串，并准备对应 DDL ---
           # driver-class-name: org.postgresql.Driver
           # url: ${DB_WRITE_URL:jdbc:postgresql://127.0.0.1:5432/hei_boot}
           # username: ${DB_WRITE_USERNAME:postgres}
-          # password: ${DB_WRITE_PASSWORD:123456}
+          # password: ${DB_WRITE_PASSWORD:infra@123}
         slave:
           # 本地/开发读写同源：与 master 共用 DB_WRITE_*，避免从库指向独立实例
           type: ${spring.datasource.type}
           driver-class-name: ${DB_WRITE_DRIVER:com.mysql.cj.jdbc.Driver}
-          url: ${DB_WRITE_URL:jdbc:mysql://127.0.0.1:3306/hei_boot?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC}
+          url: ${DB_WRITE_URL:jdbc:mysql://127.0.0.1:3306/acoj?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC}
           username: ${DB_WRITE_USERNAME:root}
-          password: ${DB_WRITE_PASSWORD:123456}
+          password: ${DB_WRITE_PASSWORD:infra@123}
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
       port: ${REDIS_PORT:6379}
       database: ${REDIS_DATABASE:0}
-      password: ${REDIS_PASSWORD:123456}
+      password: ${REDIS_PASSWORD:infra@123}
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:127.0.0.1}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:admin}
+    password: ${SPRING_RABBITMQ_PASSWORD:infra@123}
+    virtual-host: ${SPRING_RABBITMQ_VHOST:/}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    listener:
+      simple:
+        auto-startup: true
+        missing-queues-fatal: false
+        acknowledge-mode: manual
   flyway:
     enabled: false
 
@@ -76,3 +89,33 @@ hei:
   log:
     audit:
       consume-enabled: ${HEI_LOG_AUDIT_CONSUME_ENABLED:${HEI_MQ_AUDIT_CONSUME_ENABLED:true}}
+  oj:
+    judge:
+      worker-concurrency: ${OJ_JUDGE_WORKER_CONCURRENCY:4}
+      case-parallelism: ${OJ_JUDGE_CASE_PARALLELISM:4}
+      stop-on-first-error: ${OJ_JUDGE_STOP_ON_FIRST_ERROR:true}
+      real-time-factor: ${OJ_JUDGE_REAL_TIME_FACTOR:3}
+      lease-seconds: ${OJ_JUDGE_LEASE_SECONDS:180}
+      max-dispatch-per-submission: ${OJ_JUDGE_MAX_DISPATCH:3}
+      max-wait-ms: ${OJ_JUDGE_MAX_WAIT_MS:600000}
+      heartbeat-interval-ms: ${OJ_JUDGE_HEARTBEAT_INTERVAL_MS:5000}
+      heartbeat-fail-threshold: ${OJ_JUDGE_HEARTBEAT_FAIL_THRESHOLD:3}
+      heartbeat-stale-ms: ${OJ_JUDGE_HEARTBEAT_STALE_MS:90000}
+      heartbeat-stale-scan-ms: ${OJ_JUDGE_HEARTBEAT_STALE_SCAN_MS:15000}
+      auth-skew-seconds: ${OJ_JUDGE_AUTH_SKEW_SECONDS:300}
+      circuit-fail-threshold: ${OJ_JUDGE_CIRCUIT_FAIL_THRESHOLD:5}
+      circuit-open-ms: ${OJ_JUDGE_CIRCUIT_OPEN_MS:30000}
+      inline-case-max-bytes: ${OJ_JUDGE_INLINE_CASE_MAX_BYTES:262144}
+      sandbox-raw-max-bytes: ${OJ_JUDGE_SANDBOX_RAW_MAX_BYTES:65536}
+      dry-run-time-factor: ${OJ_JUDGE_DRY_RUN_TIME_FACTOR:3}
+      dry-run-memory-factor: ${OJ_JUDGE_DRY_RUN_MEMORY_FACTOR:2}
+      dry-run-relaxed-cpu-time-ms: ${OJ_JUDGE_DRY_RUN_RELAXED_CPU_MS:30000}
+      dry-run-relaxed-memory-bytes: ${OJ_JUDGE_DRY_RUN_RELAXED_MEM:1073741824}
+      # 与 SparkSandbox SPARK_SANDBOX_SIGNING_SECRET 保持一致
+      default-signing-secret: ${OJ_JUDGE_DEFAULT_SIGNING_SECRET:your-long-random-secret}
+      mq:
+        exchange: oj.judge
+        work-queue: oj.judge.work
+        retry-queue: oj.judge.retry
+        dlq: oj.judge.dlq
+        prefetch: ${OJ_JUDGE_MQ_PREFETCH:4}

@@ -19,7 +19,7 @@ const props = withDefaults(
     original: '',
     modified: '',
     language: 'typescript',
-    theme: 'vs',
+    theme: 'vs-dark',
     height: 420,
     options: () => ({}),
   },

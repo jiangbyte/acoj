@@ -10,9 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import cn.hutool.core.util.IdUtil;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 
@@ -32,13 +33,29 @@ public class ConfigChangeNotifier {
     private final RedissonClient redissonClient;
     private final ObjectMapper objectMapper;
     private final String instanceId = IdUtil.simpleUUID();
-    private final AtomicReference<Consumer<Void>> invalidateHandler = new AtomicReference<>();
+    private final List<Consumer<Void>> invalidateHandlers = new CopyOnWriteArrayList<>();
+    private final List<Consumer<Void>> afterReloadHandlers = new CopyOnWriteArrayList<>();
 
     private RTopic topic;
     private Integer listenerId;
 
     public void onInvalidate(Consumer<Void> handler) {
-        invalidateHandler.set(handler);
+        invalidateHandlers.add(handler);
+    }
+
+    /** RuntimeSettings 重载后的本地回调（如刷新 StorageEngine 缓存）。 */
+    public void onAfterReload(Consumer<Void> handler) {
+        afterReloadHandlers.add(handler);
+    }
+
+    public void runAfterReloadHandlers() {
+        for (Consumer<Void> handler : afterReloadHandlers) {
+            try {
+                handler.accept(null);
+            } catch (Exception ex) {
+                log.warn("Config after-reload handler failed", ex);
+            }
+        }
     }
 
     @PostConstruct
@@ -52,9 +69,12 @@ public class ConfigChangeNotifier {
                 if (instanceId.equals(String.valueOf(source))) {
                     return;
                 }
-                Consumer<Void> handler = invalidateHandler.get();
-                if (handler != null) {
-                    handler.accept(null);
+                for (Consumer<Void> handler : invalidateHandlers) {
+                    try {
+                        handler.accept(null);
+                    } catch (Exception ex) {
+                        log.warn("Config invalidate handler failed", ex);
+                    }
                 }
                 log.info("Config cache invalidated from distributed event reason={}", event.get("reason"));
             } catch (Exception ex) {

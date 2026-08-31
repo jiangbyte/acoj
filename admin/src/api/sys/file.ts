@@ -23,6 +23,9 @@ export interface SysFileItem {
 export interface FileUrlResponse {
   object_name: string
   url: string
+  original_name?: string | null
+  size?: number | null
+  content_type?: string | null
 }
 
 export interface FileUploadOptions {

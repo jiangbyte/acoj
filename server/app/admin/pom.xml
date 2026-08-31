@@ -55,6 +55,10 @@
             <groupId>github.jiangbyte.io</groupId>
             <artifactId>workspace</artifactId>
         </dependency>
+        <dependency>
+            <groupId>github.jiangbyte.io</groupId>
+            <artifactId>oj</artifactId>
+        </dependency>
         <!-- sample module/biz: see profile with-biz (activeByDefault); prod: -P'!with-biz' -->
 
         <dependency>

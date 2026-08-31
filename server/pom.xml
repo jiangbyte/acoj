@@ -148,6 +148,11 @@
             </dependency>
             <dependency>
                 <groupId>github.jiangbyte.io</groupId>
+                <artifactId>oj-api</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>github.jiangbyte.io</groupId>
                 <artifactId>auth</artifactId>
                 <version>${revision}</version>
             </dependency>
@@ -169,6 +174,11 @@
             <dependency>
                 <groupId>github.jiangbyte.io</groupId>
                 <artifactId>workspace</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>github.jiangbyte.io</groupId>
+                <artifactId>oj</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>

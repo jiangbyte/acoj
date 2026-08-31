@@ -321,7 +321,6 @@ function confirmDelete(row: Row) {
                 <MonacoEditor
                   v-model:value="state.draftBody"
                   language="html"
-                  theme="vs-dark"
                   height="420px"
                   :options="{ wordWrap: 'on', lineNumbers: 'on', tabSize: 2 }"
                 />

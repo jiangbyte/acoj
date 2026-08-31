@@ -25,6 +25,8 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -69,7 +71,7 @@ public class ConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> i
     private final SysConfigConvert configConvert;
     private final ConfigChangeNotifier configChangeNotifier;
     private final ConfigCryptoService configCryptoService;
-    private ConcurrentHashMap<String, String> valueCache = new ConcurrentHashMap<>();
+    private volatile ConcurrentHashMap<String, String> valueCache = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
@@ -100,7 +102,7 @@ public class ConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> i
         config.setConfigValue(encryptValue(config.getConfigKey(), config.getConfigValue()));
         this.save(config);
         AuditSnapshots.created(config);
-        afterMutation("create");
+        afterMutation("create", Map.of(config.getConfigKey(), param.getConfigValue()));
     }
 
     @Override
@@ -137,7 +139,7 @@ public class ConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> i
         config.setConfigValue(encryptValue(config.getConfigKey(), config.getConfigValue()));
         this.updateById(config);
         AuditSnapshots.after(config);
-        afterMutation("update");
+        afterMutation("update", patchPlainValue(config.getConfigKey(), param.getConfigValue()));
     }
 
     @Override
@@ -147,6 +149,7 @@ public class ConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> i
         if (ids == null || ids.isEmpty()) {
             return;
         }
+        List<SysConfig> deleted = new ArrayList<>();
         for (List<String> batch : BatchPartition.partition(ids)) {
             List<SysConfig> configs = getBaseMapper().selectByIds(batch);
             List<String> builtinKeys = configs.stream()
@@ -157,9 +160,14 @@ public class ConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> i
                 throw new BizException("内置配置不可删除: " + String.join(", ", builtinKeys));
             }
             AuditSnapshots.deletedAll(configs);
+            deleted.addAll(configs);
             this.removeByIds(batch);
         }
-        afterMutation("delete");
+        Map<String, String> patches = new HashMap<>();
+        for (SysConfig config : deleted) {
+            patches.put(config.getConfigKey(), null);
+        }
+        afterMutation("delete", patches);
     }
 
     @Override
@@ -279,7 +287,11 @@ public class ConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> i
         for (int i = 0; i < toUpdate.size(); i += size) {
             this.updateBatchById(toUpdate.subList(i, Math.min(i + size, toUpdate.size())));
         }
-        afterMutation("batchSave");
+        Map<String, String> patches = new HashMap<>();
+        for (SysConfigBatchItemParam item : itemsToSave) {
+            patches.put(item.getConfigKey(), item.getConfigValue());
+        }
+        afterMutation("batchSave", patches);
     }
 
     @Override
@@ -356,8 +368,6 @@ public class ConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> i
 
     @Override
     public void invalidateLocalCache() {
-        // 清空后预热本地缓存
-        valueCache.clear();
         warmCache();
     }
 
@@ -372,23 +382,57 @@ public class ConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> i
                 && (configKey.endsWith("_CLIENT_SECRET") || configKey.endsWith("_APP_SECRET"));
     }
 
-    private void afterMutation(String reason) {
-        // 刷新本地缓存并广播失效
-        invalidateLocalCache();
-        configChangeNotifier.publish(reason);
+    private Map<String, String> patchPlainValue(String configKey, String plainValue) {
+        if (isSensitive(configKey) && !StringUtils.hasText(plainValue)) {
+            return Map.of();
+        }
+        return Map.of(configKey, plainValue);
+    }
+
+    private void afterMutation(String reason, Map<String, String> patches) {
+        applyRuntimePatches(patches);
+        Runnable postCommit = () -> {
+            warmCache();
+            configChangeNotifier.publish(reason);
+        };
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    postCommit.run();
+                }
+            });
+            return;
+        }
+        postCommit.run();
+    }
+
+    private void applyRuntimePatches(Map<String, String> patches) {
+        if (patches == null || patches.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, String> entry : patches.entrySet()) {
+            if (entry.getValue() == null) {
+                valueCache.remove(entry.getKey());
+            } else {
+                valueCache.put(entry.getKey(), entry.getValue());
+            }
+        }
+        RuntimeSettingsHolder.reload();
+        configChangeNotifier.runAfterReloadHandlers();
     }
 
     private void warmCache() {
-        // 全量加载并解密写入本地缓存
         List<SysConfig> all = getBaseMapper().selectList(Wrappers.lambdaQuery());
-        valueCache.clear();
+        ConcurrentHashMap<String, String> nextCache = new ConcurrentHashMap<>();
         for (SysConfig config : all) {
             if (StringUtils.hasText(config.getConfigKey()) && config.getConfigValue() != null) {
-                valueCache.put(config.getConfigKey(), decryptValue(config.getConfigValue()));
+                nextCache.put(config.getConfigKey(), decryptValue(config.getConfigValue()));
             }
         }
-        // 触发运行时设置重载
+        valueCache = nextCache;
         RuntimeSettingsHolder.reload();
+        configChangeNotifier.runAfterReloadHandlers();
     }
 
     private String decryptValue(String raw) {

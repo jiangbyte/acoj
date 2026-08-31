@@ -22,6 +22,8 @@ const props = withDefaults(
     preview?: 'image' | 'video' | 'file'
     compact?: boolean
     valueType?: UploadedFileValueType
+    /** 编辑回显时的原始文件名（优先于 object key 解析） */
+    displayName?: string | null
   }>(),
   {
     value: '',
@@ -36,6 +38,7 @@ const props = withDefaults(
     compact: false,
     valueType: 'auto',
     file: null,
+    displayName: '',
   },
 )
 
@@ -78,29 +81,45 @@ const uploadText = computed(() => props.buttonText || '上传')
 const actionIcon = computed(() => props.icon || 'icon-park-outline:upload')
 
 watch(
-  () => props.value,
-  async (value) => {
+  () => [props.value, props.displayName] as const,
+  async ([value]) => {
     const raw = String(value || '').trim()
     if (!raw) {
-      state.fileUrl = ''
+      if (!state.selectedFile) {
+        state.fileUrl = ''
+        state.fileName = ''
+        state.uploadFileList = []
+      }
       return
     }
     if (/^(https?:|data:|blob:)/i.test(raw)) {
       state.fileUrl = raw
+      syncExistingUploadList(raw, props.displayName?.trim() || raw)
       return
     }
-    if (state.fileUrl && state.fileUrl.includes(raw)) {
-      return
-    }
-    try {
-      const response = await fileApi.url(raw)
-      state.fileUrl = response.data?.url || ''
-    } catch {
-      state.fileUrl = ''
-    }
+    await resolveExistingFileMeta(raw)
   },
   { immediate: true },
 )
+
+async function resolveExistingFileMeta(objectKey: string) {
+  const hintedName = props.displayName?.trim()
+  const fallbackName = hintedName || displayNameFromObjectKey(objectKey)
+  syncExistingUploadList(objectKey, fallbackName)
+  try {
+    const response = await fileApi.url(objectKey)
+    const meta = response.data
+    state.fileUrl = meta?.url || ''
+    const resolvedName = meta?.original_name?.trim() || fallbackName
+    state.fileName = resolvedName
+    state.fileSize = meta?.size ?? null
+    state.contentType = meta?.content_type ?? null
+    syncExistingUploadList(objectKey, resolvedName)
+  } catch {
+    state.fileUrl = ''
+    syncExistingUploadList(objectKey, fallbackName)
+  }
+}
 
 watch(
   () => props.file,
@@ -144,12 +163,40 @@ async function handleFileChange(event: Event) {
 }
 
 async function handleUploadFileListChange(fileList: UploadFileInfo[]) {
+  if (!fileList.length) {
+    clearSelectedFile()
+    emit('update:value', '')
+    return
+  }
   const fileInfo = [...fileList].reverse().find((item) => item.file)
   if (!fileInfo?.file) {
-    clearSelectedFile()
+    state.uploadFileList = fileList
     return
   }
   await selectFile(fileInfo.file, fileInfo)
+}
+
+function displayNameFromObjectKey(objectKey: string) {
+  const normalized = objectKey.replace(/\\/g, '/')
+  const slash = normalized.lastIndexOf('/')
+  return slash >= 0 ? normalized.slice(slash + 1) : normalized
+}
+
+/** 编辑回显：将已有 object key 同步到 NUpload 文件列表（无本地 File 对象）。 */
+function syncExistingUploadList(objectKey: string, displayName: string) {
+  if (props.mode !== 'upload' || state.selectedFile) {
+    return
+  }
+  const name = displayName.trim() || displayNameFromObjectKey(objectKey)
+  state.fileName = name
+  state.uploadFileList = [
+    {
+      id: `existing-${objectKey}`,
+      name,
+      status: 'finished',
+      percentage: 100,
+    },
+  ]
 }
 
 async function selectFile(file: File, fileInfo?: UploadFileInfo) {
@@ -191,6 +238,10 @@ async function uploadSelectedFile() {
     state.fileUrl = normalized.url
     state.fileSize = normalized.size
     state.contentType = normalized.contentType
+    state.uploadFileList = state.uploadFileList.map((item) => ({
+      ...item,
+      name: normalized.name,
+    }))
     emit('update:value', normalized.value)
     emit('uploaded', { ...normalized, ...uploaded })
     window.$message.success('上传成功')
@@ -281,7 +332,7 @@ defineExpose({
       :disabled="state.loading"
       :file-list="state.uploadFileList"
       :max="1"
-      :show-cancel-button="false"
+      :show-cancel-button="!!props.value"
       :show-retry-button="false"
       @update:file-list="handleUploadFileListChange"
     >

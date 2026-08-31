@@ -29,6 +29,8 @@ const state = reactive({
   defaultProvider: 'minio' as string,
   storageProvider: null as string | null,
   uploadFileList: [] as UploadFileInfo[],
+  /** NUpload 受控模式下 file 引用可能丢失，按 id 兜底 */
+  uploadFileMap: new Map<string, File>(),
   succeeded: 0,
   failed: 0,
 })
@@ -62,8 +64,22 @@ async function openModal() {
 function resetForm() {
   state.storageProvider = null
   state.uploadFileList = []
+  state.uploadFileMap = new Map<string, File>()
   state.succeeded = 0
   state.failed = 0
+}
+
+function handleUploadFileListChange(fileList: UploadFileInfo[]) {
+  for (const item of fileList) {
+    if (item.file) {
+      state.uploadFileMap.set(item.id, item.file)
+    }
+  }
+  state.uploadFileList = fileList
+}
+
+function resolveUploadFile(fileInfo: UploadFileInfo) {
+  return fileInfo.file ?? state.uploadFileMap.get(fileInfo.id)
 }
 
 function handleUpdateShow(show: boolean) {
@@ -87,7 +103,9 @@ async function submitForm() {
     window.$message.warning('请选择文件存储引擎')
     return
   }
-  const pending = state.uploadFileList.filter((f) => f.status === 'pending' || f.status === 'error')
+  const pending = state.uploadFileList.filter(
+    (f) => !f.status || f.status === 'pending' || f.status === 'error',
+  )
   if (!pending.length) {
     window.$message.warning('请先选择文件')
     return
@@ -97,8 +115,12 @@ async function submitForm() {
   state.failed = 0
   try {
     for (const fileInfo of pending) {
-      const file = fileInfo.file
-      if (!file) continue
+      const file = resolveUploadFile(fileInfo)
+      if (!file) {
+        fileInfo.status = 'error'
+        state.failed++
+        continue
+      }
       fileInfo.status = 'uploading'
       try {
         await fileApi.upload(file, {
@@ -195,7 +217,7 @@ defineExpose({
             :file-list="state.uploadFileList"
             :show-cancel-button="!state.submitLoading"
             :show-retry-button="false"
-            @update:file-list="state.uploadFileList = $event"
+            @update:file-list="handleUploadFileListChange"
           >
             <NUploadDragger>
               <div class="upload-dragger">

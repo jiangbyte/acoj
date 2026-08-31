@@ -20,6 +20,7 @@
         <module>iam</module>
         <module>auth</module>
         <module>workspace</module>
+        <module>oj</module>
         <module>biz</module>
     </modules>
 

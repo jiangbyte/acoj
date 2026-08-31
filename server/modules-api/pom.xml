@@ -18,5 +18,6 @@
         <module>iam-api</module>
         <module>sys-api</module>
         <module>profile-api</module>
+        <module>oj-api</module>
     </modules>
 </project>

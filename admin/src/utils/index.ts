@@ -9,6 +9,7 @@ export * from './permission'
 export * from './file'
 export * from './time'
 export * from './wire'
+export * from './oj'
 export * from './rsaEncrypt'
 
 import { createHttp } from './axios'

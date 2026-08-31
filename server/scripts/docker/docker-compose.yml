@@ -15,6 +15,7 @@ services:
     volumes:
       - hei-mysql-data:/var/lib/mysql
       - ../hei_boot.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ../oj_p0.sql:/docker-entrypoint-initdb.d/02-oj-p0.sql:ro
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
@@ -68,6 +69,29 @@ services:
     networks:
       - hei-net
 
+  rabbitmq:
+    image: ${RABBITMQ_IMAGE:-rabbitmq:3.13-management-alpine}
+    container_name: hei-rabbitmq
+    env_file: .env
+    environment:
+      TZ: Asia/Shanghai
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-hei}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-hei123456}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    volumes:
+      - hei-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - hei-net
+
   hei-boot:
     image: registry.cn-beijing.aliyuncs.com/czbyte/hei-boot:${HEI_BOOT_VERSION:-latest}
     container_name: hei-boot
@@ -77,6 +101,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     environment:
       TZ: Asia/Shanghai
       LANG: C.UTF-8
@@ -90,6 +116,11 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}
+      SPRING_RABBITMQ_HOST: ${SPRING_RABBITMQ_HOST:-rabbitmq}
+      SPRING_RABBITMQ_PORT: ${SPRING_RABBITMQ_PORT:-5672}
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-hei}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-hei123456}
+      OJ_JUDGE_DEFAULT_SIGNING_SECRET: ${OJ_JUDGE_DEFAULT_SIGNING_SECRET:-}
       HEI_CONFIG_CRYPTO_KEY: ${HEI_CONFIG_CRYPTO_KEY:?set HEI_CONFIG_CRYPTO_KEY in .env}
       SA_TOKEN_COOKIE_SECURE: ${SA_TOKEN_COOKIE_SECURE:-false}
       HEI_SECURITY_EXPOSE_ACTUATOR: ${HEI_SECURITY_EXPOSE_ACTUATOR:-true}
@@ -158,5 +189,6 @@ volumes:
   hei-mysql-data:
   hei-redis-data:
   hei-minio-data:
+  hei-rabbitmq-data:
   hei-boot-logs:
   hei-boot-storage:

@@ -15,7 +15,7 @@ withDefaults(
   {
     value: '',
     language: 'typescript',
-    theme: 'vs',
+    theme: 'vs-dark',
     height: 360,
     options: () => ({}),
   },
