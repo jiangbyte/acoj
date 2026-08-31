@@ -148,7 +148,7 @@ cd portal && pnpm install && pnpm dev
 
 | 项目 | 说明 | 协议 |
 | --- | --- | --- |
-| [**SparkSandbox**](https://github.com/jiangbyte/SparkSandbox) | 判题沙箱（编译与限资源执行） | — |
+| [**SparkSandbox**](https://github.com/jiangbyte/SparkSandbox) | 判题沙箱（编译与限资源执行） | MIT |
 | [**hei-boot**](https://github.com/jiangbyte/hei-boot) | Spring Boot 脚手架（本仓库 `server` 同源） | Apache License 2.0 |
 | [**hei-admin**](https://github.com/jiangbyte/hei-admin) | Vue 3 管理端脚手架 | Apache License 2.0 |
 | [**hei-portal**](https://github.com/jiangbyte/hei-portal) | React 门户脚手架 | Apache License 2.0 |
