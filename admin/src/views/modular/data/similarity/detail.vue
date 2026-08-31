@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { NDescriptions, NDescriptionsItem, NDrawer, NDrawerContent, NTime } from 'naive-ui'
 import { useTaskSimilarityFetch } from '@/composables/v1'
+import { FormatModuleType } from '@/utils'
 
 const emit = defineEmits(['close'])
 const show = ref(false)
@@ -38,7 +39,7 @@ defineExpose({
           {{ formData.problemIdName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="提交模块">
-          {{ formData.moduleTypeName }}
+          {{ FormatModuleType(formData.moduleType) }}
         </NDescriptionsItem>
         <NDescriptionsItem label="编程语言">
           {{ formData.languageName }}

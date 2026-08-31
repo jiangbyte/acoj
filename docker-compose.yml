@@ -2,10 +2,9 @@
 #
 # Default stack (~6–7 GiB peak):
 #   mysql + redis + rabbitmq + nacos + minio + oj + judge-service + similarity-service
+#   + pc + admin
 #
-# Optional:
-#   --profile frontend   → pc + admin
-#   Soft sandbox: change judge volume to deploy/docker/judge/judge-soft.yaml
+# Soft sandbox: change judge volume to deploy/docker/judge/judge-soft.yaml
 
 name: acoj
 
@@ -302,7 +301,7 @@ services:
           memory: 512M
     networks: [acoj]
 
-  # ───────────────────────── Frontends (optional) ─────────────────────────
+  # ───────────────────────── Frontends ─────────────────────────
   pc:
     build:
       context: ./pc
@@ -322,7 +321,6 @@ services:
           cpus: "0.25"
           memory: 128M
     networks: [acoj]
-    profiles: ["frontend"]
 
   admin:
     build:
@@ -343,7 +341,6 @@ services:
           cpus: "0.25"
           memory: 128M
     networks: [acoj]
-    profiles: ["frontend"]
 
 networks:
   acoj:

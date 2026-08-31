@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { NDescriptions, NDescriptionsItem, NDrawer, NDrawerContent, NTime } from 'naive-ui'
 import { useTaskReportsFetch } from '@/composables/v1'
+import { FormatModuleType } from '@/utils'
 
 const emit = defineEmits(['close'])
 const show = ref(false)
@@ -35,7 +36,7 @@ defineExpose({
           {{ formData.taskId }}
         </NDescriptionsItem>
         <NDescriptionsItem label="提交模块">
-          {{ formData.moduleTypeName }}
+          {{ FormatModuleType(formData.moduleType) }}
         </NDescriptionsItem>
         <NDescriptionsItem label="题目">
           {{ formData.problemIdName }}

@@ -21,3 +21,16 @@ export function FormatLanguages(languages: string[] | undefined): string[] {
     return lang.charAt(0).toUpperCase() + lang.slice(1).toLowerCase()
   })
 }
+
+const MODULE_TYPE_LABEL: Record<string, string> = {
+  PROBLEM: '题库',
+  SET: '题集',
+  CONTEST: '竞赛',
+}
+
+/** 提交模块类型展示（后端未返回 moduleTypeName） */
+export function FormatModuleType(moduleType: string | null | undefined): string {
+  if (!moduleType)
+    return '-'
+  return MODULE_TYPE_LABEL[moduleType] ?? moduleType
+}

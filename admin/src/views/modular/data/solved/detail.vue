@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { NDescriptions, NDescriptionsItem, NDrawer, NDrawerContent, NTime } from 'naive-ui'
 import { useDataSolvedFetch } from '@/composables/v1'
+import { FormatModuleType } from '@/utils'
 
 const emit = defineEmits(['close'])
 const show = ref(false)
@@ -29,7 +30,7 @@ defineExpose({
           {{ formData.id }}
         </NDescriptionsItem>
         <NDescriptionsItem label="提交模块">
-          {{ formData.moduleTypeName }}
+          {{ FormatModuleType(formData.moduleType) }}
         </NDescriptionsItem>
         <NDescriptionsItem label="用户">
           <!-- {{ formData.userId }} -->

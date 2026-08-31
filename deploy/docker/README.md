@@ -60,11 +60,7 @@ cp .env.example .env
 ## Start
 
 ```bash
-# Core stack
 docker compose up -d --build
-
-# With PC + Admin frontends
-docker compose --profile frontend up -d --build
 ```
 
 Wait until `nacos-init` / `minio-init` finish and `oj` becomes healthy:
@@ -87,8 +83,8 @@ ensures the Compose namespace exists, then publishes configs under `DEFAULT_GROU
 | MinIO Console | http://localhost:9001 (admin/infra@123) |
 | Judge | http://localhost:8888 |
 | Similarity | http://localhost:8882 |
-| PC (profile) | http://localhost:80 |
-| Admin (profile) | http://localhost:81 |
+| PC | http://localhost:80 |
+| Admin | http://localhost:81 |
 
 ## Demo data (judge + similarity)
 

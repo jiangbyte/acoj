@@ -2,6 +2,7 @@
 import type { DataTableColumns } from 'naive-ui'
 import { NAvatar, NButton, NCard, NDataTable, NEllipsis, NPagination, NPopconfirm, NSpace } from 'naive-ui'
 import { useDataSubmitFetch } from '@/composables/v1'
+import { FormatModuleType } from '@/utils'
 import Form from './form.vue'
 import Detail from './detail.vue'
 import JudgeCasePage from './judgecase.vue'
@@ -49,10 +50,8 @@ const columns: DataTableColumns<any> = [
   },
   {
     title: '提交模块',
-    key: 'moduleTypeName',
-    ellipsis: {
-      tooltip: true,
-    },
+    key: 'moduleType',
+    render: (row) => FormatModuleType(row.moduleType),
   },
   {
     title: '题目',
