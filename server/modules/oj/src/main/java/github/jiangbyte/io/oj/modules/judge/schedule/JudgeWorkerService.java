@@ -97,6 +97,13 @@ public class JudgeWorkerService {
             return;
         }
 
+        // 2b. next_retry_at 未到：ack 跳过，依赖已有 delay 消息或补偿 Job（禁止二次灌队列）
+        if (OjVerdict.PENDING.matches(status)
+                && submission.getNextRetryAt() != null
+                && submission.getNextRetryAt().isAfter(now)) {
+            return;
+        }
+
         // 3. 排队过久直接 SE，避免无限重试占队列
         if (exceededMaxWait(submission, now)) {
             finalizeSystemError(submission, "NODE_UNAVAILABLE", "等待可用节点超时");
@@ -327,16 +334,22 @@ public class JudgeWorkerService {
                 .eq(OjSubmission::getStatus, OjVerdict.JUDGING.name())
                 .eq(OjSubmission::getJudgeToken, judgeToken)) > 0;
 
-        // 4. 关闭 dispatch；CAS 成功则记节点成功并更新题/用户统计
-        finishDispatch(dispatch, OjDispatchOutcome.SUCCESS_RESULT.name(), run.httpStatus(), null, null, verdict.getStatus());
+        // 4. 关闭 dispatch（CAS finished_at）；仅本进程成功关闭时才动 inflight
+        boolean dispatchClosed = finishDispatch(dispatch, OjDispatchOutcome.SUCCESS_RESULT.name(),
+                run.httpStatus(), null, null, verdict.getStatus());
         if (cas) {
-            nodeScheduler.markSuccess(node.getId());
+            if (dispatchClosed) {
+                nodeScheduler.markSuccess(node.getId());
+            }
             bumpProblemCounts(problem.getId(), OjVerdict.AC.matches(verdict.getStatus()));
             upsertUserStat(submission.getAccountId(), problem.getId(), OjVerdict.AC.matches(verdict.getStatus()), judgedAt);
-        } else {
-            // CAS 失败：结果丢弃，仍释放本轮 inflight（若已被 reaper 处理则 GREATEST 兜底）
+        } else if (dispatchClosed) {
+            // CAS 失败但本进程关了 dispatch：需自行释放；若已被 Reaper 关闭则跳过防双减
             nodeScheduler.releaseInflight(node.getId());
             log.info("CAS rejected for submission {}, discard result", submission.getId());
+        } else {
+            log.info("CAS rejected for submission {}, dispatch already closed, skip inflight release",
+                    submission.getId());
         }
     }
 
@@ -349,23 +362,31 @@ public class JudgeWorkerService {
             String judgeToken,
             SparkSandboxClient.RunCasesResult run,
             int dispatchCount) {
-        // 1. 区分 TIMEOUT / TRANSPORT_FAIL，关闭本轮 dispatch 并扣节点
+        // 1. 区分 TIMEOUT / TRANSPORT_FAIL，CAS 关闭本轮 dispatch；成功才扣节点
         String err = truncate(run.errorMessage(), 512);
         String outcome = run.httpStatus() == 0 && err != null && err.toLowerCase().contains("timeout")
                 ? OjDispatchOutcome.TIMEOUT.name()
                 : OjDispatchOutcome.TRANSPORT_FAIL.name();
-        finishDispatch(dispatch, outcome, run.httpStatus() == 0 ? null : run.httpStatus(),
+        boolean dispatchClosed = finishDispatch(dispatch, outcome, run.httpStatus() == 0 ? null : run.httpStatus(),
                 outcome, err, null);
-        nodeScheduler.recordRunFailure(node.getId(), run.httpStatus(), err);
+        if (dispatchClosed) {
+            nodeScheduler.recordRunFailure(node.getId(), run.httpStatus(), err);
+        }
 
-        // 2. 总等待超时：直接 SE
+        // 2. 非基础设施失败（如 4xx）：不换机，直接 SE
+        if (!SparkSandboxClient.isNodeInfrastructureFailure(run.httpStatus())) {
+            casBackToPendingThenSe(submission.getId(), judgeToken, "SANDBOX_REJECT", err);
+            return;
+        }
+
+        // 3. 总等待超时：直接 SE
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         if (exceededMaxWait(submission, now)) {
             casBackToPendingThenSe(submission.getId(), judgeToken, "NODE_UNAVAILABLE", err);
             return;
         }
 
-        // 3. 未达换机上限且仍有 Eligible：退 PENDING 立即 failover
+        // 4. 未达换机上限且仍有 Eligible：退 PENDING 立即 failover
         int maxDispatch = ojProperties.getJudge().getMaxDispatchPerSubmission();
         boolean canFailover = dispatchCount < maxDispatch
                 && nodeScheduler.hasEligible(submission.getLanguage(), List.of());
@@ -385,7 +406,7 @@ public class JudgeWorkerService {
             return;
         }
 
-        // 4. 否则指数退避后重试
+        // 5. 否则指数退避后重试
         long backoff = backoffMs(dispatchCount);
         OffsetDateTime nextRetry = now.plusNanos(backoff * 1_000_000L);
         ojSubmissionMapper.update(null, Wrappers.<OjSubmission>lambdaUpdate()
@@ -454,7 +475,10 @@ public class JudgeWorkerService {
                 .in(OjSubmission::getStatus, List.of(OjVerdict.PENDING.name(), OjVerdict.JUDGING.name())));
     }
 
-    private void finishDispatch(
+    /**
+     * CAS 关闭 open dispatch；返回是否由本进程成功关闭（用于决定是否释放 inflight）。
+     */
+    private boolean finishDispatch(
             OjJudgeDispatch dispatch,
             String outcome,
             Integer httpStatus,
@@ -462,7 +486,7 @@ public class JudgeWorkerService {
             String errorMessage,
             String userVerdict) {
         if (dispatch == null || dispatch.getId() == null) {
-            return;
+            return false;
         }
         OffsetDateTime finishedAt = OffsetDateTime.now(ZoneOffset.UTC);
         Integer duration = null;
@@ -470,7 +494,7 @@ public class JudgeWorkerService {
             duration = (int) Math.max(0, finishedAt.toInstant().toEpochMilli()
                     - dispatch.getStartedAt().toInstant().toEpochMilli());
         }
-        ojJudgeDispatchMapper.update(null, Wrappers.<OjJudgeDispatch>lambdaUpdate()
+        return ojJudgeDispatchMapper.update(null, Wrappers.<OjJudgeDispatch>lambdaUpdate()
                 .set(OjJudgeDispatch::getFinishedAt, finishedAt)
                 .set(OjJudgeDispatch::getDurationMs, duration)
                 .set(OjJudgeDispatch::getOutcome, outcome)
@@ -479,7 +503,7 @@ public class JudgeWorkerService {
                 .set(OjJudgeDispatch::getErrorMessage, truncate(errorMessage, 512))
                 .set(OjJudgeDispatch::getUserVerdict, userVerdict)
                 .eq(OjJudgeDispatch::getId, dispatch.getId())
-                .isNull(OjJudgeDispatch::getFinishedAt));
+                .isNull(OjJudgeDispatch::getFinishedAt)) > 0;
     }
 
     @Transactional

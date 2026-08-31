@@ -98,10 +98,9 @@ public class SandboxHeartbeatService {
         existing.setMaxConcurrency(maxConcurrency);
         existing.setSigningEnabled(true);
         existing.setLastHeartbeatAt(now);
-        existing.setConsecutiveFailCount(0);
         existing.setSupportedLanguages(languageKeys);
         existing.setExtra(extra);
-        // 心跳成功不得单独关 OPEN 熔断；非 OPEN 恢复 ONLINE（含 DISABLED，调度侧过滤）
+        // 心跳成功不得单独关 OPEN 熔断，也不得清零 consecutive_fail（避免 health 通但 run_cases 全挂）
         if (!OjCircuitState.OPEN.matches(existing.getCircuitState())) {
             existing.setRuntimeStatus(OjJudgeRuntimeStatus.ONLINE.name());
         }

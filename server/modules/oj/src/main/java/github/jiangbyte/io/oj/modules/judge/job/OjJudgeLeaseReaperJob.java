@@ -1,6 +1,7 @@
 package github.jiangbyte.io.oj.modules.judge.job;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import github.jiangbyte.io.common.job.JobHandler;
 import github.jiangbyte.io.oj.modules.judge.dispatch.entity.OjJudgeDispatch;
 import github.jiangbyte.io.oj.modules.judge.dispatch.mapper.OjJudgeDispatchMapper;
 import github.jiangbyte.io.oj.modules.judge.enums.OjDispatchOutcome;
@@ -12,7 +13,6 @@ import github.jiangbyte.io.oj.modules.submission.enums.OjVerdict;
 import github.jiangbyte.io.oj.modules.submission.mapper.OjSubmissionMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -28,13 +28,14 @@ import java.util.UUID;
 
 /**
  * 租约回收：过期 JUDGING 改回 PENDING 并重新入队。
+ * <p>由 sys_job + Lock4j 单例调度；关 dispatch CAS 成功才 release inflight。
  *
  * Author: Charlie
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OjJudgeLeaseReaperJob {
+public class OjJudgeLeaseReaperJob implements JobHandler {
 
     private static final int SCAN_LIMIT = 100;
     private static final int IN_CHUNK = 500;
@@ -44,24 +45,19 @@ public class OjJudgeLeaseReaperJob {
     private final NodeScheduler nodeScheduler;
     private final OjJudgePublisher ojJudgePublisher;
 
-    /**
-     * 扫描租约过期的判题中提交，CAS 退回 PENDING，批量关闭未结束 dispatch，释放 inflight 后重新入队。
-     */
-    @Scheduled(fixedDelayString = "${hei.oj.judge.zombie-requeue-scan-ms:15000}")
-    public void reap() {
+    @Override
+    public String execute(String params) {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
-        // 1. 拉一批租约已过期、仍为 JUDGING 的提交（限量，避免单次扫全表）
         List<OjSubmission> expired = ojSubmissionMapper.selectList(
                 Wrappers.<OjSubmission>lambdaQuery()
                         .eq(OjSubmission::getStatus, OjVerdict.JUDGING.name())
                         .lt(OjSubmission::getJudgeLeaseUntil, now)
                         .last("LIMIT " + SCAN_LIMIT));
         if (expired.isEmpty()) {
-            return;
+            return "reclaimed=0,enqueued=0";
         }
 
-        // 2. 逐条 CAS 退回 PENDING：必须带原 judgeToken，避免与仍在工作的 Worker 双写
         List<OjSubmission> reclaimed = new ArrayList<>();
         for (OjSubmission submission : expired) {
             try {
@@ -73,13 +69,11 @@ public class OjJudgeLeaseReaperJob {
             }
         }
         if (reclaimed.isEmpty()) {
-            return;
+            return "reclaimed=0,enqueued=0";
         }
 
-        // 3. 一次（分批）查出这些提交上未结束的 dispatch，按 submission 取最新一条
         Map<String, OjJudgeDispatch> openBySubmission = loadLatestOpenDispatches(reclaimed);
 
-        // 4. 批量关闭 open dispatch，并收集需要释放 inflight 的 nodeId（同一节点只减一次）
         Set<String> nodesToRelease = new HashSet<>();
         for (OjSubmission submission : reclaimed) {
             OjJudgeDispatch open = openBySubmission.get(submission.getId());
@@ -88,7 +82,7 @@ public class OjJudgeLeaseReaperJob {
                     nodesToRelease.add(open.getNodeId());
                 }
             } else if (StringUtils.hasText(submission.getJudgeNodeId())) {
-                // 无 open dispatch 记录时仍按提交上的节点释放，避免 inflight 泄漏
+                // 无 open dispatch：本轮占坑未落审计时仍释放，避免泄漏
                 nodesToRelease.add(submission.getJudgeNodeId());
             }
         }
@@ -96,21 +90,20 @@ public class OjJudgeLeaseReaperJob {
             nodeScheduler.releaseInflight(nodeId);
         }
 
-        // 5. 重新入队；每条新 requestId，避免与旧派发混淆
+        int enqueued = 0;
         for (OjSubmission submission : reclaimed) {
             try {
                 String requestId = UUID.randomUUID().toString().replace("-", "");
                 ojJudgePublisher.publishWork(
                         OjJudgeMessage.of(submission.getId(), requestId, OjJudgeMessage.REASON_LEASE_REAP));
+                enqueued++;
             } catch (Exception ex) {
                 log.warn("lease reap enqueue failed submissionId={}: {}", submission.getId(), ex.toString());
             }
         }
+        return "reclaimed=" + reclaimed.size() + ",enqueued=" + enqueued;
     }
 
-    /**
-     * CAS：仅当仍为 JUDGING 且 token 匹配时退回 PENDING。
-     */
     private boolean casReclaimSubmission(OjSubmission submission) {
         String token = submission.getJudgeToken();
         return ojSubmissionMapper.update(null, Wrappers.<OjSubmission>lambdaUpdate()
@@ -125,9 +118,6 @@ public class OjJudgeLeaseReaperJob {
                 .eq(StringUtils.hasText(token), OjSubmission::getJudgeToken, token)) > 0;
     }
 
-    /**
-     * 按 submissionId 批量加载未结束 dispatch，每个提交只保留 startedAt 最新的一条。
-     */
     private Map<String, OjJudgeDispatch> loadLatestOpenDispatches(List<OjSubmission> reclaimed) {
         List<String> submissionIds = reclaimed.stream()
                 .map(OjSubmission::getId)
@@ -146,16 +136,12 @@ public class OjJudgeLeaseReaperJob {
                 if (row == null || !StringUtils.hasText(row.getSubmissionId())) {
                     continue;
                 }
-                // 已按 startedAt 降序，先到的即最新
                 latest.putIfAbsent(row.getSubmissionId(), row);
             }
         }
         return latest;
     }
 
-    /**
-     * 将 open dispatch 标为 CANCELLED_LEASE；返回是否成功关闭（用于决定是否 release inflight）。
-     */
     private boolean finishDispatchCancelled(OjJudgeDispatch open, OffsetDateTime now) {
         Integer duration = null;
         if (open.getStartedAt() != null) {

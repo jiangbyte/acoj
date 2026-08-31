@@ -22,6 +22,8 @@ public record OjJudgeMessage(
     public static final String REASON_FAILOVER = "FAILOVER";
     public static final String REASON_LEASE_REAP = "LEASE_REAP";
     public static final String REASON_RETRY_BACKOFF = "RETRY_BACKOFF";
+    /** PENDING 补偿入队（MQ 丢失 / confirm 失败等）。 */
+    public static final String REASON_COMPENSATE = "COMPENSATE";
 
     public static OjJudgeMessage submission(String submissionId, String requestId, String reason) {
         return new OjJudgeMessage(
