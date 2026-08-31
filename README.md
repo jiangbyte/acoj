@@ -1,16 +1,16 @@
 # ACOJ
 
-![JDK](https://img.shields.io/badge/JDK-21-007396?logo=openjdk&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F?logo=springboot&logoColor=white)
-![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
-![MySQL](https://img.shields.io/badge/MySQL-Supported-4479A1?logo=mysql&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-Supported-DC382D?logo=redis&logoColor=white)
+![JDK](https://img.shields.io/badge/JDK-21-007396)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F)
+![Vue](https://img.shields.io/badge/Vue-3-4FC08D)
+![React](https://img.shields.io/badge/React-19-61DAFB)
+![MySQL](https://img.shields.io/badge/MySQL-Supported-4479A1)
+![Redis](https://img.shields.io/badge/Redis-Supported-DC382D)
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue)
 
 **ACOJ** 是一套在线评测（OJ）平台 monorepo：在 HEI 脚手架之上扩展题库、提交判题与多执行机调度，同时提供 **Admin**（Vue）与 **Portal**（React）双端，以及统一的 Spring Boot API。判题执行依赖 [SparkSandbox](https://github.com/jiangbyte/SparkSandbox)（只负责编译与运行；AC / WA 等裁决在 ACOJ 侧完成）。
 
-> 协议：[Apache License 2.0](server/LICENSE)
+> 协议：[Apache License 2.0](LICENSE)
 
 ## 目录
 
@@ -155,4 +155,4 @@ cd portal && pnpm install && pnpm dev
 
 ## License
 
-本项目基于 [Apache License 2.0](server/LICENSE) 开源。完整条款见各子工程 `LICENSE`，版权声明见 [server/NOTICE](server/NOTICE)。
+本项目基于 [Apache License 2.0](LICENSE) 开源。完整条款见 [LICENSE](LICENSE)，版权声明见 [NOTICE](NOTICE)。
