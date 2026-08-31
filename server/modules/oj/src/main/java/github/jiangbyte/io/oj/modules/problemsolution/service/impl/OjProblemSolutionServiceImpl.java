@@ -9,6 +9,7 @@ import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.oj.modules.problem.entity.OjProblem;
 import github.jiangbyte.io.oj.modules.problem.mapper.OjProblemMapper;
+import github.jiangbyte.io.oj.modules.problemcase.enums.OjEnableStatus;
 import github.jiangbyte.io.oj.modules.problemsolution.convert.OjProblemSolutionConvert;
 import github.jiangbyte.io.oj.modules.problemsolution.entity.OjProblemSolution;
 import github.jiangbyte.io.oj.modules.problemsolution.mapper.OjProblemSolutionMapper;
@@ -53,7 +54,7 @@ public class OjProblemSolutionServiceImpl
         OjProblemSolution entity = ojProblemSolutionConvert.toEntity(param);
         entity.setLanguage(param.getLanguage().trim());
         if (!StringUtils.hasText(entity.getStatus())) {
-            entity.setStatus("ENABLED");
+            entity.setStatus(OjEnableStatus.ENABLED.name());
         }
         if (entity.getIsDefault() == null) {
             entity.setIsDefault(false);

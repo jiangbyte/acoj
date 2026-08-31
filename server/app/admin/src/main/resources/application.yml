@@ -129,6 +129,13 @@ hei:
       - /api/v1/portal/sys/dicts/tree
       - /api/v1/portal/sys/resources/current
       - /api/v1/portal/sys/notices/list
+      # 题库 / 用户主页匿名只读
+      - /api/v1/portal/oj/problems/page
+      - /api/v1/portal/oj/problems/detail
+      - /api/v1/portal/oj/languages
+      - /api/v1/portal/oj/tags/options
+      - /api/v1/portal/oj/users/homepage
+      - /api/v1/portal/spaces/detail
       - /api/*/internal/**
   rate-limit:
     enabled: ${HEI_RATE_LIMIT_ENABLED:true}

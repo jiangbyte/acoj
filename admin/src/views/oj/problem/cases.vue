@@ -8,7 +8,7 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { ojProblemApi, ojProblemCaseApi } from '@/api'
-import { readPageMeta } from '@/utils/wire'
+import { readPageMeta, wireBool } from '@/utils/wire'
 import {
   createTagColor,
   dictList,
@@ -113,11 +113,14 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     title: '样例',
     path: 'is_sample',
     width: 80,
-    render: (row) => (
-      <NTag size="small" bordered={false} type={row.is_sample ? 'success' : 'default'}>
-        {row.is_sample ? '是' : '否'}
-      </NTag>
-    ),
+    render: (row) => {
+      const sample = wireBool(row.is_sample)
+      return (
+        <NTag size="small" bordered={false} type={sample ? 'success' : 'default'}>
+          {sample ? '是' : '否'}
+        </NTag>
+      )
+    },
   },
   {
     title: '分值',

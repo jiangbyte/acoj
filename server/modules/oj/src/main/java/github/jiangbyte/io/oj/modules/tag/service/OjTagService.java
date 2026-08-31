@@ -8,6 +8,7 @@ import github.jiangbyte.io.oj.modules.tag.entity.OjTag;
 import github.jiangbyte.io.oj.modules.tag.param.OjTagAddParam;
 import github.jiangbyte.io.oj.modules.tag.param.OjTagEditParam;
 import github.jiangbyte.io.oj.modules.tag.param.OjTagPageParam;
+import github.jiangbyte.io.oj.modules.tag.result.OjPortalTagOptionsResult;
 
 import java.util.Collection;
 import java.util.List;
@@ -49,6 +50,11 @@ public interface OjTagService extends IService<OjTag> {
 
     /** 启用中的标签列表（选择器用）。 */
     List<OjTag> listEnabled();
+
+    /**
+     * 门户题库标签筛选项：启用标签 + 已发布题数（单次聚合）+ 全局统计。
+     */
+    OjPortalTagOptionsResult listPortalOptions();
 
     /** 填充题目 tags / tagIds。 */
     void fillProblemTags(OjProblem problem);

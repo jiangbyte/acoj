@@ -55,10 +55,13 @@ const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
 const canUpdate = computed(() => hasPermission('oj:problem:update'))
 
 const languageOptions = computed<SelectOption[]>(() => {
-  const langs = Array.isArray(state.problem.allowed_languages)
-    ? state.problem.allowed_languages
+  const limits = Array.isArray(state.problem.language_limits)
+    ? state.problem.language_limits
     : []
-  return langs.map((lang: string) => ({ label: lang, value: lang }))
+  return limits
+    .map((item: any) => String(item?.language || '').trim())
+    .filter(Boolean)
+    .map((lang: string) => ({ label: lang, value: lang }))
 })
 
 const searchForm = createProSearchForm<any>({

@@ -70,10 +70,13 @@ const sourceCardTitle = computed(() => {
 const canUpdate = computed(() => hasPermission('oj:problem:update'))
 
 const languageOptions = computed<SelectOption[]>(() => {
-  const langs = Array.isArray(state.problem.allowed_languages)
-    ? state.problem.allowed_languages
+  const limits = Array.isArray(state.problem.language_limits)
+    ? state.problem.language_limits
     : []
-  return langs.map((lang: string) => ({ label: lang, value: lang }))
+  return limits
+    .map((item: any) => String(item?.language || '').trim())
+    .filter(Boolean)
+    .map((lang: string) => ({ label: lang, value: lang }))
 })
 
 const monacoLanguage = computed(() => mapOjLanguageToMonaco(state.formModel.language))
@@ -243,12 +246,39 @@ async function submitDryRun() {
       payload.case_key = caseKey.value
     }
     const response = await ojProblemApi.dryRun(payload)
-    state.result = response.data ?? null
+    let result = response.data ?? null
+    state.result = result
+    const dryRunId = result?.id
+    if (dryRunId && isPendingStatus(result?.overall_status)) {
+      window.$message.info('试跑已入队，等待判题…')
+      result = await pollDryRunResult(dryRunId)
+      state.result = result
+    }
     window.$message.success(`试跑完成：${displayValue(state.result?.overall_status)}`)
   } finally {
     state.submitLoading = false
   }
 }
+
+function isPendingStatus(status?: string | null) {
+  const key = String(status || '').toUpperCase()
+  return key === 'PENDING' || key === 'JUDGING'
+}
+
+async function pollDryRunResult(id: string) {
+  const maxAttempts = 120
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    const detail = await ojProblemApi.dryRunsDetail({ id })
+    const row = detail.data
+    state.result = row
+    if (!isPendingStatus(row?.overall_status)) {
+      return row
+    }
+  }
+  throw new Error('试跑超时，请到试跑历史查看')
+}
+
 
 async function applySuggestedLimits() {
   if (!state.result?.suggested_time_ms || !state.result?.suggested_memory_bytes) {
@@ -258,10 +288,11 @@ async function applySuggestedLimits() {
   try {
     await ojProblemApi.applyLimits({
       problem_id: problemId.value,
+      language: state.result.language || state.formModel.language,
       time_limit_ms: state.result.suggested_time_ms,
       memory_limit_bytes: state.result.suggested_memory_bytes,
     })
-    window.$message.success('已写回题目限额')
+    window.$message.success('已写回该语言限额')
     await fetchProblem()
   } finally {
     state.applyLoading = false

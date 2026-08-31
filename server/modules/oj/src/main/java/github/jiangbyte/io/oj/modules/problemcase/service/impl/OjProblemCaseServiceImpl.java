@@ -11,6 +11,8 @@ import github.jiangbyte.io.oj.modules.problem.entity.OjProblem;
 import github.jiangbyte.io.oj.modules.problem.service.OjProblemService;
 import github.jiangbyte.io.oj.modules.problemcase.convert.OjProblemCaseConvert;
 import github.jiangbyte.io.oj.modules.problemcase.entity.OjProblemCase;
+import github.jiangbyte.io.oj.modules.problemcase.enums.OjCaseStorage;
+import github.jiangbyte.io.oj.modules.problemcase.enums.OjEnableStatus;
 import github.jiangbyte.io.oj.modules.problemcase.mapper.OjProblemCaseMapper;
 import github.jiangbyte.io.oj.modules.problemcase.param.OjProblemCaseAddParam;
 import github.jiangbyte.io.oj.modules.problemcase.param.OjProblemCaseEditParam;
@@ -142,7 +144,7 @@ public class OjProblemCaseServiceImpl extends ServiceImpl<OjProblemCaseMapper, O
             entity.setScore(0);
         }
         if (!StringUtils.hasText(entity.getStatus())) {
-            entity.setStatus("ENABLED");
+            entity.setStatus(OjEnableStatus.ENABLED.name());
         }
         if (entity.getExtra() == null) {
             entity.setExtra(new HashMap<>());
@@ -157,22 +159,22 @@ public class OjProblemCaseServiceImpl extends ServiceImpl<OjProblemCaseMapper, O
     }
 
     private static void normalizeStorageFields(OjProblemCase entity) {
-        if ("OBJECT".equalsIgnoreCase(entity.getInputStorage())) {
+        if (OjCaseStorage.OBJECT.matches(entity.getInputStorage())) {
             if (!StringUtils.hasText(entity.getInputObjectKey())) {
                 throw new BizException(400, "OBJECT 输入须指定 input_object_key");
             }
             entity.setInputText(null);
         } else {
-            entity.setInputStorage("INLINE");
+            entity.setInputStorage(OjCaseStorage.INLINE.name());
             entity.setInputObjectKey(null);
         }
-        if ("OBJECT".equalsIgnoreCase(entity.getOutputStorage())) {
+        if (OjCaseStorage.OBJECT.matches(entity.getOutputStorage())) {
             if (!StringUtils.hasText(entity.getOutputObjectKey())) {
                 throw new BizException(400, "OBJECT 输出须指定 output_object_key");
             }
             entity.setOutputText(null);
         } else {
-            entity.setOutputStorage("INLINE");
+            entity.setOutputStorage(OjCaseStorage.INLINE.name());
             entity.setOutputObjectKey(null);
         }
     }

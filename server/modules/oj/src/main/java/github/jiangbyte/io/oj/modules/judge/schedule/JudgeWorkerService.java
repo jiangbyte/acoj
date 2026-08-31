@@ -4,15 +4,21 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import github.jiangbyte.io.oj.config.OjProperties;
 import github.jiangbyte.io.oj.modules.judge.dispatch.entity.OjJudgeDispatch;
 import github.jiangbyte.io.oj.modules.judge.dispatch.mapper.OjJudgeDispatchMapper;
+import github.jiangbyte.io.oj.modules.judge.enums.OjDispatchOutcome;
+import github.jiangbyte.io.oj.modules.judge.enums.SandboxCaseStatus;
 import github.jiangbyte.io.oj.modules.judge.mq.OjJudgeMessage;
 import github.jiangbyte.io.oj.modules.judge.mq.OjJudgePublisher;
 import github.jiangbyte.io.oj.modules.judge.node.entity.OjJudgeNode;
 import github.jiangbyte.io.oj.modules.judge.sandbox.SparkSandboxClient;
 import github.jiangbyte.io.oj.modules.problem.entity.OjProblem;
 import github.jiangbyte.io.oj.modules.problem.mapper.OjProblemMapper;
+import github.jiangbyte.io.oj.modules.problemlanguagelimit.entity.OjProblemLanguageLimit;
+import github.jiangbyte.io.oj.modules.problemlanguagelimit.service.OjProblemLanguageLimitService;
 import github.jiangbyte.io.oj.modules.stat.entity.OjUserProblemStat;
+import github.jiangbyte.io.oj.modules.stat.enums.OjUserProblemStatStatus;
 import github.jiangbyte.io.oj.modules.stat.mapper.OjUserProblemStatMapper;
 import github.jiangbyte.io.oj.modules.submission.entity.OjSubmission;
+import github.jiangbyte.io.oj.modules.submission.enums.OjVerdict;
 import github.jiangbyte.io.oj.modules.submission.mapper.OjSubmissionMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +50,7 @@ public class JudgeWorkerService {
     private final OjProperties ojProperties;
     private final OjSubmissionMapper ojSubmissionMapper;
     private final OjProblemMapper ojProblemMapper;
+    private final OjProblemLanguageLimitService ojProblemLanguageLimitService;
     private final OjJudgeDispatchMapper ojJudgeDispatchMapper;
     private final OjUserProblemStatMapper ojUserProblemStatMapper;
     private final NodeScheduler nodeScheduler;
@@ -55,29 +62,48 @@ public class JudgeWorkerService {
 
     private final String workerId = resolveWorkerId();
 
+    /**
+     * UpdateWrapper.set(JSON 字段) 默认不走实体 TypeHandler，会把 List/Map 以 binary 写入导致 MySQL JSON 报错。
+     * 必须显式指定 typeHandler。
+     */
+    private static final String JSON_TYPE_HANDLER =
+            "typeHandler=github.jiangbyte.io.common.mybatis.handler.JacksonJsonTypeHandler";
+
+    /**
+     * 消费一条判题消息：校验可领 → 选机占坑 → CAS 领取 → 调沙箱 → 裁决落库或换机重入队。
+     * 边界：幂等（非 PENDING/不可回收则直接返回）；不负责消息 ACK（由 Consumer 处理）。
+     */
     public void process(OjJudgeMessage message) {
+        // 1. 加载提交；消息可能早于事务可见，短延迟重试避免误进 DLQ
         OjSubmission submission = ojSubmissionMapper.selectById(message.submissionId());
         if (submission == null) {
-            log.warn("submission not found, to dlq: {}", message.submissionId());
-            ojJudgePublisher.publishDlq(message);
+            log.warn("submission not found yet, retry soon: {}", message.submissionId());
+            ojJudgePublisher.publishRetry(
+                    OjJudgeMessage.of(
+                            message.submissionId(),
+                            message.requestId(),
+                            OjJudgeMessage.REASON_RETRY_BACKOFF),
+                    1000L);
             return;
         }
 
+        // 2. 仅处理 PENDING，或租约已过期的 JUDGING（可被本 Worker 回收）
         String status = submission.getStatus();
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
-        boolean reclaimable = "JUDGING".equals(status)
+        boolean reclaimable = OjVerdict.JUDGING.matches(status)
                 && submission.getJudgeLeaseUntil() != null
                 && submission.getJudgeLeaseUntil().isBefore(now);
-        if (!"PENDING".equals(status) && !reclaimable) {
-            // 已终态或他 Worker 持有有效租约
+        if (!OjVerdict.PENDING.matches(status) && !reclaimable) {
             return;
         }
 
+        // 3. 排队过久直接 SE，避免无限重试占队列
         if (exceededMaxWait(submission, now)) {
             finalizeSystemError(submission, "NODE_UNAVAILABLE", "等待可用节点超时");
             return;
         }
 
+        // 4. 题目缺失无法判题，落 SE
         OjProblem problem = ojProblemMapper.selectById(submission.getProblemId());
         if (problem == null) {
             finalizeSystemError(submission, "PROBLEM_MISSING", "题目不存在");
@@ -88,6 +114,7 @@ public class JudgeWorkerService {
                 ? message.requestId()
                 : UUID.randomUUID().toString().replace("-", "");
 
+        // 5. 按语言选机并 CAS 占坑；无节点则退避重试
         OjJudgeNode node = nodeScheduler.selectAndAcquire(
                 submission.getLanguage(),
                 submission.getTriedNodeIds(),
@@ -97,6 +124,7 @@ public class JudgeWorkerService {
             return;
         }
 
+        // 6. 准备新租约 token、tried 列表与 dispatch 次数
         String judgeToken = UUID.randomUUID().toString().replace("-", "");
         OffsetDateTime leaseUntil = now.plusSeconds(ojProperties.getJudge().getLeaseSeconds());
         List<String> tried = submission.getTriedNodeIds() == null
@@ -107,15 +135,31 @@ public class JudgeWorkerService {
         }
         int nextDispatch = (submission.getDispatchCount() == null ? 0 : submission.getDispatchCount()) + 1;
 
-        boolean claimed = claimSubmission(submission.getId(), submission.getJudgeToken(),
-                judgeToken, leaseUntil, node.getId(), tried, nextDispatch, reclaimable);
+        // 7. CAS 领取提交为 JUDGING；失败则释放已占坑
+        boolean claimed;
+        try {
+            claimed = claimSubmission(submission.getId(), submission.getJudgeToken(),
+                    judgeToken, leaseUntil, node.getId(), tried, nextDispatch, reclaimable);
+        } catch (RuntimeException ex) {
+            nodeScheduler.releaseInflight(node.getId());
+            throw ex;
+        }
         if (!claimed) {
             nodeScheduler.releaseInflight(node.getId());
             return;
         }
 
-        OjJudgeDispatch dispatch = startDispatch(submission.getId(), node, nextDispatch, requestId, now);
+        // 8. 写 dispatch 开始记录；失败则回滚提交到 PENDING
+        OjJudgeDispatch dispatch;
         try {
+            dispatch = startDispatch(submission.getId(), node, nextDispatch, requestId, now);
+        } catch (RuntimeException ex) {
+            nodeScheduler.releaseInflight(node.getId());
+            unlockAfterClaimFailure(submission.getId(), judgeToken, ex.getMessage());
+            throw ex;
+        }
+        try {
+            // 9. 加载测例 → 调沙箱 → 传输失败换机或正常裁决落库
             List<CaseLoader.LoadedCase> cases = caseLoader.load(problem.getId(), submission.getCaseVersion());
             SparkSandboxClient.RunCasesResult run = callSandbox(node, problem, submission, cases);
             if (run.transportFail()) {
@@ -131,6 +175,9 @@ public class JudgeWorkerService {
         }
     }
 
+    /**
+     * CAS 领取：PENDING→JUDGING，或过期 JUDGING 用旧 token 回收。
+     */
     private boolean claimSubmission(
             String submissionId,
             String previousToken,
@@ -140,23 +187,25 @@ public class JudgeWorkerService {
             List<String> tried,
             int dispatchCount,
             boolean reclaimable) {
+        // 1. 写入租约与调度元数据，JSON 字段显式 typeHandler
         var update = Wrappers.<OjSubmission>lambdaUpdate()
-                .set(OjSubmission::getStatus, "JUDGING")
+                .set(OjSubmission::getStatus, OjVerdict.JUDGING.name())
                 .set(OjSubmission::getJudgeToken, judgeToken)
                 .set(OjSubmission::getJudgeLeaseOwner, workerId)
                 .set(OjSubmission::getJudgeLeaseUntil, leaseUntil)
                 .set(OjSubmission::getJudgeNodeId, nodeId)
-                .set(OjSubmission::getTriedNodeIds, tried)
+                .set(OjSubmission::getTriedNodeIds, tried, JSON_TYPE_HANDLER)
                 .set(OjSubmission::getDispatchCount, dispatchCount)
                 .set(OjSubmission::getLastDispatchError, null)
                 .eq(OjSubmission::getId, submissionId);
+        // 2. 回收路径校验旧 token；正常路径要求仍为 PENDING
         if (reclaimable) {
-            update.eq(OjSubmission::getStatus, "JUDGING");
+            update.eq(OjSubmission::getStatus, OjVerdict.JUDGING.name());
             if (StringUtils.hasText(previousToken)) {
                 update.eq(OjSubmission::getJudgeToken, previousToken);
             }
         } else {
-            update.eq(OjSubmission::getStatus, "PENDING");
+            update.eq(OjSubmission::getStatus, OjVerdict.PENDING.name());
         }
         return ojSubmissionMapper.update(null, update) > 0;
     }
@@ -175,19 +224,45 @@ public class JudgeWorkerService {
         dispatch.setWorkerId(workerId);
         dispatch.setRequestId(requestId);
         dispatch.setStartedAt(startedAt);
+        // outcome 列 NOT NULL 无默认值；开始时记 STARTED，结束时再覆盖
+        dispatch.setOutcome(OjDispatchOutcome.STARTED.name());
         dispatch.setExtra(new HashMap<>());
         ojJudgeDispatchMapper.insert(dispatch);
         return dispatch;
     }
 
+    /**
+     * claim 成功但后续无法继续时，把提交退回 PENDING。
+     */
+    private void unlockAfterClaimFailure(String submissionId, String judgeToken, String message) {
+        ojSubmissionMapper.update(null, Wrappers.<OjSubmission>lambdaUpdate()
+                .set(OjSubmission::getStatus, OjVerdict.PENDING.name())
+                .set(OjSubmission::getJudgeToken, null)
+                .set(OjSubmission::getJudgeLeaseUntil, null)
+                .set(OjSubmission::getJudgeLeaseOwner, null)
+                .set(OjSubmission::getErrorCode, "DISPATCH_START_FAILED")
+                .set(OjSubmission::getLastDispatchError, truncate(message, 512))
+                .eq(OjSubmission::getId, submissionId)
+                .eq(OjSubmission::getStatus, OjVerdict.JUDGING.name())
+                .eq(OjSubmission::getJudgeToken, judgeToken));
+    }
+
+    /** 按语言限额组装沙箱请求并执行 run_cases。 */
     private SparkSandboxClient.RunCasesResult callSandbox(
             OjJudgeNode node,
             OjProblem problem,
             OjSubmission submission,
             List<CaseLoader.LoadedCase> cases) {
-        int cpu = problem.getTimeLimitMs() == null ? 1000 : problem.getTimeLimitMs();
+        // 1. 限额行即允许语言；缺失说明配置被删，属异常
+        OjProblemLanguageLimit limit = ojProblemLanguageLimitService.findByProblemAndLanguage(
+                problem.getId(), submission.getLanguage());
+        if (limit == null) {
+            throw new IllegalStateException("missing language limit: " + submission.getLanguage());
+        }
+        // 2. 实限 = CPU×系数；默认内存 256MiB
+        int cpu = limit.getTimeLimitMs() == null ? 1000 : limit.getTimeLimitMs();
         int real = cpu * Math.max(1, ojProperties.getJudge().getRealTimeFactor());
-        long mem = problem.getMemoryLimitBytes() == null ? 268435456L : problem.getMemoryLimitBytes();
+        long mem = limit.getMemoryLimitBytes() == null ? 268435456L : limit.getMemoryLimitBytes();
         List<SparkSandboxClient.CaseInput> inputs = cases.stream()
                 .map(c -> new SparkSandboxClient.CaseInput(c.caseKey(), c.stdin()))
                 .toList();
@@ -200,11 +275,12 @@ public class JudgeWorkerService {
                 cpu,
                 real,
                 mem,
-                problem.getStackLimitBytes(),
-                problem.getOutputLimitBytes());
+                limit.getStackLimitBytes(),
+                limit.getOutputLimitBytes());
         return sparkSandboxClient.runCases(node, req);
     }
 
+    /** 业务裁决落库：CAS 写终态；成功则 bump 统计，失败则丢弃结果并释放 inflight。 */
     private void handleExecutionResult(
             OjSubmission submission,
             OjProblem problem,
@@ -213,15 +289,16 @@ public class JudgeWorkerService {
             String judgeToken,
             List<CaseLoader.LoadedCase> cases,
             SparkSandboxClient.RunCasesResult run) {
+        // 1. 聚合沙箱响应为整单 verdict
         VerdictAggregator.AggregateResult verdict = verdictAggregator.aggregate(
                 run.body(),
                 cases,
                 ojProperties.getJudge().isStopOnFirstError());
 
-        // internal_error 且无有效测点时按换机处理
-        if ("SE".equals(verdict.getStatus())
+        // 2. internal_error 且无测点：按传输失败换机，而非直接落 SE
+        if (OjVerdict.SE.matches(verdict.getStatus())
                 && run.body() != null
-                && "internal_error".equalsIgnoreCase(run.body().path("status").asText())
+                && SandboxCaseStatus.INTERNAL_ERROR.matches(run.body().path("status").asText())
                 && (verdict.getCaseResults() == null || verdict.getCaseResults().isEmpty())) {
             handleTransportFail(submission, node, dispatch, dispatch.getRequestId(), judgeToken,
                     SparkSandboxClient.RunCasesResult.transportFail(run.httpStatus(), "sandbox internal_error", run.body()),
@@ -229,6 +306,7 @@ public class JudgeWorkerService {
             return;
         }
 
+        // 3. CAS 写终态（须仍持有本轮 judgeToken）
         OffsetDateTime judgedAt = OffsetDateTime.now(ZoneOffset.UTC);
         Map<String, Object> sandboxRaw = truncateSandboxRaw(run.body());
         boolean cas = ojSubmissionMapper.update(null, Wrappers.<OjSubmission>lambdaUpdate()
@@ -239,20 +317,22 @@ public class JudgeWorkerService {
                 .set(OjSubmission::getCompileOutput, truncate(verdict.getCompileOutput(), 65000))
                 .set(OjSubmission::getJudgeMessage, truncate(verdict.getJudgeMessage(), 512))
                 .set(OjSubmission::getCaseResults,
-                        verdict.getCaseResults() == null ? List.of() : verdict.getCaseResults())
-                .set(OjSubmission::getSandboxRaw, sandboxRaw)
+                        verdict.getCaseResults() == null ? List.of() : verdict.getCaseResults(),
+                        JSON_TYPE_HANDLER)
+                .set(OjSubmission::getSandboxRaw, sandboxRaw, JSON_TYPE_HANDLER)
                 .set(OjSubmission::getJudgedAt, judgedAt)
                 .set(OjSubmission::getErrorCode, null)
                 .set(OjSubmission::getLastDispatchError, null)
                 .eq(OjSubmission::getId, submission.getId())
-                .eq(OjSubmission::getStatus, "JUDGING")
+                .eq(OjSubmission::getStatus, OjVerdict.JUDGING.name())
                 .eq(OjSubmission::getJudgeToken, judgeToken)) > 0;
 
-        finishDispatch(dispatch, "SUCCESS_RESULT", run.httpStatus(), null, null, verdict.getStatus());
+        // 4. 关闭 dispatch；CAS 成功则记节点成功并更新题/用户统计
+        finishDispatch(dispatch, OjDispatchOutcome.SUCCESS_RESULT.name(), run.httpStatus(), null, null, verdict.getStatus());
         if (cas) {
             nodeScheduler.markSuccess(node.getId());
-            bumpProblemCounts(problem.getId(), "AC".equals(verdict.getStatus()));
-            upsertUserStat(submission.getAccountId(), problem.getId(), "AC".equals(verdict.getStatus()), judgedAt);
+            bumpProblemCounts(problem.getId(), OjVerdict.AC.matches(verdict.getStatus()));
+            upsertUserStat(submission.getAccountId(), problem.getId(), OjVerdict.AC.matches(verdict.getStatus()), judgedAt);
         } else {
             // CAS 失败：结果丢弃，仍释放本轮 inflight（若已被 reaper 处理则 GREATEST 兜底）
             nodeScheduler.releaseInflight(node.getId());
@@ -260,6 +340,7 @@ public class JudgeWorkerService {
         }
     }
 
+    /** 传输/超时失败：关 dispatch、记节点失败，再换机或退避重试，超时则 SE。 */
     private void handleTransportFail(
             OjSubmission submission,
             OjJudgeNode node,
@@ -268,43 +349,47 @@ public class JudgeWorkerService {
             String judgeToken,
             SparkSandboxClient.RunCasesResult run,
             int dispatchCount) {
+        // 1. 区分 TIMEOUT / TRANSPORT_FAIL，关闭本轮 dispatch 并扣节点
         String err = truncate(run.errorMessage(), 512);
         String outcome = run.httpStatus() == 0 && err != null && err.toLowerCase().contains("timeout")
-                ? "TIMEOUT"
-                : "TRANSPORT_FAIL";
+                ? OjDispatchOutcome.TIMEOUT.name()
+                : OjDispatchOutcome.TRANSPORT_FAIL.name();
         finishDispatch(dispatch, outcome, run.httpStatus() == 0 ? null : run.httpStatus(),
                 outcome, err, null);
         nodeScheduler.recordRunFailure(node.getId(), run.httpStatus(), err);
 
+        // 2. 总等待超时：直接 SE
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         if (exceededMaxWait(submission, now)) {
             casBackToPendingThenSe(submission.getId(), judgeToken, "NODE_UNAVAILABLE", err);
             return;
         }
 
+        // 3. 未达换机上限且仍有 Eligible：退 PENDING 立即 failover
         int maxDispatch = ojProperties.getJudge().getMaxDispatchPerSubmission();
         boolean canFailover = dispatchCount < maxDispatch
                 && nodeScheduler.hasEligible(submission.getLanguage(), List.of());
 
         if (canFailover) {
             ojSubmissionMapper.update(null, Wrappers.<OjSubmission>lambdaUpdate()
-                    .set(OjSubmission::getStatus, "PENDING")
+                    .set(OjSubmission::getStatus, OjVerdict.PENDING.name())
                     .set(OjSubmission::getJudgeToken, null)
                     .set(OjSubmission::getJudgeLeaseUntil, null)
                     .set(OjSubmission::getJudgeLeaseOwner, null)
                     .set(OjSubmission::getLastDispatchError, err)
                     .set(OjSubmission::getErrorCode, "TRANSPORT_FAIL")
                     .eq(OjSubmission::getId, submission.getId())
-                    .eq(OjSubmission::getStatus, "JUDGING")
+                    .eq(OjSubmission::getStatus, OjVerdict.JUDGING.name())
                     .eq(OjSubmission::getJudgeToken, judgeToken));
             ojJudgePublisher.publishWork(OjJudgeMessage.of(submission.getId(), requestId, OjJudgeMessage.REASON_FAILOVER));
             return;
         }
 
+        // 4. 否则指数退避后重试
         long backoff = backoffMs(dispatchCount);
         OffsetDateTime nextRetry = now.plusNanos(backoff * 1_000_000L);
         ojSubmissionMapper.update(null, Wrappers.<OjSubmission>lambdaUpdate()
-                .set(OjSubmission::getStatus, "PENDING")
+                .set(OjSubmission::getStatus, OjVerdict.PENDING.name())
                 .set(OjSubmission::getJudgeToken, null)
                 .set(OjSubmission::getJudgeLeaseUntil, null)
                 .set(OjSubmission::getJudgeLeaseOwner, null)
@@ -312,7 +397,7 @@ public class JudgeWorkerService {
                 .set(OjSubmission::getErrorCode, "TRANSPORT_FAIL")
                 .set(OjSubmission::getNextRetryAt, nextRetry)
                 .eq(OjSubmission::getId, submission.getId())
-                .eq(OjSubmission::getStatus, "JUDGING")
+                .eq(OjSubmission::getStatus, OjVerdict.JUDGING.name())
                 .eq(OjSubmission::getJudgeToken, judgeToken));
         ojJudgePublisher.publishRetry(
                 OjJudgeMessage.of(submission.getId(), requestId, OjJudgeMessage.REASON_RETRY_BACKOFF),
@@ -332,7 +417,7 @@ public class JudgeWorkerService {
                 .set(OjSubmission::getErrorCode, "NO_ONLINE_NODE")
                 .set(OjSubmission::getNextRetryAt, now.plusNanos(backoff * 1_000_000L))
                 .eq(OjSubmission::getId, submission.getId())
-                .eq(OjSubmission::getStatus, "PENDING"));
+                .eq(OjSubmission::getStatus, OjVerdict.PENDING.name()));
         ojJudgePublisher.publishRetry(
                 OjJudgeMessage.of(submission.getId(), requestId, OjJudgeMessage.REASON_RETRY_BACKOFF),
                 backoff);
@@ -341,32 +426,32 @@ public class JudgeWorkerService {
     private void casBackToPendingThenSe(String submissionId, String judgeToken, String errorCode, String message) {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         ojSubmissionMapper.update(null, Wrappers.<OjSubmission>lambdaUpdate()
-                .set(OjSubmission::getStatus, "SE")
+                .set(OjSubmission::getStatus, OjVerdict.SE.name())
                 .set(OjSubmission::getScore, 0)
                 .set(OjSubmission::getJudgedAt, now)
                 .set(OjSubmission::getErrorCode, errorCode)
                 .set(OjSubmission::getLastDispatchError, truncate(message, 512))
                 .set(OjSubmission::getJudgeMessage, truncate(message, 512))
-                .set(OjSubmission::getCaseResults, List.of())
-                .set(OjSubmission::getSandboxRaw, Map.of())
+                .set(OjSubmission::getCaseResults, List.of(), JSON_TYPE_HANDLER)
+                .set(OjSubmission::getSandboxRaw, Map.of(), JSON_TYPE_HANDLER)
                 .eq(OjSubmission::getId, submissionId)
-                .eq(OjSubmission::getStatus, "JUDGING")
+                .eq(OjSubmission::getStatus, OjVerdict.JUDGING.name())
                 .eq(OjSubmission::getJudgeToken, judgeToken));
     }
 
     private void finalizeSystemError(OjSubmission submission, String errorCode, String message) {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         ojSubmissionMapper.update(null, Wrappers.<OjSubmission>lambdaUpdate()
-                .set(OjSubmission::getStatus, "SE")
+                .set(OjSubmission::getStatus, OjVerdict.SE.name())
                 .set(OjSubmission::getScore, 0)
                 .set(OjSubmission::getJudgedAt, now)
                 .set(OjSubmission::getErrorCode, errorCode)
                 .set(OjSubmission::getLastDispatchError, truncate(message, 512))
                 .set(OjSubmission::getJudgeMessage, truncate(message, 512))
-                .set(OjSubmission::getCaseResults, List.of())
-                .set(OjSubmission::getSandboxRaw, Map.of())
+                .set(OjSubmission::getCaseResults, List.of(), JSON_TYPE_HANDLER)
+                .set(OjSubmission::getSandboxRaw, Map.of(), JSON_TYPE_HANDLER)
                 .eq(OjSubmission::getId, submission.getId())
-                .in(OjSubmission::getStatus, List.of("PENDING", "JUDGING")));
+                .in(OjSubmission::getStatus, List.of(OjVerdict.PENDING.name(), OjVerdict.JUDGING.name())));
     }
 
     private void finishDispatch(
@@ -422,7 +507,9 @@ public class JudgeWorkerService {
             OjUserProblemStat row = new OjUserProblemStat();
             row.setAccountId(accountId);
             row.setProblemId(problemId);
-            row.setStatus(accepted ? "ACCEPTED" : "ATTEMPTED");
+            row.setStatus(accepted
+                    ? OjUserProblemStatStatus.ACCEPTED.name()
+                    : OjUserProblemStatStatus.ATTEMPTED.name());
             row.setAttemptCount(1);
             row.setAcceptedCount(accepted ? 1 : 0);
             row.setFirstAcceptedAt(accepted ? at : null);
@@ -437,12 +524,12 @@ public class JudgeWorkerService {
                 .eq(OjUserProblemStat::getId, existing.getId());
         if (accepted) {
             update.setSql("accepted_count = IFNULL(accepted_count, 0) + 1")
-                    .set(OjUserProblemStat::getStatus, "ACCEPTED");
+                    .set(OjUserProblemStat::getStatus, OjUserProblemStatStatus.ACCEPTED.name());
             if (existing.getFirstAcceptedAt() == null) {
                 update.set(OjUserProblemStat::getFirstAcceptedAt, at);
             }
-        } else if (!"ACCEPTED".equals(existing.getStatus())) {
-            update.set(OjUserProblemStat::getStatus, "ATTEMPTED");
+        } else if (!OjUserProblemStatStatus.ACCEPTED.matches(existing.getStatus())) {
+            update.set(OjUserProblemStat::getStatus, OjUserProblemStatStatus.ATTEMPTED.name());
         }
         ojUserProblemStatMapper.update(null, update);
     }

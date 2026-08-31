@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import github.jiangbyte.io.common.core.domain.BaseEntity;
 import github.jiangbyte.io.common.mybatis.handler.JacksonJsonTypeHandler;
+import github.jiangbyte.io.oj.modules.problemlanguagelimit.entity.OjProblemLanguageLimit;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -38,19 +39,8 @@ public class OjProblem extends BaseEntity {
     private List<Map<String, Object>> samples;
     @Schema(description = "难度：EASY/MEDIUM/HARD")
     private String difficulty;
-    @Schema(description = "CPU 时限毫秒")
-    private Integer timeLimitMs;
-    @Schema(description = "内存限额字节")
-    private Long memoryLimitBytes;
-    @Schema(description = "栈限额字节，空则用沙箱默认")
-    private Long stackLimitBytes;
-    @Schema(description = "输出限额字节，空则用沙箱默认")
-    private Long outputLimitBytes;
     @Schema(description = "判题模式；P0: STANDARD")
     private String judgeMode;
-    @TableField(typeHandler = JacksonJsonTypeHandler.class)
-    @Schema(description = "允许语言 key 数组")
-    private List<String> allowedLanguages;
     @Schema(description = "测例变更版本")
     private Integer caseVersion;
     @Schema(description = "状态：DRAFT/PUBLISHED/DISABLED")
@@ -65,6 +55,13 @@ public class OjProblem extends BaseEntity {
     @Schema(description = "扩展信息")
     private Map<String, Object> extra;
 
+    /**
+     * 非表字段：详情回显用语言限额。
+     */
+    @TableField(exist = false)
+    @Schema(description = "题目 × 语言资源限额（有行即允许该语言）")
+    private List<OjProblemLanguageLimit> languageLimits;
+
     /** 非表字段：详情/列表回显用标签。 */
     @TableField(exist = false)
     @Schema(description = "关联标签列表")
@@ -74,6 +71,13 @@ public class OjProblem extends BaseEntity {
     @TableField(exist = false)
     @Schema(description = "关联标签 ID 列表")
     private List<String> tagIds;
+
+    /**
+     * 非表字段：当前登录用户对本题的做题状态。
+     */
+    @TableField(exist = false)
+    @Schema(description = "本人做题状态：ACCEPTED/ATTEMPTED，未尝试为 null")
+    private String myStatus;
 
     @Data
     @Schema(description = "题目标签摘要")

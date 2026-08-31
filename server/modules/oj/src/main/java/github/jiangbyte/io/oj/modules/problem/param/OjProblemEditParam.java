@@ -6,8 +6,11 @@ package github.jiangbyte.io.oj.modules.problem.param;
  * Author: Charlie
  */
 
+import github.jiangbyte.io.oj.modules.problemlanguagelimit.param.OjProblemLanguageLimitItemParam;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -42,18 +45,12 @@ public class OjProblemEditParam {
     @NotBlank
     @Schema(description = "难度：EASY/MEDIUM/HARD")
     private String difficulty;
-    @Schema(description = "CPU 时限毫秒")
-    private Integer timeLimitMs;
-    @Schema(description = "内存限额字节")
-    private Long memoryLimitBytes;
-    @Schema(description = "栈限额字节，空则用沙箱默认")
-    private Long stackLimitBytes;
-    @Schema(description = "输出限额字节，空则用沙箱默认")
-    private Long outputLimitBytes;
     @Schema(description = "判题模式；P0: STANDARD")
     private String judgeMode;
-    @Schema(description = "允许语言 key 数组")
-    private List<String> allowedLanguages;
+    @NotEmpty
+    @Valid
+    @Schema(description = "语言限额列表（至少 1 条）")
+    private List<OjProblemLanguageLimitItemParam> languageLimits;
     @NotBlank
     @Schema(description = "状态：DRAFT/PUBLISHED/DISABLED")
     private String status;

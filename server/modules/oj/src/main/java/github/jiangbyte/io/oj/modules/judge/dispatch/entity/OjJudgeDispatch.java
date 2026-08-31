@@ -39,7 +39,7 @@ public class OjJudgeDispatch extends BaseEntity {
     private OffsetDateTime finishedAt;
     @Schema(description = "耗时毫秒")
     private Integer durationMs;
-    @Schema(description = "结果：SUCCESS_RESULT/TRANSPORT_FAIL/SANDBOX_INTERNAL/CANCELLED_LEASE/TIMEOUT")
+    @Schema(description = "结果：STARTED/SUCCESS_RESULT/TRANSPORT_FAIL/SANDBOX_INTERNAL/CANCELLED_LEASE/TIMEOUT")
     private String outcome;
     @Schema(description = "HTTP 状态码")
     private Integer httpStatus;

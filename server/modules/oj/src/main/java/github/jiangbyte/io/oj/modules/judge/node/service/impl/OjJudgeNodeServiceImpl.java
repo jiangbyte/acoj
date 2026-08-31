@@ -7,6 +7,9 @@ import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
+import github.jiangbyte.io.oj.modules.judge.enums.OjCircuitState;
+import github.jiangbyte.io.oj.modules.judge.enums.OjJudgeAdminStatus;
+import github.jiangbyte.io.oj.modules.judge.enums.OjJudgeRuntimeStatus;
 import github.jiangbyte.io.oj.modules.judge.node.convert.OjJudgeNodeConvert;
 import github.jiangbyte.io.oj.modules.judge.node.entity.OjJudgeNode;
 import github.jiangbyte.io.oj.modules.judge.node.mapper.OjJudgeNodeMapper;
@@ -111,7 +114,7 @@ public class OjJudgeNodeServiceImpl extends ServiceImpl<OjJudgeNodeMapper, OjJud
     @ReadDataSource
     public OjJudgeLanguagesResult listAggregatedLanguages() {
         List<OjJudgeNode> nodes = this.list(Wrappers.<OjJudgeNode>lambdaQuery()
-                .eq(OjJudgeNode::getAdminStatus, "ENABLED")
+                .eq(OjJudgeNode::getAdminStatus, OjJudgeAdminStatus.ENABLED.name())
                 .select(OjJudgeNode::getId, OjJudgeNode::getSupportedLanguages));
         TreeSet<String> languages = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         for (OjJudgeNode node : nodes) {
@@ -136,13 +139,13 @@ public class OjJudgeNodeServiceImpl extends ServiceImpl<OjJudgeNodeMapper, OjJud
             entity.setSigningEnabled(true);
         }
         if (!StringUtils.hasText(entity.getAdminStatus())) {
-            entity.setAdminStatus("ENABLED");
+            entity.setAdminStatus(OjJudgeAdminStatus.ENABLED.name());
         }
         if (!StringUtils.hasText(entity.getRuntimeStatus())) {
-            entity.setRuntimeStatus("OFFLINE");
+            entity.setRuntimeStatus(OjJudgeRuntimeStatus.OFFLINE.name());
         }
         if (!StringUtils.hasText(entity.getCircuitState())) {
-            entity.setCircuitState("CLOSED");
+            entity.setCircuitState(OjCircuitState.CLOSED.name());
         }
         if (entity.getWeight() == null) {
             entity.setWeight(100);

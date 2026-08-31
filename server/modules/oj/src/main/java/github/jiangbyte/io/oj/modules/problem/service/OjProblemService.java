@@ -8,6 +8,8 @@ import github.jiangbyte.io.oj.modules.problem.param.OjProblemAddParam;
 import github.jiangbyte.io.oj.modules.problem.param.OjProblemEditParam;
 import github.jiangbyte.io.oj.modules.problem.param.OjProblemPageParam;
 
+import java.util.List;
+
 /**
  * OJ 题目服务接口：CRUD。
  *
@@ -30,9 +32,16 @@ public interface OjProblemService extends IService<OjProblem> {
     /** 分页查询。 */
     Page<OjProblem> page(OjProblemPageParam param);
 
-    /** 门户：已发布题目分页。 */
+    /**
+     * 门户：已发布题目分页（可附带本人做题状态过滤；账户取自当前登录用户）。
+     */
     Page<OjProblem> portalPage(OjProblemPageParam param);
 
     /** 门户：已发布题目详情。 */
     OjProblem portalDetail(String id);
+
+    /**
+     * 批量填充当前登录用户的做题状态。
+     */
+    void fillMyStatus(List<OjProblem> problems);
 }

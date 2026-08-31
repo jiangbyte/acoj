@@ -59,7 +59,12 @@ public class OjJudgePublisher {
     private void send(String routingKey, OjJudgeMessage payload, String expirationMs) {
         try {
             Map<String, Object> body = new HashMap<>();
+            body.put("job_type", payload.jobType() == null ? OjJudgeMessage.TYPE_SUBMISSION : payload.jobType());
             body.put("submission_id", payload.submissionId());
+            body.put("dry_run_id", payload.dryRunId());
+            if (payload.stopOnFirstError() != null) {
+                body.put("stop_on_first_error", payload.stopOnFirstError());
+            }
             body.put("request_id", payload.requestId());
             body.put("enqueue_at", payload.enqueueAt());
             body.put("reason", payload.reason());

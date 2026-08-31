@@ -37,10 +37,9 @@ const dataId = computed(() => {
   return typeof id === 'string' ? id : ''
 })
 
-const languagesText = computed(() => {
-  const langs = state.detail.allowed_languages
-  if (Array.isArray(langs)) return langs.join(', ')
-  return displayValue(langs)
+const languageLimitRows = computed(() => {
+  const rows = state.detail.language_limits
+  return Array.isArray(rows) ? rows : []
 })
 
 const problemTags = computed(() => {
@@ -50,8 +49,18 @@ const problemTags = computed(() => {
 
 const sampleList = computed(() => {
   const raw = state.detail.samples
-  if (!Array.isArray(raw)) return [] as Array<Record<string, unknown>>
-  return raw.filter((item) => item && typeof item === 'object') as Array<Record<string, unknown>>
+  let list: unknown[] = []
+  if (Array.isArray(raw)) {
+    list = raw
+  } else if (typeof raw === 'string' && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) list = parsed
+    } catch {
+      list = []
+    }
+  }
+  return list.filter((item) => item && typeof item === 'object') as Array<Record<string, unknown>>
 })
 
 async function fetchDetail(id: string) {
@@ -164,18 +173,25 @@ watch(dataId, (id) => {
               </div>
               <div class="meta-item">
                 <div class="meta-key">
-                  时限
+                  语言限额
                 </div>
                 <div class="meta-value">
-                  {{ displayValue(state.detail.time_limit_ms) }} ms
-                </div>
-              </div>
-              <div class="meta-item">
-                <div class="meta-key">
-                  内存
-                </div>
-                <div class="meta-value">
-                  {{ displayValue(state.detail.memory_limit_bytes) }} 字节
+                  <div
+                    v-if="languageLimitRows.length"
+                    class="space-y-1"
+                  >
+                    <div
+                      v-for="row in languageLimitRows"
+                      :key="row.id || row.language"
+                    >
+                      {{ displayValue(row.language) }}：
+                      {{ displayValue(row.time_limit_ms) }} ms /
+                      {{ displayValue(row.memory_limit_bytes) }} B
+                    </div>
+                  </div>
+                  <template v-else>
+                    —
+                  </template>
                 </div>
               </div>
               <div class="meta-item">
@@ -184,14 +200,6 @@ watch(dataId, (id) => {
                 </div>
                 <div class="meta-value">
                   {{ displayValue(state.detail.case_version) }}
-                </div>
-              </div>
-              <div class="meta-item">
-                <div class="meta-key">
-                  允许语言
-                </div>
-                <div class="meta-value">
-                  {{ languagesText }}
                 </div>
               </div>
               <div class="meta-item">

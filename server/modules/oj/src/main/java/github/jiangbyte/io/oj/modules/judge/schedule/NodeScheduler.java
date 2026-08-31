@@ -2,6 +2,9 @@ package github.jiangbyte.io.oj.modules.judge.schedule;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import github.jiangbyte.io.oj.config.OjProperties;
+import github.jiangbyte.io.oj.modules.judge.enums.OjCircuitState;
+import github.jiangbyte.io.oj.modules.judge.enums.OjJudgeAdminStatus;
+import github.jiangbyte.io.oj.modules.judge.enums.OjJudgeRuntimeStatus;
 import github.jiangbyte.io.oj.modules.judge.node.entity.OjJudgeNode;
 import github.jiangbyte.io.oj.modules.judge.node.mapper.OjJudgeNodeMapper;
 import github.jiangbyte.io.oj.modules.judge.sandbox.SparkSandboxClient;
@@ -33,15 +36,19 @@ public class NodeScheduler {
 
     /**
      * 选择 Eligible 节点并 CAS 占坑；失败返回 null。
+     * 边界：先 OPEN→HALF_OPEN；优先未试过节点；HALF_OPEN 仅允许 inflight=0。
      */
     @Transactional
     public OjJudgeNode selectAndAcquire(String language, List<String> triedNodeIds, String requestId) {
+        // 1. 冷却到期的 OPEN 转 HALF_OPEN，允许探测
         transitionOpenToHalfOpen();
+        // 2. 筛 Eligible（启用/在线/闭环或半开、支持语言、未满并发）
         List<OjJudgeNode> eligible = listEligible(language);
         if (eligible.isEmpty()) {
             return null;
         }
 
+        // 3. 未试过优先；全试过再回退，避免死循环卡在坏节点池外
         Set<String> tried = triedNodeIds == null ? Set.of() : new HashSet<>(triedNodeIds);
         List<OjJudgeNode> preferred = new ArrayList<>();
         List<OjJudgeNode> fallback = new ArrayList<>();
@@ -53,8 +60,10 @@ public class NodeScheduler {
             }
         }
         List<OjJudgeNode> ordered = preferred.isEmpty() ? fallback : preferred;
+        // 4. 按负载/优先级/requestId 散列排序，打散热点
         ordered.sort(comparator(requestId));
 
+        // 5. 依次 CAS 占坑，成功即返回
         for (OjJudgeNode candidate : ordered) {
             OjJudgeNode acquired = tryAcquire(candidate);
             if (acquired != null) {
@@ -108,11 +117,11 @@ public class NodeScheduler {
                 .eq(OjJudgeNode::getId, nodeId);
 
         if (consecutive >= ojProperties.getJudge().getCircuitFailThreshold()) {
-            update.set(OjJudgeNode::getCircuitState, "OPEN")
-                    .set(OjJudgeNode::getRuntimeStatus, "UNHEALTHY")
+            update.set(OjJudgeNode::getCircuitState, OjCircuitState.OPEN.name())
+                    .set(OjJudgeNode::getRuntimeStatus, OjJudgeRuntimeStatus.UNHEALTHY.name())
                     .set(OjJudgeNode::getCircuitOpenedAt, now);
         } else {
-            update.set(OjJudgeNode::getRuntimeStatus, "UNHEALTHY");
+            update.set(OjJudgeNode::getRuntimeStatus, OjJudgeRuntimeStatus.UNHEALTHY.name());
         }
         ojJudgeNodeMapper.update(null, update);
     }
@@ -127,8 +136,8 @@ public class NodeScheduler {
                 .setSql("inflight_count = GREATEST(inflight_count - 1, 0)")
                 .setSql("total_success = IFNULL(total_success, 0) + 1")
                 .set(OjJudgeNode::getConsecutiveFailCount, 0)
-                .set(OjJudgeNode::getCircuitState, "CLOSED")
-                .set(OjJudgeNode::getRuntimeStatus, "ONLINE")
+                .set(OjJudgeNode::getCircuitState, OjCircuitState.CLOSED.name())
+                .set(OjJudgeNode::getRuntimeStatus, OjJudgeRuntimeStatus.ONLINE.name())
                 .set(OjJudgeNode::getLastSuccessAt, now)
                 .eq(OjJudgeNode::getId, nodeId));
     }
@@ -138,25 +147,26 @@ public class NodeScheduler {
         OffsetDateTime threshold = OffsetDateTime.now(ZoneOffset.UTC)
                 .minusNanos(ojProperties.getJudge().getCircuitOpenMs() * 1_000_000L);
         ojJudgeNodeMapper.update(null, Wrappers.<OjJudgeNode>lambdaUpdate()
-                .set(OjJudgeNode::getCircuitState, "HALF_OPEN")
-                .set(OjJudgeNode::getRuntimeStatus, "ONLINE")
+                .set(OjJudgeNode::getCircuitState, OjCircuitState.HALF_OPEN.name())
+                .set(OjJudgeNode::getRuntimeStatus, OjJudgeRuntimeStatus.ONLINE.name())
                 .set(OjJudgeNode::getCircuitHalfOpenAt, OffsetDateTime.now(ZoneOffset.UTC))
-                .eq(OjJudgeNode::getCircuitState, "OPEN")
+                .eq(OjJudgeNode::getCircuitState, OjCircuitState.OPEN.name())
                 .le(OjJudgeNode::getCircuitOpenedAt, threshold));
     }
 
     private OjJudgeNode tryAcquire(OjJudgeNode candidate) {
+        // 1. HALF_OPEN 只允许单探测（inflight 必须为 0）；CLOSED 按 maxConcurrency
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
-        boolean halfOpen = "HALF_OPEN".equals(candidate.getCircuitState());
+        boolean halfOpen = OjCircuitState.HALF_OPEN.matches(candidate.getCircuitState());
         var update = Wrappers.<OjJudgeNode>lambdaUpdate()
                 .setSql("inflight_count = inflight_count + 1")
                 .setSql("total_dispatch = IFNULL(total_dispatch, 0) + 1")
                 .set(OjJudgeNode::getLastSelectedAt, now)
                 .eq(OjJudgeNode::getId, candidate.getId())
                 .eq(OjJudgeNode::getEpoch, candidate.getEpoch())
-                .eq(OjJudgeNode::getAdminStatus, "ENABLED")
-                .eq(OjJudgeNode::getRuntimeStatus, "ONLINE")
-                .in(OjJudgeNode::getCircuitState, List.of("CLOSED", "HALF_OPEN"));
+                .eq(OjJudgeNode::getAdminStatus, OjJudgeAdminStatus.ENABLED.name())
+                .eq(OjJudgeNode::getRuntimeStatus, OjJudgeRuntimeStatus.ONLINE.name())
+                .in(OjJudgeNode::getCircuitState, List.of(OjCircuitState.CLOSED.name(), OjCircuitState.HALF_OPEN.name()));
         if (halfOpen) {
             update.eq(OjJudgeNode::getInflightCount, 0);
         } else {
@@ -167,15 +177,21 @@ public class NodeScheduler {
         if (affected <= 0) {
             return null;
         }
-        return ojJudgeNodeMapper.selectById(candidate.getId());
+        // 2. CAS 已成功：直接在内存候选上反映 inflight+1，避免再 selectById
+        int inflight = candidate.getInflightCount() == null ? 0 : candidate.getInflightCount();
+        candidate.setInflightCount(inflight + 1);
+        candidate.setLastSelectedAt(now);
+        long total = candidate.getTotalDispatch() == null ? 0L : candidate.getTotalDispatch();
+        candidate.setTotalDispatch(total + 1);
+        return candidate;
     }
 
     private List<OjJudgeNode> listEligible(String language) {
         List<OjJudgeNode> nodes = ojJudgeNodeMapper.selectList(
                 Wrappers.<OjJudgeNode>lambdaQuery()
-                        .eq(OjJudgeNode::getAdminStatus, "ENABLED")
-                        .eq(OjJudgeNode::getRuntimeStatus, "ONLINE")
-                        .in(OjJudgeNode::getCircuitState, List.of("CLOSED", "HALF_OPEN")));
+                        .eq(OjJudgeNode::getAdminStatus, OjJudgeAdminStatus.ENABLED.name())
+                        .eq(OjJudgeNode::getRuntimeStatus, OjJudgeRuntimeStatus.ONLINE.name())
+                        .in(OjJudgeNode::getCircuitState, List.of(OjCircuitState.CLOSED.name(), OjCircuitState.HALF_OPEN.name())));
         List<OjJudgeNode> result = new ArrayList<>();
         for (OjJudgeNode node : nodes) {
             if (!languageSupported(node, language)) {
@@ -183,7 +199,7 @@ public class NodeScheduler {
             }
             int inflight = node.getInflightCount() == null ? 0 : node.getInflightCount();
             int max = node.getMaxConcurrency() == null ? 1 : Math.max(node.getMaxConcurrency(), 1);
-            if ("HALF_OPEN".equals(node.getCircuitState())) {
+            if (OjCircuitState.HALF_OPEN.matches(node.getCircuitState())) {
                 if (inflight != 0) {
                     continue;
                 }

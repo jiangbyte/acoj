@@ -61,6 +61,11 @@ export function UserCenter({ compact = false, placement = 'bottomRight' }: Props
 
   const items: MenuProps['items'] = [
     {
+      key: 'profile',
+      icon: <HomeOutlined />,
+      label: '用户主页',
+    },
+    {
       key: 'userCenter',
       icon: <UserOutlined />,
       label: '个人中心',
@@ -72,11 +77,6 @@ export function UserCenter({ compact = false, placement = 'bottomRight' }: Props
     },
     { type: 'divider' },
     {
-      key: 'home',
-      icon: <HomeOutlined />,
-      label: '首页',
-    },
-    {
       key: 'logout',
       icon: <LogoutOutlined />,
       label: '退出登录',
@@ -84,16 +84,16 @@ export function UserCenter({ compact = false, placement = 'bottomRight' }: Props
   ]
 
   const onClick: MenuProps['onClick'] = ({ key }) => {
+    if (key === 'profile') {
+      navigate(`/profile?account_id=${encodeURIComponent(String(userInfo?.accountId || ''))}`)
+      return
+    }
     if (key === 'userCenter') {
       navigate('/usercenter')
       return
     }
     if (key === 'feedback') {
       navigate('/feedback')
-      return
-    }
-    if (key === 'home') {
-      navigate('/')
       return
     }
     if (key === 'logout') {

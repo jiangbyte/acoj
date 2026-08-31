@@ -1,6 +1,27 @@
-.md-preview,
-.md-preview .md-editor,
-.md-preview .md-editor-dark,
-.md-preview .md-editor-previewOnly {
-  --md-bk-color: transparent !important;
+/* Author: Charlie — md-editor-rt 只读预览嵌入样式（跟随站点明暗） */
+
+.md-preview {
+  width: 100%;
+  min-width: 0;
+}
+
+.md-preview .md-editor {
+  --md-bk-color: transparent;
+  background: transparent;
+  border: none;
+}
+
+.md-preview .md-editor-preview {
+  padding-block: 0;
+  padding-inline: 0;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.md-preview .md-editor-preview > :first-child {
+  margin-top: 0;
+}
+
+.md-preview .md-editor-preview > :last-child {
+  margin-bottom: 0;
 }

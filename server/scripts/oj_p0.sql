@@ -21,12 +21,7 @@ CREATE TABLE `oj_problem` (
   `hint` text NULL COMMENT '提示',
   `samples` json NOT NULL DEFAULT ('[]') COMMENT '题面样例 [{input,output,explanation?}]',
   `difficulty` varchar(32) NOT NULL COMMENT 'EASY/MEDIUM/HARD',
-  `time_limit_ms` int NOT NULL COMMENT 'CPU 时限毫秒，对应沙箱 cpu_time_ms',
-  `memory_limit_bytes` bigint NOT NULL COMMENT '内存限额字节',
-  `stack_limit_bytes` bigint NULL COMMENT '栈限额，空则用沙箱默认',
-  `output_limit_bytes` bigint NULL COMMENT '输出限额，空则用沙箱默认',
   `judge_mode` varchar(32) NOT NULL DEFAULT 'STANDARD' COMMENT 'P0: STANDARD',
-  `allowed_languages` json NOT NULL DEFAULT ('[]') COMMENT '允许语言 key 数组，如 ["cpp17","python3"]',
   `case_version` int NOT NULL DEFAULT 1 COMMENT '测例变更版本；提交时快照',
   `status` varchar(32) NOT NULL COMMENT 'DRAFT/PUBLISHED/DISABLED',
   `submit_count` int NOT NULL DEFAULT 0 COMMENT '提交总数（冗余）',
@@ -44,6 +39,29 @@ CREATE TABLE `oj_problem` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='OJ 题目';
 
 -- ----------------------------
+-- Table structure for oj_problem_language_limit
+-- ----------------------------
+DROP TABLE IF EXISTS `oj_problem_language_limit`;
+CREATE TABLE `oj_problem_language_limit`
+(
+    `id`                 varchar(64) NOT NULL COMMENT '主键ID',
+    `problem_id`         varchar(64) NOT NULL COMMENT '所属题目ID',
+    `language`           varchar(32) NOT NULL COMMENT '语言 key，与 SparkSandbox 一致',
+    `time_limit_ms`      int         NOT NULL COMMENT 'CPU 时限毫秒，对应沙箱 cpu_time_ms',
+    `memory_limit_bytes` bigint      NOT NULL COMMENT '内存限额字节',
+    `stack_limit_bytes`  bigint NULL COMMENT '栈限额，空则用沙箱默认',
+    `output_limit_bytes` bigint NULL COMMENT '输出限额，空则用沙箱默认',
+    `extra`              json        NOT NULL DEFAULT ('{}') COMMENT '扩展信息',
+    `created_at`         datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
+    `created_by`         varchar(64) NULL COMMENT '创建人',
+    `updated_at`         datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间',
+    `updated_by`         varchar(64) NULL COMMENT '更新人',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_oj_problem_language_limit` (`problem_id`, `language`),
+    KEY                  `idx_oj_problem_language_limit_problem` (`problem_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='OJ 题目×语言资源限额';
+
+-- ----------------------------
 -- Table structure for oj_problem_case
 -- ----------------------------
 DROP TABLE IF EXISTS `oj_problem_case`;
@@ -54,7 +72,7 @@ CREATE TABLE `oj_problem_case` (
   `case_key` varchar(64) NOT NULL COMMENT '题内测例号，如 1、sample1',
   `sort_no` int NOT NULL DEFAULT 0 COMMENT '判题与展示顺序',
   `is_sample` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否样例（可对用户展示）',
-  `score` int NOT NULL DEFAULT 0 COMMENT '预留 OI 分值；P0 STANDARD 可忽略',
+  `score` int NOT NULL DEFAULT 0 COMMENT '测例分值；全 0 时等权计分',
   `input_storage` varchar(32) NOT NULL COMMENT 'INLINE/OBJECT',
   `output_storage` varchar(32) NOT NULL COMMENT 'INLINE/OBJECT',
   `input_text` mediumtext NULL COMMENT 'INLINE 输入；OBJECT 时 NULL',
@@ -173,11 +191,12 @@ CREATE TABLE `oj_submission` (
   `source_code` mediumtext NOT NULL COMMENT '源代码',
   `case_version` int NOT NULL COMMENT '提交时题目测例版本快照',
   `status` varchar(32) NOT NULL COMMENT 'PENDING/JUDGING/AC/WA/TLE/MLE/OLE/RE/CE/SE',
-  `score` int NOT NULL DEFAULT 0 COMMENT 'P0: AC=100 否则 0',
+  `score` int NOT NULL DEFAULT 0 COMMENT '得分 0-100：AC 测例分值之和 / 总分 ×100；全 AC=100',
   `time_ms` int NULL COMMENT '测点耗时汇总（如峰值或总和，实现写死一种）',
   `memory_bytes` bigint NULL COMMENT '测点内存峰值汇总',
   `compile_output` text NULL COMMENT '编译输出（CE）',
   `judge_message` varchar(512) NULL COMMENT '简短说明',
+  `note`  varchar(255) NULL COMMENT '用户备注',
   `case_results` json NOT NULL DEFAULT ('[]') COMMENT '业务裁决后的测点摘要数组',
   `sandbox_raw` json NOT NULL DEFAULT ('{}') COMMENT '截断后的执行侧摘要（排障）',
   `queued_at` datetime(6) NULL COMMENT '入队时间',
@@ -285,7 +304,7 @@ CREATE TABLE `oj_judge_dispatch` (
   `started_at` datetime(6) NOT NULL COMMENT '开始时间',
   `finished_at` datetime(6) NULL COMMENT '结束时间',
   `duration_ms` int NULL COMMENT '耗时毫秒',
-  `outcome` varchar(32) NOT NULL COMMENT 'SUCCESS_RESULT/TRANSPORT_FAIL/SANDBOX_INTERNAL/CANCELLED_LEASE/TIMEOUT',
+  `outcome` varchar(32) NOT NULL COMMENT 'STARTED/SUCCESS_RESULT/TRANSPORT_FAIL/SANDBOX_INTERNAL/CANCELLED_LEASE/TIMEOUT',
   `http_status` int NULL COMMENT 'HTTP 状态码',
   `error_code` varchar(64) NULL COMMENT '错误码',
   `error_message` varchar(512) NULL COMMENT '错误摘要（脱敏）',

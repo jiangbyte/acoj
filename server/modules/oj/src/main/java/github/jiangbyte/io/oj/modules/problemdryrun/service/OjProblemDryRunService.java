@@ -2,6 +2,7 @@ package github.jiangbyte.io.oj.modules.problemdryrun.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import github.jiangbyte.io.oj.modules.judge.mq.OjJudgeMessage;
 import github.jiangbyte.io.oj.modules.problemdryrun.entity.OjProblemDryRun;
 import github.jiangbyte.io.oj.modules.problemdryrun.param.OjProblemApplyLimitsParam;
 import github.jiangbyte.io.oj.modules.problemdryrun.param.OjProblemDryRunPageParam;
@@ -14,8 +15,15 @@ import github.jiangbyte.io.oj.modules.problemdryrun.param.OjProblemDryRunParam;
  */
 public interface OjProblemDryRunService extends IService<OjProblemDryRun> {
 
-    /** 同步试跑并落历史。 */
+    /**
+     * 入队试跑（落 PENDING，MQ 异步执行）。
+     */
     OjProblemDryRun dryRun(OjProblemDryRunParam param);
+
+    /**
+     * Worker：消费试跑任务。
+     */
+    void processQueued(OjJudgeMessage message);
 
     /** 试跑历史分页。 */
     Page<OjProblemDryRun> page(OjProblemDryRunPageParam param);

@@ -1,0 +1,30 @@
+/* Author: Charlie */
+
+.code-block {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--ant-color-fill-quaternary);
+}
+
+.code-block code.hljs {
+  display: block;
+  padding: 0;
+  background: transparent;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.code-block-empty code.hljs {
+  color: var(--ant-color-text-quaternary);
+}
+
+.code-block-light .hljs {
+  color: #24292e;
+}
+
+.code-block-dark .hljs {
+  color: #c9d1d9;
+}

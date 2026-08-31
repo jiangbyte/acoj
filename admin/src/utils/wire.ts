@@ -15,8 +15,14 @@ export function wireBool(value: unknown, defaultValue = false): boolean {
   if (typeof value === 'boolean') {
     return value
   }
+  if (typeof value === 'number') {
+    return value !== 0
+  }
   if (typeof value === 'string') {
-    return value === 'true'
+    const text = value.trim().toLowerCase()
+    if (text === 'true' || text === '1' || text === 'yes') return true
+    if (text === 'false' || text === '0' || text === 'no') return false
+    return defaultValue
   }
   return defaultValue
 }

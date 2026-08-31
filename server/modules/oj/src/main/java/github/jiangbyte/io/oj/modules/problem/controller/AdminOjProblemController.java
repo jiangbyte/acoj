@@ -15,6 +15,7 @@ import github.jiangbyte.io.oj.modules.problem.param.OjProblemReplaceCasesParam;
 import github.jiangbyte.io.oj.modules.problem.param.OjProblemSetTagsParam;
 import github.jiangbyte.io.oj.modules.problem.service.OjProblemService;
 import github.jiangbyte.io.oj.modules.problemcase.service.OjProblemCaseService;
+import github.jiangbyte.io.oj.modules.problemlanguagelimit.service.OjProblemLanguageLimitService;
 import github.jiangbyte.io.oj.modules.tag.service.OjTagService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,6 +42,7 @@ public class AdminOjProblemController {
     private final OjProblemService ojProblemService;
     private final OjProblemCaseService ojProblemCaseService;
     private final OjTagService ojTagService;
+    private final OjProblemLanguageLimitService ojProblemLanguageLimitService;
 
     /** 创建。 */
     @Operation(summary = "创建。")
@@ -89,6 +91,7 @@ public class AdminOjProblemController {
     public ApiResponse<Page<OjProblem>> page(@Valid @ModelAttribute OjProblemPageParam param) {
         Page<OjProblem> page = ojProblemService.page(param);
         ojTagService.fillProblemTags(page.getRecords());
+        ojProblemLanguageLimitService.fillLanguageLimits(page.getRecords());
         return ApiResponse.ok(page);
     }
 

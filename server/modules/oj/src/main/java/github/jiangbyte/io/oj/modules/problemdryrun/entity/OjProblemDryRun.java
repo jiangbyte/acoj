@@ -37,7 +37,7 @@ public class OjProblemDryRun extends BaseEntity {
     private String source;
     @Schema(description = "STORED/OVERRIDE")
     private String sourceFrom;
-    @Schema(description = "整单结果")
+    @Schema(description = "整单结果：PENDING/JUDGING/AC/WA/.../SE")
     private String overallStatus;
     @Schema(description = "测点耗时峰值")
     private Integer maxTimeMs;

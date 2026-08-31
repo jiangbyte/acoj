@@ -2,6 +2,7 @@
 
 import { Navigate, type RouteObject } from 'react-router-dom'
 import { MainLayout } from '@/layouts'
+import { ProblemWorkspaceLayout } from '@/layouts/ProblemWorkspaceLayout'
 import { HomePage } from '@/pages/home'
 import { LoginPage } from '@/pages/auth/login'
 import { RegisterPage } from '@/pages/auth/register'
@@ -15,6 +16,8 @@ import { AnnouncementDetailPage } from '@/pages/announcements/detail'
 import { FeedbackListPage } from '@/pages/feedback'
 import { FeedbackNewPage } from '@/pages/feedback/new'
 import { FeedbackDetailPage } from '@/pages/feedback/detail'
+import { ProblemListPage } from '@/pages/problems'
+import { ProblemSolvePage } from '@/pages/problems/solve'
 import { guestOnly, requireAuth } from './guard'
 
 export const routes: RouteObject[] = [
@@ -31,6 +34,10 @@ export const routes: RouteObject[] = [
         path: 'usercenter',
         loader: requireAuth,
         element: <UserCenterPage />,
+      },
+      {
+        path: 'problems',
+        element: <ProblemListPage />,
       },
       {
         path: 'announcements',
@@ -56,6 +63,11 @@ export const routes: RouteObject[] = [
         element: <FeedbackDetailPage />,
       },
     ],
+  },
+  {
+    path: '/problems/:id',
+    element: <ProblemWorkspaceLayout />,
+    children: [{ index: true, element: <ProblemSolvePage /> }],
   },
   {
     path: '/auth/login',

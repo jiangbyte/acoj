@@ -168,10 +168,14 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: '时限(ms)',
-    path: 'time_limit_ms',
+    title: '语言数',
+    key: 'language_count',
     width: 90,
     align: 'right',
+    render: (row) => {
+      const limits = row.language_limits
+      return Array.isArray(limits) ? String(limits.length) : '—'
+    },
   },
   {
     title: '测例版本',

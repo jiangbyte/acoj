@@ -23,4 +23,10 @@ public class OjProblemPageParam extends PageQuery {
     private String difficulty;
     @Schema(description = "状态：DRAFT/PUBLISHED/DISABLED")
     private String status;
+    @Schema(description = "本人做题状态过滤：ACCEPTED/ATTEMPTED/UNTRIED")
+    private String myStatus;
+    @Schema(description = "标签 ID 过滤（单选，AND）")
+    private String tagId;
+    @Schema(description = "关键词（题号或标题，OR）")
+    private String keyword;
 }

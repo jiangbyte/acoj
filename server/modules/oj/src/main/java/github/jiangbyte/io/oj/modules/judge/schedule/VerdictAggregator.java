@@ -1,5 +1,7 @@
 package github.jiangbyte.io.oj.modules.judge.schedule;
 
+import github.jiangbyte.io.oj.modules.judge.enums.SandboxCaseStatus;
+import github.jiangbyte.io.oj.modules.submission.enums.OjVerdict;
 import tools.jackson.databind.JsonNode;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -19,32 +21,43 @@ import java.util.Map;
 public class VerdictAggregator {
 
     private static final List<String> PRIORITY = List.of(
-            "CE", "SE", "RE", "TLE", "MLE", "OLE", "WA", "AC");
+            OjVerdict.CE.name(),
+            OjVerdict.SE.name(),
+            OjVerdict.RE.name(),
+            OjVerdict.TLE.name(),
+            OjVerdict.MLE.name(),
+            OjVerdict.OLE.name(),
+            OjVerdict.WA.name(),
+            OjVerdict.AC.name());
 
     /**
      * 根据沙箱响应与期望输出聚合整单结果。
-     *
-     * @param stopOnFirstError 与传给沙箱一致
+     * 边界：只做业务裁决与计分，不写库、不调沙箱；{@code stopOnFirstError} 须与传给沙箱一致。
      */
     public AggregateResult aggregate(
             JsonNode sandboxResponse,
             List<CaseLoader.LoadedCase> cases,
             boolean stopOnFirstError) {
+        // 1. 空响应直接 SE
         if (sandboxResponse == null) {
             return AggregateResult.systemError("空沙箱响应");
         }
 
+        // 2. 编译失败：收集诊断输出，整单 CE、不计测点
         String topStatus = text(sandboxResponse, "status");
         JsonNode compile = sandboxResponse.path("compile");
         String compileStatus = text(compile, "status");
-        if ("compile_failed".equalsIgnoreCase(topStatus)
-                || "compile_failed".equalsIgnoreCase(compileStatus)) {
+        if (SandboxCaseStatus.COMPILE_FAILED.matches(topStatus)
+                || SandboxCaseStatus.COMPILE_FAILED.matches(compileStatus)) {
+            // SparkSandbox 把编译器诊断放在顶层 compiler_output；compile.message 多为 "non-zero exit code"
             String compileOut = firstNonBlank(
+                    text(sandboxResponse, "compiler_output"),
                     text(compile, "stderr"),
                     text(compile, "stdout"),
+                    text(compile, "message"),
                     text(sandboxResponse, "message"));
             return AggregateResult.builder()
-                    .status("CE")
+                    .status(OjVerdict.CE.name())
                     .score(0)
                     .compileOutput(compileOut)
                     .judgeMessage("Compile Error")
@@ -52,11 +65,13 @@ public class VerdictAggregator {
                     .build();
         }
 
+        // 3. 期望输出按 caseKey 索引，供逐测比对
         Map<String, CaseLoader.LoadedCase> byKey = new LinkedHashMap<>();
         for (CaseLoader.LoadedCase c : cases) {
             byKey.put(c.caseKey(), c);
         }
 
+        // 4. 逐测例：映射沙箱状态 → 有期望则 RTRIM 比对 → 记 max 时/空与首个非 AC
         JsonNode caseNodes = sandboxResponse.path("cases");
         List<Map<String, Object>> caseResults = new ArrayList<>();
         int maxTime = 0;
@@ -71,13 +86,18 @@ public class VerdictAggregator {
                 String verdict = mapCaseStatus(sandboxStatus);
                 String message = "";
 
-                if ("AC".equals(verdict) || "succeeded".equalsIgnoreCase(sandboxStatus)) {
+                if (OjVerdict.AC.matches(verdict) || SandboxCaseStatus.SUCCEEDED.matches(sandboxStatus)) {
                     String stdout = firstNonBlank(text(node, "stdout"), "");
-                    String expect = expected == null ? "" : expected.expectedStdout();
-                    if (textEqualsRtrim(expect, stdout)) {
-                        verdict = "AC";
+                    String expect = expected == null ? null : expected.expectedStdout();
+                    if (expect == null) {
+                        // 无期望输出：以沙箱执行结果为准（succeeded → AC）
+                        verdict = SandboxCaseStatus.SUCCEEDED.matches(sandboxStatus) || OjVerdict.AC.matches(verdict)
+                                ? OjVerdict.AC.name()
+                                : verdict;
+                    } else if (textEqualsRtrim(expect, stdout)) {
+                        verdict = OjVerdict.AC.name();
                     } else {
-                        verdict = "WA";
+                        verdict = OjVerdict.WA.name();
                         message = "Wrong Answer";
                     }
                 }
@@ -99,7 +119,7 @@ public class VerdictAggregator {
                 row.put("message", message);
                 caseResults.add(row);
 
-                if (!"AC".equals(verdict) && firstNonAc == null) {
+                if (!OjVerdict.AC.matches(verdict) && firstNonAc == null) {
                     firstNonAc = verdict;
                     if (stopOnFirstError) {
                         break;
@@ -108,42 +128,106 @@ public class VerdictAggregator {
             }
         }
 
+        // 5. 整单状态：遇错即停取首个非 AC；无测点则 SE；否则取最差优先级
         String overall;
         if (stopOnFirstError && firstNonAc != null) {
             overall = firstNonAc;
         } else if (caseResults.isEmpty()) {
-            if ("internal_error".equalsIgnoreCase(topStatus)) {
+            if (SandboxCaseStatus.INTERNAL_ERROR.matches(topStatus)) {
                 return AggregateResult.systemError("sandbox internal_error");
             }
-            overall = "SE";
+            overall = OjVerdict.SE.name();
         } else {
             overall = pickWorst(caseResults);
         }
 
+        // 6. 计分并打包返回
         return AggregateResult.builder()
                 .status(overall)
-                .score("AC".equals(overall) ? 100 : 0)
+                .score(computeScore(overall, cases, caseResults))
                 .timeMs(maxTime > 0 ? maxTime : null)
                 .memoryBytes(maxMem > 0 ? maxMem : null)
                 .caseResults(caseResults)
                 .judgeMessage(overall)
-                .compileOutput(text(compile, "stderr"))
+                .compileOutput(firstNonBlank(
+                        text(sandboxResponse, "compiler_output"),
+                        text(compile, "stderr"),
+                        text(compile, "stdout")))
                 .build();
     }
 
-    private static String mapCaseStatus(String sandboxStatus) {
-        if (!StringUtils.hasText(sandboxStatus)) {
-            return "SE";
+    /**
+     * 按测例分值计分：AC 测例得分之和 / 总分 × 100。
+     * 若全部测例 score 为 0，则等权（每测例 1 分）。
+     * CE / SE 为 0；整单 AC 恒为 100。
+     */
+    static int computeScore(
+            String overall,
+            List<CaseLoader.LoadedCase> cases,
+            List<Map<String, Object>> caseResults) {
+        // 1. CE/SE 零分；整单 AC 满分
+        if (OjVerdict.CE.matches(overall) || OjVerdict.SE.matches(overall)) {
+            return 0;
         }
-        return switch (sandboxStatus.toLowerCase()) {
-            case "succeeded" -> "AC";
-            case "time_limit_exceeded" -> "TLE";
-            case "memory_limit_exceeded" -> "MLE";
-            case "output_limit_exceeded" -> "OLE";
-            case "runtime_error", "security_violation" -> "RE";
-            case "internal_error" -> "SE";
-            case "compile_failed" -> "CE";
-            default -> "SE";
+        if (OjVerdict.AC.matches(overall)) {
+            return 100;
+        }
+        if (cases == null || cases.isEmpty()) {
+            return 0;
+        }
+        // 2. 任一测例 score>0 则加权，否则等权 1
+        boolean weighted = false;
+        for (CaseLoader.LoadedCase c : cases) {
+            if (c != null && c.score() > 0) {
+                weighted = true;
+                break;
+            }
+        }
+        // 3. 汇总权重表与总分
+        int total = 0;
+        Map<String, Integer> weightByKey = new HashMap<>();
+        for (CaseLoader.LoadedCase c : cases) {
+            if (c == null || !StringUtils.hasText(c.caseKey())) {
+                continue;
+            }
+            int w = weighted ? Math.max(0, c.score()) : 1;
+            weightByKey.put(c.caseKey(), w);
+            total += w;
+        }
+        if (total <= 0) {
+            return 0;
+        }
+        // 4. 累加 AC 测例权重，换算百分制
+        int earned = 0;
+        if (caseResults != null) {
+            for (Map<String, Object> row : caseResults) {
+                if (row == null || !OjVerdict.AC.matches(String.valueOf(row.get("status")))) {
+                    continue;
+                }
+                Object keyObj = row.get("case_key");
+                String key = keyObj == null ? "" : String.valueOf(keyObj);
+                Integer w = weightByKey.get(key);
+                if (w != null) {
+                    earned += w;
+                }
+            }
+        }
+        return (int) Math.round(100.0 * earned / total);
+    }
+
+    private static String mapCaseStatus(String sandboxStatus) {
+        SandboxCaseStatus status = SandboxCaseStatus.fromWire(sandboxStatus);
+        if (status == null) {
+            return OjVerdict.SE.name();
+        }
+        return switch (status) {
+            case SUCCEEDED -> OjVerdict.AC.name();
+            case TIME_LIMIT_EXCEEDED -> OjVerdict.TLE.name();
+            case MEMORY_LIMIT_EXCEEDED -> OjVerdict.MLE.name();
+            case OUTPUT_LIMIT_EXCEEDED -> OjVerdict.OLE.name();
+            case RUNTIME_ERROR, SECURITY_VIOLATION -> OjVerdict.RE.name();
+            case INTERNAL_ERROR -> OjVerdict.SE.name();
+            case COMPILE_FAILED -> OjVerdict.CE.name();
         };
     }
 
@@ -290,7 +374,7 @@ public class VerdictAggregator {
 
         static AggregateResult systemError(String message) {
             return AggregateResult.builder()
-                    .status("SE")
+                    .status(OjVerdict.SE.name())
                     .score(0)
                     .judgeMessage(message)
                     .caseResults(List.of())

@@ -92,3 +92,42 @@ function formatChinaDate(timestamp: number) {
 function pad(value: string | number, length = 2) {
   return String(value).padStart(length, '0')
 }
+
+/** 相对时间（中文简写）；无法解析时回退到完整时间。 */
+export function formatRelativeTime(value: unknown, fallback = '-') {
+  if (value === undefined || value === null || value === '') {
+    return fallback
+  }
+  const full = formatDateTime(value, '')
+  if (!full) {
+    return fallback
+  }
+  const match = full.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/)
+  if (!match) {
+    return full
+  }
+  const [, y, m, d, hh, mm, ss] = match
+  const target = Date.UTC(Number(y), Number(m) - 1, Number(d), Number(hh), Number(mm), Number(ss)) - CHINA_OFFSET_MS
+  const now = Date.now()
+  const diffSec = Math.floor((now - target) / 1000)
+  if (!Number.isFinite(diffSec)) {
+    return full
+  }
+  if (diffSec < 60) {
+    return '刚刚'
+  }
+  if (diffSec < 3600) {
+    return `${Math.floor(diffSec / 60)} 分钟前`
+  }
+  if (diffSec < 86400) {
+    return `${Math.floor(diffSec / 3600)} 小时前`
+  }
+  if (diffSec < 86400 * 30) {
+    return `${Math.floor(diffSec / 86400)} 天前`
+  }
+  if (diffSec < 86400 * 365) {
+    return `${Math.floor(diffSec / (86400 * 30))} 个月前`
+  }
+  return `${Math.floor(diffSec / (86400 * 365))} 年前`
+}
+

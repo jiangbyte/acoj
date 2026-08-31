@@ -18,6 +18,14 @@ interface SampleItem {
   explanation: string
 }
 
+interface LanguageLimitItem {
+  language: string | null
+  time_limit_ms: number | null
+  memory_limit_bytes: number | null
+  stack_limit_bytes: number | null
+  output_limit_bytes: number | null
+}
+
 const route = useRoute()
 const router = useRouter()
 const formRef = ref<FormInst | null>(null)
@@ -29,6 +37,14 @@ const difficultyOptions: SelectOption[] = [
   { label: '困难', value: 'HARD' },
 ]
 
+const defaultLanguageLimit = (): LanguageLimitItem => ({
+  language: 'cpp17',
+  time_limit_ms: 1000,
+  memory_limit_bytes: 268435456,
+  stack_limit_bytes: null,
+  output_limit_bytes: null,
+})
+
 const defaultFormData: Record<string, any> = {
   problem_key: '',
   title: '',
@@ -38,12 +54,8 @@ const defaultFormData: Record<string, any> = {
   hint: '',
   samples: [] as SampleItem[],
   difficulty: 'EASY',
-  time_limit_ms: 1000,
-  memory_limit_bytes: 268435456,
-  stack_limit_bytes: null,
-  output_limit_bytes: null,
   judge_mode: 'STANDARD',
-  allowed_languages: ['cpp17', 'python3'] as string[],
+  language_limits: [defaultLanguageLimit()] as LanguageLimitItem[],
   status: 'DRAFT',
   source: '',
   extra: '{}',
@@ -63,9 +75,12 @@ const state = reactive({
 const pageTitle = computed(() => (state.dataId ? '编辑题目' : '新增题目'))
 
 const languageOptions = computed<SelectOption[]>(() => {
-  const selected = Array.isArray(state.formModel.allowed_languages)
-    ? state.formModel.allowed_languages
+  const selected = (Array.isArray(state.formModel.language_limits)
+    ? state.formModel.language_limits
     : []
+  )
+    .map((item: LanguageLimitItem) => item?.language)
+    .filter(Boolean) as string[]
   const merged = new Set<string>([...state.clusterLanguages, ...selected])
   return [...merged]
     .filter(Boolean)
@@ -79,22 +94,11 @@ const rules = computed<FormRules>(() => ({
   statement_md: [createRequiredRule('题面', 'input')],
   difficulty: [createRequiredRule('难度', 'change')],
   status: [createRequiredRule('状态', 'change')],
-  time_limit_ms: [
+  language_limits: [
     {
-      validator: () =>
-        typeof state.formModel.time_limit_ms === 'number' &&
-        Number.isFinite(state.formModel.time_limit_ms),
-      message: '请输入时限',
-      trigger: ['input', 'blur'],
-    },
-  ],
-  memory_limit_bytes: [
-    {
-      validator: () =>
-        typeof state.formModel.memory_limit_bytes === 'number' &&
-        Number.isFinite(state.formModel.memory_limit_bytes),
-      message: '请输入内存限额',
-      trigger: ['input', 'blur'],
+      validator: () => validateLanguageLimits(state.formModel.language_limits),
+      message: '请完善语言限额（语言唯一，时限≥1，内存≥1MiB）',
+      trigger: ['change', 'blur'],
     },
   ],
   samples: [
@@ -224,28 +228,61 @@ function normalizeSamples(value: unknown): SampleItem[] {
   })
 }
 
-function normalizeLanguages(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.map((item) => String(item).trim()).filter(Boolean)
+function normalizeLanguageLimits(value: unknown): LanguageLimitItem[] {
+  if (!Array.isArray(value) || !value.length) {
+    return [defaultLanguageLimit()]
   }
-  if (typeof value === 'string' && value.trim()) {
-    const text = value.trim()
-    if (text.startsWith('[')) {
-      try {
-        const parsed = JSON.parse(text)
-        if (Array.isArray(parsed)) {
-          return parsed.map((item) => String(item).trim()).filter(Boolean)
-        }
-      } catch {
-        // fall through to comma split
-      }
+  return value.map((item) => {
+    const row = item && typeof item === 'object' ? (item as Record<string, any>) : {}
+    return {
+      language: row.language == null || row.language === '' ? null : String(row.language),
+      time_limit_ms:
+        row.time_limit_ms === null || row.time_limit_ms === undefined || row.time_limit_ms === ''
+          ? null
+          : Number(row.time_limit_ms),
+      memory_limit_bytes:
+        row.memory_limit_bytes === null ||
+        row.memory_limit_bytes === undefined ||
+        row.memory_limit_bytes === ''
+          ? null
+          : Number(row.memory_limit_bytes),
+      stack_limit_bytes:
+        row.stack_limit_bytes === null ||
+        row.stack_limit_bytes === undefined ||
+        row.stack_limit_bytes === ''
+          ? null
+          : Number(row.stack_limit_bytes),
+      output_limit_bytes:
+        row.output_limit_bytes === null ||
+        row.output_limit_bytes === undefined ||
+        row.output_limit_bytes === ''
+          ? null
+          : Number(row.output_limit_bytes),
     }
-    return text
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean)
+  })
+}
+
+function validateLanguageLimits(value: unknown): boolean {
+  if (!Array.isArray(value) || !value.length) return false
+  const seen = new Set<string>()
+  for (const item of value as LanguageLimitItem[]) {
+    const lang = String(item?.language || '')
+      .trim()
+      .toLowerCase()
+    if (!lang || seen.has(lang)) return false
+    seen.add(lang)
+    if (typeof item.time_limit_ms !== 'number' || !Number.isFinite(item.time_limit_ms) || item.time_limit_ms < 1) {
+      return false
+    }
+    if (
+      typeof item.memory_limit_bytes !== 'number' ||
+      !Number.isFinite(item.memory_limit_bytes) ||
+      item.memory_limit_bytes < 1024 * 1024
+    ) {
+      return false
+    }
   }
-  return [...defaultFormData.allowed_languages]
+  return true
 }
 
 function normalizeFormData(data: Record<string, any> = {}): Record<string, any> {
@@ -255,28 +292,16 @@ function normalizeFormData(data: Record<string, any> = {}): Record<string, any> 
     ...wireFields(
       data,
       {
-        time_limit_ms: 'int',
-        memory_limit_bytes: 'int',
         case_version: 'int',
       },
       defaultFormData,
     ),
-    stack_limit_bytes:
-      data.stack_limit_bytes === null || data.stack_limit_bytes === undefined || data.stack_limit_bytes === ''
-        ? null
-        : Number(data.stack_limit_bytes),
-    output_limit_bytes:
-      data.output_limit_bytes === null ||
-      data.output_limit_bytes === undefined ||
-      data.output_limit_bytes === ''
-        ? null
-        : Number(data.output_limit_bytes),
     difficulty: data.difficulty || defaultFormData.difficulty,
     status: data.status || defaultFormData.status,
-    allowed_languages: Object.keys(data).length
-      ? normalizeLanguages(data.allowed_languages)
-      : [...defaultFormData.allowed_languages],
-    samples: Object.keys(data).length ? normalizeSamples(data.samples) : [],
+    language_limits: Object.keys(data).length
+      ? normalizeLanguageLimits(data.language_limits)
+      : [defaultLanguageLimit()],
+    samples: Object.keys(data).length ? normalizeSamples(data.samples ?? []) : [],
     extra: stringifyJsonObject(data.extra),
     tag_ids: Array.isArray(data.tag_ids)
       ? data.tag_ids.map((item: unknown) => String(item)).slice(0, 2)
@@ -292,8 +317,38 @@ function onTagIdsUpdate(value: Array<string | number> | null) {
   }
 }
 
+function addLanguageLimit() {
+  if (!Array.isArray(state.formModel.language_limits)) {
+    state.formModel.language_limits = []
+  }
+  state.formModel.language_limits.push({
+    language: null,
+    time_limit_ms: 1000,
+    memory_limit_bytes: 268435456,
+    stack_limit_bytes: null,
+    output_limit_bytes: null,
+  })
+}
+
+function removeLanguageLimit(index: number) {
+  if (!Array.isArray(state.formModel.language_limits)) return
+  if (state.formModel.language_limits.length <= 1) {
+    window.$message.warning('至少保留一种语言限额')
+    return
+  }
+  state.formModel.language_limits.splice(index, 1)
+}
+
 function normalizeSubmitData(data: Record<string, any>): Record<string, any> {
-  const langs = normalizeLanguages(data.allowed_languages)
+  const limits = (Array.isArray(data.language_limits) ? data.language_limits : []).map(
+    (item: LanguageLimitItem) => ({
+      language: String(item?.language ?? '').trim(),
+      time_limit_ms: item.time_limit_ms,
+      memory_limit_bytes: item.memory_limit_bytes,
+      stack_limit_bytes: item.stack_limit_bytes,
+      output_limit_bytes: item.output_limit_bytes,
+    }),
+  )
   return {
     problem_key: data.problem_key,
     title: data.title,
@@ -313,12 +368,8 @@ function normalizeSubmitData(data: Record<string, any>): Record<string, any> {
       return row
     }),
     difficulty: data.difficulty,
-    time_limit_ms: data.time_limit_ms,
-    memory_limit_bytes: data.memory_limit_bytes,
-    stack_limit_bytes: data.stack_limit_bytes,
-    output_limit_bytes: data.output_limit_bytes,
     judge_mode: data.judge_mode || 'STANDARD',
-    allowed_languages: langs,
+    language_limits: limits,
     status: data.status,
     source: data.source || null,
     extra: parseJsonObject(data.extra),
@@ -558,80 +609,119 @@ watch(
           </section>
 
           <section class="form-section">
-            <div class="form-section-title">
-              判题限制
+            <div class="form-section-head">
+              <div class="form-section-title form-section-title--inline">
+                语言限额
+              </div>
+              <NButton
+                size="small"
+                secondary
+                @click="addLanguageLimit"
+              >
+                添加语言
+              </NButton>
             </div>
-            <NGrid
-              cols="1 s:2 m:4"
-              responsive="screen"
-              :x-gap="16"
-              :y-gap="0"
+            <NFormItem
+              path="language_limits"
+              :show-label="false"
             >
-              <NGi>
-                <NFormItem
-                  label="时限(ms)"
-                  path="time_limit_ms"
+              <div class="samples-editor">
+                <div
+                  v-for="(item, index) in state.formModel.language_limits"
+                  :key="index"
+                  class="sample-editor-item"
                 >
-                  <NInputNumber
-                    v-model:value="state.formModel.time_limit_ms"
-                    class="w-full"
-                  />
-                </NFormItem>
-              </NGi>
-              <NGi>
-                <NFormItem
-                  label="内存(B)"
-                  path="memory_limit_bytes"
-                >
-                  <NInputNumber
-                    v-model:value="state.formModel.memory_limit_bytes"
-                    class="w-full"
-                  />
-                </NFormItem>
-              </NGi>
-              <NGi>
-                <NFormItem
-                  label="栈限额"
-                  path="stack_limit_bytes"
-                >
-                  <NInputNumber
-                    v-model:value="state.formModel.stack_limit_bytes"
-                    class="w-full"
-                    clearable
-                    placeholder="默认"
-                  />
-                </NFormItem>
-              </NGi>
-              <NGi>
-                <NFormItem
-                  label="输出限额"
-                  path="output_limit_bytes"
-                >
-                  <NInputNumber
-                    v-model:value="state.formModel.output_limit_bytes"
-                    class="w-full"
-                    clearable
-                    placeholder="默认"
-                  />
-                </NFormItem>
-              </NGi>
-              <NGi span="1 s:2 m:4">
-                <NFormItem
-                  label="允许语言"
-                  path="allowed_languages"
-                >
-                  <NSelect
-                    v-model:value="state.formModel.allowed_languages"
-                    :options="languageOptions"
-                    multiple
-                    filterable
-                    tag
-                    clearable
-                    placeholder="从执行机聚合；无选项时可手动输入"
-                  />
-                </NFormItem>
-              </NGi>
-            </NGrid>
+                  <div class="sample-editor-header">
+                    <span class="sample-editor-title">语言 {{ index + 1 }}</span>
+                    <NButton
+                      size="tiny"
+                      quaternary
+                      type="error"
+                      @click="removeLanguageLimit(index)"
+                    >
+                      删除
+                    </NButton>
+                  </div>
+                  <NGrid
+                    cols="1 s:2 m:5"
+                    responsive="screen"
+                    :x-gap="12"
+                    :y-gap="0"
+                  >
+                    <NGi>
+                      <NFormItem
+                        label="语言"
+                        label-placement="top"
+                        :show-feedback="false"
+                      >
+                        <NSelect
+                          v-model:value="item.language"
+                          :options="languageOptions"
+                          filterable
+                          tag
+                          clearable
+                          placeholder="语言 key"
+                        />
+                      </NFormItem>
+                    </NGi>
+                    <NGi>
+                      <NFormItem
+                        label="时限(ms)"
+                        label-placement="top"
+                        :show-feedback="false"
+                      >
+                        <NInputNumber
+                          v-model:value="item.time_limit_ms"
+                          class="w-full"
+                          :min="1"
+                        />
+                      </NFormItem>
+                    </NGi>
+                    <NGi>
+                      <NFormItem
+                        label="内存(B)"
+                        label-placement="top"
+                        :show-feedback="false"
+                      >
+                        <NInputNumber
+                          v-model:value="item.memory_limit_bytes"
+                          class="w-full"
+                          :min="1048576"
+                        />
+                      </NFormItem>
+                    </NGi>
+                    <NGi>
+                      <NFormItem
+                        label="栈限额"
+                        label-placement="top"
+                        :show-feedback="false"
+                      >
+                        <NInputNumber
+                          v-model:value="item.stack_limit_bytes"
+                          class="w-full"
+                          clearable
+                          placeholder="默认"
+                        />
+                      </NFormItem>
+                    </NGi>
+                    <NGi>
+                      <NFormItem
+                        label="输出限额"
+                        label-placement="top"
+                        :show-feedback="false"
+                      >
+                        <NInputNumber
+                          v-model:value="item.output_limit_bytes"
+                          class="w-full"
+                          clearable
+                          placeholder="默认"
+                        />
+                      </NFormItem>
+                    </NGi>
+                  </NGrid>
+                </div>
+              </div>
+            </NFormItem>
           </section>
 
           <section class="form-section">

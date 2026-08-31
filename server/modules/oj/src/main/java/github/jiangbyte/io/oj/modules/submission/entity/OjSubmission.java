@@ -44,6 +44,8 @@ public class OjSubmission extends BaseEntity {
     private String compileOutput;
     @Schema(description = "简短说明")
     private String judgeMessage;
+    @Schema(description = "用户备注")
+    private String note;
     @TableField(typeHandler = JacksonJsonTypeHandler.class)
     @Schema(description = "业务裁决后的测点摘要数组")
     private List<Map<String, Object>> caseResults;

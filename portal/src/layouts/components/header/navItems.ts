@@ -2,6 +2,7 @@
 
 export const navItems = [
   { key: '/', label: '首页' },
+  { key: '/problems', label: '题库' },
   { key: '/announcements', label: '公告' },
 ]
 

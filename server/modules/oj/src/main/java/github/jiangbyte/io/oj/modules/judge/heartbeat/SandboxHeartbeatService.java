@@ -2,6 +2,9 @@ package github.jiangbyte.io.oj.modules.judge.heartbeat;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import github.jiangbyte.io.common.core.exception.BizException;
+import github.jiangbyte.io.oj.modules.judge.enums.OjCircuitState;
+import github.jiangbyte.io.oj.modules.judge.enums.OjJudgeAdminStatus;
+import github.jiangbyte.io.oj.modules.judge.enums.OjJudgeRuntimeStatus;
 import github.jiangbyte.io.oj.modules.judge.node.entity.OjJudgeNode;
 import github.jiangbyte.io.oj.modules.judge.node.mapper.OjJudgeNodeMapper;
 import java.time.OffsetDateTime;
@@ -70,9 +73,9 @@ public class SandboxHeartbeatService {
             created.setBaseUrl(baseUrl);
             created.setSigningEnabled(true);
             created.setSigningSecretCipher(null);
-            created.setAdminStatus("ENABLED");
-            created.setRuntimeStatus("ONLINE");
-            created.setCircuitState("CLOSED");
+            created.setAdminStatus(OjJudgeAdminStatus.ENABLED.name());
+            created.setRuntimeStatus(OjJudgeRuntimeStatus.ONLINE.name());
+            created.setCircuitState(OjCircuitState.CLOSED.name());
             created.setWeight(100);
             created.setPriority(100);
             created.setMaxConcurrency(maxConcurrency);
@@ -99,8 +102,8 @@ public class SandboxHeartbeatService {
         existing.setSupportedLanguages(languageKeys);
         existing.setExtra(extra);
         // 心跳成功不得单独关 OPEN 熔断；非 OPEN 恢复 ONLINE（含 DISABLED，调度侧过滤）
-        if (!"OPEN".equals(existing.getCircuitState())) {
-            existing.setRuntimeStatus("ONLINE");
+        if (!OjCircuitState.OPEN.matches(existing.getCircuitState())) {
+            existing.setRuntimeStatus(OjJudgeRuntimeStatus.ONLINE.name());
         }
         ojJudgeNodeMapper.updateById(existing);
     }

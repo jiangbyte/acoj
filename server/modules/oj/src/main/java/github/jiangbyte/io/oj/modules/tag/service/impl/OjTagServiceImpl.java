@@ -7,8 +7,14 @@ import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
+import github.jiangbyte.io.common.satoken.utils.LoginHelper;
 import github.jiangbyte.io.oj.modules.problem.entity.OjProblem;
+import github.jiangbyte.io.oj.modules.problem.enums.OjProblemStatus;
 import github.jiangbyte.io.oj.modules.problem.service.OjProblemService;
+import github.jiangbyte.io.oj.modules.problemcase.enums.OjEnableStatus;
+import github.jiangbyte.io.oj.modules.stat.entity.OjUserProblemStat;
+import github.jiangbyte.io.oj.modules.stat.enums.OjUserProblemStatStatus;
+import github.jiangbyte.io.oj.modules.stat.mapper.OjUserProblemStatMapper;
 import github.jiangbyte.io.oj.modules.tag.convert.OjTagConvert;
 import github.jiangbyte.io.oj.modules.tag.entity.OjProblemTag;
 import github.jiangbyte.io.oj.modules.tag.entity.OjTag;
@@ -17,11 +23,14 @@ import github.jiangbyte.io.oj.modules.tag.mapper.OjTagMapper;
 import github.jiangbyte.io.oj.modules.tag.param.OjTagAddParam;
 import github.jiangbyte.io.oj.modules.tag.param.OjTagEditParam;
 import github.jiangbyte.io.oj.modules.tag.param.OjTagPageParam;
+import github.jiangbyte.io.oj.modules.tag.result.OjPortalTagOptionsResult;
+import github.jiangbyte.io.oj.modules.tag.result.OjTagOptionItem;
 import github.jiangbyte.io.oj.modules.tag.service.OjTagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import com.baomidou.mybatisplus.extension.toolkit.Db;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,13 +55,14 @@ public class OjTagServiceImpl extends ServiceImpl<OjTagMapper, OjTag> implements
     private final OjTagConvert ojTagConvert;
     private final OjProblemService ojProblemService;
     private final OjProblemTagMapper ojProblemTagMapper;
+    private final OjUserProblemStatMapper ojUserProblemStatMapper;
 
     @Override
     @Transactional
     public void create(OjTagAddParam param) {
         OjTag entity = ojTagConvert.toEntity(param);
         if (!StringUtils.hasText(entity.getStatus())) {
-            entity.setStatus("ENABLED");
+            entity.setStatus(OjEnableStatus.ENABLED.name());
         }
         this.save(entity);
         AuditSnapshots.created(entity);
@@ -79,8 +89,13 @@ public class OjTagServiceImpl extends ServiceImpl<OjTagMapper, OjTag> implements
         }
         List<OjTag> entities = this.listByIds(param.getIds());
         AuditSnapshots.deletedAll(entities);
-        ojProblemTagMapper.delete(Wrappers.<OjProblemTag>lambdaQuery()
-                .in(OjProblemTag::getTagId, param.getIds()));
+        // 关联表按 500 分批删，避免超长 IN
+        List<String> ids = param.getIds();
+        for (int i = 0; i < ids.size(); i += 500) {
+            List<String> batch = ids.subList(i, Math.min(i + 500, ids.size()));
+            ojProblemTagMapper.delete(Wrappers.<OjProblemTag>lambdaQuery()
+                    .in(OjProblemTag::getTagId, batch));
+        }
         this.removeByIds(param.getIds());
     }
 
@@ -142,9 +157,8 @@ public class OjTagServiceImpl extends ServiceImpl<OjTagMapper, OjTag> implements
                 relation.setTagId(tagId);
                 relations.add(relation);
             }
-            for (OjProblemTag relation : relations) {
-                ojProblemTagMapper.insert(relation);
-            }
+            // 批量插入，避免逐条 insert N+1（虽每题最多 2 条）
+            Db.saveBatch(relations);
         }
         AuditSnapshots.after(Map.of("problemId", problemId, "tagIds", normalized));
     }
@@ -205,8 +219,34 @@ public class OjTagServiceImpl extends ServiceImpl<OjTagMapper, OjTag> implements
     @ReadDataSource
     public List<OjTag> listEnabled() {
         return this.list(Wrappers.<OjTag>lambdaQuery()
-                .eq(OjTag::getStatus, "ENABLED")
+                .eq(OjTag::getStatus, OjEnableStatus.ENABLED.name())
                 .orderByAsc(OjTag::getName));
+    }
+
+    @Override
+    @ReadDataSource
+    public OjPortalTagOptionsResult listPortalOptions() {
+        OjPortalTagOptionsResult result = new OjPortalTagOptionsResult();
+        List<OjTagOptionItem> tags = this.getBaseMapper().selectEnabledWithPublishedCounts();
+        result.setTags(tags != null ? tags : List.of());
+        long published = ojProblemService.count(Wrappers.<OjProblem>lambdaQuery()
+                .eq(OjProblem::getStatus, OjProblemStatus.PUBLISHED.name()));
+        result.setPublishedCount(published);
+
+        String accountId = LoginHelper.currentUser()
+                .map(u -> u.getAccountId())
+                .orElse(null);
+        if (StringUtils.hasText(accountId)) {
+            // 已通过且题目仍为已发布：EXISTS 子查询一次完成，避免先查全部 ID 再 IN
+            Long accepted = ojUserProblemStatMapper.selectCount(
+                    Wrappers.<OjUserProblemStat>lambdaQuery()
+                            .eq(OjUserProblemStat::getAccountId, accountId)
+                            .eq(OjUserProblemStat::getStatus, OjUserProblemStatStatus.ACCEPTED.name())
+                            .apply("EXISTS (SELECT 1 FROM oj_problem p WHERE p.id = oj_user_problem_stat.problem_id AND p.status = {0})",
+                                    OjProblemStatus.PUBLISHED.name()));
+            result.setAcceptedCount(accepted == null ? 0L : accepted);
+        }
+        return result;
     }
 
     @Override

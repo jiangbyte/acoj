@@ -7,12 +7,17 @@ import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.oj.config.OjProperties;
+import github.jiangbyte.io.oj.modules.judge.mq.OjJudgeMessage;
+import github.jiangbyte.io.oj.modules.judge.mq.OjJudgePublisher;
 import github.jiangbyte.io.oj.modules.judge.node.entity.OjJudgeNode;
 import github.jiangbyte.io.oj.modules.judge.sandbox.SparkSandboxClient;
 import github.jiangbyte.io.oj.modules.judge.schedule.CaseLoader;
 import github.jiangbyte.io.oj.modules.judge.schedule.NodeScheduler;
 import github.jiangbyte.io.oj.modules.judge.schedule.VerdictAggregator;
 import github.jiangbyte.io.oj.modules.problemdryrun.entity.OjProblemDryRun;
+import github.jiangbyte.io.oj.modules.problemdryrun.enums.OjDryRunLimitMode;
+import github.jiangbyte.io.oj.modules.problemdryrun.enums.OjDryRunMode;
+import github.jiangbyte.io.oj.modules.problemdryrun.enums.OjDryRunSourceFrom;
 import github.jiangbyte.io.oj.modules.problemdryrun.mapper.OjProblemDryRunMapper;
 import github.jiangbyte.io.oj.modules.problemdryrun.param.OjProblemApplyLimitsParam;
 import github.jiangbyte.io.oj.modules.problemdryrun.param.OjProblemDryRunPageParam;
@@ -20,11 +25,18 @@ import github.jiangbyte.io.oj.modules.problemdryrun.param.OjProblemDryRunParam;
 import github.jiangbyte.io.oj.modules.problemdryrun.service.OjProblemDryRunService;
 import github.jiangbyte.io.oj.modules.problem.entity.OjProblem;
 import github.jiangbyte.io.oj.modules.problem.mapper.OjProblemMapper;
+import github.jiangbyte.io.oj.modules.problemlanguagelimit.entity.OjProblemLanguageLimit;
+import github.jiangbyte.io.oj.modules.problemlanguagelimit.service.OjProblemLanguageLimitService;
+import github.jiangbyte.io.oj.modules.problemcase.enums.OjEnableStatus;
 import github.jiangbyte.io.oj.modules.problemsolution.entity.OjProblemSolution;
 import github.jiangbyte.io.oj.modules.problemsolution.mapper.OjProblemSolutionMapper;
+import github.jiangbyte.io.oj.modules.submission.enums.OjVerdict;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -33,10 +45,11 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * OJ 管理端试跑服务：选机 → run_cases → 裁决 → 落历史。
+ * OJ 管理端试跑：入队 + Worker 异步执行（与 Portal 提交共用 RabbitMQ）。
  *
  * Author: Charlie
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OjProblemDryRunServiceImpl
@@ -47,48 +60,57 @@ public class OjProblemDryRunServiceImpl
     /** 试跑 ALL 模式每批测例数（DB 分页 + 沙箱分批）。 */
     private static final long DRY_RUN_CASE_BATCH = 50L;
     private static final List<String> STATUS_PRIORITY = List.of(
-            "CE", "SE", "RE", "TLE", "MLE", "OLE", "WA", "AC");
+            OjVerdict.CE.name(),
+            OjVerdict.SE.name(),
+            OjVerdict.RE.name(),
+            OjVerdict.TLE.name(),
+            OjVerdict.MLE.name(),
+            OjVerdict.OLE.name(),
+            OjVerdict.WA.name(),
+            OjVerdict.AC.name());
 
     private final OjProblemMapper ojProblemMapper;
     private final OjProblemSolutionMapper ojProblemSolutionMapper;
+    private final OjProblemLanguageLimitService ojProblemLanguageLimitService;
     private final CaseLoader caseLoader;
     private final NodeScheduler nodeScheduler;
     private final SparkSandboxClient sparkSandboxClient;
     private final VerdictAggregator verdictAggregator;
     private final OjProperties ojProperties;
+    private final OjJudgePublisher ojJudgePublisher;
 
+    /**
+     * 管理端发起试跑：校验题/语言 → 解析源码与限额 → 落 PENDING 记录 → 事务提交后入队。
+     * 边界：不在此同步调沙箱；实际执行见 {@link #processQueued}。
+     */
     @Override
+    @Transactional
     public OjProblemDryRun dryRun(OjProblemDryRunParam param) {
+        // 1. 题目存在性
         OjProblem problem = ojProblemMapper.selectById(param.getProblemId());
         if (problem == null) {
             throw new BizException(404, "OjProblem not found");
         }
+        // 2. 限额模式 + 语言：限额行即允许语言
         String limitMode = normalizeLimitMode(param.getLimitMode());
         if (!StringUtils.hasText(param.getLanguage())) {
             throw new BizException(400, "请选择语言");
         }
         String language = param.getLanguage().trim();
-        List<String> allowed = problem.getAllowedLanguages();
-        if (allowed != null && !allowed.isEmpty()
-                && allowed.stream().noneMatch(l -> language.equalsIgnoreCase(l))) {
+        if (ojProblemLanguageLimitService.findByProblemAndLanguage(problem.getId(), language) == null) {
             throw new BizException(400, "该题目不支持语言: " + language);
         }
+        // 3. caseKey 有则 SINGLE，否则 ALL
         boolean single = StringUtils.hasText(param.getCaseKey());
-        String mode = single ? "SINGLE" : "ALL";
+        String mode = single ? OjDryRunMode.SINGLE.name() : OjDryRunMode.ALL.name();
         String caseKey = single ? param.getCaseKey().trim() : null;
 
+        // 4. 解析源码（覆盖或启用参考答案）与限额（题目/放宽）
         SourceResolved source = resolveSource(problem.getId(), language, param.getSource());
-        Limits limits = resolveLimits(problem, limitMode);
-        boolean stopOnFirstError = param.getStopOnFirstError() != null
-                ? param.getStopOnFirstError()
-                : false;
+        Limits limits = resolveLimits(problem.getId(), language, limitMode);
+        boolean stopOnFirstError = param.getStopOnFirstError() != null && param.getStopOnFirstError();
 
-        String requestId = UUID.randomUUID().toString().replace("-", "");
-        OjJudgeNode node = nodeScheduler.selectAndAcquire(language, List.of(), requestId);
-        if (node == null) {
-            throw new BizException("当前无可用执行机");
-        }
-
+        // 5. 落 PENDING 试跑记录（快照 caseVersion / 限额 / 源码）
         OjProblemDryRun record = new OjProblemDryRun();
         record.setProblemId(problem.getId());
         record.setCaseVersion(problem.getCaseVersion());
@@ -100,33 +122,154 @@ public class OjProblemDryRunServiceImpl
         record.setSourceFrom(source.sourceFrom());
         record.setAppliedTimeMs(limits.cpuTimeMs());
         record.setAppliedMemoryBytes(limits.memoryBytes());
-        record.setNodeId(node.getId());
+        record.setOverallStatus(OjVerdict.PENDING.name());
         record.setCaseResults(List.of());
+        this.save(record);
+        AuditSnapshots.created(record);
+
+        // 6. 事务提交后再投递，避免 Worker 读不到未提交行
+        String dryRunId = record.getId();
+        String requestId = UUID.randomUUID().toString().replace("-", "");
+        enqueueAfterCommit(OjJudgeMessage.dryRun(dryRunId, requestId, stopOnFirstError));
+        return record;
+    }
+
+    /**
+     * Worker 执行已入队试跑：选机 → JUDGING → 单测/分批全测 → 裁决写回。
+     * 边界：幂等跳过终态；与 Portal 提交共用 MQ，但不写 submission。
+     */
+    @Override
+    public void processQueued(OjJudgeMessage message) {
+        // 1. 校验 dryRunId；缺失进 DLQ
+        String dryRunId = message.dryRunId();
+        if (!StringUtils.hasText(dryRunId)) {
+            log.warn("dry-run message missing dryRunId");
+            ojJudgePublisher.publishDlq(message);
+            return;
+        }
+        // 2. 记录可能尚未可见：短延迟重试
+        OjProblemDryRun record = this.getById(dryRunId);
+        if (record == null) {
+            log.warn("dry-run not found yet, retry soon: {}", dryRunId);
+            ojJudgePublisher.publishRetry(
+                    OjJudgeMessage.dryRun(
+                            dryRunId,
+                            message.requestId(),
+                            Boolean.TRUE.equals(message.stopOnFirstError())),
+                    1000L);
+            return;
+        }
+        // 3. 已终态直接跳过（幂等）
+        if (!OjVerdict.PENDING.matches(record.getOverallStatus())
+                && !OjVerdict.JUDGING.matches(record.getOverallStatus())) {
+            return;
+        }
+
+        // 4. 题目缺失则 SE
+        OjProblem problem = ojProblemMapper.selectById(record.getProblemId());
+        if (problem == null) {
+            finishError(record, "题目不存在");
+            return;
+        }
+
+        // 5. 选机占坑；无节点则记错并退避重试
+        boolean stopOnFirstError = Boolean.TRUE.equals(message.stopOnFirstError());
+        String requestId = StringUtils.hasText(message.requestId())
+                ? message.requestId()
+                : UUID.randomUUID().toString().replace("-", "");
+        OjJudgeNode node = nodeScheduler.selectAndAcquire(record.getLanguage(), List.of(), requestId);
+        if (node == null) {
+            ojJudgePublisher.publishRetry(
+                    OjJudgeMessage.dryRun(dryRunId, requestId, stopOnFirstError),
+                    3000L);
+            this.update(Wrappers.<OjProblemDryRun>lambdaUpdate()
+                    .set(OjProblemDryRun::getErrorMessage, "NO_ONLINE_NODE")
+                    .eq(OjProblemDryRun::getId, dryRunId)
+                    .eq(OjProblemDryRun::getOverallStatus, OjVerdict.PENDING.name()));
+            return;
+        }
+
+        // 6. 标记 JUDGING 并绑定节点；限额从记录快照恢复
+        this.update(Wrappers.<OjProblemDryRun>lambdaUpdate()
+                .set(OjProblemDryRun::getOverallStatus, OjVerdict.JUDGING.name())
+                .set(OjProblemDryRun::getNodeId, node.getId())
+                .eq(OjProblemDryRun::getId, dryRunId)
+                .in(OjProblemDryRun::getOverallStatus, List.of(OjVerdict.PENDING.name(), OjVerdict.JUDGING.name())));
+
+        record.setNodeId(node.getId());
+        record.setOverallStatus(OjVerdict.JUDGING.name());
+        SourceResolved source = new SourceResolved(record.getSource(), record.getSourceFrom());
+        Limits limits = new Limits(
+                record.getAppliedTimeMs() == null ? 1000 : record.getAppliedTimeMs(),
+                (record.getAppliedTimeMs() == null ? 1000 : record.getAppliedTimeMs())
+                        * Math.max(1, ojProperties.getJudge().getRealTimeFactor()),
+                record.getAppliedMemoryBytes() == null ? 268435456L : record.getAppliedMemoryBytes());
+
+        // 7. 语言限额整单只查一次，供各批沙箱请求复用（栈/输出限额）
+        OjProblemLanguageLimit langLimit = ojProblemLanguageLimitService.findByProblemAndLanguage(
+                problem.getId(), record.getLanguage());
 
         try {
-            if (single) {
+            // 8. SINGLE 按 key 加载；ALL 分页分批跑沙箱并合并
+            if (OjDryRunMode.SINGLE.matches(record.getMode())) {
                 List<CaseLoader.LoadedCase> cases = caseLoader.loadByKey(
-                        problem.getId(), problem.getCaseVersion(), caseKey);
+                        problem.getId(), record.getCaseVersion(), record.getCaseKey());
                 if (cases.isEmpty()) {
-                    throw new BizException("测例不存在或未启用: " + caseKey);
+                    nodeScheduler.releaseInflight(node.getId());
+                    finishError(record, "测例不存在或未启用: " + record.getCaseKey());
+                    return;
                 }
-                applyBatchResult(record, problem, node, cases, source, limits, stopOnFirstError, language);
+                applyBatchResult(record, problem, node, cases, source, limits, stopOnFirstError,
+                        record.getLanguage(), langLimit);
             } else {
-                applyAllBatched(record, problem, node, source, limits, stopOnFirstError, language);
+                applyAllBatched(record, problem, node, source, limits, stopOnFirstError,
+                        record.getLanguage(), langLimit);
             }
         } catch (BizException ex) {
             nodeScheduler.releaseInflight(node.getId());
-            throw ex;
+            finishError(record, ex.getMessage());
+            return;
         } catch (Exception ex) {
             nodeScheduler.recordRunFailure(node.getId(), 0, ex.getMessage());
-            record.setOverallStatus("SE");
+            record.setOverallStatus(OjVerdict.SE.name());
             record.setErrorMessage(truncate(ex.getMessage(), 512));
             record.setCaseResults(List.of());
         }
+        // 9. 写回终态（成功路径已在 apply* 内 markSuccess）
+        this.updateById(record);
+    }
 
-        this.save(record);
-        AuditSnapshots.created(record);
-        return record;
+    private void enqueueAfterCommit(OjJudgeMessage message) {
+        Runnable publish = () -> {
+            try {
+                ojJudgePublisher.publishWork(message);
+            } catch (Exception ex) {
+                log.warn("publish dry-run work failed dryRunId={}: {}", message.dryRunId(), ex.toString());
+                this.update(Wrappers.<OjProblemDryRun>lambdaUpdate()
+                        .set(OjProblemDryRun::getOverallStatus, OjVerdict.SE.name())
+                        .set(OjProblemDryRun::getErrorMessage,
+                                "判题入队失败：" + truncate(ex.getMessage(), 200))
+                        .eq(OjProblemDryRun::getId, message.dryRunId())
+                        .eq(OjProblemDryRun::getOverallStatus, OjVerdict.PENDING.name()));
+            }
+        };
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    publish.run();
+                }
+            });
+        } else {
+            publish.run();
+        }
+    }
+
+    private void finishError(OjProblemDryRun record, String message) {
+        record.setOverallStatus(OjVerdict.SE.name());
+        record.setErrorMessage(truncate(message, 512));
+        record.setCaseResults(List.of());
+        this.updateById(record);
     }
 
     /** ALL 模式：DB 分页加载测例，分批调用沙箱并合并裁决。 */
@@ -137,17 +280,19 @@ public class OjProblemDryRunServiceImpl
             SourceResolved source,
             Limits limits,
             boolean stopOnFirstError,
-            String language) {
+            String language,
+            OjProblemLanguageLimit langLimit) {
         long current = 1L;
         List<Map<String, Object>> mergedCaseResults = new ArrayList<>();
-        String overall = "AC";
+        String overall = OjVerdict.AC.name();
         int maxTime = 0;
         long maxMem = 0L;
         boolean anyCase = false;
 
         while (true) {
+            // 分页拉测例，避免一次加载超大测例包
             List<CaseLoader.LoadedCase> batch = caseLoader.loadPage(
-                    problem.getId(), problem.getCaseVersion(), current, DRY_RUN_CASE_BATCH);
+                    problem.getId(), record.getCaseVersion(), current, DRY_RUN_CASE_BATCH);
             if (batch.isEmpty()) {
                 if (!anyCase) {
                     throw new BizException("题目无可用测例");
@@ -155,10 +300,11 @@ public class OjProblemDryRunServiceImpl
                 break;
             }
             anyCase = true;
-            BatchOutcome outcome = runOneBatch(node, problem, batch, source, limits, stopOnFirstError, language);
+            BatchOutcome outcome = runOneBatch(
+                    node, problem, batch, source, limits, stopOnFirstError, language, langLimit);
             if (outcome.transportFail()) {
                 nodeScheduler.recordRunFailure(node.getId(), outcome.httpStatus(), outcome.errorMessage());
-                record.setOverallStatus("SE");
+                record.setOverallStatus(OjVerdict.SE.name());
                 record.setErrorMessage(truncate(outcome.errorMessage(), 512));
                 record.setCaseResults(truncateCaseResults(mergedCaseResults));
                 return;
@@ -171,7 +317,7 @@ public class OjProblemDryRunServiceImpl
             if (outcome.verdict().getMemoryBytes() != null) {
                 maxMem = Math.max(maxMem, outcome.verdict().getMemoryBytes());
             }
-            if (stopOnFirstError && !"AC".equals(outcome.verdict().getStatus())) {
+            if (stopOnFirstError && !OjVerdict.AC.matches(outcome.verdict().getStatus())) {
                 break;
             }
             if (batch.size() < DRY_RUN_CASE_BATCH) {
@@ -185,7 +331,7 @@ public class OjProblemDryRunServiceImpl
         record.setMaxTimeMs(maxTime > 0 ? maxTime : null);
         record.setMaxMemoryBytes(maxMem > 0 ? maxMem : null);
         record.setCaseResults(truncateCaseResults(mergedCaseResults));
-        if (!"AC".equals(overall) && !"WA".equals(overall)) {
+        if (!OjVerdict.AC.matches(overall) && !OjVerdict.WA.matches(overall)) {
             record.setErrorMessage(truncate(overall, 512));
         }
         applySuggestions(record, problem);
@@ -199,11 +345,13 @@ public class OjProblemDryRunServiceImpl
             SourceResolved source,
             Limits limits,
             boolean stopOnFirstError,
-            String language) {
-        BatchOutcome outcome = runOneBatch(node, problem, cases, source, limits, stopOnFirstError, language);
+            String language,
+            OjProblemLanguageLimit langLimit) {
+        BatchOutcome outcome = runOneBatch(
+                node, problem, cases, source, limits, stopOnFirstError, language, langLimit);
         if (outcome.transportFail()) {
             nodeScheduler.recordRunFailure(node.getId(), outcome.httpStatus(), outcome.errorMessage());
-            record.setOverallStatus("SE");
+            record.setOverallStatus(OjVerdict.SE.name());
             record.setErrorMessage(truncate(outcome.errorMessage(), 512));
             record.setCaseResults(List.of());
             return;
@@ -215,8 +363,8 @@ public class OjProblemDryRunServiceImpl
         record.setMaxMemoryBytes(verdict.getMemoryBytes());
         record.setCaseResults(truncateCaseResults(verdict.getCaseResults()));
         if (StringUtils.hasText(verdict.getJudgeMessage())
-                && !"AC".equals(verdict.getStatus())
-                && !"WA".equals(verdict.getStatus())) {
+                && !OjVerdict.AC.matches(verdict.getStatus())
+                && !OjVerdict.WA.matches(verdict.getStatus())) {
             record.setErrorMessage(truncate(verdict.getJudgeMessage(), 512));
         }
         applySuggestions(record, problem);
@@ -229,7 +377,8 @@ public class OjProblemDryRunServiceImpl
             SourceResolved source,
             Limits limits,
             boolean stopOnFirstError,
-            String language) {
+            String language,
+            OjProblemLanguageLimit langLimit) {
         List<SparkSandboxClient.CaseInput> inputs = cases.stream()
                 .map(c -> new SparkSandboxClient.CaseInput(c.caseKey(), c.stdin()))
                 .toList();
@@ -242,8 +391,8 @@ public class OjProblemDryRunServiceImpl
                 limits.cpuTimeMs(),
                 limits.realTimeMs(),
                 limits.memoryBytes(),
-                problem.getStackLimitBytes(),
-                problem.getOutputLimitBytes());
+                langLimit == null ? null : langLimit.getStackLimitBytes(),
+                langLimit == null ? null : langLimit.getOutputLimitBytes());
         SparkSandboxClient.RunCasesResult run = sparkSandboxClient.runCases(node, req);
         if (run.transportFail()) {
             return BatchOutcome.transportFail(run.httpStatus(), run.errorMessage());
@@ -311,44 +460,56 @@ public class OjProblemDryRunServiceImpl
         if (param.getMemoryLimitBytes() == null || param.getMemoryLimitBytes() < MIB) {
             throw new BizException("内存限额无效（至少 1MiB）");
         }
+        if (!StringUtils.hasText(param.getLanguage())) {
+            throw new BizException("请指定语言");
+        }
         OjProblem problem = ojProblemMapper.selectById(param.getProblemId());
         if (problem == null) {
             throw new BizException(404, "OjProblem not found");
         }
-        AuditSnapshots.before(problem);
-        problem.setTimeLimitMs(param.getTimeLimitMs());
-        problem.setMemoryLimitBytes(param.getMemoryLimitBytes());
-        ojProblemMapper.updateById(problem);
-        AuditSnapshots.after(problem);
+        OjProblemLanguageLimit row = ojProblemLanguageLimitService.findByProblemAndLanguage(
+                param.getProblemId(), param.getLanguage().trim());
+        if (row == null) {
+            throw new BizException(404, "该语言限额不存在，请先在题目中配置");
+        }
+        AuditSnapshots.before(row);
+        row.setTimeLimitMs(param.getTimeLimitMs());
+        row.setMemoryLimitBytes(param.getMemoryLimitBytes());
+        ojProblemLanguageLimitService.updateById(row);
+        AuditSnapshots.after(row);
     }
 
     private SourceResolved resolveSource(String problemId, String language, String override) {
         if (StringUtils.hasText(override)) {
-            return new SourceResolved(override, "OVERRIDE");
+            return new SourceResolved(override, OjDryRunSourceFrom.OVERRIDE.name());
         }
         OjProblemSolution preferred = ojProblemSolutionMapper.selectOne(
                 Wrappers.<OjProblemSolution>lambdaQuery()
                         .eq(OjProblemSolution::getProblemId, problemId)
                         .eq(OjProblemSolution::getLanguage, language)
-                        .eq(OjProblemSolution::getStatus, "ENABLED")
+                        .eq(OjProblemSolution::getStatus, OjEnableStatus.ENABLED.name())
                         .orderByDesc(OjProblemSolution::getIsDefault)
                         .last("LIMIT 1"));
         if (preferred == null || !StringUtils.hasText(preferred.getSource())) {
             throw new BizException("未找到该语言的启用参考答案，请提供 source 或先维护参考答案");
         }
-        return new SourceResolved(preferred.getSource(), "STORED");
+        return new SourceResolved(preferred.getSource(), OjDryRunSourceFrom.STORED.name());
     }
 
-    private Limits resolveLimits(OjProblem problem, String limitMode) {
+    private Limits resolveLimits(String problemId, String language, String limitMode) {
         OjProperties.Judge judge = ojProperties.getJudge();
         int factor = Math.max(1, judge.getRealTimeFactor());
-        if ("RELAXED".equals(limitMode)) {
+        if (OjDryRunLimitMode.RELAXED.matches(limitMode)) {
             int cpu = Math.max(1000, judge.getDryRunRelaxedCpuTimeMs());
             long mem = Math.max(MIB, judge.getDryRunRelaxedMemoryBytes());
             return new Limits(cpu, cpu * factor, mem);
         }
-        int cpu = problem.getTimeLimitMs() == null ? 1000 : Math.max(1, problem.getTimeLimitMs());
-        long mem = problem.getMemoryLimitBytes() == null ? 268435456L : Math.max(MIB, problem.getMemoryLimitBytes());
+        OjProblemLanguageLimit limit = ojProblemLanguageLimitService.findByProblemAndLanguage(problemId, language);
+        if (limit == null) {
+            throw new BizException(400, "该题目未配置语言限额: " + language);
+        }
+        int cpu = limit.getTimeLimitMs() == null ? 1000 : Math.max(1, limit.getTimeLimitMs());
+        long mem = limit.getMemoryLimitBytes() == null ? 268435456L : Math.max(MIB, limit.getMemoryLimitBytes());
         return new Limits(cpu, cpu * factor, mem);
     }
 
@@ -360,7 +521,11 @@ public class OjProblemDryRunServiceImpl
         double memFactor = judge.getDryRunMemoryFactor() <= 0 ? 2.0 : judge.getDryRunMemoryFactor();
 
         int suggestedTime = Math.max(1000, (int) Math.ceil(maxTime * timeFactor));
-        long problemMem = problem.getMemoryLimitBytes() == null ? 0L : problem.getMemoryLimitBytes();
+        OjProblemLanguageLimit langLimit = ojProblemLanguageLimitService.findByProblemAndLanguage(
+                problem.getId(), record.getLanguage());
+        long problemMem = langLimit == null || langLimit.getMemoryLimitBytes() == null
+                ? 0L
+                : langLimit.getMemoryLimitBytes();
         long suggestedMem = Math.max(problemMem, (long) Math.ceil(maxMem * memFactor));
         suggestedMem = Math.max(MIB, ((suggestedMem + MIB - 1) / MIB) * MIB);
 
@@ -391,11 +556,11 @@ public class OjProblemDryRunServiceImpl
         if (!StringUtils.hasText(raw)) {
             throw new BizException("limit_mode 不能为空");
         }
-        String mode = raw.trim().toUpperCase();
-        if (!"PROBLEM".equals(mode) && !"RELAXED".equals(mode)) {
+        OjDryRunLimitMode mode = OjDryRunLimitMode.fromCode(raw);
+        if (mode == null) {
             throw new BizException("limit_mode 仅支持 PROBLEM/RELAXED");
         }
-        return mode;
+        return mode.name();
     }
 
     private static String truncate(String text, int max) {
