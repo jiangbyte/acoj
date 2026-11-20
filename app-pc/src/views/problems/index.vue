@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useDataProblemFetch, useSysCategoryFetch, useSysDictFetch, useSysTagFetch } from '@/composables/v1'
 import type { DataTableColumns } from 'naive-ui'
-import { Icon } from '@iconify/vue'
+import { Icon } from '@iconify/vue/offline'
 import { NSpace, NTag } from 'naive-ui'
 import { AesCrypto } from '@/utils'
 

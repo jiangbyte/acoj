@@ -15,7 +15,7 @@ export function useDataContestFetch() {
     id: '',
     title: '',
     description: '',
-    contestType: null,
+    contestType: 'OI',
     ruleType: '',
     categoryId: '',
     cover: '',

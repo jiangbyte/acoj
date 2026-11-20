@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
 import { useSysMenuFetch } from '@/composables/v1'
-import { Icon } from '@iconify/vue'
+import { Icon } from '@iconify/vue/offline'
 import CodeEditor from '@/components/common/editor/code/CodeEditor.vue'
 
 const emit = defineEmits(['close', 'submit'])

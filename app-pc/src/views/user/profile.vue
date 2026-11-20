@@ -46,26 +46,35 @@ function updateProfile() {
   }
 }
 
-function updateAvatar(url: string) {
-  console.log('avatar URL', url)
+function updateAvatar(objectName: string, displayUrl?: string) {
+  // 1. 先本地回显，避免等接口时头像空白
+  if (displayUrl) {
+    profileData.value.avatar = displayUrl
+  }
+  // 2. 落库（后端按登录用户更新，不依赖本地 id）
   useSysUserFetch().sysUserUpdateAvatar({
     id: profileData.value.id,
-    img: url,
+    img: objectName,
   }).then(({ success }) => {
     if (success) {
       window.$message.success('头像更新成功')
       loadData()
+      window.dispatchEvent(new CustomEvent('acoj:profile-updated'))
     }
   })
 }
-function updateBackground(url: string) {
+function updateBackground(objectName: string, displayUrl?: string) {
+  if (displayUrl) {
+    profileData.value.background = displayUrl
+  }
   useSysUserFetch().sysUserUpdateBackground({
     id: profileData.value.id,
-    img: url,
+    img: objectName,
   }).then(({ success }) => {
     if (success) {
       window.$message.success('背景图更新成功')
       loadData()
+      window.dispatchEvent(new CustomEvent('acoj:profile-updated'))
     }
   })
 }
@@ -204,7 +213,15 @@ const profileRules = {
                 <img :src="profileData?.avatar" alt="当前头像" class="w-full h-full object-cover">
               </div>
               <n-space vertical>
-                <FileUploadButton v-model="profileData.avatar" type="primary" :is-image="true" buttontext="上传新头像" @success="updateAvatar" />
+                <FileUploadButton
+                  v-model="profileData.avatar"
+                  type="primary"
+                  :is-image="true"
+                  :enable-crop="true"
+                  :crop-aspect="1"
+                  buttontext="上传新头像"
+                  @success="updateAvatar"
+                />
                 <n-text depth="3">
                   推荐尺寸: 200x200像素，支持JPG、PNG格式，文件大小不超过2MB
                 </n-text>

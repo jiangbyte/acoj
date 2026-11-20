@@ -1,5 +1,5 @@
 import { NIcon } from 'naive-ui'
-import { Icon } from '@iconify/vue'
+import { Icon } from '@iconify/vue/offline'
 /**
  * 根据 icon 名称渲染图标
  */

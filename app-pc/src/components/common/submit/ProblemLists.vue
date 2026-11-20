@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useDataContestProblemFetch, useDataSetFetch } from '@/composables/v1'
 import { AesCrypto } from '@/utils'
-import { Icon } from '@iconify/vue'
+import { Icon } from '@iconify/vue/offline'
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NDrawer, NDrawerContent, NSpace, NTag } from 'naive-ui'
 

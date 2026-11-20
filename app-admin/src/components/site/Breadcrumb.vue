@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
-import type { IconifyIcon } from '@iconify/vue'
+import { Icon } from '@iconify/vue/offline'
+import type { IconifyIcon } from '@iconify/vue/offline'
 
 const router = useRouter()
 const route = useRoute()

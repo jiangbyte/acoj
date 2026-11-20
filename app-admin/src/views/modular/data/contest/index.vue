@@ -25,14 +25,6 @@ const columns: DataTableColumns<any> = [
   //   title: '竞赛描述',
   //   key: 'description',
   // },
-  {
-    title: '竞赛类型',
-    key: 'contestTypeName',
-    width: 120,
-    ellipsis: {
-      tooltip: true,
-    },
-  },
   // {
   //   title: '规则类型',
   //   key: 'ruleType',

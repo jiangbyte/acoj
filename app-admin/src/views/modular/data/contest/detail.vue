@@ -35,9 +35,6 @@ defineExpose({
         <NDescriptionsItem label="竞赛描述">
           <MDViewer :model-value="formData.description" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="竞赛类型">
-          {{ formData.contestTypeName }}
-        </NDescriptionsItem>
         <!-- <NDescriptionsItem label="规则类型">
           {{ formData.ruleType }}
         </NDescriptionsItem> -->

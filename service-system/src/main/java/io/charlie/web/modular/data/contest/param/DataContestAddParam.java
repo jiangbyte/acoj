@@ -33,7 +33,7 @@ public class DataContestAddParam implements Serializable {
     @Schema(description = "竞赛描述")
     private String description;
 
-    @Schema(description = "竞赛类型: ACM/OI/OIO")
+    @Schema(description = "竞赛类型: OI（后端统一写入，可忽略）")
     private String contestType;
 
     @Schema(description = "规则类型")

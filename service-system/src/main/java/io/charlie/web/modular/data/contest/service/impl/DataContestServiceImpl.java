@@ -80,7 +80,10 @@ public class DataContestServiceImpl extends ServiceImpl<DataContestMapper, DataC
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void add(DataContestAddParam dataContestAddParam) {
+        // 1. 入参转实体，统一固定为 OI 赛制（前端已去掉赛制选择）
         DataContest bean = BeanUtil.toBean(dataContestAddParam, DataContest.class);
+        bean.setContestType("OI");
+        // 2. 封面转为对象存储相对路径后落库
         if (StrUtil.isNotBlank(bean.getCover())) {
             bean.setCover(StoragePathHelper.toObjectName(bean.getCover()));
         }
@@ -90,11 +93,15 @@ public class DataContestServiceImpl extends ServiceImpl<DataContestMapper, DataC
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void edit(DataContestEditParam dataContestEditParam) {
+        // 1. 校验竞赛存在
         if (!this.exists(new LambdaQueryWrapper<DataContest>().eq(DataContest::getId, dataContestEditParam.getId()))) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
+        // 2. 覆盖更新字段，并强制赛制为 OI
         DataContest bean = BeanUtil.toBean(dataContestEditParam, DataContest.class);
         BeanUtil.copyProperties(dataContestEditParam, bean);
+        bean.setContestType("OI");
+        // 3. 封面路径规范化后更新
         if (StrUtil.isNotBlank(bean.getCover())) {
             bean.setCover(StoragePathHelper.toObjectName(bean.getCover()));
         }

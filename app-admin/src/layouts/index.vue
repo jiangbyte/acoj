@@ -12,14 +12,16 @@ const siteStore = useSiteStore()
     embedded
   >
     <n-layout-sider
-      bordered
       :collapsed="siteStore.collapsed"
       collapse-mode="width"
       :collapsed-width="64"
-      content-style="display: flex; flex-direction: column; height: 100vh"
+      :width="220"
+      :native-scrollbar="false"
+      class="admin-sider"
+      content-style="display: flex; flex-direction: column; height: 100vh; background: #001529;"
     >
       <Logo />
-      <n-scrollbar class="flex-1">
+      <n-scrollbar class="flex-1 admin-sider__scroll">
         <SiderNav />
       </n-scrollbar>
     </n-layout-sider>
@@ -52,3 +54,19 @@ const siteStore = useSiteStore()
     </n-layout>
   </n-layout>
 </template>
+
+<style scoped>
+.admin-sider {
+  background: #001529 !important;
+  box-shadow: 2px 0 6px rgba(0, 21, 41, 0.35);
+  z-index: 10;
+}
+
+.admin-sider :deep(.n-layout-sider-scroll-container) {
+  background: #001529;
+}
+
+.admin-sider__scroll :deep(.n-scrollbar-rail) {
+  z-index: 2;
+}
+</style>

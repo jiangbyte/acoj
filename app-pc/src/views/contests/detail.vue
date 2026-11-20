@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { AesCrypto, Poller } from '@/utils'
+import { AesCrypto } from '@/utils'
 import { useDataContestAuthFetch, useDataContestFetch, useDataContestProblemFetch, useDataSubmitFetch } from '@/composables/v1'
 import type { DataTableColumns, ImageInst } from 'naive-ui'
 import { NAvatar, NButton, NEllipsis, NSpace, NTag, NText, NTime } from 'naive-ui'
-import { Icon } from '@iconify/vue'
+import { Icon } from '@iconify/vue/offline'
 
 const route = useRoute()
 const detailData = ref()
@@ -385,35 +385,15 @@ function getCountdownText() {
   }
 }
 
-// 监听detailData变化，计算倒计时
+// 竞赛详情就绪后只计算一次；到点由 NCountdown @finish 刷新页面
 watch(() => detailData.value, () => {
   calculateCountdown()
 })
-
-// 每秒更新一次倒计时（可选）
-const countdownPoller = new Poller(
-  {
-    interval: 1000, // 1秒轮询一次
-    immediate: true,
-  },
-  {
-    onPoll: () => {
-      calculateCountdown()
-    },
-  },
-)
 
 // 自定义倒计时显示格式 - 时分秒
 function renderCountdown({ hours, minutes, seconds }: { hours: number, minutes: number, seconds: number }) {
   return `${hours.toString().padStart(2, '0')} 时 ${minutes.toString().padStart(2, '0')} 分 ${seconds.toString().padStart(2, '0')} 秒`
 }
-onMounted(() => {
-  countdownPoller.start()
-})
-
-onUnmounted(() => {
-  countdownPoller.stop()
-})
 
 function onfinishTime() {
   window.location.reload()
@@ -544,16 +524,13 @@ function cancelSignUp() {
                     <template #description>
                       <NSpace vertical>
                         <n-flex>
-                          <NTag size="small" type="error">
+                          <NTag v-if="detailData?.statusName" size="small" type="error">
                             {{ detailData?.statusName }}
                           </NTag>
                           <NTag size="small" type="error">
                             {{ detailData?.isPublic ? '公开竞赛' : '私密竞赛' }}
                           </NTag>
-                          <NTag size="small" type="warning">
-                            {{ detailData?.contestTypeName }}
-                          </NTag>
-                          <NTag size="small" type="success">
+                          <NTag v-if="detailData?.category" size="small" type="success">
                             {{ detailData?.category }}
                           </NTag>
                         </n-flex>
@@ -653,13 +630,14 @@ function cancelSignUp() {
                   竞赛信息与统计
                 </n-h2>
               </template>
-              <NSpace vertical class="mb-4">
+              <div class="mb-4 flex flex-col gap-3">
                 <!-- 倒计时显示 -->
                 <NSpace v-if="countdownActive" align="center" :size="0">
                   <NText depth="3">
                     {{ getCountdownText() }}
                   </NText>
                   <NCountdown
+                    :key="`${countdownType}-${countdownDuration}`"
                     :duration="countdownDuration"
                     :active="countdownActive"
                     :render="renderCountdown"
@@ -706,10 +684,10 @@ function cancelSignUp() {
                     {{ setProblemPageData?.length ? setProblemPageData.length : 0 }}
                   </NText>
                 </NSpace>
-                <n-alert show-icon type="warning">
-                  竞赛请注意时间及时刷新页面：开始时间到达时请刷新页面，结束时间到达将锁定竞赛，无法提交。
-                </n-alert>
-              </NSpace>
+              </div>
+              <n-alert show-icon type="warning">
+                竞赛请注意时间及时刷新页面：开始时间到达时请刷新页面，结束时间到达将锁定竞赛，无法提交。
+              </n-alert>
             </n-card>
           </NSpace>
         </n-gi>

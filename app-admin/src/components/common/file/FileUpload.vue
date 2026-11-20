@@ -335,6 +335,7 @@ function renderFileList({ fileList }: { fileList: UploadFileInfo[] }) {
       :multiple="props.moltiple"
       :default-file-list="fileList"
       :max="props.moltiple ? 10 : 1"
+      :accept="isImage ? 'image/jpeg,image/png,image/gif,image/webp' : undefined"
       :custom-request="FileUploadRequest"
       :list-type="isImage ? 'image-card' : 'text'"
       :show-file-list="true"

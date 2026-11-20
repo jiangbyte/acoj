@@ -78,6 +78,12 @@ public class DataContestController {
         return Result.success(dataContestService.detail(dataContestIdParam));
     }
 
+    @Operation(summary = "C端-获取竞赛详情")
+    @GetMapping("/data/contest/detail/client")
+    public Result<?> detailClient(@ParameterObject @Valid DataContestIdParam dataContestIdParam) {
+        return Result.success(dataContestService.detail(dataContestIdParam));
+    }
+
     @Operation(summary = "C端-获取最热10个题集")
     @GetMapping("/data/contest/hot")
     public Result<?> getHot() {

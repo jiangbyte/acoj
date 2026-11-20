@@ -1,318 +1,154 @@
-<!-- <script lang="ts" setup>
-import { NUpload } from 'naive-ui'
-import type { UploadCustomRequestOptions, UploadFileInfo } from 'naive-ui'
-import { useFileFetch } from '@/composables/v1'
-import { watch } from 'vue'
-
-const props = defineProps<{
-  modelValue: string // v-model 绑定的值
-  isImage?: boolean // 是否为图片上传 (made optional since not used)
-  moltiple?: boolean // 是否为多文件上传 (made optional since not used)
-  buttontext?: string
-}>()
-
-const emit = defineEmits<{
-  (e: 'update:modelValue', url: string): void
-  (e: 'success', url: string): void
-  (e: 'error', error?: Error): void
-}>()
-
-const { uploadFile } = useFileFetch()
-const fileUrl = ref(props.modelValue) // Initialize with modelValue
-const fileList = ref<UploadFileInfo[]>([])
-
-// 监听 modelValue 变化，构建回显数据
-watch(() => props.modelValue, (newVal) => {
-  if (newVal) {
-    fileList.value = [{
-      id: Date.now().toString(),
-      name: newVal.split('/').pop() || 'file',
-      status: 'finished',
-      url: newVal,
-    }]
-  }
-  else {
-    fileList.value = []
-  }
-}, { immediate: true })
-
-async function FileUploadRequest({
-  file,
-  onFinish,
-  onError,
-}: UploadCustomRequestOptions) {
-  try {
-    const formData = new FormData()
-    formData.append('file', file.file as File)
-    const { data, success } = await uploadFile(formData)
-    console.log(data)
-
-    if (success) {
-      window.$message.success('上传成功')
-    }
-
-    if (!data?.url) {
-      throw new Error('No URL returned from upload')
-    }
-
-    fileUrl.value = data.url
-    emit('update:modelValue', data.url)
-    emit('success', data.url)
-    onFinish()
-  }
-  catch (error) {
-    console.error('Upload failed:', error)
-    emit('error', error instanceof Error ? error : new Error('Upload failed'))
-    onError()
-  }
-}
-
-function handleFinish({
-  file,
-  event,
-}: {
-  file: UploadFileInfo
-  event?: ProgressEvent
-}) {
-  const s = { file, event }
-//   console.log('Upload finished:', file, event)
-}
-
-function handleError({
-  file,
-  event,
-}: {
-  file: UploadFileInfo
-  event?: ProgressEvent
-}) {
-  const s = { file, event }
-  //   console.error('Upload error:', file, event)
-  emit('error', new Error('Upload failed'))
-}
-</script>
-
-<template>
-  <NUpload
-    v-if="isImage"
-    :multiple="false"
-    :show-file-list="false"
-    :custom-request="FileUploadRequest"
-    @finish="handleFinish"
-    @error="handleError"
-  >
-    <n-button type="primary">
-      {{ props.buttontext }}
-    </n-button>
-  </NUpload>
-</template>
-
-<style>
-
-</style> -->
-
 <script lang="ts" setup>
-import { NButton, NProgress, NUpload, useMessage } from 'naive-ui'
-import type { UploadCustomRequestOptions, UploadFileInfo } from 'naive-ui'
+import { NButton, NProgress } from 'naive-ui'
 import { useFileFetch } from '@/composables/v1'
+import ImageCropModal from './ImageCropModal.vue'
 
 const props = defineProps<{
-  modelValue: string // v-model 绑定的值
-  isImage?: boolean // 是否为图片上传
-  moltiple?: boolean // 是否为多文件上传
+  modelValue: string
+  isImage?: boolean
+  moltiple?: boolean
   buttontext?: string
   type?: 'primary' | 'default' | 'info' | 'success' | 'warning' | 'error'
   color?: string
+  /** 图片大小上限（MB），默认 5 */
+  maxSizeMb?: number
+  /** 开启裁剪（头像建议开启） */
+  enableCrop?: boolean
+  /** 裁剪宽高比，默认 1 */
+  cropAspect?: number
 }>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', url: string): void
-  (e: 'success', url: string): void
+  (e: 'success', url: string, displayUrl?: string): void
   (e: 'error', error?: Error): void
 }>()
 
 const { uploadFile } = useFileFetch()
-const fileUrl = ref(props.modelValue)
-const fileList = ref<UploadFileInfo[]>([])
-const uploadProgress = ref<number>(0)
-const isUploading = ref<boolean>(false)
-const message = useMessage()
+const inputRef = ref<HTMLInputElement | null>(null)
+const uploadProgress = ref(0)
+const isUploading = ref(false)
+const cropShow = ref(false)
+const cropSource = ref<File | null>(null)
 
-// 监听 modelValue 变化，构建回显数据（库中为对象名，接口回显可能是可访问 URL）
-watch(() => props.modelValue, (newVal) => {
-  if (newVal) {
-    const isHttp = newVal.startsWith('http://') || newVal.startsWith('https://')
-    const displayUrl = isHttp
-      ? newVal
-      : (fileUrl.value && String(fileUrl.value).includes(newVal) ? fileUrl.value : newVal)
-    fileUrl.value = displayUrl
-    fileList.value = [{
-      id: Date.now().toString(),
-      name: newVal.split('/').pop() || 'file',
-      status: 'finished',
-      url: displayUrl,
-    }]
-  }
-  else {
-    fileList.value = []
-    fileUrl.value = undefined as any
-  }
-}, { immediate: true })
+const acceptTypes = computed(() => (props.isImage === false ? undefined : 'image/jpeg,image/png,image/gif,image/webp'))
+const maxBytes = computed(() => (props.maxSizeMb ?? 5) * 1024 * 1024)
 
-// 模拟进度更新
-function simulateProgress() {
-  uploadProgress.value = 0
-  isUploading.value = true
-
-  const interval = setInterval(() => {
-    uploadProgress.value += Math.random() * 15
-    if (uploadProgress.value >= 95) {
-      clearInterval(interval)
-    }
-  }, 200)
-
-  return interval
+function openFileDialog() {
+  if (isUploading.value)
+    return
+  inputRef.value?.click()
 }
 
-async function FileUploadRequest({
-  file,
-  onFinish,
-  onError,
-  onProgress,
-}: UploadCustomRequestOptions) {
-  const progressInterval = simulateProgress()
+/**
+ * 选文件：校验 →（可选）1:1 裁剪 → 上传
+ */
+async function onFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const files = input.files
+  if (!files || files.length === 0)
+    return
 
+  const raw = files[0]
+  input.value = ''
+
+  if (props.isImage !== false && !raw.type.startsWith('image/')) {
+    window.$message?.error('请上传图片文件')
+    emit('error', new Error('invalid type'))
+    return
+  }
+  if (raw.size > maxBytes.value) {
+    window.$message?.error(`图片大小不能超过 ${props.maxSizeMb ?? 5}MB`)
+    emit('error', new Error('file too large'))
+    return
+  }
+
+  if (props.enableCrop) {
+    cropSource.value = raw
+    cropShow.value = true
+    return
+  }
+
+  await doUpload(raw)
+}
+
+async function onCropConfirm(file: File) {
+  cropSource.value = null
+  await doUpload(file)
+}
+
+function onCropCancel() {
+  cropSource.value = null
+}
+
+/**
+ * 实际上传并回传对象名 / 访问 URL
+ */
+async function doUpload(raw: File) {
+  isUploading.value = true
+  uploadProgress.value = 20
   try {
     const formData = new FormData()
-    formData.append('file', file.file as File)
-
-    // 模拟上传进度
-    const progressTimer = setInterval(() => {
-      if (uploadProgress.value < 95) {
-        onProgress({ percent: uploadProgress.value })
-      }
-    }, 100)
-
-    const { data, success } = await uploadFile(formData)
-
-    // 完成进度
-    clearInterval(progressInterval)
-    clearInterval(progressTimer)
+    formData.append('file', raw)
+    const { data, success, message: errMsg } = await uploadFile(formData)
     uploadProgress.value = 100
-    onProgress({ percent: 100 })
 
-    // 延迟一下让进度条完成
-    setTimeout(() => {
-      isUploading.value = false
-      uploadProgress.value = 0
-    }, 500)
-
-    if (success) {
-      message.success('上传成功')
-    }
-
-    if (!data?.filename && !data?.url) {
-      throw new Error('No URL returned from upload')
+    if (!success || (!data?.filename && !data?.url)) {
+      throw new Error(errMsg || '上传失败：未返回文件信息')
     }
 
     const objectName = data.filename || data.url
-    fileUrl.value = data.url || objectName
+    const displayUrl = data.url || objectName
     emit('update:modelValue', objectName)
-    emit('success', objectName)
-    onFinish()
+    emit('success', objectName, displayUrl)
+    window.$message?.success('上传成功')
   }
   catch (error) {
-    clearInterval(progressInterval)
+    console.error('Upload failed:', error)
+    window.$message?.error(error instanceof Error ? error.message : '上传失败')
+    emit('error', error instanceof Error ? error : new Error('Upload failed'))
+  }
+  finally {
     isUploading.value = false
     uploadProgress.value = 0
-    console.error('Upload failed:', error)
-    message.error('上传失败')
-    emit('error', error instanceof Error ? error : new Error('Upload failed'))
-    onError()
   }
 }
-
-function handleFinish({
-  file,
-  event,
-}: {
-  file: UploadFileInfo
-  event?: ProgressEvent
-}) {
-  console.log('Upload finished:', file, event)
-}
-
-function handleError({
-  file,
-  event,
-}: {
-  file: UploadFileInfo
-  event?: ProgressEvent
-}) {
-  console.error('Upload error:', file, event)
-  message.error('上传失败')
-  emit('error', new Error('Upload failed'))
-}
-
-// 使用 h 函数创建自定义按钮组件
-const CustomUploadButton = computed(() => {
-  return h('div', { class: 'flex flex-col items-center gap-2' }, [
-    h(
-      NButton,
-      {
-        type: props.type,
-        color: props.color,
-        disabled: isUploading.value,
-        class: 'w-full',
-      },
-      {
-        default: () => props.buttontext || '上传文件',
-      },
-    ),
-    // 上传时显示进度条
-    isUploading.value
-      ? h(
-          NProgress,
-          {
-            type: 'line',
-            percentage: uploadProgress.value,
-            height: 4,
-            borderRadius: 2,
-            class: 'w-full max-w-40',
-            showIndicator: false,
-          },
-        )
-      : null,
-  ])
-})
 </script>
 
 <template>
-  <div class="flex items-center">
-    <NUpload
-      :multiple="moltiple"
-      :show-file-list="false"
-      :custom-request="FileUploadRequest"
-      :disabled="isUploading"
-      @finish="handleFinish"
-      @error="handleError"
+  <div class="inline-flex flex-col items-stretch gap-2">
+    <input
+      ref="inputRef"
+      type="file"
+      style="display: none"
+      :accept="acceptTypes"
+      :multiple="!!moltiple"
+      @change="onFileChange"
     >
-      <!-- 使用自定义渲染的按钮 -->
-      <component :is="CustomUploadButton" />
-    </NUpload>
-
-    <!-- 显示上传状态 -->
-    <!-- <div v-if="isUploading" class="mt-2 text-xs text-gray-500 text-center">
-      上传中... {{ Math.round(uploadProgress) }}%
-    </div> -->
+    <NButton
+      :type="type || 'primary'"
+      :color="color"
+      :loading="isUploading"
+      :disabled="isUploading"
+      @click="openFileDialog"
+    >
+      {{ buttontext || '上传文件' }}
+    </NButton>
+    <NProgress
+      v-if="isUploading"
+      type="line"
+      :percentage="uploadProgress"
+      :height="4"
+      :border-radius="2"
+      class="w-full max-w-40"
+      :show-indicator="false"
+    />
+    <ImageCropModal
+      v-model:show="cropShow"
+      :source-file="cropSource"
+      :aspect-ratio="cropAspect || 1"
+      @confirm="onCropConfirm"
+      @cancel="onCropCancel"
+    />
   </div>
 </template>
-
-<style scoped>
-.upload-container {
-  @apply inline-block;
-}
-
-:deep(.n-upload-trigger) {
-  @apply w-full;
-}
-</style>

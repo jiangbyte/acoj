@@ -16,9 +16,6 @@ const rules = {
   description: [
     { required: true, message: '请输入竞赛描述', trigger: ['input', 'blur'] },
   ],
-  contestType: [
-    // { required: true, message: '请输入竞赛类型: ACM/OI/OIO', trigger: ['input', 'blur'] },
-  ],
   ruleType: [
     { required: true, message: '请输入规则类型', trigger: ['input', 'blur'] },
   ],
@@ -92,7 +89,6 @@ async function doSubmit() {
 }
 
 const allowLanguageOptions = ref()
-const contestTypeOptions = ref()
 const { sysDictOptions } = useSysDictFetch()
 async function doOpen(row: any = null, edit: boolean = false) {
   show.value = true
@@ -104,11 +100,6 @@ async function doOpen(row: any = null, edit: boolean = false) {
   const { data: allowLanguageData } = await sysDictOptions({ dictType: 'ALLOW_LANGUAGE' })
   if (allowLanguageData) {
     allowLanguageOptions.value = allowLanguageData
-  }
-
-  const { data: contestTypeData } = await sysDictOptions({ dictType: 'CONTEST_TYPE' })
-  if (contestTypeData) {
-    contestTypeOptions.value = contestTypeData
   }
 }
 defineExpose({
@@ -132,17 +123,6 @@ defineExpose({
         <NFormItem label="竞赛描述" path="description">
           <!-- <NInput v-model:value="formData.description" placeholder="请输入竞赛描述" /> -->
           <MDEditor v-model="formData.description" />
-        </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="竞赛类型" path="contestType">
-          <!-- <NInput v-model:value="formData.contestType" placeholder="请输入竞赛类型" /> -->
-          <NSelect
-            v-model:value="formData.contestType"
-            placeholder="请选择竞赛类型"
-            :options="contestTypeOptions"
-            clearable
-            remote
-          />
         </NFormItem>
         <!-- 输入框 -->
         <!-- <NFormItem label="规则类型" path="ruleType">

@@ -1,6 +1,7 @@
 package io.charlie.web.modular.sys.user.service.impl;
 
 import cn.dev33.satoken.secure.BCrypt;
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.date.DateUtil;
@@ -317,24 +318,40 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
     @Override
     public Boolean updateAvatar(SysUserUpdateImageParam sysUserUpdateImageParam) {
-        if (!this.exists(new LambdaQueryWrapper<SysUser>().eq(SysUser::getId, sysUserUpdateImageParam.getId()))) {
-            throw new BusinessException(ResultCode.PARAM_ERROR);
-        }
+        // 1. 以当前登录用户为准，避免前端 id 为空或被篡改
+        String userId = StpUtil.getLoginIdAsString();
+        // 2. 校验图片并规范为对象名入库
+        String objectName = requireStoredImage(sysUserUpdateImageParam.getImg());
         return this.update(new LambdaUpdateWrapper<SysUser>()
-                .eq(SysUser::getId, sysUserUpdateImageParam.getId())
-                .set(SysUser::getAvatar, toStoredObjectName(sysUserUpdateImageParam.getImg()))
+                .eq(SysUser::getId, userId)
+                .set(SysUser::getAvatar, objectName)
         );
     }
 
     @Override
     public Boolean updateBackground(SysUserUpdateImageParam sysUserUpdateImageParam) {
-        if (!this.exists(new LambdaQueryWrapper<SysUser>().eq(SysUser::getId, sysUserUpdateImageParam.getId()))) {
-            throw new BusinessException(ResultCode.PARAM_ERROR);
-        }
+        // 1. 以当前登录用户为准
+        String userId = StpUtil.getLoginIdAsString();
+        // 2. 校验图片并规范为对象名入库
+        String objectName = requireStoredImage(sysUserUpdateImageParam.getImg());
         return this.update(new LambdaUpdateWrapper<SysUser>()
-                .eq(SysUser::getId, sysUserUpdateImageParam.getId())
-                .set(SysUser::getBackground, toStoredObjectName(sysUserUpdateImageParam.getImg()))
+                .eq(SysUser::getId, userId)
+                .set(SysUser::getBackground, objectName)
         );
+    }
+
+    /**
+     * 校验图片入参并转为存储对象名。
+     */
+    private String requireStoredImage(String img) {
+        if (StrUtil.isBlank(img)) {
+            throw new BusinessException("图片不能为空");
+        }
+        String objectName = toStoredObjectName(img);
+        if (StrUtil.isBlank(objectName)) {
+            throw new BusinessException("图片地址无效");
+        }
+        return objectName;
     }
 
     /**

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useTabStore } from '@/stores'
 // import type { RouteLocationNormalized } from 'vue-router'
-import { Icon } from '@iconify/vue'
-// import type { IconifyIcon } from '@iconify/vue'
+import { Icon } from '@iconify/vue/offline'
+// import type { IconifyIcon } from '@iconify/vue/offline'
 
 // const scrollContainer = ref<HTMLElement | null>(null)
 

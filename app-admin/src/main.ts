@@ -1,5 +1,6 @@
 import 'uno.css'
 import '@/assets/main.css'
+import '@/plugins/offline-icons'
 import App from '@/App.vue'
 import { setupPinia } from '@/stores'
 import { setupRouter } from '@/router'

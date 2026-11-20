@@ -1,54 +1,63 @@
 import { useRouterStore, useTabStore, useTokenStore } from '@/stores'
 import type { Router } from 'vue-router'
 
+/** 可匿名访问的路由前缀（含详情子路径） */
+const PUBLIC_ROUTE_PREFIXES = [
+  '/home',
+  '/problems',
+  '/sets',
+  '/status',
+  '/ranking',
+  '/notice',
+  '/user',
+  '/contests',
+  '/groups',
+  '/login',
+  '/register',
+]
+
+function isPublicRoute(path: string) {
+  if (path === '/' || path === '')
+    return true
+  return PUBLIC_ROUTE_PREFIXES.some(prefix => path === prefix || path.startsWith(`${prefix}/`))
+}
+
 export function setupRouterGuard(router: Router) {
   const tokenStore = useTokenStore()
   const routerStore = useRouterStore()
   const tabStore = useTabStore()
 
-  const publicRoutes = ['/', '/home', '/problems', '/sets', '/status', '/ranking', '/login', '/register', '/status/problem', '/notice', '/sets/detail', '/user', '/contests']
-
   router.beforeEach(async (to, _from, next) => {
-    // 外部链接
+    // 1. 外链
     if (to.meta.extraLink) {
       if (to.meta.extraLinkEnabled) {
         window.open(to.meta.extraLink as string)
       }
-      return // 终止导航
+      next(false)
+      return
     }
 
-    // 加载条
+    // 2. 加载条
     window.$loadingBar?.start()
 
-    // 检查是否是公开路由
-    const isPublicRoute = publicRoutes.includes(to.path)
-
-    // 公开路径直接放行
-    if (isPublicRoute) {
+    // 3. 公开路由直接放行
+    if (isPublicRoute(to.path)) {
+      // 已登录访问登录/注册 → 回首页
+      if ((to.name === 'login' || to.name === 'register') && tokenStore.isLogined) {
+        next({ path: '/' })
+        return
+      }
       next()
       return
     }
 
-    // 登录页直接放行
-    if (to.name === 'login') {
-      next()
-      return
-    }
-
-    // 未登录且非公开路径 → 跳转到登录页
+    // 4. 未登录访问受保护页 → 登录并带回跳
     if (!tokenStore.isLogined) {
       const redirect = to.name === '404' ? undefined : to.fullPath
-      next({ path: '/login', query: { redirect } })
+      next({ path: '/login', query: redirect ? { redirect } : undefined })
       return
     }
 
-    // 已登录时访问登录页 → 重定向到首页
-    if (to.name === 'login' && tokenStore.isLogined) {
-      next({ path: '/' })
-      return
-    }
-
-    // 其他情况放行
     next()
   })
 

@@ -4,7 +4,6 @@ import { NButton, NTag } from 'naive-ui'
 import { AesCrypto, CleanMarkdown } from '@/utils'
 
 const categoryOptions = ref()
-const difficultyOptions = ref()
 const setTypeOptions = ref()
 const setRankingListData = ref()
 
@@ -15,7 +14,6 @@ const pageParam = ref({
   sortOrder: 'DESCEND',
   keyword: '',
   categoryId: null,
-  difficulty: null,
   setType: null,
 })
 
@@ -44,13 +42,7 @@ async function loadData() {
     categoryOptions.value = catgoryData
   }
 
-  // 获取难度下拉列表数据
-  const { data: difficultyData } = await sysDictOptions({ dictType: 'CONTEST_TYPE' })
-  if (difficultyData) {
-    difficultyOptions.value = difficultyData
-  }
-
-  // 获取竞赛类型下拉列表数据
+  // 获取题集类型下拉（侧栏等复用）
   const { data: setTypeData } = await sysDictOptions({ dictType: 'PROBLEM_SET_TYPE' })
   if (setTypeData) {
     setTypeOptions.value = setTypeData.map((item: any) => ({
@@ -83,7 +75,6 @@ loadData()
 function resetHandle() {
   pageParam.value.keyword = ''
   pageParam.value.categoryId = null
-  pageParam.value.difficulty = null
   pageParam.value.setType = null
   loadData()
 }
@@ -145,15 +136,6 @@ function resetHandle() {
                   @clear="() => { pageParam.categoryId = null; loadData() }"
                 />
               </n-gi> -->
-              <n-gi span="1 l:1">
-                <n-select
-                  v-model:value="pageParam.difficulty"
-                  placeholder="选择类型"
-                  clearable
-                  :options="difficultyOptions"
-                  @clear="() => { pageParam.difficulty = null; loadData() }"
-                />
-              </n-gi>
             </n-grid>
             <template #footer>
               <n-input-group class="flex justify-end">
@@ -216,14 +198,11 @@ function resetHandle() {
                                 <NTag size="small" type="error">
                                   {{ item.isPublic ? '公开竞赛' : '私密竞赛' }}
                                 </NTag>
-                                <NTag size="small" type="error">
+                                <NTag v-if="item.statusName" size="small" type="error">
                                   {{ item.statusName }}
                                 </NTag>
                               </n-flex>
                               <n-flex align="center">
-                                <NTag size="small" type="warning">
-                                  {{ item.contestTypeName }}
-                                </NTag>
                                 <NTag size="small" type="success">
                                   {{ item.category }}
                                 </NTag>

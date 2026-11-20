@@ -130,11 +130,14 @@ security:
       - /api/v1/sys/notice/latest
       - /api/v1/sys/notice/lists
       - /api/v1/sys/notice/detail
+      - /api/v1/sys/notice/detail/client
       - /api/v1/data/set/detail
+      - /api/v1/data/set/detail/client
       - /api/v1/data/set/problem
       - /api/v1/data/set/user
       - /api/v1/data/submit/set/page
       - /api/v1/data/submit/detail
+      - /api/v1/data/submit/detail/client
       - /api/v1/sys/category/options
       - /api/v1/sys/dict/options/**
       - /api/v1/sys/tag/options
@@ -152,6 +155,7 @@ security:
       - /api/v1/data/problem/problem/ranking/top
       - /api/v1/data/set/set/ranking/top
       - /api/v1/data/problem/page/client/**
+      - /api/v1/data/problem/client/detail
       - /api/v1/data/solved/averagepassrate
       - /api/v1/data/problem/today/problemcount
       - /api/v1/data/solved/usersolvedproblem
@@ -176,5 +180,14 @@ security:
       - /api/v1/data/user/rank/active/top
 
       - /api/v1/data/submit/problem/page
+      - /api/v1/data/submit/module/page
+
+      # 竞赛公开浏览
+      - /api/v1/data/contest/page/client
+      - /api/v1/data/contest/hot
+      - /api/v1/data/contest/detail
+      - /api/v1/data/contest/detail/client
+      - /api/v1/data/contest/problem/lists
+      - /api/v1/data/contest/problem/detail/client
 
       # - /api/v1/chat/stream

@@ -2,7 +2,7 @@
 import type { DataTableColumns } from 'naive-ui'
 import { NDrawer, NDrawerContent, NIcon, NTag } from 'naive-ui'
 import { useSysMenuFetch, useSysRoleFetch } from '@/composables/v1'
-import { Icon } from '@iconify/vue'
+import { Icon } from '@iconify/vue/offline'
 
 const emit = defineEmits(['close', 'submit'])
 const loading = ref(false)

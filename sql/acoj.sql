@@ -43,7 +43,7 @@ CREATE TABLE `data_contest`  (
   `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '竞赛标题',
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '竞赛描述',
-  `contest_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '竞赛类型: ACM/OI/OIO',
+  `contest_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'OI' COMMENT '竞赛类型: OI（统一 OI 赛制）',
   `rule_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规则类型',
   `category` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '分类',
   `cover` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '封面',
@@ -591,15 +591,9 @@ CREATE TABLE `sys_config`  (
 -- ----------------------------
 -- Records of sys_config
 -- ----------------------------
-INSERT INTO `sys_config` VALUES ('1982136140003225601', 'Admin端登录背景', 'APP_ADMIN_LOGIN_BACKGROUND', 'http://120.26.180.149:9000/astro-code-oj/021143219b6643fb8289ffa417ad4a8d.png', '6', '登录页面背景图片', 0, '2025-10-21 12:25:12', '1', '2025-10-30 09:03:06', '1', '5', 8);
-INSERT INTO `sys_config` VALUES ('1982136140003225602', 'Web端登录背景', 'APP_PC_LOGIN_BACKGROUND', 'http://120.26.180.149:9000/astro-code-oj/c2c720efeb1b45ee8ff63255367e29f5.png', '6', 'Web应用端登录背景', 0, '2025-10-21 12:25:12', '1', '2025-10-28 17:11:32', '1', '5', 5);
-INSERT INTO `sys_config` VALUES ('1982136140003225603', 'Web端注册背景', 'APP_PC_REGISTER_BACKGROUND', 'http://120.26.180.149:9000/astro-code-oj/3c57c5d910b34d0aa0847b49e9d31a60.png', '6', 'Web应用端注册背景', 0, '2025-10-21 12:25:12', '1', '2025-10-28 17:11:36', '1', '5', 5);
-INSERT INTO `sys_config` VALUES ('1982136140003225604', 'Web端显示名称', 'APP_PC_SHOW_APP_NAME', 'false', '1', 'false 显示 Logo，true 显示 名称', 0, '2025-10-21 12:25:12', '1', '2025-10-28 16:49:58', '1', '5', 7);
 INSERT INTO `sys_config` VALUES ('1982136140003225605', '用户默认头像', 'APP_DEFAULT_AVATAR', 'http://120.26.180.149:9000/astro-code-oj/0e1cbf5a2a614929a6e103e57b2c1dbf.png', '6', '', 0, '2025-10-21 12:25:12', '1', '2025-10-30 09:02:14', '1', '5', 3);
 INSERT INTO `sys_config` VALUES ('1982136140003225606', '用户默认背景', 'APP_DEFAULT_USER_BACKGROUND', 'http://120.26.180.149:9000/astro-code-oj/21977c80d7bc4e549e3f67e26e330946.png', '6', '', 0, '2025-10-21 12:25:12', '1', '2025-10-28 20:32:06', '1', '5', 4);
-INSERT INTO `sys_config` VALUES ('1982136140003225607', '应用Logo', 'APP_LOGO', '06a529dcc13e4e98a81d741b7673475f.jpg', '6', '建议 1:1 图片；默认使用前端 public/logo.svg', 0, '2025-10-21 12:25:12', '1', '2026-08-29 20:42:12', '1', '5', 1);
 INSERT INTO `sys_config` VALUES ('1982136140003225608', '应用名称', 'APP_NAME', 'ACOJ', '2', '应用名称', 0, '2025-10-21 12:25:12', '1', '2025-10-28 16:49:22', '1', '5', 2);
-INSERT INTO `sys_config` VALUES ('1982136140003225609', 'Admin端显示名称', 'APP_ADMIN_SHOW_APP_NAME', 'false', '1', '', 0, '2025-10-21 12:25:12', '1', '2025-10-28 16:50:16', '1', '5', 9);
 
 -- ----------------------------
 -- Table structure for sys_conversation
@@ -748,9 +742,14 @@ INSERT INTO `sys_dict` VALUES ('1982137082970841089', 'SYS_GENDER', '性别', '0
 INSERT INTO `sys_dict` VALUES ('1982137082970841090', 'SYS_GENDER', '性别', '1', '男', 1, 0, '2025-10-21 12:25:12', '1', '2025-10-22 12:25:12', '1');
 INSERT INTO `sys_dict` VALUES ('1982137082970841091', 'SYS_GENDER', '性别', '2', '女', 2, 0, '2025-10-21 12:25:12', '1', '2025-10-22 12:25:12', '1');
 INSERT INTO `sys_dict` VALUES ('1983422246512275457', 'JUDGE_STATUS', '判题状态', 'RUN_SUCCESS', '运行成功', 0, 0, '2025-10-29 14:34:48', '1', '2025-10-29 14:34:48', '1');
-INSERT INTO `sys_dict` VALUES ('1986443880561328129', 'CONTEST_TYPE', '竞赛类型', 'ACM', 'ACM/ICPC赛制', 0, 0, '2025-11-06 22:41:42', '1', '2025-11-06 22:41:42', '1');
-INSERT INTO `sys_dict` VALUES ('1986443938925068290', 'CONTEST_TYPE', '竞赛类型', 'OI', 'OI/IOI赛制', 0, 0, '2025-11-06 22:41:56', '1', '2025-11-06 22:41:56', '1');
-INSERT INTO `sys_dict` VALUES ('1986443978200530945', 'CONTEST_TYPE', '竞赛类型', 'OIO', 'OIO赛制', 0, 0, '2025-11-06 22:42:05', '1', '2025-11-06 22:42:05', '1');
+INSERT INTO `sys_dict` VALUES ('1986443938925068290', 'CONTEST_TYPE', '竞赛类型', 'OI', 'OI/IOI赛制', 0, 0, '2025-11-06 22:41:42', '1', '2025-11-06 22:41:42', '1');
+INSERT INTO `sys_dict` VALUES ('1986444000000000001', 'CONTEST_STATUS', '竞赛状态', 'NOT_STARTED', '未开始', 0, 0, '2025-11-06 22:41:42', '1', '2025-11-06 22:41:42', '1');
+INSERT INTO `sys_dict` VALUES ('1986444000000000002', 'CONTEST_STATUS', '竞赛状态', 'REGISTERING', '报名中', 1, 0, '2025-11-06 22:41:42', '1', '2025-11-06 22:41:42', '1');
+INSERT INTO `sys_dict` VALUES ('1986444000000000003', 'CONTEST_STATUS', '竞赛状态', 'REGISTER_END', '报名结束', 2, 0, '2025-11-06 22:41:42', '1', '2025-11-06 22:41:42', '1');
+INSERT INTO `sys_dict` VALUES ('1986444000000000004', 'CONTEST_STATUS', '竞赛状态', 'RUNNING', '进行中', 3, 0, '2025-11-06 22:41:42', '1', '2025-11-06 22:41:42', '1');
+INSERT INTO `sys_dict` VALUES ('1986444000000000005', 'CONTEST_STATUS', '竞赛状态', 'FROZEN', '封榜中', 4, 0, '2025-11-06 22:41:42', '1', '2025-11-06 22:41:42', '1');
+INSERT INTO `sys_dict` VALUES ('1986444000000000006', 'CONTEST_STATUS', '竞赛状态', 'FINISHED', '已结束', 5, 0, '2025-11-06 22:41:42', '1', '2025-11-06 22:41:42', '1');
+INSERT INTO `sys_dict` VALUES ('1986444000000000007', 'CONTEST_STATUS', '竞赛状态', 'UNKNOWN', '未知', 6, 0, '2025-11-06 22:41:42', '1', '2025-11-06 22:41:42', '1');
 
 -- ----------------------------
 -- Table structure for sys_group

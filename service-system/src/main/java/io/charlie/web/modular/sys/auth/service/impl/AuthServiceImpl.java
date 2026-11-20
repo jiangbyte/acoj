@@ -35,9 +35,12 @@ import io.charlie.web.constant.EUserConstant;
 import io.charlie.web.modular.sys.user.entity.SysUser;
 import io.charlie.web.modular.sys.user.mapper.SysUserMapper;
 import io.charlie.cores.exception.BusinessException;
+import io.charlie.cores.result.ResultCode;
 import lombok.RequiredArgsConstructor;
 import org.dromara.trans.service.impl.TransService;
 import org.springframework.beans.BeanUtils;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,6 +81,8 @@ public class AuthServiceImpl implements AuthService {
 
     private final SysMenuMapper sysMenuMapper;
 
+    private final Environment environment;
+
     @Override
     public CaptchaResult captcha() {
         CaptchaResult captchaResult = new CaptchaResult();
@@ -97,112 +102,75 @@ public class AuthServiceImpl implements AuthService {
         return captchaResult;
     }
 
+    /**
+     * 用户名密码登录：校验验证码与凭据后签发 Sa-Token。
+     */
     @Override
     public String doLogin(UsernamePasswordLoginParam usernamePasswordLoginParam) {
-        // 测试用验证码，如果是9926，则不进行验证码校验
-        if (!usernamePasswordLoginParam.getCaptchaCode().equals("9926")) {
-            // 校验验证码
-            if (ObjectUtil.isEmpty(usernamePasswordLoginParam.getUuid())) {
-                throw new BusinessException("验证码标识不能为空");
-            }
-            if (ObjectUtil.isEmpty(usernamePasswordLoginParam.getCaptchaCode())) {
-                throw new BusinessException("验证码不能为空");
-            }
-            String captchaCode = (String) redisTemplate.opsForValue().get("captcha:" + usernamePasswordLoginParam.getUuid());
-            if (ObjectUtil.isEmpty(captchaCode)) {
-                throw new BusinessException("验证码已过期");
-            }
-            if (!usernamePasswordLoginParam.getCaptchaCode().equals(captchaCode)) {
-                throw new BusinessException("验证码错误");
-            }
-            // 到这里验证码校验通过，删除验证码
-            redisTemplate.delete("captcha:" + usernamePasswordLoginParam.getUuid());
+        // 1. 校验图形验证码（dev 下允许测试码 9926）
+        assertCaptchaValid(usernamePasswordLoginParam.getUuid(), usernamePasswordLoginParam.getCaptchaCode(), "9926");
+
+        // 2. 校验登录平台
+        if (ObjectUtil.isEmpty(usernamePasswordLoginParam.getPlatform())
+                || !PlatformEnum.isValid(usernamePasswordLoginParam.getPlatform().toUpperCase())) {
+            throw new BusinessException(ResultCode.PLATFORM_ERROR);
         }
 
-        // 平台校验
-        if (!PlatformEnum.isValid(usernamePasswordLoginParam.getPlatform().toUpperCase())) {
-            throw new BusinessException("平台参数错误");
-        }
-
-        // 登录逻辑
+        // 3. 校验用户名/密码格式
         String username = usernamePasswordLoginParam.getUsername().toLowerCase();
         UserValidationUtil.validateUsername(username).throwIfFailed();
-
         String password = usernamePasswordLoginParam.getPassword();
         UserValidationUtil.validatePassword(password).throwIfFailed();
 
-        // 数据库用户名是否存在
+        // 4. 查库校验账号与密码
         SysUser sysUser = sysUserMapper.selectOne(new LambdaQueryWrapper<SysUser>().eq(SysUser::getUsername, username));
         if (ObjectUtil.isEmpty(sysUser)) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ResultCode.USERNAME_NOT_EXISTS);
         }
         if (!BCrypt.checkpw(password, sysUser.getPassword())) {
-            throw new BusinessException("密码错误");
+            throw new BusinessException(ResultCode.PASSWORD_ERROR);
         }
-        // 判断是否是ADMIN平台
+
+        // 5. ADMIN 需管理权限；CLIENT 记活跃分
         if ("ADMIN".equalsIgnoreCase(usernamePasswordLoginParam.getPlatform())) {
             if (!dataScopeUtil.canManageData(sysUser.getId())) {
-                throw new BusinessException("无权限");
+                throw new BusinessException(ResultCode.UNAUTHORIZED);
             }
         } else {
-            // CLIENT 平台
             userActivityService.addActivity(sysUser.getId(), ActivityScoreCalculator.LOGIN, false);
         }
 
-        // 更新登录时间
+        // 6. 更新登录时间并签发 token
         sysUser.setLoginTime(new Date());
         sysUserMapper.updateById(sysUser);
-        // redis 记录用户活跃情况（保留30天），进行评分自增记录
-
         StpUtil.login(sysUser.getId(), usernamePasswordLoginParam.getPlatform().toUpperCase());
-
         return StpUtil.getTokenValue();
     }
 
+    /**
+     * 用户注册：校验验证码与唯一性后落库并自动登录 CLIENT。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String doRegister(UsernamePasswordEmailRegisterParam usernamePasswordEmailRegisterParam) {
-        // 测试用验证码，如果是9927，则不进行验证码校验
-        if (!usernamePasswordEmailRegisterParam.getCaptchaCode().equals("9927")) {
+        // 1. 校验图形验证码（dev 下允许测试码 9927）
+        assertCaptchaValid(usernamePasswordEmailRegisterParam.getUuid(),
+                usernamePasswordEmailRegisterParam.getCaptchaCode(), "9927");
 
-            // 校验验证码
-            if (ObjectUtil.isEmpty(usernamePasswordEmailRegisterParam.getUuid())) {
-                throw new BusinessException("验证码标识不能为空");
-            }
-            if (ObjectUtil.isEmpty(usernamePasswordEmailRegisterParam.getCaptchaCode())) {
-                throw new BusinessException("验证码不能为空");
-            }
-            String captchaCode = (String) redisTemplate.opsForValue().get("captcha:" + usernamePasswordEmailRegisterParam.getUuid());
-            if (ObjectUtil.isEmpty(captchaCode)) {
-                throw new BusinessException("验证码已过期");
-            }
-            if (!captchaCode.equals(usernamePasswordEmailRegisterParam.getCaptchaCode())) {
-                throw new BusinessException("验证码错误");
-            }
-
-            // 到这里验证码校验通过，删除验证码
-            redisTemplate.delete("captcha:" + usernamePasswordEmailRegisterParam.getUuid());
-
-        }
-
-        // 用户名校验，必须是字母开头，长度6-20位，只能包含字母、数字、下划线
+        // 2. 校验用户名/密码/邮箱格式
         String username = usernamePasswordEmailRegisterParam.getUsername().toLowerCase();
         UserValidationUtil.validateUsername(username).throwIfFailed();
-
-        // 注册逻辑
-//        String username = usernamePasswordEmailRegisterParam.getUsername();
         String password = usernamePasswordEmailRegisterParam.getPassword();
         UserValidationUtil.validatePassword(password).throwIfFailed();
-
         String email = usernamePasswordEmailRegisterParam.getEmail().toLowerCase();
         UserValidationUtil.validateEmail(email).throwIfFailed();
 
-        // 用户名 邮箱 存在校验
+        // 3. 唯一性校验
         if (sysUserMapper.exists(new LambdaQueryWrapper<SysUser>().eq(SysUser::getUsername, username))) {
-            throw new BusinessException("用户名已存在");
+            throw new BusinessException(ResultCode.USERNAME_EXISTS);
         }
         if (sysUserMapper.exists(new LambdaQueryWrapper<SysUser>().eq(SysUser::getEmail, email))) {
-            throw new BusinessException("邮箱已存在");
+            throw new BusinessException(ResultCode.EMAIL_EXISTS);
         }
 
         // 加密密码
@@ -296,17 +264,52 @@ public class AuthServiceImpl implements AuthService {
 
         // 验证旧密码
         if (!BCrypt.checkpw(passwordChangeParam.getOldPassword(), sysUser.getPassword())) {
-            throw new BusinessException("旧密码错误");
+            throw new BusinessException(ResultCode.PASSWORD_ERROR);
         }
 
         // 新密码是否两次一样
         if (!passwordChangeParam.getNewPassword().equals(passwordChangeParam.getConfirmPassword())) {
-            throw new BusinessException("新密码不一样");
+            throw new BusinessException(ResultCode.PARAM_ERROR);
         }
 
         UserValidationUtil.validatePassword(passwordChangeParam.getNewPassword()).throwIfFailed();
         sysUser.setPassword(BCrypt.hashpw(passwordChangeParam.getNewPassword()));
 
         sysUserMapper.updateById(sysUser);
+    }
+
+    /**
+     * 校验图形验证码；仅 dev 环境允许测试旁路码。
+     */
+    private void assertCaptchaValid(String uuid, String captchaCode, String devBypassCode) {
+        // 1. dev 旁路：仅当激活了 dev 且输入了指定测试码时跳过 Redis 校验
+        if (isDevCaptchaBypass(captchaCode, devBypassCode)) {
+            return;
+        }
+        // 2. 必填校验（避免 captchaCode 为 null 时 NPE）
+        if (ObjectUtil.isEmpty(uuid)) {
+            throw new BusinessException(ResultCode.PARAM_NOT_NULL);
+        }
+        if (ObjectUtil.isEmpty(captchaCode)) {
+            throw new BusinessException(ResultCode.PARAM_NOT_NULL);
+        }
+        // 3. Redis 比对并消费
+        String cached = (String) redisTemplate.opsForValue().get("captcha:" + uuid);
+        if (ObjectUtil.isEmpty(cached)) {
+            throw new BusinessException(ResultCode.CAPTCHA_EXPIRED);
+        }
+        if (!captchaCode.equals(cached)) {
+            throw new BusinessException(ResultCode.CAPTCHA_ERROR);
+        }
+        redisTemplate.delete("captcha:" + uuid);
+    }
+
+    /**
+     * 是否允许使用开发环境验证码旁路。
+     */
+    private boolean isDevCaptchaBypass(String captchaCode, String bypassCode) {
+        return ObjectUtil.isNotEmpty(captchaCode)
+                && captchaCode.equals(bypassCode)
+                && environment.acceptsProfiles(Profiles.of("dev"));
     }
 }

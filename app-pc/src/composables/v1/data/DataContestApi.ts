@@ -15,7 +15,7 @@ export function useDataContestFetch() {
     id: '',
     title: '',
     description: '',
-    contestType: '',
+    contestType: 'OI',
     ruleType: '',
     categoryId: '',
     cover: '',
@@ -88,7 +88,7 @@ export function useDataContestFetch() {
      * 竞赛 详情接口
      */
     dataContestDetail(data: any) {
-      return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail/client`, {
         params: {
           ...data,
         },

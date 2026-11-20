@@ -45,27 +45,35 @@ function updateProfileReset() {
   })
   showProfileModal.value = false
 }
-function updateAvatar(url: string) {
-  console.log('avatar URL', url)
+function updateAvatar(objectName: string, displayUrl?: string) {
+  // 1. 先本地回显，避免等接口时头像空白
+  if (displayUrl) {
+    userInfo.value.avatar = displayUrl
+  }
+  // 2. 落库（后端按登录用户更新）
   useSysUserFetch().sysUserUpdateAvatar({
     id: userInfo.value.id,
-    img: url,
+    img: objectName,
   }).then(({ success }) => {
     if (success) {
       window.$message.success('头像更新成功')
       loadData()
+      window.dispatchEvent(new CustomEvent('acoj:profile-updated'))
     }
   })
 }
-function updateBackground(url: string) {
-  console.log('backgroundImage URL', url)
+function updateBackground(objectName: string, displayUrl?: string) {
+  if (displayUrl) {
+    userInfo.value.background = displayUrl
+  }
   useSysUserFetch().sysUserUpdateBackground({
     id: userInfo.value.id,
-    img: url,
+    img: objectName,
   }).then(({ success }) => {
     if (success) {
       window.$message.success('背景更新成功')
       loadData()
+      window.dispatchEvent(new CustomEvent('acoj:profile-updated'))
     }
   })
 }
@@ -223,8 +231,17 @@ function updateProfile() {
                   round
                   :size="90"
                   :src="userInfo.avatar"
+                  object-fit="cover"
                 />
-                <FileUploadTextButton v-model="userInfo.avatar" type="primary" :is-image="true" buttontext="更换头像" @success="updateAvatar" />
+                <FileUploadTextButton
+                  v-model="userInfo.avatar"
+                  type="primary"
+                  :is-image="true"
+                  :enable-crop="true"
+                  :crop-aspect="1"
+                  buttontext="更换头像"
+                  @success="updateAvatar"
+                />
               </NSpace>
 
               <NSpace vertical size="small" style="margin-left: 20px;">

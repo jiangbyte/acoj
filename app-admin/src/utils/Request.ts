@@ -1,55 +1,58 @@
-// import { SERVICE_BASE_URL } from '@/config'
-import { createServerTokenAuthentication } from 'alova/client'
 import { createAlova } from 'alova'
 import VueHook from 'alova/vue'
 import adapterFetch from 'alova/fetch'
 import { createDiscreteApi } from 'naive-ui'
 import { useTokenStore } from '@/stores'
-import type { VueHookType } from 'alova/vue'
 
 const gateway = import.meta.env.VITE_GATEWAY
 
 // message 弹窗
 const { message } = createDiscreteApi(['message'])
 
+/** 未登录/过期处理锁，避免并发 401 连弹 toast、重复跳转 */
+let unauthorizedHandling = false
+
 /**
- * token 认证拦截器
+ * 判断业务/HTTP 是否未登录或无权限（后端统一 code=401）
  */
-const { onAuthRequired, onResponseRefreshToken } = createServerTokenAuthentication<VueHookType>({
-  // 服务端判定Token是否过期
-  refreshTokenOnSuccess: {
-    // 401 未认证过期
-    isExpired: (response, method) => {
-      const isExpired = method.meta && method.meta.isExpired
-      return response.status === 401 && !isExpired
-    },
+function isUnauthorized(status: number, jsonData?: Record<string, any>) {
+  return status === 401 || String(jsonData?.code) === '401'
+}
 
-    handler: async (_response, method) => {
-      if (!method.meta) {
-        method.meta = {
-          isExpired: true,
-        }
-      }
-      else {
-        method.meta.isExpired = true
-      }
+/**
+ * 清理本地登录态，提示一次并跳转登录页（登录页除外）
+ */
+async function handleUnauthorized() {
+  // 1. 已在处理中则直接忽略，防并发请求刷屏
+  if (unauthorizedHandling)
+    return
+  unauthorizedHandling = true
 
-      message.error('登录过期，请重新登录')
+  // 2. 清理 token，并区分「未登录」与「登录过期」文案
+  const tokenStore = useTokenStore()
+  const hadToken = !!tokenStore.getToken
+  tokenStore.resetToken()
+  const tip = hadToken ? '登录过期，请重新登录' : '请先登录'
 
-      // 不刷新token
-      const tokenStore = useTokenStore()
-      tokenStore.resetToken()
+  // 3. 提示一次
+  message.error(tip)
 
-      // 不刷新token
-    },
-  },
-
-  // 附加Token
-  assignToken: (method) => {
-    const tokenStore = useTokenStore()
-    method.config.headers.Authorization = tokenStore.getToken
-  },
-})
+  // 4. 懒加载 router，避免与 stores/utils 循环依赖；非登录页强制跳转
+  try {
+    const { router } = await import('@/router')
+    const current = router.currentRoute.value
+    if (current.name !== 'login' && current.path !== '/login') {
+      const redirect = current.name === '404' ? undefined : current.fullPath
+      await router.replace({ path: '/login', query: redirect ? { redirect } : undefined })
+    }
+  }
+  finally {
+    // 跳转后短暂保持锁，吞掉仍在飞行的 401
+    window.setTimeout(() => {
+      unauthorizedHandling = false
+    }, 1500)
+  }
+}
 
 function showErrorMessage(jsonData: Record<string, any>) {
   const text = jsonData.message || jsonData.error || '请求失败'
@@ -68,67 +71,79 @@ const alovaInstance = createAlova({
   baseURL: gateway,
   timeout: 60 * 1000,
 
-  beforeRequest: onAuthRequired((method) => {
-    if (method.meta?.isFormPost) {
+  beforeRequest(method) {
+    // 1. 仅在有 token 时附加 Authorization，避免空值干扰鉴权
+    const tokenStore = useTokenStore()
+    const token = tokenStore.getToken
+    if (token) {
+      method.config.headers.Authorization = token
+    }
+
+    // 2. FormData 上传：必须去掉 Content-Type，由浏览器自动带 multipart boundary
+    if (typeof FormData !== 'undefined' && method.data instanceof FormData) {
+      delete method.config.headers['Content-Type']
+      delete method.config.headers['content-type']
+    }
+    // 3. 表单提交内容类型转换
+    else if (method.meta?.isFormPost) {
       method.config.headers['Content-Type'] = 'application/x-www-form-urlencoded'
       method.data = new URLSearchParams(method.data as URLSearchParams).toString()
     }
-  }),
+  },
 
-  responded: onResponseRefreshToken({
+  responded: {
     onSuccess: async (response, method) => {
-      // 对SSE单独处理
+      // 1. SSE 原样透传，不走 JSON 解析
       const url = String(method.url || '')
       const sseApiPattern = /\/api\/.*?sse/
       const isMatch = sseApiPattern.test(url)
       const hasApi = url.includes('/api/')
       const hasSse = url.includes('/sse')
-      const isMatch2 = hasApi && hasSse
-      if (isMatch || isMatch2) {
+      if (isMatch || (hasApi && hasSse)) {
         return response
       }
 
-      // 其他正常请求
+      // 2. 解析响应体
       const { status } = response
+      let jsonData: Record<string, any> = {}
+      try {
+        jsonData = await response.clone().json()
+      }
+      catch {
+        jsonData = {}
+      }
 
-      // 获取json数据
-      const jsonData = await response.clone().json()
+      // 3. 未登录/过期：统一登出并跳登录，不再二次 toast
+      if (isUnauthorized(status, jsonData)) {
+        await handleUnauthorized()
+        return jsonData
+      }
 
+      // 4. 成功响应
       if (status === 200) {
         if (method.meta?.isBlob) {
           return response.blob()
         }
-
-        // 如果code 是 401 马上执行本地登出
-        if (jsonData.code === '401') {
-          message.error(jsonData.message || '登录过期，请重新登录')
-          // 登出
-          const tokenStore = useTokenStore()
-          tokenStore.resetToken()
-          return jsonData
-        }
-
-        // 获取json数据中的code字段，判断是否为成功状态，默认为"200"
         if (jsonData.code === '200' || jsonData.success === true) {
           return jsonData
         }
-
-        // 业务请求失败：展示后端 message（即使 data 为 null）
         showErrorMessage(jsonData)
         return jsonData
       }
 
-      // 接口请求失败
+      // 5. 其他 HTTP 失败
       showErrorMessage(jsonData)
       return jsonData
     },
 
     onError: async (error, _method) => {
-      message.error(error?.message || '网络异常，请稍后重试')
+      if (!unauthorizedHandling) {
+        message.error(error?.message || '网络异常，请稍后重试')
+      }
     },
 
     onComplete: async (_method) => {},
-  }),
+  },
 })
 
 export const request = alovaInstance

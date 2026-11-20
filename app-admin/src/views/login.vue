@@ -1,10 +1,12 @@
 <script lang="ts" setup>
-import { NButton, NCard, NForm, NFormItem, NInput, NText } from 'naive-ui'
+import { NButton, NForm, NFormItem, NInput, NText } from 'naive-ui'
 import type { FormInst } from 'naive-ui'
+import AuthShell from '@/components/auth/AuthShell.vue'
 import { useTokenStore } from '@/stores'
-import { useAuthFetch, useSysConfigFetch } from '@/composables/v1'
+import { useAuthFetch } from '@/composables/v1'
+import { captchaRule, passwordRule, usernameRule } from '@/utils/authFormRules'
+import { resolveAuthRedirect } from '@/utils/authRedirect'
 
-// 表单数据
 const formRef = ref<FormInst | null>(null)
 const formData = ref({
   username: '',
@@ -13,221 +15,213 @@ const formData = ref({
   uuid: '',
   platform: 'ADMIN',
 })
-
 const formRules = {
-  username: {
-    required: true,
-    message: '请输入用户名',
-    trigger: 'blur',
-  },
-  password: {
-    required: true,
-    message: '请输入密码',
-    trigger: 'blur',
-  },
+  username: usernameRule,
+  password: passwordRule,
+  captchaCode: captchaRule,
 }
 
-// 请求处理
 const { doLogin, captcha } = useAuthFetch()
-const { getValueByCode } = useSysConfigFetch()
 const captchaRef = ref({
   captcha: '',
   uuid: '',
 })
-const appName = ref('')
-const appAdminLoginBG = ref('')
+const isLoading = ref(false)
 
+const router = useRouter()
+const route = useRoute()
+const tokenStore = useTokenStore()
+
+/**
+ * 拉取验证码并同步写入表单 uuid，避免先清空再异步加载的竞态。
+ */
 async function loadCaptcha() {
   const { data } = await captcha()
   if (data) {
     captchaRef.value = data
-    formData.value.uuid = captchaRef.value.uuid
+    formData.value.uuid = data.uuid
   }
 }
-// 刷新验证码
-function refreshCaptcha() {
-  loadCaptcha()
+
+async function refreshCaptcha() {
   formData.value.captchaCode = ''
-  formData.value.uuid = ''
-}
-async function loadData() {
   await loadCaptcha()
-  const [appConfig, bgConfig] = await Promise.all([
-    getValueByCode({ code: 'APP_NAME' }),
-    getValueByCode({ code: 'APP_ADMIN_LOGIN_BACKGROUND' }),
-  ])
-
-  // 处理配置项
-  appName.value = appConfig.data ?? appName.value
-  appAdminLoginBG.value = bgConfig.data ?? appAdminLoginBG.value
 }
-loadData()
 
-const router = useRouter()
-const useToken = useTokenStore()
-const isLoading = ref(false)
-async function handleLogin(e: MouseEvent) {
-  e.preventDefault()
-  formRef.value?.validate((errors) => {
-    if (errors) {
-      window.$message.error('请填写完整信息')
+loadCaptcha()
+
+async function handleLogin(e?: Event) {
+  e?.preventDefault()
+  if (isLoading.value) {
+    return
+  }
+  try {
+    await formRef.value?.validate()
+  }
+  catch {
+    window.$message.error('请填写完整且合法的信息')
+    return
+  }
+
+  isLoading.value = true
+  try {
+    const res = await doLogin(formData.value)
+    if (res?.data) {
+      tokenStore.setToken(res.data)
+      if (tokenStore.isLogined) {
+        const target = resolveAuthRedirect(route.query.redirect)
+        await router.replace(target)
+      }
       return
     }
-    isLoading.value = true
-    useAuthFetch().doLogin(formData.value).then((res) => {
-      if (res?.data) {
-        useToken.setToken(res.data)
-        if (useToken.isLogined) {
-          router.push('/')
-        }
-      }
-      else {
-        // 拦截器已弹过后端 message；失败时刷新验证码
-        refreshCaptcha()
-      }
-    }).catch((err) => {
-      const msg = err?.message || '登录失败'
-      window.$message.error(msg)
-      refreshCaptcha()
-    }).finally(() => {
-      isLoading.value = false
-    })
-  })
+    await refreshCaptcha()
+  }
+  catch {
+    await refreshCaptcha()
+  }
+  finally {
+    isLoading.value = false
+  }
 }
-
-const version = import.meta.env.VITE_VERSION
 </script>
 
 <template>
-  <div
-    class="h-screen w-screen flex flex-col justify-center items-center"
-    :style="appAdminLoginBG ? { background: `url(${appAdminLoginBG}) no-repeat center center`, backgroundSize: 'cover' } : {}"
+  <AuthShell
+    title="欢迎登录 ACOJ Admin"
+    subtitle="「简洁、高效、安全」的管理控制台"
   >
-    <NCard
-      class="w-auto filter-bg"
-      :bordered="false"
+    <div class="auth-form-title">
+      账号登录
+    </div>
+    <NForm
+      ref="formRef"
+      :model="formData"
+      :rules="formRules"
+      class="auth-form"
+      :show-label="false"
+      size="large"
+      @keyup.enter="handleLogin"
     >
-      <div class="flex flex-col items-center gap-2 mb-2">
-        <div class="text-center text-xl">
-          {{ appName }}
-        </div>
-        <NText
-          depth="3"
-          class="text-center text-3"
-        >
-          Version {{ version }}
-        </NText>
-      </div>
-      <NForm
-        ref="formRef"
-        :label-width="80"
-        :model="formData"
-        :rules="formRules"
-        class="w-[300px]"
-        :show-label="false"
-        @keypress.enter="handleLogin"
-      >
-        <NFormItem
-          label="Username"
-          path="username"
-        >
+      <NFormItem path="username">
+        <NInput
+          v-model:value="formData.username"
+          data-testid="username-inp"
+          :input-props="{ autocomplete: 'username' }"
+          placeholder="请输入用户名"
+          clearable
+        />
+      </NFormItem>
+      <NFormItem path="password">
+        <NInput
+          v-model:value="formData.password"
+          type="password"
+          show-password-on="click"
+          data-testid="password-inp"
+          :input-props="{ autocomplete: 'current-password' }"
+          placeholder="请输入密码"
+        />
+      </NFormItem>
+      <NFormItem path="captchaCode">
+        <div class="captcha-row">
           <NInput
-            v-model:value="formData.username"
-            :input-props="{
-              autocomplete: 'username',
-            }"
-            placeholder="请输入用户名"
+            v-model:value="formData.captchaCode"
+            data-testid="captcha-inp"
+            placeholder="请输入验证码"
+            class="captcha-row__input"
           />
-        </NFormItem>
-        <NFormItem
-          label="Password"
-          path="password"
-        >
-          <NInput
-            v-model:value="formData.password"
-            :input-props="{
-              autocomplete: 'current-password',
-            }"
-            type="password"
-            placeholder="请输入密码"
-          />
-        </NFormItem>
-        <NFormItem
-          label="Captcha"
-          path="captcha"
-        >
-          <div class="flex items-center gap-2">
-            <NInput
-              v-model:value="formData.captchaCode"
-              placeholder="请输入验证码"
-              class="flex-1"
-            />
-            <div
-              class="h-[34px] cursor-pointer"
-              @click="refreshCaptcha"
+          <button
+            type="button"
+            class="captcha-row__img"
+            title="点击刷新验证码"
+            @click="refreshCaptcha"
+          >
+            <img
+              v-if="captchaRef.captcha"
+              :src="captchaRef.captcha"
+              alt="验证码"
             >
-              <img
-                v-if="captchaRef.captcha"
-                :src="captchaRef.captcha"
-                alt="验证码"
-                class="h-full"
-              >
-              <div
-                v-else
-                class="h-full w-[100px] bg-gray-100 flex items-center justify-center text-gray-400"
-              >
-                点击刷新
-              </div>
-            </div>
-          </div>
-        </NFormItem>
-      </NForm>
-      <div class="text-center">
-        <NButton
-          block
-          type="primary"
-          :loading="isLoading"
-          @click="handleLogin"
-        >
-          登录
-        </NButton>
-      </div>
-      <!-- <div class="mt-4 flex justify-between items-center"> -->
-      <!-- <NButton text> -->
-      <!-- <n-text depth="3">
-            Reset
-          </n-text> -->
-      <!-- </NButton> -->
-      <!-- <div class="flex items-center gap-2">
-          <NText depth="3">
-            没有账号？
-          </NText>
-          <NButton
-            text
-            type="primary"
-            @click="$router.push('/register')"
-          >
-            注册
-          </NButton>
-        </div> -->
-      <!-- </div> -->
-      <template #footer>
-        <div class="flex justify-center items-center">
-          <NText
-            class="text-3"
-            depth="3"
-          >
-            © 2024-2025 by Charlie Zhang
-          </NText>
+            <span v-else>点击刷新</span>
+          </button>
         </div>
-      </template>
-    </NCard>
-  </div>
+      </NFormItem>
+    </NForm>
+    <NButton
+      block
+      type="primary"
+      size="large"
+      data-testid="login-execute"
+      :loading="isLoading"
+      class="auth-submit"
+      @click="handleLogin"
+    >
+      登录
+    </NButton>
+    <div class="auth-hint">
+      <NText depth="3">
+        仅限具备管理权限的账号登录
+      </NText>
+    </div>
+  </AuthShell>
 </template>
 
 <style scoped>
-/* .filter-bg {
-  backdrop-filter: blur(10px);
-  background-color: rgba(255, 255, 255, 0.8);
-} */
+.auth-form-title {
+  margin-bottom: 35px;
+  font-size: 20px;
+  text-align: center;
+  color: #1e1e1e;
+}
+
+.auth-form {
+  width: 100%;
+}
+
+.captcha-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.captcha-row__input {
+  flex: 1;
+}
+
+.captcha-row__img {
+  flex-shrink: 0;
+  height: 40px;
+  min-width: 110px;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #f8fafc;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.captcha-row__img img {
+  height: 100%;
+  display: block;
+}
+
+.auth-submit {
+  margin-top: 4px;
+  height: 50px;
+  --n-color: #1748fd !important;
+  --n-color-hover: #3b66fd !important;
+  --n-color-pressed: #1239d0 !important;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.auth-hint {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 13px;
+}
 </style>

@@ -5,7 +5,7 @@ import { useSysMenuFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
 import Permission from './permission.vue'
-import { Icon } from '@iconify/vue'
+import { Icon } from '@iconify/vue/offline'
 
 const formRef = ref()
 const detailRef = ref()

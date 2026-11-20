@@ -2,7 +2,7 @@
 import { NButton, NCard, NForm, NFormItem, NInput, NText } from 'naive-ui'
 import type { FormInst } from 'naive-ui'
 import { useTokenStore } from '@/stores'
-import { useAuthFetch, useSysConfigFetch } from '@/composables/v1'
+import { useAuthFetch } from '@/composables/v1'
 
 // 表单数据
 const formRef = ref<FormInst | null>(null)
@@ -33,13 +33,11 @@ const formRules = {
 
 // 请求处理
 const { doLogin, captcha } = useAuthFetch()
-const { getValueByCode } = useSysConfigFetch()
 const captchaRef = ref({
   captcha: '',
   uuid: '',
 })
-const appName = ref('')
-const appAdminLoginBG = ref('')
+const appName = 'ACOJ'
 
 async function loadCaptcha() {
   const { data } = await captcha()
@@ -54,18 +52,7 @@ function refreshCaptcha() {
   formData.value.captchaCode = ''
   formData.value.uuid = ''
 }
-async function loadData() {
-  await loadCaptcha()
-  const [appConfig, bgConfig] = await Promise.all([
-    getValueByCode({ code: 'APP_NAME' }),
-    getValueByCode({ code: 'APP_ADMIN_LOGIN_BACKGROUND' }),
-  ])
-
-  // 处理配置项
-  appName.value = appConfig.data ?? appName.value
-  appAdminLoginBG.value = bgConfig.data ?? appAdminLoginBG.value
-}
-loadData()
+loadCaptcha()
 
 const router = useRouter()
 const useToken = useTokenStore()
@@ -85,7 +72,6 @@ const version = import.meta.env.VITE_VERSION
 <template>
   <div
     class="h-screen w-screen flex flex-col justify-center items-center"
-    :style="appAdminLoginBG ? { background: `url(${appAdminLoginBG}) no-repeat center center`, backgroundSize: 'cover' } : {}"
   >
     <NCard
       class="w-auto filter-bg"

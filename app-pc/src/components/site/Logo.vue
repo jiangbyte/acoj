@@ -1,62 +1,31 @@
 <script lang="ts" setup>
-import { useSysConfigFetch } from '@/composables/v1'
-import { NSpace, NText } from 'naive-ui'
-
-const { getValueByCode } = useSysConfigFetch()
-
-const appName = ref('')
-const appLogo = ref('/logo.svg')
-const appAdminShowAppName = ref(false)
-
-function resolveLogo(url?: string | null) {
-  if (!url?.trim())
-    return '/logo.svg'
-  if (url.includes('120.26.180.149:9000/astro-code-oj/'))
-    return '/logo.svg'
-  return url
-}
-
-async function loadData() {
-  const [appConfig, logoConfig, adminShowConfig] = await Promise.all([
-    getValueByCode({ code: 'APP_NAME' }),
-    getValueByCode({ code: 'APP_LOGO' }),
-    getValueByCode({ code: 'APP_PC_SHOW_APP_NAME' }),
-  ])
-
-  // 处理配置项
-  appName.value = appConfig?.data ?? appName.value
-  appLogo.value = resolveLogo(logoConfig?.data)
-  appAdminShowAppName.value = adminShowConfig?.data === 'true'
-}
-loadData()
+import { NText } from 'naive-ui'
 </script>
 
 <template>
-  <NSpace
-    align="center"
-    :wrap="false"
-    justify="center"
-    class="h-10"
+  <div
+    class="pc-logo"
     @click="$router.push('/')"
   >
-    <!-- <n-avatar
-      v-if="appLogo && !appAdminShowAppName"
-      size="large"
-      :src="appLogo"
-    /> -->
-    <img
-      v-if="appLogo && !appAdminShowAppName"
-      :src="appLogo"
-      class="h-12 flex items-center justify-center"
-    >
-    <NText
-      v-if="appAdminShowAppName"
-    >
-      {{ appName }}
+    <NText class="pc-logo__title">
+      ACOJ
     </NText>
-  </NSpace>
+  </div>
 </template>
 
-<style>
+<style scoped>
+.pc-logo {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
 
+.pc-logo__title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
 </style>

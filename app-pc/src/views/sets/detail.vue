@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { AesCrypto, Poller } from '@/utils'
+import { AesCrypto } from '@/utils'
 import { useDataSetFetch, useDataSubmitFetch } from '@/composables/v1'
 import type { DataTableColumns, ImageInst } from 'naive-ui'
 import { NAvatar, NButton, NEllipsis, NSpace, NTag, NText, NTime } from 'naive-ui'
-import { Icon } from '@iconify/vue'
+import { Icon } from '@iconify/vue/offline'
 
 const route = useRoute()
 const detailData = ref()
@@ -444,66 +444,47 @@ const countdownDuration = ref(0)
 const countdownActive = ref(false)
 const countdownType = ref<'start' | 'end'>('start')
 
-// 计算倒计时持续时间
+/**
+ * 按当前时间计算一次倒计时时长；由 NCountdown 自行滴答，禁止秒级重算以免 NSpace 异常叠渲染。
+ */
 function calculateCountdown() {
-  if (!detailData.value?.setType === 2)
+  // 1. 非限时题集直接关闭倒计时
+  if (detailData.value?.setType !== 2) {
+    countdownActive.value = false
     return
+  }
 
   const now = Date.now()
   const startTime = Number(detailData.value.startTime)
   const endTime = Number(detailData.value.endTime)
 
-  // 如果当前时间在开始时间之前，显示开始倒计时
+  // 2. 赛前：距开始；赛中：距结束；否则停表
   if (now < startTime) {
     countdownDuration.value = startTime - now
     countdownType.value = 'start'
     countdownActive.value = true
   }
-  // 如果当前时间在开始时间和结束时间之间，显示结束倒计时
   else if (now >= startTime && now < endTime) {
     countdownDuration.value = endTime - now
     countdownType.value = 'end'
     countdownActive.value = true
   }
-  // 如果已经结束，停止倒计时
   else {
     countdownActive.value = false
   }
 }
 
-// 监听detailData变化，计算倒计时
+// 题集详情就绪后只计算一次；到点由 NCountdown @finish 刷新页面
 watch(() => detailData.value, (newVal) => {
   if (newVal?.setType === 2) {
     calculateCountdown()
   }
 })
 
-// 每秒更新一次倒计时（可选）
-const countdownPoller = new Poller(
-  {
-    interval: 1000, // 1秒轮询一次
-    immediate: true,
-  },
-  {
-    onPoll: () => {
-      calculateCountdown()
-    },
-  },
-)
-
 // 自定义倒计时显示格式 - 时分秒
 function renderCountdown({ hours, minutes, seconds }: { hours: number, minutes: number, seconds: number }) {
   return `${hours.toString().padStart(2, '0')} 时 ${minutes.toString().padStart(2, '0')} 分 ${seconds.toString().padStart(2, '0')} 秒`
 }
-onMounted(() => {
-  if (detailData.value?.setType === 2) {
-    countdownPoller.start()
-  }
-})
-
-onUnmounted(() => {
-  countdownPoller.stop()
-})
 
 function onfinishTime() {
   window.location.reload()
@@ -687,13 +668,14 @@ function onfinishTime() {
                 题集信息与统计
               </n-h2>
             </template>
-            <NSpace vertical class="mb-4">
+            <div class="mb-4 flex flex-col gap-3">
               <!-- 倒计时显示 -->
               <NSpace v-if="detailData?.setType === 2 && countdownActive" align="center" :size="0">
                 <NText depth="3">
                   {{ countdownType === 'start' ? '开始倒计时：' : '结束倒计时：' }}
                 </NText>
                 <NCountdown
+                  :key="`${countdownType}-${countdownDuration}`"
                   :duration="countdownDuration"
                   :active="countdownActive"
                   :render="renderCountdown"
@@ -756,10 +738,10 @@ function onfinishTime() {
                   {{ detailData?.participantUserCount ? detailData?.participantUserCount : 0 }}
                 </NText>
               </NSpace>
-              <n-alert v-if="detailData?.setType === 2" show-icon type="warning">
-                限时题集请注意时间及时刷新页面：开始时间到达时请刷新页面，结束时间到达将锁定题集，无法提交。
-              </n-alert>
-            </NSpace>
+            </div>
+            <n-alert v-if="detailData?.setType === 2" show-icon type="warning">
+              限时题集请注意时间及时刷新页面：开始时间到达时请刷新页面，结束时间到达将锁定题集，无法提交。
+            </n-alert>
           </n-card>
         </NSpace>
       </n-gi>

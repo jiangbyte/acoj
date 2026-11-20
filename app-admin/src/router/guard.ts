@@ -19,43 +19,31 @@ export function setupRouterGuard(router: Router) {
   const routerStore = useRouterStore()
   const tabStore = useTabStore()
 
-  router.beforeEach(async (to, from, next) => {
-    console.log('导航守卫触发:', {
-      to: to.path,
-      from: from.path,
-      isLogined: tokenStore.isLogined,
-      isInit: routerStore.isInit,
-      rowRoutesLength: routerStore.rowRoutes?.length,
-    })
-
+  router.beforeEach(async (to, _from, next) => {
     const parameters = parseJson(String(to.meta.parameters))
-    console.log('头部参数', parameters)
 
-    // 外部链接
+    // 1. 外链：打开新窗口并取消本次导航
     if (parameters?.href_outter) {
-      console.log('href_outter', parameters.href_outter)
       window.open(parameters.href_outter as string)
       next(false)
       return
     }
 
-    // 加载条
+    // 2. 顶部加载条
     window.$loadingBar?.start()
 
-    // 鉴权
+    // 3. 未登录：仅放行登录页，其余跳转登录并带回跳地址
     if (!tokenStore.isLogined) {
       if (to.name === 'login') {
         next()
+        return
       }
-
-      if (to.name !== 'login') {
-        const redirect = to.name === '404' ? undefined : to.fullPath
-        next({ path: '/login', query: { redirect } })
-      }
-      return false
+      const redirect = to.name === '404' ? undefined : to.fullPath
+      next({ path: '/login', query: redirect ? { redirect } : undefined })
+      return
     }
 
-    // 路由初始化
+    // 4. 首次进入：拉取动态路由/菜单，失败则登出
     if (!routerStore.isInit) {
       try {
         await routerStore.initRouter()
@@ -63,6 +51,7 @@ export function setupRouterGuard(router: Router) {
         if (routerStore.rowRoutes.length === 0 || routerStore.menus.length === 0) {
           tokenStore.$reset()
           next({ path: '/login' })
+          return
         }
 
         if (to.name === '404') {
@@ -72,34 +61,38 @@ export function setupRouterGuard(router: Router) {
             query: to.query,
             hash: to.hash,
           })
-          return false
+          return
         }
+
+        // 动态路由刚注册完，需重新匹配当前地址
+        next({ ...to, replace: true })
+        return
       }
       catch (error) {
         console.error('路由初始化失败:', error)
         tokenStore.$reset()
         next({ path: '/login' })
-        return false
+        return
       }
     }
 
-    // 已登录状态下访问登录页，重定向到首页
+    // 5. 已登录访问登录页 → 回首页
     if (to.name === 'login') {
       next({ path: '/' })
-      return false
+      return
     }
 
     next()
   })
+
   router.beforeResolve((to) => {
     routerStore.setActiveMenu(to.path)
     tabStore.addTab(to)
     tabStore.setCurrent(to.path)
   })
+
   router.afterEach((to) => {
-    // 修改网页标题
     document.title = `${to.meta.title}`
-    // 结束 loadingBar
     window.$loadingBar?.finish()
   })
 }

@@ -147,9 +147,16 @@ async function loadData() {
   profile.value = data
 }
 
+function onProfileUpdated() {
+  if (useTokenStore().isLogined) {
+    loadData()
+  }
+}
+
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
   window.addEventListener('resize', handleResize)
+  window.addEventListener('acoj:profile-updated', onProfileUpdated)
   checkIfMobile()
   if (useTokenStore().isLogined) {
     loadData()
@@ -159,6 +166,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('acoj:profile-updated', onProfileUpdated)
 })
 </script>
 

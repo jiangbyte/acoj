@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { NDescriptions, NDescriptionsItem, NDrawer, NDrawerContent, NTime } from 'naive-ui'
 import { useSysMenuFetch } from '@/composables/v1'
-import { Icon } from '@iconify/vue'
+import { Icon } from '@iconify/vue/offline'
 
 const emit = defineEmits(['close'])
 const show = ref(false)

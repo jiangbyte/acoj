@@ -187,7 +187,7 @@ import { router } from '@/router'
 import type { MenuOption } from 'naive-ui'
 import { RouterLink } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
-import { clone, min, omit, pick } from 'radash'
+import { clone, omit, pick } from 'radash'
 import Layout from '@/layouts/index.vue'
 import { arrayTree, iconRender } from '@/utils'
 import { useSysMenuFetch } from '@/composables/v1'
@@ -280,15 +280,18 @@ function createRoutes(routes: SiteRoute.RowRoute[]): RouteRecordRaw {
   const resultRouter = arrayTree(
     standardizedRoutes(routes).map(item => ({
       ...item,
-      component: item.componentPath && !item.redirect
+      // 目录（menuType=0）或已有子路由时禁止 redirect，避免点父级跳首个子页
+      redirect: isDirectoryMeta(item.meta) ? undefined : item.redirect,
+      component: item.componentPath && !item.redirect && !isDirectoryMeta(item.meta)
         ? modules[`/src/views${item.componentPath}`]
         : undefined,
     })),
   ) as SiteRoute.Route[]
 
-  console.log('标准化后的路由表:', resultRouter)
+  // 建树后再清一遍父级 redirect（此时已有 children）
+  clearDirectoryRedirect(resultRouter)
 
-  setRedirect(resultRouter)
+  console.log('标准化后的路由表:', resultRouter)
 
   return {
     path: '/webroot',
@@ -300,117 +303,71 @@ function createRoutes(routes: SiteRoute.RowRoute[]): RouteRecordRaw {
   }
 }
 
-function setRedirect(routes: SiteRoute.Route[]) {
+/**
+ * 是否目录型菜单（注意 menuType 数字 0 不能用 !menuType 判断）。
+ */
+function isDirectoryMeta(meta?: SiteRoute.Route['meta'] | Record<string, any>) {
+  return Number(meta?.menuType) === 0
+}
+
+/**
+ * 递归清除目录/有子节点路由的 redirect。
+ */
+function clearDirectoryRedirect(routes: SiteRoute.Route[]) {
   routes.forEach((route) => {
-    if (route.children?.length) {
-      console.log(route.meta.title, '有子路由:', route.children)
-      if (!route.redirect) {
-        console.log(route.meta.title, '无跳转')
-        const visibleChilds = route.children.filter(child => child.meta.visible)
-        // if (visibleChilds.length > 1) {
-        //   const orderChilds = visibleChilds.filter(child => Number(child.meta.sort))
-        //   const target = orderChilds.length
-        //     ? min(orderChilds, i => Number(i.meta.sort)!)
-        //     : visibleChilds[0]
-        //   if (target)
-        //     route.redirect = target.path
-        // }
-        // 修改这里：当有至少一个可见子菜单时就应该设置重定向
-        if (visibleChilds.length >= 1) {
-          let target: SiteRoute.Route | null = visibleChilds[0]
-
-          // 如果有多个可见子菜单，按排序选择第一个
-          if (visibleChilds.length > 1) {
-            // const orderChilds = visibleChilds.filter(child => Number(child.meta.sort))
-            // target = orderChilds.length
-            //   ? min(orderChilds, i => Number(i.meta.sort)!)
-            //   : visibleChilds[0]
-            const orderChilds = visibleChilds.filter(child => Number(child.meta.sort))
-            const sortedTarget = orderChilds.length
-              ? min(orderChilds, i => Number(i.meta.sort)!)
-              : visibleChilds[0]
-
-            // 确保 target 不是 null
-            if (sortedTarget) {
-              target = sortedTarget
-            }
-          }
-
-          if (target) {
-            route.redirect = target.path
-            console.log(route.meta.title, '设置重定向到:', target.path)
-          }
-        }
-        else {
-          console.log(route.meta.title, '没有可见的子菜单，无法设置重定向')
-        }
-      }
-      console.log(route.meta.title, '最终跳转:', route.redirect)
-      setRedirect(route.children)
+    const hasChildren = !!(route.children && route.children.length)
+    if (hasChildren || isDirectoryMeta(route.meta)) {
+      delete (route as any).redirect
+    }
+    if (hasChildren) {
+      clearDirectoryRedirect(route.children as SiteRoute.Route[])
     }
   })
 }
 
 function createMenus(userRoutes: SiteRoute.RowRoute[]) {
-  // return arrayTree(
-  //   standardizedRoutes(userRoutes)
-  //     .filter(route => route.meta.visible)
-  //     .sort((a, b) => (Number(a.meta.sort) || 0) - (Number(b.meta.sort) || 0))
-  //     .map(item => ({
-  //       id: Number(item.id),
-  //       pid: Number(item.pid),
-  //       label: createLabel(item),
-  //       key: item.path,
-  //       icon: item.meta.icon ? iconRender(item.meta.icon) : undefined,
-  //     })),
-  // )
-
+  // 1. 先建树（此时尚无 label；必须建树后才能根据 children 判断目录）
   const fullTree = arrayTree(
     standardizedRoutes(userRoutes)
       .sort((a, b) => (Number(a.meta.sort) || 0) - (Number(b.meta.sort) || 0))
       .map(item => ({
         id: Number(item.id),
         pid: Number(item.pid),
-        label: createLabel(item),
         key: item.path,
         icon: item.meta.icon ? iconRender(item.meta.icon) : undefined,
-        meta: item.meta, // 保留meta信息用于过滤
-        path: item.path, // 保留path信息
+        meta: item.meta,
+        path: item.path,
+        title: item.meta.title,
       })),
   )
 
-  // 递归过滤：如果父级不可见，子级也要隐藏
+  // 2. 过滤不可见节点，并在有 children 后生成 label（目录绝不包 RouterLink）
   const filterVisibleMenus = (menus: any[]): any[] => {
     return menus
       .filter((menu) => {
-        // 如果当前菜单不可见，直接过滤掉
         if (!menu.meta.visible) {
           return false
         }
-
-        // 如果有子菜单，递归处理
         if (menu.children) {
           menu.children = filterVisibleMenus(menu.children)
         }
-
         return true
       })
-      .map(menu => ({
-        // 只返回菜单需要的字段，去除meta等额外字段
-        id: menu.id,
-        pid: menu.pid,
-        label: menu.label,
-        key: menu.key,
-        icon: menu.icon,
-        children: menu.children,
-      }))
+      .map((menu) => {
+        const hasChildren = !!(menu.children && menu.children.length)
+        const isDirectory = isDirectoryMeta(menu.meta) || hasChildren
+        return {
+          id: menu.id,
+          pid: menu.pid,
+          label: isDirectory
+            ? () => menu.title
+            : () => h(RouterLink, { to: { path: menu.path } }, () => menu.title),
+          key: menu.key,
+          icon: menu.icon,
+          children: hasChildren ? menu.children : undefined,
+        }
+      })
   }
 
   return filterVisibleMenus(fullTree)
-}
-
-function createLabel(item: SiteRoute.Route) {
-  return (!item.meta.menuType || Number(item.meta.menuType) === 1)
-    ? () => h(RouterLink, { to: { path: item.path } }, () => item.meta.title)
-    : () => item.meta.title
 }

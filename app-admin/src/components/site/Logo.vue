@@ -1,63 +1,38 @@
 <script lang="ts" setup>
-import { useSysConfigFetch } from '@/composables/v1'
-import { NSpace, NText } from 'naive-ui'
+import { useSiteStore } from '@/stores'
 
-const { getValueByCode } = useSysConfigFetch()
-
-const appName = ref('')
-const appLogo = ref('/logo.svg')
-const appAdminShowAppName = ref(false)
-
-function resolveLogo(url?: string | null) {
-  if (!url?.trim())
-    return '/logo.svg'
-  // 旧 MinIO 人物 logo → 使用本地简约标
-  if (url.includes('120.26.180.149:9000/astro-code-oj/'))
-    return '/logo.svg'
-  return url
-}
-
-async function loadData() {
-  const [appConfig, logoConfig, adminShowConfig] = await Promise.all([
-    getValueByCode({ code: 'APP_NAME' }),
-    getValueByCode({ code: 'APP_LOGO' }),
-    getValueByCode({ code: 'APP_ADMIN_SHOW_APP_NAME' }),
-  ])
-
-  // 处理配置项
-  appName.value = appConfig.data ?? appName.value
-  appLogo.value = resolveLogo(logoConfig.data)
-  appAdminShowAppName.value = adminShowConfig.data === 'true'
-}
-loadData()
+const siteStore = useSiteStore()
 </script>
 
 <template>
-  <NSpace
-    align="center"
-    :wrap="false"
-    justify="center"
-    class="h-16"
+  <div
+    class="admin-logo"
     @click="$router.push('/')"
   >
-    <!-- <n-avatar
-      v-if="appLogo && !appAdminShowAppName"
-      size="large"
-      :src="appLogo"
-    /> -->
-    <img
-      v-if="appLogo && !appAdminShowAppName"
-      :src="appLogo"
-      class="w-12 flex items-center justify-center object-cover"
-    >
-    <NText
-      v-if="appAdminShowAppName"
-    >
-      {{ appName }}
-    </NText>
-  </NSpace>
+    <span class="admin-logo__title">
+      {{ siteStore.collapsed ? 'AC' : 'ACOJ' }}
+    </span>
+  </div>
 </template>
 
-<style>
+<style scoped>
+.admin-logo {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  background: #001529;
+  cursor: pointer;
+  flex-shrink: 0;
+}
 
+.admin-logo__title {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  user-select: none;
+}
 </style>

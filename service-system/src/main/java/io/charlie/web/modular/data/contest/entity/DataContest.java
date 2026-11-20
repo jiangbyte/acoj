@@ -44,7 +44,7 @@ public class DataContest extends CommonEntity {
     @Schema(description = "竞赛描述")
     private String description;
 
-    @Schema(description = "竞赛类型: ACM/OI/OIO")
+    @Schema(description = "竞赛类型: OI（统一 OI 赛制，前端不再选择）")
     @Trans(type = TransType.DICTIONARY, key = "CONTEST_TYPE")
     private String contestType;
 

@@ -8,6 +8,16 @@ async function loadData() {
   response.value = await getProfile() || { data: { nickname: 'No Data', avatar: '#' } }
 }
 loadData()
+
+function onProfileUpdated() {
+  loadData()
+}
+onMounted(() => {
+  window.addEventListener('acoj:profile-updated', onProfileUpdated)
+})
+onUnmounted(() => {
+  window.removeEventListener('acoj:profile-updated', onProfileUpdated)
+})
 </script>
 
 <template>

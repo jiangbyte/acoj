@@ -8,6 +8,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AuthShell: typeof import('./../components/auth/AuthShell.vue')['default']
     Breadcrumb: typeof import('./../components/site/Breadcrumb.vue')['default']
     CodeEditor: typeof import('./../components/common/editor/code/CodeEditor.vue')['default']
     Collapse: typeof import('./../components/site/Collapse.vue')['default']
@@ -36,6 +37,7 @@ declare module 'vue' {
     IconParkOutlineSortOne: typeof import('~icons/icon-park-outline/sort-one')['default']
     IconParkOutlineUpload: typeof import('~icons/icon-park-outline/upload')['default']
     IconParkOutlineUser: typeof import('~icons/icon-park-outline/user')['default']
+    ImageCropModal: typeof import('./../components/common/file/ImageCropModal.vue')['default']
     Logo: typeof import('./../components/site/Logo.vue')['default']
     MarkdownEditor: typeof import('./../components/common/editor/md/MarkdownEditor.vue')['default']
     MarkdownViewer: typeof import('./../components/common/editor/md/MarkdownViewer.vue')['default']

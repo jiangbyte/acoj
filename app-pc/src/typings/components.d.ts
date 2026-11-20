@@ -9,6 +9,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AiHelp: typeof import('./../components/modular/problem/problem/AiHelp.vue')['default']
+    AuthShell: typeof import('./../components/auth/AuthShell.vue')['default']
     BannerSkeleton01: typeof import('./../components/common/skeleton/BannerSkeleton01.vue')['default']
     Bck: typeof import('./../components/common/chat/bck.vue')['default']
     CodeEditor: typeof import('./../components/common/editor/code/CodeEditor.vue')['default']
@@ -29,6 +30,7 @@ declare module 'vue' {
     IconParkOutlineSort: typeof import('~icons/icon-park-outline/sort')['default']
     IconParkOutlineSortOne: typeof import('~icons/icon-park-outline/sort-one')['default']
     IconParkOutlineUser: typeof import('~icons/icon-park-outline/user')['default']
+    ImageCropModal: typeof import('./../components/common/file/ImageCropModal.vue')['default']
     JudgeResult: typeof import('./../components/common/judge/JudgeResult.vue')['default']
     JudgeResultHeader: typeof import('./../components/common/judge/JudgeResultHeader.vue')['default']
     JudgeResultStats: typeof import('./../components/common/judge/JudgeResultStats.vue')['default']
