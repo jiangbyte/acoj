@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 检测结果任务库 API请求
+  * Implementation details.
  */
 export function useTaskSimilarityFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useTaskSimilarityFetch() {
   const table = 'task/similarity'
 
   /*
-     * 检测结果任务库 默认数据
+      * Implementation details.
      */
   const taskSimilarityDefaultData = {
     id: '',
@@ -41,12 +41,12 @@ export function useTaskSimilarityFetch() {
   }
   return {
     /*
-    * 检测结果任务库 默认数据
+     * Implementation details.
     */
     taskSimilarityDefaultData,
 
     /*
-     * 检测结果任务库 分页接口
+      * Implementation details.
      */
     taskSimilarityPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -57,28 +57,28 @@ export function useTaskSimilarityFetch() {
     },
 
     /*
-     * 检测结果任务库 新增接口
+      * Implementation details.
      */
     taskSimilarityAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 检测结果任务库 修改接口
+      * Implementation details.
      */
     taskSimilarityEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 检测结果任务库 删除接口
+      * Implementation details.
      */
     taskSimilarityDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 检测结果任务库 详情接口
+      * Implementation details.
      */
     taskSimilarityDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

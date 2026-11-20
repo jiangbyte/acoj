@@ -22,14 +22,14 @@ async function loadData() {
 }
 loadData()
 
-// 用户排行榜数据
+// Implementation note.
 const userRankingColumns = [
   {
-    title: '排名',
+    title: 'Rank',
     key: 'ranking',
   },
   {
-    title: '题集',
+    title: 'Problem Set',
     key: 'set',
     render: (row: any) => {
       return h(
@@ -45,23 +45,23 @@ const userRankingColumns = [
     },
   },
   {
-    title: '参与用户数',
+    title: 'Participants',
     key: 'participantCount',
   },
   {
-    title: '通过率',
+    title: 'Acceptance Rate',
     key: 'acceptanceRate',
   },
   {
-    title: '提交数',
+    title: 'Submissions',
     key: 'submissionCount',
   },
   {
-    title: '运行数',
+    title: 'Runs',
     key: 'executionCount',
   },
   {
-    title: '总提交数',
+    title: 'Total Submissions',
     key: 'totalSubmissionCount',
   },
 ]
@@ -71,7 +71,7 @@ const userRankingColumns = [
   <n-flex vertical>
     <n-flex justify="end">
       <n-button size="small" @click="loadData">
-        刷新
+        Refresh
       </n-button>
     </n-flex>
     <n-data-table
@@ -88,7 +88,7 @@ const userRankingColumns = [
       show-size-picker
       :page-count="totalRankingPageData ? Number(totalRankingPageData.pages) : 0"
       :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-        label: `${(i + 1) * 10} 每页`,
+        label: `${(i + 1) * 10} per page`,
         value: (i + 1) * 10,
       }))"
       class="flex justify-center items-center"

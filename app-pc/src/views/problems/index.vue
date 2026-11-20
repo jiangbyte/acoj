@@ -7,7 +7,7 @@ import { AesCrypto } from '@/utils'
 
 const columns: DataTableColumns<any> = [
   {
-    title: '状态',
+    title: 'Status',
     align: 'center',
     key: 'currentUserSolved',
     width: 60,
@@ -25,7 +25,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '题目',
+    title: 'Problem',
     key: 'title',
     width: 150,
     ellipsis: {
@@ -33,7 +33,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '分类',
+    title: 'Category',
     key: 'categoryName',
     width: 90,
     render: (row) => {
@@ -41,7 +41,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '标签',
+    title: 'Tags',
     key: 'tagNames',
     width: 210,
     render: (row) => {
@@ -59,7 +59,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '难度',
+    title: 'Difficulty',
     key: 'difficultyName',
     align: 'center',
     width: 60,
@@ -75,16 +75,16 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '智能辅助',
+    title: 'AI Assistance',
     key: 'useAiName',
     align: 'center',
     width: 80,
     render: (row) => {
-      return row.useAi ? '支持' : '-'
+      return row.useAi ? 'Supported' : '-'
     },
   },
   {
-    title: '解决',
+    title: 'Solved',
     key: 'solved',
     width: 100,
     align: 'center',
@@ -93,7 +93,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '通过率',
+    title: 'Acceptance Rate',
     key: 'acceptance',
     fixed: 'right',
     align: 'center',
@@ -130,7 +130,7 @@ async function loadData() {
   const { sysCategoryOptions } = useSysCategoryFetch()
   const { sysDictOptions } = useSysDictFetch()
   const { sysTagOptions } = useSysTagFetch()
-  // 获取Top10排行榜
+  // Implementation note.
   useDataProblemFetch().dataProblemHot().then(({ data }) => {
     problemRankingListData.value = data
     console.log('r', data)
@@ -163,10 +163,10 @@ async function loadData() {
     }
   })
 
-  // 获取下拉列表数据
+  // Implementation note.
   sysDictOptions({ dictType: 'PROBLEM_DIFFICULTY' }).then(({ data }) => {
     if (data) {
-      // 将其中的value 转换为 number，其余保留
+      // Implementation note.
       difficultyOptions.value = data.map((item: any) => {
         return {
           value: Number(item.value),
@@ -215,26 +215,26 @@ function resetHandle() {
       :y-gap="24"
       responsive="screen"
     >
-      <!-- 左侧主内容 -->
+      <!-- Section -->
       <n-gi span="1 l:4">
-        <!-- 公告内容 -->
+        <!-- Section -->
         <NSpace vertical :size="24">
           <n-card size="small" class="rounded-xl">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                筛选题目
+                Filter Problems
               </n-h2>
             </template>
             <template #header-extra>
               <n-flex align="center">
                 <n-text class="text-sm">
-                  收录题目 <span class="text-blue-600 dark:text-blue-400 font-medium">
+                  Available Problems <span class="text-blue-600 dark:text-blue-400 font-medium">
                     {{ problemcount?.total ? problemcount.total : 0 }}
                   </span>
                 </n-text>
                 <!-- <n-text class="text-green-600 dark:text-green-400 text-xs flex items-center">
                   <icon-park-outline-arrow-up class="mr-1" />
-                  较上月增长 {{ problemcount?.growthRate * 100 }} %
+                  Up from last month: {{ problemcount?.growthRate * 100 }} %
                 </n-text> -->
               </n-flex>
             </template>
@@ -247,7 +247,7 @@ function resetHandle() {
               <n-gi span="1 l:1">
                 <n-input
                   v-model:value="pageParam.keyword"
-                  placeholder="搜索题目"
+                  placeholder="Search problems"
                   clearable
                   @keyup.enter="loadData"
                   @clear="() => { pageParam.keyword = ''; loadData() }"
@@ -256,7 +256,7 @@ function resetHandle() {
               <n-gi span="1 l:1">
                 <n-select
                   v-model:value="pageParam.categoryId"
-                  placeholder="选择分类"
+                  placeholder="Select a category"
                   clearable
                   :options="categoryOptions"
                   @clear="() => { pageParam.categoryId = null; loadData() }"
@@ -265,7 +265,7 @@ function resetHandle() {
               <n-gi span="1 l:1">
                 <n-select
                   v-model:value="pageParam.tagId"
-                  placeholder="选择标签"
+                  placeholder="Select tags"
                   clearable
                   :options="tagOptions"
                   @clear="() => { pageParam.tagId = null; loadData() }"
@@ -274,7 +274,7 @@ function resetHandle() {
               <n-gi span="1 l:1">
                 <n-select
                   v-model:value="pageParam.difficulty"
-                  placeholder="选择难度"
+                  placeholder="Select a difficulty"
                   clearable
                   :options="difficultyOptions"
                   @clear="() => { pageParam.difficulty = null; loadData() }"
@@ -284,10 +284,10 @@ function resetHandle() {
             <template #footer>
               <n-input-group class="flex justify-end">
                 <n-button type="warning" @click="resetHandle">
-                  重置筛选
+                  Reset
                 </n-button>
                 <n-button type="primary" @click="loadData">
-                  应用筛选
+                  Apply Filters
                 </n-button>
               </n-input-group>
             </template>
@@ -296,14 +296,14 @@ function resetHandle() {
           <n-card class="rounded-xl" size="small" content-style="padding: 0">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                题目列表
+                Problem List
               </n-h2>
             </template>
             <template #header-extra>
               <n-text>
-                当前共 <span class="text-blue-600 dark:text-blue-400 font-medium">
+                Total: <span class="text-blue-600 dark:text-blue-400 font-medium">
                   {{ pageData?.total ? pageData.total : 0 }}
-                </span> 条数据
+                </span> items
               </n-text>
             </template>
             <n-data-table
@@ -323,7 +323,7 @@ function resetHandle() {
                 show-size-picker
                 :page-count="pageData ? Number(pageData.pages) : 0"
                 :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                  label: `${(i + 1) * 10} 每页`,
+                  label: `${(i + 1) * 10} per page`,
                   value: (i + 1) * 10,
                 }))"
                 :page-slot="3"
@@ -339,7 +339,7 @@ function resetHandle() {
         </NSpace>
       </n-gi>
 
-      <!-- 右侧边栏 -->
+      <!-- Section -->
       <n-gi span="1 l:2">
         <NSpace
           vertical
@@ -348,12 +348,12 @@ function resetHandle() {
           <n-card class="rounded-xl" size="small">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                我的解题
+                My Progress
               </n-h2>
             </template>
             <n-flex align="end" justify="center" :size="4">
               <n-text depth="3">
-                解决
+                Solved
               </n-text>
               <h3 class="text-4xl  text-green-6">
                 {{ problemcount?.solved ? problemcount.solved : 0 }}
@@ -365,13 +365,13 @@ function resetHandle() {
                 {{ problemcount?.total ? problemcount.total : 0 }}
               </h3>
               <n-text depth="3">
-                未解决
+                Unsolved
               </n-text>
             </n-flex>
             <!-- <icon-park-outline-check /> -->
             <template #footer>
               <n-text depth="3">
-                <icon-park-outline-user class="mr-1" /> 登录后可跟踪进度
+                <icon-park-outline-user class="mr-1" /> Sign in to track your progress
               </n-text>
             </template>
           </n-card>
@@ -379,14 +379,14 @@ function resetHandle() {
           <n-card class="rounded-xl" size="small" content-style="padding: 0">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                难度分布
+                Difficulty Distribution
               </n-h2><LineSkeleton01 v-if="!difficultyDistribution" />
               <EmptyData v-else-if="difficultyDistribution.length === 0" />
               <div v-else class="space-y-4">
                 <div v-for="item in difficultyDistribution" :key="item.difficulty">
                   <div class="flex justify-between mb-1">
                     <span class="text-sm">{{ item.difficultyName }}</span>
-                    <span class="text-sm font-medium">{{ item.count }} 题 ({{ item.percentage }}%)</span>
+                    <span class="text-sm font-medium">{{ item.count }} problems ({{ item.percentage }}%)</span>
                   </div>
                   <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                     <div class="bg-green-600 h-2.5 rounded-full" :style="{ width: `${item.percentage}%` }" />
@@ -399,7 +399,7 @@ function resetHandle() {
           <n-card size="small" class="rounded-xl" content-style="padding: 0">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                热门题目
+                Popular Problems
               </n-h2>
             </template>
             <ListSkeleton02 v-if="!problemRankingListData" />
@@ -407,20 +407,20 @@ function resetHandle() {
             <HotProblem v-else :list-data="problemRankingListData" />
           </n-card>
 
-          <!-- 数据统计卡片 -->
+          <!-- Section -->
           <!-- <div class="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 transform transition-all hover:shadow-md hover:-translate-y-1">
               <div class="flex items-start justify-between">
                 <div>
                   <p class="text-gray-500 dark:text-gray-400 text-sm">
-                    总题目数
+                    Total Problems
                   </p>
                   <h3 class="text-2xl font-bold mt-1">
                     {{ problemcount?.total ? problemcount.total : 0 }}
                   </h3>
                   <p class="text-green-600 dark:text-green-400 text-xs mt-2 flex items-center">
                     <icon-park-outline-arrow-up class="mr-1" />
-                    较上月增长 {{ problemcount?.growthRate * 100 }} %
+                    Up from last month: {{ problemcount?.growthRate * 100 }} %
                   </p>
                 </div>
                 <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
@@ -432,14 +432,14 @@ function resetHandle() {
               <div class="flex items-start justify-between">
                 <div>
                   <p class="text-gray-500 dark:text-gray-400 text-sm">
-                    已解决题目
+                    Solved Problems
                   </p>
                   <h3 class="text-2xl font-bold mt-1">
                     {{ problemcount?.solved ? problemcount.solved : 0 }} / {{ problemcount?.total ? problemcount.total : 0 }}
                   </h3>
                   <p class="text-gray-500 dark:text-gray-400 text-xs mt-2 flex items-center">
                     <icon-park-outline-user class="mr-1" />
-                    登录后可跟踪进度
+                    Sign in to track your progress
                   </p>
                 </div>
                 <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
@@ -451,13 +451,13 @@ function resetHandle() {
               <div class="flex items-start justify-between">
                 <div>
                   <p class="text-gray-500 dark:text-gray-400 text-sm">
-                    总体通过率
+                    Overall Acceptance
                   </p>
                   <h3 class="text-2xl font-bold mt-1">
                     {{ problemcount?.avgPassRate ? problemcount?.avgPassRate : 0 }} %
                   </h3>
                   <p class="text-gray-500 dark:text-gray-400 text-xs mt-2">
-                    所有已提交的题目总体提交通过率
+                    Overall acceptance rate across all submissions
                   </p>
                 </div>
                 <div class="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400">
@@ -469,14 +469,14 @@ function resetHandle() {
               <div class="flex items-start justify-between">
                 <div>
                   <p class="text-gray-500 dark:text-gray-400 text-sm">
-                    本月新增
+                    Added This Month
                   </p>
                   <h3 class="text-2xl font-bold mt-1">
                     {{ problemcount?.monthAdd ? problemcount?.monthAdd : 0 }}
                   </h3>
                   <p class="text-blue-600 dark:text-blue-400 text-xs mt-2 flex items-center">
                     <icon-park-outline-calendar class="mr-1" />
-                    最新更新于  <n-time :time="Number(problemcount?.lastAddTime ? Number(problemcount?.lastAddTime) : 0)" type="relative" />
+                    Last updated <n-time :time="Number(problemcount?.lastAddTime ? Number(problemcount?.lastAddTime) : 0)" type="relative" />
                   </p>
                 </div>
                 <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">

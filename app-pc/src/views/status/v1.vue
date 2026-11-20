@@ -23,7 +23,7 @@ loadData()
 
 <template>
   <main class="container mx-auto px-4 py-8">
-    <!-- 提交状态概览 -->
+    <!-- Section -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -36,8 +36,8 @@ loadData()
             </h1>
           </n-flex>
           <div class="flex flex-wrap items-center gap-3 text-sm">
-            <span>提交时间  <n-time :time="detailData?.createTime" /></span>
-            <span>语言
+            <span>Submitted  <n-time :time="detailData?.createTime" /></span>
+            <span>Language
               <NTag
                 class="ml-1"
                 size="small"
@@ -45,14 +45,14 @@ loadData()
                 {{ detailData?.languageName }}
               </NTag>
             </span>
-            <span>最大耗时
+            <span>Max Time
               <NTag
                 class="ml-1"
                 size="small"
               >
                 {{ detailData?.maxTime }}
               </NTag> ms</span>
-            <span>最大内存
+            <span>Max Memory
               <NTag
                 class="ml-1"
                 size="small"
@@ -70,23 +70,23 @@ loadData()
         </div>
       </div>
 
-      <!-- 判题结果详情 -->
+      <!-- Section -->
       <JudgeResultStats :result-task-data="detailData" class="w-full" />
     </div>
 
-    <!-- 错误信息 -->
+    <!-- Error Details -->
     <n-card v-if="detailData?.message" size="small" hoverable>
       <n-code :language="detailData?.language" :code="detailData?.message" show-line-numbers word-wrap />
     </n-card>
 
-    <!-- 代码和测试用例结果 -->
+    <!-- Section -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-      <!-- 提交的代码 -->
+      <!-- Submitted Code -->
       <div class="lg:col-span-2">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
             <h2 class="text-lg font-bold">
-              提交的代码
+              Submitted Code
             </h2>
             <div class="flex items-center space-x-2">
               <span class="text-sm text-gray-500 dark:text-gray-400">{{ detailData?.languageName }}</span>
@@ -104,16 +104,16 @@ loadData()
         </div>
       </div>
 
-      <!-- 代码克隆检测结果 -->
+      <!-- Section -->
       <div v-if="detailData?.submitType" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
         <h2 class="text-xl font-bold mb-4 flex items-center">
-          <i class="fa fa-clone text-purple-500 mr-2" /> 代码克隆检测
+          <i class="fa fa-clone text-purple-500 mr-2" /> Code Clone Detection
         </h2>
 
         <n-space vertical class="w-full" :size="16">
           <n-space align="center" justify="space-between">
             <n-text>
-              代码相似度
+              Code Similarity
             </n-text>
             <n-space align="center">
               <n-tag v-if="detailData?.similarityCategoryName" type="info">
@@ -130,27 +130,27 @@ loadData()
             :percentage="(detailData?.similarity || 0) * 100"
           />
           <n-alert type="info" show-icon>
-            代码克隆检测用于辅助判断代码相似度，结果仅供参考
+            Clone detection estimates code similarity and is for reference only
           </n-alert>
         </n-space>
       </div>
 
-      <!-- 测试用例结果 -->
+      <!-- Test Case Results -->
       <div>
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h2 class="text-lg font-bold">
-              测试用例结果
+              Test Case Results
             </h2>
           </div>
           <div class="divide-y divide-gray-200 dark:divide-gray-700 max-h-[500px] overflow-y-auto">
-            <!-- 测试用例1 -->
+            <!-- Test Case1 -->
             <div
               v-for="(testCase, index) in detailData?.testCase" :key="index"
               class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
             >
               <div class="flex justify-between items-center mb-2">
-                <span class="font-medium">测试用例 <NTag
+                <span class="font-medium">Test Case <NTag
                   class="ml-1"
                   size="small"
                 >
@@ -162,16 +162,16 @@ loadData()
                 </NTag>
               </div>
               <!--              <div class="text-xs text-gray-500 dark:text-gray-400 mb-1"> -->
-              <!--                输入: {{ testCase.input }} -->
+              <!--                Input: {{ testCase.input }} -->
               <!--              </div> -->
               <!--              <div class="text-xs text-gray-500 dark:text-gray-400 mb-1"> -->
-              <!--                输出:   {{ testCase.output }} -->
+              <!--                Output:   {{ testCase.output }} -->
               <!--              </div> -->
               <!--              <div class="text-xs text-gray-500 dark:text-gray-400"> -->
-              <!--                预期: {{ testCase.except }} -->
+              <!--                Expected: {{ testCase.except }} -->
               <!--              </div> -->
               <div class="flex justify-end mt-2 text-xs text-gray-500 dark:text-gray-400">
-                <span>耗时
+                <span>Time
                   <NTag
                     class="ml-1"
                     size="small"
@@ -179,7 +179,7 @@ loadData()
                     {{ testCase.maxTime ? testCase.maxTime : 0 }}
                   </NTag> ms</span>
                 <span class="mx-1" />
-                <span>内存
+                <span>Memory
                   <NTag
                     class="ml-1"
                     size="small"

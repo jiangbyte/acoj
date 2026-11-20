@@ -22,14 +22,14 @@ async function loadData() {
 }
 loadData()
 
-// 用户排行榜数据
+// Implementation note.
 const userRankingColumns = [
   {
-    title: '排名',
+    title: 'Rank',
     key: 'ranking',
   },
   {
-    title: '用户',
+    title: 'User',
     key: 'user',
     render: (row: any) => {
       return h(
@@ -45,27 +45,27 @@ const userRankingColumns = [
     },
   },
   {
-    title: '解决题目数',
+    title: 'Problems Solved',
     key: 'solvedCount',
   },
   {
-    title: '提交题目数',
+    title: 'Problems Submitted',
     key: 'attemptedCount',
   },
   {
-    title: '通过率',
+    title: 'Acceptance Rate',
     key: 'acceptanceRate',
   },
   {
-    title: '提交数',
+    title: 'Submissions',
     key: 'submissionCount',
   },
   {
-    title: '运行数',
+    title: 'Runs',
     key: 'executionCount',
   },
   {
-    title: '总提交数',
+    title: 'Total Submissions',
     key: 'totalSubmissionCount',
   },
 ]
@@ -87,7 +87,7 @@ const userRankingColumns = [
       show-size-picker
       :page-count="totalRankingPageData ? Number(totalRankingPageData.pages) : 0"
       :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-        label: `${(i + 1) * 10} 每页`,
+        label: `${(i + 1) * 10} per page`,
         value: (i + 1) * 10,
       }))"
       class="flex justify-center items-center"

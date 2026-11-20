@@ -33,10 +33,10 @@ async function loadData() {
 }
 loadData()
 
-// 用户排行榜数据
+// Implementation note.
 const userRankingColumns = [
   {
-    title: '排名',
+    title: 'Rank',
     key: 'rank',
     width: 80,
     render: (row: any) => {
@@ -47,7 +47,7 @@ const userRankingColumns = [
     //   const rank = row.rank
     //   const isTopThree = rank <= 3
 
-    //   // 配置对象
+    // Implementation note.
     //   const config = {
     //     tagProps: {
     //       round: true,
@@ -68,7 +68,7 @@ const userRankingColumns = [
     // },
   },
   {
-    title: '用户',
+    title: 'User',
     key: 'user',
     width: 150,
     render: (row: any) => {
@@ -93,7 +93,7 @@ const userRankingColumns = [
     },
   },
   {
-    title: '解决题目数',
+    title: 'Problems Solved',
     key: 'solvedCount',
     width: 100,
     align: 'center',
@@ -102,7 +102,7 @@ const userRankingColumns = [
     },
   },
   {
-    title: '提交题目数',
+    title: 'Problems Submitted',
     key: 'submittedCount',
     width: 100,
     align: 'center',
@@ -111,12 +111,12 @@ const userRankingColumns = [
     },
   },
   // {
-  //   title: '提交题目数',
+  //   title: 'Problems Submitted',
   //   key: 'submitCount',
   //   width: 100,
   // },
   {
-    title: '总提交数',
+    title: 'Total Submissions',
     key: 'totalSubmitCount',
     align: 'center',
     width: 100,
@@ -125,7 +125,7 @@ const userRankingColumns = [
     },
   },
   {
-    title: '通过率',
+    title: 'Acceptance Rate',
     key: 'acceptanceRate',
     width: 100,
     render: (row: any) => {
@@ -133,12 +133,12 @@ const userRankingColumns = [
     },
   },
   // {
-  //   title: '运行数',
+  //   title: 'Runs',
   //   key: 'executionCount',
   //   width: 100,
   // },
   // {
-  //   title: '总提交数',
+  //   title: 'Total Submissions',
   //   key: 'totalSubmissionCount',
   //   width: 100,
   // },
@@ -166,21 +166,21 @@ function rowProps(row: any) {
       :y-gap="24"
       responsive="screen"
     >
-      <!-- 左侧主内容 -->
+      <!-- Section -->
       <n-gi span="1 l:4">
-        <!-- 公告内容 -->
+        <!-- Section -->
         <NSpace vertical :size="24">
           <n-card class="rounded-xl" size="small" content-style="padding: 0">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                用户排行榜
+                User Rankings
               </n-h2>
             </template>
             <template #header-extra>
               <NText>
-                当前共 <span class="text-blue-600 dark:text-blue-400 font-medium">
+                Total: <span class="text-blue-600 dark:text-blue-400 font-medium">
                   {{ totalRankingPageData?.total ? totalRankingPageData.total : 0 }}
-                </span> 条数据
+                </span> items
               </NText>
             </template>
             <n-data-table
@@ -199,7 +199,7 @@ function rowProps(row: any) {
                 show-size-picker
                 :page-count="totalRankingPageData ? Number(totalRankingPageData.pages) : 0"
                 :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                  label: `${(i + 1) * 10} 每页`,
+                  label: `${(i + 1) * 10} per page`,
                   value: (i + 1) * 10,
                 }))"
                 :page-slot="3"
@@ -214,7 +214,7 @@ function rowProps(row: any) {
           </n-card>
         </NSpace>
       </n-gi>
-      <!-- 右侧边栏 -->
+      <!-- Section -->
       <n-gi span="1 l:2">
         <NSpace
           vertical
@@ -223,7 +223,7 @@ function rowProps(row: any) {
           <n-card class="rounded-xl" size="small" content-style="padding: 0">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                活跃用户
+                Active Users
               </n-h2>
             </template>
             <ListSkeleton03 v-if="!activeUsersTop" />
@@ -234,34 +234,34 @@ function rowProps(row: any) {
           <n-card class="rounded-xl" size="small" content-style="padding: 0">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                排名规则说明
+                Ranking Rules
               </n-h2>
             </template>
             <div class="p-x-5 pb-5 flex flex-col space-y-4">
               <div>
                 <h4 class="font-medium mb-2">
-                  🏆 用户排行榜
+                  🏆 User Rankings
                 </h4>
                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
-                  <li>按用户成功解决的题目数量从高到低排序</li>
-                  <li>解决题目数相同的用户，按提交效率排序</li>
-                  <li>通过率 = 用户通过题目数 / 用户总提交题目数</li>
-                  <li>用户排行榜数据每十分钟刷新一次</li>
+                  <li>Ranked by the number of problems solved</li>
+                  <li>Ties are ranked by submission efficiency</li>
+                  <li>Acceptance rate = solved problems / submitted problems</li>
+                  <li>Rankings refresh every 10 minutes</li>
                 </ul>
               </div>
 
               <div>
                 <h4 class="font-medium mb-2">
-                  🎯 活跃用户
+                  🎯 Active Users
                 </h4>
                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
-                  <li>活跃度计算分数：</li>
-                  <li>登录：+5分</li>
-                  <li>有效提交代码：+2分</li>
-                  <li>解题成功：+10分</li>
-                  <li>每日上限：50分（防止刷分）</li>
-                  <li>活跃度指数实时更新，反映用户活跃度</li>
-                  <li>每月月初重置数据</li>
+                  <li>Activity score:</li>
+                  <li>Sign in: +5</li>
+                  <li>Valid submission: +2</li>
+                  <li>Problem solved: +10</li>
+                  <li>Daily cap: 50 points</li>
+                  <li>The activity score updates in real time</li>
+                  <li>Scores reset at the start of each month</li>
                 </ul>
               </div>
             </div>
@@ -273,7 +273,7 @@ function rowProps(row: any) {
 </template>
 
 <style scoped>
-/* 基础样式补充 */
+/* Component styles. */
 html {
   scroll-behavior: smooth;
 }
@@ -282,19 +282,19 @@ a {
   text-decoration: none;
 }
 
-/* 解决select下拉箭头在部分浏览器不显示的问题 */
+/* Component styles. */
 select {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
 }
 
-/* 表格行悬停效果 */
+/* Component styles. */
 tbody tr {
   transition: background-color 0.2s ease;
 }
 
-/* 隐藏滚动条但保留功能 */
+/* Component styles. */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }

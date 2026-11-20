@@ -40,7 +40,7 @@ const proSetSolvedUserDataParam = ref({
 
 const columns: DataTableColumns<any> = [
   {
-    title: '状态',
+    title: 'Status',
     align: 'center',
     key: 'currentUserSolved',
     width: 20,
@@ -58,7 +58,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '编号',
+    title: 'ID',
     key: 'problemCode',
     width: 20,
     ellipsis: {
@@ -66,7 +66,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '题目',
+    title: 'Problem',
     key: 'problemIdName',
     width: 150,
     ellipsis: {
@@ -74,7 +74,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '操作',
+    title: 'Actions',
     key: 'action',
     fixed: 'right',
     width: 20,
@@ -82,7 +82,7 @@ const columns: DataTableColumns<any> = [
       return h(NButton, {
         size: 'small',
         type: 'primary',
-        // 报名并且运行中才可点击开始
+        // Implementation note.
         disabled: !detailData.value.isRegister || detailData.value.status !== 'RUNNING',
         onClick: () => {
           router.push({
@@ -90,13 +90,13 @@ const columns: DataTableColumns<any> = [
             query: { contestId: AesCrypto.encrypt(routeContestId), problemId: AesCrypto.encrypt(row.problemId) },
           })
         },
-      }, { default: () => '开始' })
+      }, { default: () => 'Start' })
     },
   },
 ]
 const submitColumns: DataTableColumns<any> = [
   {
-    title: '题目',
+    title: 'Problem',
     key: 'problemIdName',
     ellipsis: {
       tooltip: true,
@@ -104,7 +104,7 @@ const submitColumns: DataTableColumns<any> = [
     width: 120,
   },
   {
-    title: '用户',
+    title: 'User',
     key: 'user',
     width: 150,
     render(row: any) {
@@ -137,7 +137,7 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '状态',
+    title: 'Status',
     key: 'statusName',
     width: 100,
     render: (row) => {
@@ -154,7 +154,7 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '编程语言',
+    title: 'Programming Language',
     key: 'languageName',
     width: 80,
     render: (row) => {
@@ -162,7 +162,7 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '长度(byte)',
+    title: 'Size (bytes)',
     key: 'codeLength',
     width: 80,
     render: (row) => {
@@ -170,7 +170,7 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '执行类型',
+    title: 'Run Type',
     key: 'submitTypeName',
     width: 90,
     render: (row) => {
@@ -178,7 +178,7 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '耗时(ms)',
+    title: 'Time (ms)',
     key: 'maxTime',
     width: 80,
     render: (row) => {
@@ -186,7 +186,7 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '内存(Kb)',
+    title: 'Memory (KB)',
     key: 'maxMemory',
     width: 80,
     render: (row) => {
@@ -194,7 +194,7 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '提交时间',
+    title: 'Submitted',
     key: 'createTime',
     width: 100,
     render(row: any) {
@@ -202,7 +202,7 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '更新时间',
+    title: 'Updated',
     key: 'updateTime',
     width: 100,
     render(row: any) {
@@ -212,12 +212,12 @@ const submitColumns: DataTableColumns<any> = [
 ]
 const userColumns: DataTableColumns<any> = [
   {
-    title: '用户组',
+    title: 'User Group',
     key: 'groupIdName',
     width: 150,
   },
   {
-    title: '用户',
+    title: 'User',
     key: 'user',
     width: 150,
     render(row: any) {
@@ -250,7 +250,7 @@ const userColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '签名',
+    title: 'Bio',
     key: 'quote',
     ellipsis: {
       tooltip: true,
@@ -258,21 +258,21 @@ const userColumns: DataTableColumns<any> = [
     width: 200,
   },
   {
-    title: '性别',
+    title: 'Gender',
     key: 'gender',
     width: 100,
     render: (value) => {
       if (value.gender === 1) {
-        return '男'
+        return 'Male'
       }
       else if (value.gender === 2) {
-        return '女'
+        return 'Female'
       }
-      return '未知'
+      return 'Unknown'
     },
   },
   {
-    title: '邮箱',
+    title: 'Email',
     key: 'email',
     ellipsis: {
       tooltip: true,
@@ -290,14 +290,14 @@ async function loadData() {
     console.log(data)
 
     if (data.isPublic) {
-      console.log('公开竞赛')
+      console.log('Public Contest')
     }
     else {
-      console.log('私密竞赛')
+      console.log('Private Contest')
     }
   }
 
-  // 竞赛题目获取
+  // Implementation note.
   useDataContestProblemFetch().dataContestProblemList({
     contestId: routeContestId,
   }).then(({ data }) => {
@@ -305,11 +305,11 @@ async function loadData() {
     console.log(data)
   })
 
-  // 竞赛提交历史获取
+  // Implementation note.
   useDataSubmitFetch().dataModuleSubmitPage(submitPageParam.value).then(({ data }) => {
     submitPageData.value = data
   })
-  // TODO 竞赛用户获取
+  // TODO: Review this implementation.
   isLoading.value = false
 }
 loadData()
@@ -319,12 +319,12 @@ function handleClickImage() {
   imageRef.value?.showPreview()
 }
 
-// ===================================== 倒计时相关 =====================================
+// Implementation note.
 const countdownDuration = ref(0)
 const countdownActive = ref(false)
 const countdownType = ref<'register_start' | 'register_end' | 'contest_start' | 'contest_end'>('contest_start')
 
-// 计算倒计时持续时间
+// Implementation note.
 function calculateCountdown() {
   const now = Date.now()
   const registerStartTime = Number(detailData.value.registerStartTime)
@@ -332,67 +332,67 @@ function calculateCountdown() {
   const contestStartTime = Number(detailData.value.contestStartTime)
   const contestEndTime = Number(detailData.value.contestEndTime)
 
-  // 根据竞赛状态设置不同的倒计时类型
+  // Implementation note.
   switch (detailData.value.status) {
     case 'NOT_STARTED':
-      // 报名未开始，显示报名开始倒计时
+      // Implementation note.
       countdownDuration.value = registerStartTime - now
       countdownType.value = 'register_start'
       countdownActive.value = true
       break
     case 'REGISTERING':
-      // 报名进行中，显示报名结束倒计时
+      // Implementation note.
       countdownDuration.value = registerEndTime - now
       countdownType.value = 'register_end'
       countdownActive.value = true
       break
     case 'REGISTER_END':
-      // 报名结束，竞赛未开始，显示竞赛开始倒计时
+      // Implementation note.
       countdownDuration.value = contestStartTime - now
       countdownType.value = 'contest_start'
       countdownActive.value = true
       break
     case 'RUNNING':
     case 'FROZEN':
-      // 竞赛进行中，显示竞赛结束倒计时
+      // Implementation note.
       countdownDuration.value = contestEndTime - now
       countdownType.value = 'contest_end'
       countdownActive.value = true
       break
     case 'FINISHED':
     default:
-      // 竞赛已结束，停止倒计时
+      // Implementation note.
       countdownActive.value = false
       break
   }
 }
 
-// 格式化倒计时显示文本
+// Implementation note.
 function getCountdownText() {
   if (!countdownActive.value)
     return ''
   switch (countdownType.value) {
     case 'register_start':
-      return `报名开始倒计时：`
+      return `Registration opens in:`
     case 'register_end':
-      return `报名结束倒计时：`
+      return `Registration closes in:`
     case 'contest_start':
-      return `竞赛开始倒计时：`
+      return `Contest starts in:`
     case 'contest_end':
-      return `竞赛结束倒计时：`
+      return `Contest ends in:`
     default:
       return ''
   }
 }
 
-// 竞赛详情就绪后只计算一次；到点由 NCountdown @finish 刷新页面
+// Implementation note.
 watch(() => detailData.value, () => {
   calculateCountdown()
 })
 
-// 自定义倒计时显示格式 - 时分秒
+// Implementation note.
 function renderCountdown({ hours, minutes, seconds }: { hours: number, minutes: number, seconds: number }) {
-  return `${hours.toString().padStart(2, '0')} 时 ${minutes.toString().padStart(2, '0')} 分 ${seconds.toString().padStart(2, '0')} 秒`
+  return `${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`
 }
 
 function onfinishTime() {
@@ -408,7 +408,7 @@ const passwordFormValue = ref({
 
 const rules = {
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
+    { required: true, message: 'Enter your password', trigger: 'blur' },
   ],
 }
 
@@ -420,7 +420,7 @@ function handlePasswordSubmit() {
       useDataContestAuthFetch().dataContestAuth(passwordFormValue.value).then(({ success }) => {
         if (success) {
           passwordFormLoading.value = false
-          // 刷新页面
+          // Implementation note.
           window.location.reload()
         }
         else {
@@ -455,12 +455,12 @@ function cancelSignUp() {
 </script>
 
 <template>
-  <!-- 加载状态 -->
+  <!-- Section -->
   <template v-if="isLoading">
     <main class="container mx-auto px-2 py-6">
       <n-flex class="min-h-[calc(100vh-10rem-12rem)]" align="center" justify="center" vertical>
         <n-spin size="large" />
-        <NText>正在加载竞赛数据...</NText>
+        <NText>Loading contest...</NText>
       </n-flex>
     </main>
   </template>
@@ -482,10 +482,10 @@ function cancelSignUp() {
               <n-gi span="1 l:3" class="relative">
                 <img
                   :src="detailData?.cover" class="w-full
-                <!-- 手机：只有上部圆角 -->
+                <!-- Section -->
                   rounded-t-xl rounded-tr-xl rounded-tl-xl
                   rounded-br-none rounded-bl-none
-                  <!-- 电脑：只有左侧圆角 -->
+                  <!-- Section -->
                   m:rounded-l-xl m:rounded-bl-xl m:rounded-tl-xl
                   m:rounded-r-none m:rounded-tr-none m:rounded-br-none
                   l:rounded-l-xl l:rounded-bl-xl l:rounded-tl-xl
@@ -514,10 +514,10 @@ function cancelSignUp() {
                     <template #header-extra>
                       <n-flex align="center">
                         <NButton v-if="detailData?.status === 'REGISTERING' && !detailData?.isRegister" type="primary" @click="signUp">
-                          报名
+                          Register
                         </NButton>
                         <NButton v-if="detailData?.status === 'REGISTERING' && detailData?.isRegister" type="warning" @click="cancelSignUp">
-                          取消报名
+                          Withdraw
                         </NButton>
                       </n-flex>
                     </template>
@@ -528,7 +528,7 @@ function cancelSignUp() {
                             {{ detailData?.statusName }}
                           </NTag>
                           <NTag size="small" type="error">
-                            {{ detailData?.isPublic ? '公开竞赛' : '私密竞赛' }}
+                            {{ detailData?.isPublic ? 'Public Contest' : 'Private Contest' }}
                           </NTag>
                           <NTag v-if="detailData?.category" size="small" type="success">
                             {{ detailData?.category }}
@@ -558,16 +558,16 @@ function cancelSignUp() {
             </n-grid>
           </n-card>
         </n-gi>
-        <!-- 左侧主内容 -->
+        <!-- Section -->
 
-        <!-- 左侧主内容 -->
+        <!-- Section -->
         <n-gi span="1 l:5">
-          <!-- 公告内容 -->
+          <!-- Section -->
           <NSpace vertical :size="24">
             <n-card class="rounded-xl" size="small">
               <n-tabs type="line" animated>
-                <n-tab-pane name="problems" tab="题目">
-                  <!-- 题目筛选和搜索 -->
+                <n-tab-pane name="problems" tab="Problem">
+                  <!-- Section -->
                   <div class="bg-white p-y-2">
                     <div class="divide-y divide-gray-100 dark:divide-gray-700">
                       <n-data-table
@@ -580,12 +580,12 @@ function cancelSignUp() {
                         :scroll-x="800"
                       />
                       <NText v-else>
-                        竞赛未开始，暂时无法查看题目
+                        Problems will be available when the contest starts
                       </NText>
                     </div>
                   </div>
                 </n-tab-pane>
-                <n-tab-pane name="submissions" tab="提交">
+                <n-tab-pane name="submissions" tab="Submit">
                   <div class="divide-y divide-gray-100 dark:divide-gray-700">
                     <n-data-table
                       v-if="detailData?.status === 'RUNNING'"
@@ -597,7 +597,7 @@ function cancelSignUp() {
                       :scroll-x="1200"
                     />
                     <NText v-else>
-                      竞赛未开始，暂时无法查看提交
+                      Submissions will be available when the contest starts
                     </NText>
                   </div>
                   <n-pagination
@@ -607,7 +607,7 @@ function cancelSignUp() {
                     show-size-picker
                     :page-count="submitPageData ? Number(submitPageData.pages) : 0"
                     :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                      label: `${(i + 1) * 10} 每页`,
+                      label: `${(i + 1) * 10} per page`,
                       value: (i + 1) * 10,
                     }))"
                     :page-slot="3"
@@ -622,16 +622,16 @@ function cancelSignUp() {
         </n-gi>
 
         <n-gi span="1 l:2">
-          <!-- 公告内容 -->
+          <!-- Section -->
           <NSpace vertical :size="24">
             <n-card class="rounded-xl" size="small">
               <template #header>
                 <n-h2 class="pb-0 mb-0">
-                  竞赛信息与统计
+                  Contest Details
                 </n-h2>
               </template>
               <div class="mb-4 flex flex-col gap-3">
-                <!-- 倒计时显示 -->
+                <!-- Section -->
                 <NSpace v-if="countdownActive" align="center" :size="0">
                   <NText depth="3">
                     {{ getCountdownText() }}
@@ -646,7 +646,7 @@ function cancelSignUp() {
                 </NSpace>
                 <NSpace align="center" :size="0">
                   <NText depth="3">
-                    报名开始时间：
+                    Registration Opens:
                   </NText>
                   <NText>
                     <NTime :time="Number(detailData?.registerStartTime) || 0" />
@@ -654,7 +654,7 @@ function cancelSignUp() {
                 </NSpace>
                 <NSpace align="center" :size="0">
                   <NText depth="3">
-                    报名结束时间：
+                    Registration Closes:
                   </NText>
                   <NText>
                     <NTime :time="Number(detailData?.registerEndTime) || 0" />
@@ -662,7 +662,7 @@ function cancelSignUp() {
                 </NSpace>
                 <NSpace align="center" :size="0">
                   <NText depth="3">
-                    竞赛开始时间：
+                    Contest Starts:
                   </NText>
                   <NText>
                     <NTime :time="Number(detailData?.contestStartTime) || 0" />
@@ -670,7 +670,7 @@ function cancelSignUp() {
                 </NSpace>
                 <NSpace align="center" :size="0">
                   <NText depth="3">
-                    竞赛结束时间：
+                    Contest Ends:
                   </NText>
                   <NText>
                     <NTime :time="Number(detailData?.contestEndTime) || 0" />
@@ -678,7 +678,7 @@ function cancelSignUp() {
                 </NSpace>
                 <NSpace align="center" :size="0">
                   <NText depth="3">
-                    题目数量：
+                    Problems:
                   </NText>
                   <NText>
                     {{ setProblemPageData?.length ? setProblemPageData.length : 0 }}
@@ -686,7 +686,7 @@ function cancelSignUp() {
                 </NSpace>
               </div>
               <n-alert show-icon type="warning">
-                竞赛请注意时间及时刷新页面：开始时间到达时请刷新页面，结束时间到达将锁定竞赛，无法提交。
+                Refresh the page when the contest starts. Submissions are locked when it ends.
               </n-alert>
             </n-card>
           </NSpace>
@@ -697,13 +697,13 @@ function cancelSignUp() {
   <template v-else>
     <main class="container mx-auto px-2 py-6">
       <n-flex class="min-h-[calc(100vh-10rem-12rem)]" align="center" justify="center" vertical>
-        <n-card class="w-full max-w-md" title="私密竞赛">
+        <n-card class="w-full max-w-md" title="Private Contest">
           <n-form ref="passwordFormRef" :model="passwordFormValue" :rules="rules">
-            <n-form-item path="password" label="访问密码">
+            <n-form-item path="password" label="Access Password">
               <n-input
                 v-model:value="passwordFormValue.password"
                 type="password"
-                placeholder="请输入访问密码"
+                placeholder="Enter the access password"
                 @keydown.enter="handlePasswordSubmit"
               />
             </n-form-item>
@@ -711,7 +711,7 @@ function cancelSignUp() {
           <template #footer>
             <n-flex justify="end">
               <NButton type="primary" :loading="passwordFormLoading" @click="handlePasswordSubmit">
-                进入竞赛
+                Enter Contest
               </NButton>
             </n-flex>
           </template>

@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * API请求
+  * Implementation details.
  */
 export function useUserRankingFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -10,7 +10,7 @@ export function useUserRankingFetch() {
 
   return {
     /*
-     * 用户排行榜 分页接口
+      * Implementation details.
      */
     useUserRankingPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -21,19 +21,19 @@ export function useUserRankingFetch() {
     },
 
     /*
-     * 用户排行榜 详情接口
+      * Implementation details.
      */
     useUserRankingTop() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/top`)
     },
     /*
-     * 用户排行榜 详情接口
+      * Implementation details.
      */
     useUserActiveTop() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/active/top`)
     },
     /*
-     * 用户排行榜 详情接口
+      * Implementation details.
      */
     useUserRankingDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

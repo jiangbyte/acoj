@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useSiteStore } from '@/stores'
-import { dateZhCN, zhCN } from 'naive-ui'
+import { dateEnUS, enUS } from 'naive-ui'
 
 import hljs from 'highlight.js/lib/core'
 
-// 导入语言定义
+// Implementation note.
 import javascript from 'highlight.js/lib/languages/javascript'
 import json from 'highlight.js/lib/languages/json'
 import cpp from 'highlight.js/lib/languages/cpp'
@@ -13,11 +13,11 @@ import java from 'highlight.js/lib/languages/java'
 import c from 'highlight.js/lib/languages/c'
 import python from 'highlight.js/lib/languages/python'
 
-// 注册需要的语言
+// Implementation note.
 hljs.registerLanguage('javascript', javascript)
 hljs.registerLanguage('json', json)
 hljs.registerLanguage('cpp', cpp)
-// Golang 在 highlight.js 中的别名是 'go',同时注册 'go' 和 'golang' 两种别名
+// Implementation note.
 hljs.registerLanguage('golang', go)
 hljs.registerLanguage('go', go)
 hljs.registerLanguage('java', java)
@@ -31,8 +31,8 @@ const siteStore = useSiteStore()
   <n-config-provider
     inline-theme-disabled
     :theme-overrides="siteStore.themeOverrides"
-    :locale="zhCN"
-    :date-locale="dateZhCN"
+    :locale="enUS"
+    :date-locale="dateEnUS"
     :breakpoints="{ s: 640, m: 768, l: 1024 }"
   >
     <NaiveProvider>

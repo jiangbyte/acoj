@@ -8,7 +8,7 @@ defineProps<{
 
 <template>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <!-- 题集项 -->
+    <!-- Section -->
     <div
       v-for="item in setListData" :key="item.id" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow" @click="$router.push({
         name: 'proset_detail',
@@ -23,7 +23,7 @@ defineProps<{
           <n-tag size="small" type="info" class="mr-3">
             {{ item.setTypeName }}
           </n-tag>
-          <span class="text-sm text-gray-500 dark:text-gray-400">共 {{ item.problemIds.length ? item.problemIds.length : 0 }} 道题</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400">{{ item.problemIds.length ? item.problemIds.length : 0 }} problems</span>
         </div>
         <n-button text class="mb-2">
           <h3 class="text-xl font-semibold">
@@ -36,8 +36,8 @@ defineProps<{
           {{ CleanMarkdown(item.description) }}
         </p>
         <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-          <span>分类: {{ item.categoryName }}</span>
-          <span>难度: {{ item.difficultyName }}</span>
+          <span>Category: {{ item.categoryName }}</span>
+          <span>Difficulty: {{ item.difficultyName }}</span>
         </div>
       </div>
     </div>

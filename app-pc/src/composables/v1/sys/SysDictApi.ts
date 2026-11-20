@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 系统字典 API请求
+  * Implementation details.
  */
 export function useSysDictFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useSysDictFetch() {
   const table = 'sys/dict'
 
   /*
-     * 系统字典 默认数据
+      * Implementation details.
      */
   const sysDictDefaultData = {
     id: '',
@@ -25,12 +25,12 @@ export function useSysDictFetch() {
   }
   return {
     /*
-    * 系统字典 默认数据
+     * Implementation details.
     */
     sysDictDefaultData,
 
     /*
-     * 系统字典 分页接口
+      * Implementation details.
      */
     sysDictPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -41,28 +41,28 @@ export function useSysDictFetch() {
     },
 
     /*
-     * 系统字典 新增接口
+      * Implementation details.
      */
     sysDictAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 系统字典 修改接口
+      * Implementation details.
      */
     sysDictEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 系统字典 删除接口
+      * Implementation details.
      */
     sysDictDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 系统字典 详情接口
+      * Implementation details.
      */
     sysDictDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {
@@ -72,7 +72,7 @@ export function useSysDictFetch() {
       })
     },
     /*
-     * 字典 选项接口
+      * Implementation details.
      */
     sysDictOptions(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/options`, {

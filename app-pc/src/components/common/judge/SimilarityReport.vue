@@ -11,7 +11,7 @@ defineProps<Props>()
     <n-space vertical class="w-full" :size="16">
       <n-space align="center" justify="space-between">
         <n-text>
-          代码相似度
+          Code Similarity
         </n-text>
         <n-space align="center">
           <n-tag v-if="resultTaskData?.similarityCategoryName" type="info">
@@ -28,7 +28,7 @@ defineProps<Props>()
         :percentage="(resultTaskData?.similarity || 0) * 100"
       />
       <n-alert type="info" show-icon>
-        代码克隆检测用于辅助判断代码相似度，结果仅供参考
+        Clone detection estimates code similarity and is for reference only
       </n-alert>
     </n-space>
   </n-card>

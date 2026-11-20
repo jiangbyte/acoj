@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 大模型对话 API请求
+  * Implementation details.
  */
 export function useSysConversationFetch() {
   const gateway = import.meta.env.VITE_GATEWAY
@@ -10,7 +10,7 @@ export function useSysConversationFetch() {
   const table = 'sys/conversation'
 
   /*
-     * 大模型对话 默认数据
+      * Implementation details.
      */
   const sysConversationDefaultData = {
     id: '',
@@ -42,13 +42,13 @@ export function useSysConversationFetch() {
   const sysConversationStreamUrl = `${gateway + pathPrefix}chat/stream`
   return {
     /*
-    * 大模型对话 默认数据
+     * Implementation details.
     */
     sysConversationDefaultData,
     sysConversationStreamUrl,
 
     /*
-     * 大模型对话 分页接口
+      * Implementation details.
      */
     sysConversationPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -59,28 +59,28 @@ export function useSysConversationFetch() {
     },
 
     /*
-     * 大模型对话 新增接口
+      * Implementation details.
      */
     sysConversationAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 大模型对话 修改接口
+      * Implementation details.
      */
     sysConversationEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 大模型对话 删除接口
+      * Implementation details.
      */
     sysConversationDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 大模型对话 详情接口
+      * Implementation details.
      */
     sysConversationDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

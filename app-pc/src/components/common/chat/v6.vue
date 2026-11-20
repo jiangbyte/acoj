@@ -5,7 +5,7 @@ import { useTokenStore } from '@/stores'
 import { useSysConversationFetch } from '@/composables/v1'
 import MdViewer from '@/components/common/editor/md/MarkdownViewer.vue'
 
-// 定义 props
+// Implementation note.
 const props = defineProps({
   problemId: {
     type: String,
@@ -41,24 +41,24 @@ const currentMessageType = ref('')
 
 const tokenStore = useTokenStore()
 
-// 连接并发送消息
+// Implementation note.
 function sendMessage(messageType: string = 'DailyConversation') {
   if (!chatRequestParam.value.messageContent.trim() && messageType === 'DailyConversation') {
-    window.$message?.warning('请输入消息内容')
+    window.$message?.warning('Enter a message')
     return
   }
 
-  // 生成会话ID（如果是新会话）
+  // Implementation note.
   if (!chatRequestParam.value.conversationId) {
     chatRequestParam.value.conversationId = `task-${uuidv4()}`
-    console.log('生成会话ID:', chatRequestParam.value.conversationId)
+    console.log('Generated conversation ID:', chatRequestParam.value.conversationId)
   }
 
   isLoading.value = true
   currentAssistantMessage.value = ''
   currentMessageType.value = messageType
 
-  // 根据消息类型确定要发送的内容
+  // Implementation note.
   let messageContentToSend = ''
   let userDisplayMessage = ''
 
@@ -67,18 +67,18 @@ function sendMessage(messageType: string = 'DailyConversation') {
     userDisplayMessage = chatRequestParam.value.messageContent
   }
   else {
-    // 对于功能按钮，设置对应的消息内容
+    // Implementation note.
     const buttonMessages = {
-      ProblemSolvingIdeas: '请帮我分析这道题的解题思路',
-      AnalyzeComplexity: '请帮我分析这段代码的时间复杂度和空间复杂度',
-      OptimizeCode: '请帮我优化这段代码',
-      AnalyzeBoundary: '请帮我分析这道题的边界情况',
+      ProblemSolvingIdeas: 'Help me develop an approach to this problem',
+      AnalyzeComplexity: 'Analyze the time and space complexity of this code',
+      OptimizeCode: 'Help me optimize this code',
+      AnalyzeBoundary: 'Help me identify edge cases for this problem',
     }
-    messageContentToSend = buttonMessages[messageType] || '请帮我分析这个问题'
+    messageContentToSend = buttonMessages[messageType] || 'Help me analyze this problem'
     userDisplayMessage = messageContentToSend
   }
 
-  // 添加用户消息到消息列表
+  // Implementation note.
   messages.value.push({
     conversationId: chatRequestParam.value.conversationId,
     messageContent: userDisplayMessage,
@@ -87,7 +87,7 @@ function sendMessage(messageType: string = 'DailyConversation') {
     responseTime: Date.now(),
   })
 
-  // 添加一个空的助手消息用于显示流式响应
+  // Implementation note.
   messages.value.push({
     conversationId: chatRequestParam.value.conversationId,
     messageContent: '',
@@ -96,10 +96,10 @@ function sendMessage(messageType: string = 'DailyConversation') {
     responseTime: Date.now(),
   })
 
-  // 创建中止控制器
+  // Implementation note.
   controller.value = new AbortController()
 
-  console.log('发送请求:', {
+  console.log('Sending request:', {
     conversationId: chatRequestParam.value.conversationId,
     problemId: chatRequestParam.value.problemId,
     messageContent: messageContentToSend,
@@ -118,7 +118,7 @@ function sendMessage(messageType: string = 'DailyConversation') {
     body: JSON.stringify({
       conversationId: chatRequestParam.value.conversationId,
       problemId: chatRequestParam.value.problemId,
-      messageContent: messageContentToSend, // 使用计算后的消息内容
+      messageContent: messageContentToSend, // Implementation note.
       messageType,
       userCode: chatRequestParam.value.userCode,
       language: chatRequestParam.value.language,
@@ -128,12 +128,12 @@ function sendMessage(messageType: string = 'DailyConversation') {
 
     onopen: async (response) => {
       if (response.ok) {
-        console.log('SSE连接已建立')
+        console.log('SSE connection established')
       }
       else {
-        window.$message?.error(`连接失败: ${response.status}`)
+        window.$message?.error(`Connection failed: ${response.status}`)
         isLoading.value = false
-        // 移除空的助手消息
+        // Implementation note.
         messages.value.pop()
       }
     },
@@ -141,43 +141,43 @@ function sendMessage(messageType: string = 'DailyConversation') {
       try {
         if (event.data) {
           const data = JSON.parse(event.data)
-          console.log('接收到消息:', data)
+          console.log('Message received:', data)
 
-          // 处理流式消息 - 根据后端返回的字段调整
+          // Implementation note.
           if (data.content || data.messageContent || data.data) {
             const content = data.content || data.messageContent || data.data
             currentAssistantMessage.value += content
 
-            // 更新最后一条助手消息的内容
+            // Implementation note.
             const lastMessageIndex = messages.value.length - 1
             if (lastMessageIndex >= 0 && messages.value[lastMessageIndex].messageRole === 'ASSISTANT') {
               messages.value[lastMessageIndex].messageContent = currentAssistantMessage.value
             }
           }
 
-          // 处理消息结束
+          // Implementation note.
           if (data.finishReason || data.finished) {
-            console.log('消息接收完成')
+            console.log('Message complete')
             isLoading.value = false
           }
         }
       }
       catch (error) {
-        console.error('解析消息错误:', error)
-        window.$message?.error('接收消息格式错误')
+        console.error('Failed to parse message:', error)
+        window.$message?.error('Invalid response format')
       }
     },
     onerror: (error) => {
-      console.error('SSE错误:', error)
-      window.$message?.error('连接错误，已停止接收消息')
+      console.error('SSE error:', error)
+      window.$message?.error('Connection error. Response stopped')
       isLoading.value = false
     },
     onclose: () => {
-      console.log('SSE连接关闭')
+      console.log('SSE connection closed')
       isLoading.value = false
       currentAssistantMessage.value = ''
 
-      // 如果助手消息为空，可能是连接异常，移除空消息
+      // Implementation note.
       const lastMessageIndex = messages.value.length - 1
       if (lastMessageIndex >= 0
         && messages.value[lastMessageIndex].messageRole === 'ASSISTANT'
@@ -187,18 +187,18 @@ function sendMessage(messageType: string = 'DailyConversation') {
     },
   })
 
-  // 清空输入框（仅对日常对话）
+  // Implementation note.
   if (messageType === 'DailyConversation') {
     chatRequestParam.value.messageContent = ''
   }
 }
 
-// 按钮点击处理函数
+// Implementation note.
 function handleButtonClick(messageType: string | undefined) {
   sendMessage(messageType)
 }
 
-// 停止发送
+// StopSend
 function stopSending() {
   if (controller.value) {
     controller.value.abort()
@@ -207,7 +207,7 @@ function stopSending() {
   }
 }
 
-// 清空对话
+// Clear Chat
 function clearMessages() {
   messages.value = []
   chatRequestParam.value.conversationId = ''
@@ -219,7 +219,7 @@ function handleCollapse() {
   isCollapse.value = !isCollapse.value
 }
 
-// 自动滚动到底部
+// Implementation note.
 function scrollToBottom() {
   nextTick(() => {
     const chatContainer = document.querySelector('.overflow-scroll')
@@ -229,24 +229,24 @@ function scrollToBottom() {
   })
 }
 
-// 监听消息变化，自动滚动
+// Implementation note.
 watch(messages, () => {
   scrollToBottom()
 }, { deep: true })
 
-// 组件挂载时，如果有会话ID则加载历史记录
+// Implementation note.
 onMounted(() => {
-  // 这里可以添加加载历史消息的逻辑
+  // Implementation note.
 })
 
-// 添加消息类型映射函数
+// Implementation note.
 function getMessageTypeText(type: string | number) {
   const typeMap = {
-    DailyConversation: '对话',
-    ProblemSolvingIdeas: '解题思路',
-    AnalyzeComplexity: '复杂度分析',
-    OptimizeCode: '代码优化',
-    AnalyzeBoundary: '边界分析',
+    DailyConversation: 'Chat',
+    ProblemSolvingIdeas: 'Solution Approach',
+    AnalyzeComplexity: 'Complexity Analysis',
+    OptimizeCode: 'Code Optimization',
+    AnalyzeBoundary: 'Edge Case Analysis',
   }
   return typeMap[type] || type
 }
@@ -262,7 +262,7 @@ function getMessageTypeText(type: string | number) {
         <n-empty
           v-if="messages.length === 0"
           class="flex flex-col items-center justify-center py-12"
-          description="暂无对话记录"
+          description="No conversations"
         >
           <template #icon>
             <n-icon size="40" class="text-gray-300 dark:text-gray-600">
@@ -270,7 +270,7 @@ function getMessageTypeText(type: string | number) {
             </n-icon>
           </template>
           <n-text depth="3" class="text-center max-w-xs">
-            还没有消息，点击下方按钮开始对话！
+            No messages yet. Choose an action below to start
           </n-text>
         </n-empty>
 
@@ -299,7 +299,7 @@ function getMessageTypeText(type: string | number) {
               </n-flex>
               <MdViewer v-if="message.messageContent" :model-value="message.messageContent" />
               <div v-else class="typing-indicator">
-                思考中...
+                Thinking...
               </div>
             </n-flex>
           </n-card>
@@ -307,7 +307,7 @@ function getMessageTypeText(type: string | number) {
       </div>
     </n-flex>
 
-    <!-- 输入区域 -->
+    <!-- Section -->
     <n-card size="small">
       <NFlex
         vertical
@@ -320,47 +320,47 @@ function getMessageTypeText(type: string | number) {
               size="small"
               @click="handleButtonClick('ProblemSolvingIdeas')"
             >
-              解题思路
+              Solution Approach
             </n-button>
             <n-button
               size="small"
               :disabled="!props.userCode && !props.language"
               @click="handleButtonClick('AnalyzeComplexity')"
             >
-              分析复杂度
+              Analyze Complexity
             </n-button>
             <n-button
               size="small"
               :disabled="!props.userCode && !props.language"
               @click="handleButtonClick('OptimizeCode')"
             >
-              优化代码
+              Optimize Code
             </n-button>
             <n-button
               size="small"
               @click="handleButtonClick('AnalyzeBoundary')"
             >
-              分析边界
+              Analyze Edge Cases
             </n-button>
             <n-button
               size="small"
               @click="clearMessages"
             >
-              清空对话
+              Clear Chat
             </n-button>
           </n-flex>
           <n-button
             size="small"
             @click="handleCollapse"
           >
-            {{ isCollapse ? '展开' : '收起' }}
+            {{ isCollapse ? 'Expand' : 'Collapse' }}
           </n-button>
         </n-flex>
         <NInput
           v-if="!isCollapse"
           v-model:value="chatRequestParam.messageContent"
           type="textarea"
-          placeholder="遇到问题？向 AI 描述你的疑问或需要帮助的地方。例如：如何优化这段代码的时间复杂度？"
+          placeholder="Need help? Ask AI a question, such as how to improve this code's time complexity."
           :autosize="{ minRows: 4, maxRows: 4 }"
           @keydown.enter.exact.prevent="sendMessage()"
         />
@@ -378,7 +378,7 @@ function getMessageTypeText(type: string | number) {
             <template #icon>
               <icon-park-outline-send />
             </template>
-            发送
+            Send
           </NButton>
           <NButton
             secondary
@@ -390,7 +390,7 @@ function getMessageTypeText(type: string | number) {
             <template #icon>
               <icon-park-outline-close />
             </template>
-            停止
+            Stop
           </NButton>
         </NFlex>
       </NFlex>

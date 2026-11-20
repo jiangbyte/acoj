@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 用户组 API请求
+  * Implementation details.
  */
 export function useSysGroupFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useSysGroupFetch() {
   const table = 'sys/group'
 
   /*
-     * 用户组 默认数据
+      * Implementation details.
      */
   const sysGroupDefaultData = {
     id: '',
@@ -27,12 +27,12 @@ export function useSysGroupFetch() {
   }
   return {
     /*
-    * 用户组 默认数据
+     * Implementation details.
     */
     sysGroupDefaultData,
 
     /*
-     * 用户组 分页接口
+      * Implementation details.
      */
     sysGroupPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -43,28 +43,28 @@ export function useSysGroupFetch() {
     },
 
     /*
-     * 用户组 新增接口
+      * Implementation details.
      */
     sysGroupAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 用户组 修改接口
+      * Implementation details.
      */
     sysGroupEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 用户组 删除接口
+      * Implementation details.
      */
     sysGroupDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 用户组 详情接口
+      * Implementation details.
      */
     sysGroupDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

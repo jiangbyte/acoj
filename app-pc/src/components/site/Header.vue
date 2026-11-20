@@ -4,11 +4,11 @@ import { RouterLink } from 'vue-router'
 import { useSysUserFetch } from '@/composables/v1'
 import { iconRender } from '@/utils'
 
-// 定义props
+// Implementation note.
 const props = defineProps({
   className: {
     type: String,
-    default: 'max-w-1400px', // 默认值
+    default: 'max-w-1400px', // Implementation note.
   },
 })
 
@@ -19,7 +19,7 @@ const profile = ref()
 
 const { getProfile } = useSysUserFetch()
 
-// 检测是否为移动设备
+// Implementation note.
 function checkIfMobile() {
   const userAgent = navigator.userAgent.toLowerCase()
   const mobileKeywords = ['mobile', 'android', 'iphone', 'ipad', 'ipod', 'windows phone']
@@ -36,7 +36,7 @@ const menuOptions = [
             path: '/',
           },
         },
-        { default: () => '首页' },
+        { default: () => 'Home' },
       ),
     key: 'home',
     icon: iconRender('icon-park-outline:home'),
@@ -50,7 +50,7 @@ const menuOptions = [
             path: '/problems',
           },
         },
-        { default: () => '题库' },
+        { default: () => 'Problems' },
       ),
     key: 'problems',
     icon: iconRender('icon-park-outline:book'),
@@ -64,7 +64,7 @@ const menuOptions = [
             path: '/sets',
           },
         },
-        { default: () => '题集训练' },
+        { default: () => 'Problem Sets' },
       ),
     key: 'sets',
     icon: iconRender('icon-park-outline:folder-open'),
@@ -78,7 +78,7 @@ const menuOptions = [
   //           path: '/groups',
   //         },
   //       },
-  //       { default: () => '群组' },
+  //       { default: () => 'Groups' },
   //     ),
   //   key: 'groups',
   // },
@@ -91,7 +91,7 @@ const menuOptions = [
             path: '/contests',
           },
         },
-        { default: () => '竞赛' },
+        { default: () => 'Contests' },
       ),
     key: 'contests',
     icon: iconRender('icon-park-outline:fireworks'),
@@ -105,7 +105,7 @@ const menuOptions = [
             path: '/ranking',
           },
         },
-        { default: () => '排行榜' },
+        { default: () => 'Rankings' },
       ),
     key: 'ranking',
     icon: iconRender('icon-park-outline:ranking'),
@@ -119,7 +119,7 @@ const menuOptions = [
             path: '/status',
           },
         },
-        { default: () => '状态' },
+        { default: () => 'Status' },
       ),
     key: 'status',
     icon: iconRender('icon-park-outline:hourglass'),
@@ -202,10 +202,10 @@ onUnmounted(() => {
           </Dropdown>
           <n-space v-else>
             <n-button data-testid="login-btn" @click="$router.push('/login')">
-              登录
+              Sign In
             </n-button>
             <n-button data-testid="register-btn" @click="$router.push('/register')">
-              注册
+              Sign Up
             </n-button>
           </n-space>
         </template>
@@ -232,7 +232,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- 移动端抽屉菜单 -->
+    <!-- Section -->
     <n-drawer
       v-if="isMobile"
       v-model:show="show"
@@ -269,7 +269,7 @@ onUnmounted(() => {
             block
             @click="$router.push('/login')"
           >
-            登录
+            Sign In
           </n-button>
           <n-button
             type="primary"
@@ -278,7 +278,7 @@ onUnmounted(() => {
             style="margin-top: 12px"
             @click="$router.push('/register')"
           >
-            注册
+            Sign Up
           </n-button>
         </div>
         <Dropdown v-if="useTokenStore().isLogined" :dropdown="false" class="w-full" />

@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { useTokenStore } from '@/stores'
 import { useSysConversationFetch } from '@/composables/v1'
 
-// 定义 props
+// Implementation note.
 const props = defineProps({
   problemId: {
     type: String,
@@ -20,19 +20,19 @@ const props = defineProps({
   },
 })
 
-// 监听 props 变化
+// Implementation note.
 watch(() => props.problemId, (newVal) => {
-  console.log('问题ID变化:', newVal)
-  // 问题变化时重新加载对话历史
+  console.log('Problem ID changed:', newVal)
+  // Implementation note.
   loadConversationHistory()
 })
 
 watch(() => props.userCode, (newVal) => {
-  console.log('代码变化:', newVal)
+  console.log('Code changed:', newVal)
 })
 
 watch(() => props.language, (newVal) => {
-  console.log('语言变化:', newVal)
+  console.log('Language changed:', newVal)
 })
 
 const gateway = import.meta.env.VITE_GATEWAY
@@ -49,7 +49,7 @@ const chatRequestParam = ref({
   setId: '',
 })
 
-// 调整消息结构以匹配后端实体
+// Implementation note.
 const messages = ref<Array<{
   id: string
   content: string
@@ -70,7 +70,7 @@ const controller = ref<AbortController | null>(null)
 const tokenStore = useTokenStore()
 
 const { sysConversationHistory } = useSysConversationFetch()
-// 加载对话历史
+// Implementation note.
 async function loadConversationHistory() {
   if (!chatRequestParam.value.conversationId)
     return
@@ -79,9 +79,9 @@ async function loadConversationHistory() {
   try {
     const { data } = await sysConversationHistory(chatRequestParam.value.conversationId)
     if (data) {
-      // 转换后端数据为前端消息格式
+      // Implementation note.
       messages.value = data.map((item: any) => [
-        // 用户消息
+        // Implementation note.
         {
           id: `${item.id}-user`,
           content: item.userMessage,
@@ -92,7 +92,7 @@ async function loadConversationHistory() {
           userCode: item.userCode,
           language: item.language,
         },
-        // AI回复消息
+        // Implementation note.
         {
           id: `${item.id}-bot`,
           content: item.aiResponse,
@@ -101,32 +101,32 @@ async function loadConversationHistory() {
           messageType: item.messageType,
           aiResponse: item.aiResponse,
         },
-      ]).flat().filter(msg => msg.content) // 过滤掉空内容的消息
+      ]).flat().filter(msg => msg.content) // Implementation note.
     }
   }
   catch (error) {
-    console.error('加载对话历史失败:', error)
+    console.error('Failed to load chat history:', error)
   }
   finally {
     isHistoryLoading.value = false
   }
 }
 
-// 连接并发送消息
+// Implementation note.
 function sendMessage(messageType: string = 'DailyConversation') {
-  // 生成会话ID（如果是新会话）
+  // Implementation note.
   if (!chatRequestParam.value.conversationId) {
     chatRequestParam.value.conversationId = `task-${uuidv4()}`
   }
 
-  // 更新消息类型和内容
+  // Implementation note.
   chatRequestParam.value.messageType = messageType
   chatRequestParam.value.userCode = props.userCode
   chatRequestParam.value.language = props.language
 
   isLoading.value = true
 
-  // 创建中止控制器
+  // Implementation note.
   controller.value = new AbortController()
 
   fetchEventSource(`${gateway + pathPrefix}/chat/stream`, {
@@ -148,15 +148,15 @@ function sendMessage(messageType: string = 'DailyConversation') {
 
     onopen: async (response) => {
       if (response.ok) {
-        console.log('SSE连接已建立')
+        console.log('SSE connection established')
       }
       else if (response.status === 401 || response.status === 403) {
-        console.error('认证失败')
-        throw new Error('认证失败')
+        console.error('Authentication failed')
+        throw new Error('Authentication failed')
       }
       else {
-        console.error('连接失败:', response.status)
-        throw new Error(`连接失败: ${response.status}`)
+        console.error('Connection failed:', response.status)
+        throw new Error(`Connection failed: ${response.status}`)
       }
     },
 
@@ -164,7 +164,7 @@ function sendMessage(messageType: string = 'DailyConversation') {
       try {
         if (event.data) {
           const data = JSON.parse(event.data)
-          console.log('接收到消息:', data)
+          console.log('Message received:', data)
         //   const botMessageIndex = messages.value.findIndex(msg => msg.id === botMessageId)
         //   if (botMessageIndex !== -1) {
         //     messages.value[botMessageIndex].content += data.content || data.message || ''
@@ -175,35 +175,35 @@ function sendMessage(messageType: string = 'DailyConversation') {
         }
       }
       catch (error) {
-        console.error('解析消息错误:', error)
+        console.error('Failed to parse message:', error)
       }
     },
 
     onerror: (error) => {
-      console.error('SSE错误:', error)
+      console.error('SSE error:', error)
       isLoading.value = false
       // const botMessageIndex = messages.value.findIndex(msg => msg.id === botMessageId)
       // if (botMessageIndex !== -1) {
-      //   messages.value[botMessageIndex].content = '抱歉，发生错误，请重试。'
-      //   messages.value[botMessageIndex].aiResponse = '抱歉，发生错误，请重试。'
+      //   messages.value[botMessageIndex].content = 'Sorry, something went wrong. Please try again.'
+      //   messages.value[botMessageIndex].aiResponse = 'Sorry, something went wrong. Please try again.'
       // }
     },
 
     onclose: () => {
-      console.log('SSE连接关闭')
+      console.log('SSE connection closed')
       isLoading.value = false
-      // 对话结束后重新加载历史记录以确保数据同步
+      // Implementation note.
       loadConversationHistory()
     },
   })
 }
 
-// 按钮点击处理函数
+// Implementation note.
 function handleButtonClick(messageType: any) {
   sendMessage(messageType)
 }
 
-// 停止发送
+// StopSend
 function stopSending() {
   if (controller.value) {
     controller.value.abort()
@@ -211,7 +211,7 @@ function stopSending() {
   }
 }
 
-// 清空对话
+// Clear Chat
 function clearMessages() {
   messages.value = []
   chatRequestParam.value.conversationId = ''
@@ -222,7 +222,7 @@ function handleCollapse() {
   isCollapse.value = !isCollapse.value
 }
 
-// 组件挂载时，如果有会话ID则加载历史记录
+// Implementation note.
 onMounted(() => {
   if (chatRequestParam.value.conversationId) {
     loadConversationHistory()
@@ -242,7 +242,7 @@ onMounted(() => {
         <n-empty
           v-else-if="messages.length === 0"
           class="flex flex-col items-center justify-center py-12"
-          description="暂无对话记录"
+          description="No conversations"
         >
           <template #icon>
             <n-icon size="40" class="text-gray-300 dark:text-gray-600">
@@ -250,7 +250,7 @@ onMounted(() => {
             </n-icon>
           </template>
           <n-text depth="3" class="text-center max-w-xs">
-            还没有消息，点击下方按钮开始对话！
+            No messages yet. Choose an action below to start
           </n-text>
         </n-empty>
         <div v-for="message in messages" :key="message.id">
@@ -281,13 +281,13 @@ onMounted(() => {
             </n-card>
           </div>
           <span v-if="isLoading && message.type === 'bot' && !message.content" class="typing-indicator">
-            思考中...
+            Thinking...
           </span>
         </div>
       </div>
     </n-flex> -->
 
-    <!-- 输入区域 -->
+    <!-- Section -->
     <n-card size="small">
       <NFlex
         vertical
@@ -300,46 +300,46 @@ onMounted(() => {
               size="small"
               @click="handleButtonClick('ProblemSolvingIdeas')"
             >
-              解题思路
+              Solution Approach
             </n-button>
             <n-button
               size="small"
               :disabled="!props.userCode && !props.language"
               @click="handleButtonClick('AnalyzeComplexity')"
             >
-              分析复杂度
+              Analyze Complexity
             </n-button>
             <n-button
               size="small"
               :disabled="!props.userCode && !props.language"
               @click="handleButtonClick('OptimizeCode')"
             >
-              优化代码
+              Optimize Code
             </n-button>
             <n-button
               size="small"
               @click="handleButtonClick('AnalyzeBoundary')"
             >
-              分析边界
+              Analyze Edge Cases
             </n-button>
             <n-button
               size="small"
             >
-              对话历史
+              Chat History
             </n-button>
           </n-flex>
           <n-button
             size="small"
             @click="handleCollapse"
           >
-            {{ isCollapse ? '展开' : '收起' }}
+            {{ isCollapse ? 'Expand' : 'Collapse' }}
           </n-button>
         </n-flex>
         <NInput
           v-if="!isCollapse"
           v-model:value="chatRequestParam.messageContent"
           type="textarea"
-          placeholder="遇到问题？向 AI 描述你的疑问或需要帮助的地方。例如：如何优化这段代码的时间复杂度？"
+          placeholder="Need help? Ask AI a question, such as how to improve this code's time complexity."
           :autosize="{ minRows: 4, maxRows: 4 }"
           @keydown.enter.prevent="sendMessage()"
         />
@@ -357,7 +357,7 @@ onMounted(() => {
             <template #icon>
               <icon-park-outline-send />
             </template>
-            发送
+            Send
           </NButton>
           <NButton
             secondary
@@ -369,7 +369,7 @@ onMounted(() => {
             <template #icon>
               <icon-park-outline-close />
             </template>
-            停止
+            Stop
           </NButton>
           <NButton
             secondary
@@ -380,7 +380,7 @@ onMounted(() => {
             <template #icon>
               <icon-park-outline-clear />
             </template>
-            清空
+            Clear
           </NButton>
         </NFlex>
       </NFlex>

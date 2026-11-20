@@ -4,7 +4,7 @@ import type { FormInst } from 'naive-ui'
 import { useTokenStore } from '@/stores'
 import { useAuthFetch } from '@/composables/v1'
 
-// 表单数据
+// Implementation note.
 const formRef = ref<FormInst | null>(null)
 const formData = ref({
   username: 'super',
@@ -16,22 +16,22 @@ const formData = ref({
 const formRules = {
   username: {
     required: true,
-    message: '请输入用户名',
+    message: 'Enter your username',
     trigger: 'blur',
   },
   password: {
     required: true,
-    message: '请输入密码',
+    message: 'Enter your password',
     trigger: 'blur',
   },
   captchaCode: {
     required: true,
-    message: '请输入验证码',
+    message: 'Enter the verification code',
     trigger: 'blur',
   },
 }
 
-// 请求处理
+// Implementation note.
 const { doLogin, captcha } = useAuthFetch()
 const captchaRef = ref({
   captcha: '',
@@ -46,7 +46,7 @@ async function loadCaptcha() {
     formData.value.uuid = captchaRef.value.uuid
   }
 }
-// 刷新验证码
+// RefreshVerification Code
 function refreshCaptcha() {
   loadCaptcha()
   formData.value.captchaCode = ''
@@ -97,32 +97,32 @@ const version = import.meta.env.VITE_VERSION
         :show-label="false"
       >
         <NFormItem
-          label="用户名"
+          label="Username"
           path="username"
         >
           <NInput
             v-model:value="formData.username"
-            placeholder="请输入用户名"
+            placeholder="Enter your username"
           />
         </NFormItem>
         <NFormItem
-          label="密码"
+          label="Password"
           path="password"
         >
           <NInput
             v-model:value="formData.password"
             type="password"
-            placeholder="请输入密码"
+            placeholder="Enter your password"
           />
         </NFormItem>
         <NFormItem
-          label="验证码"
+          label="Verification Code"
           path="captchaCode"
         >
           <div class="flex items-center gap-2">
             <NInput
               v-model:value="formData.captchaCode"
-              placeholder="请输入验证码"
+              placeholder="Enter the verification code"
               class="flex-1"
             />
             <div
@@ -132,14 +132,14 @@ const version = import.meta.env.VITE_VERSION
               <img
                 v-if="captchaRef.captcha"
                 :src="captchaRef.captcha"
-                alt="验证码"
+                alt="Verification Code"
                 class="h-full"
               >
               <div
                 v-else
                 class="h-full w-[100px] bg-gray-100 flex items-center justify-center text-gray-400"
               >
-                点击刷新
+                Click to refresh
               </div>
             </div>
           </div>
@@ -151,25 +151,25 @@ const version = import.meta.env.VITE_VERSION
           type="primary"
           @click="handleLogin"
         >
-          登录
+          Sign In
         </NButton>
       </div>
       <div class="mt-4 flex justify-between items-center">
         <NButton text>
           <NText depth="3">
-            重置密码
+            Reset Password
           </NText>
         </NButton>
         <div class="flex items-center gap-2">
           <NText depth="3">
-            没有账号？
+            Don't have an account?
           </NText>
           <NButton
             text
             type="primary"
             @click="$router.push('/register')"
           >
-            注册
+            Sign Up
           </NButton>
         </div>
       </div>

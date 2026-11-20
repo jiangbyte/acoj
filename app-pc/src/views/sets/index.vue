@@ -44,7 +44,7 @@ async function loadData() {
     categoryOptions.value = catgoryData
   }
 
-  // 获取难度下拉列表数据
+  // Implementation note.
   const { data: difficultyData } = await sysDictOptions({ dictType: 'PROBLEM_DIFFICULTY' })
   if (difficultyData) {
     difficultyOptions.value = difficultyData.map((item: any) => ({
@@ -53,7 +53,7 @@ async function loadData() {
     }))
   }
 
-  // 获取题集类型下拉列表数据
+  // Implementation note.
   const { data: setTypeData } = await sysDictOptions({ dictType: 'PROBLEM_SET_TYPE' })
   if (setTypeData) {
     setTypeOptions.value = setTypeData.map((item: any) => ({
@@ -64,7 +64,7 @@ async function loadData() {
 
   loading.value = false
 
-  // 获取最新题集数据
+  // Implementation note.
   useDataSetFetch().dataSetLatest().then(({ data }) => {
     setListData.value = data
   })
@@ -99,27 +99,27 @@ function resetHandle() {
       :y-gap="24"
       responsive="screen"
     >
-      <!-- 左侧主内容 -->
+      <!-- Section -->
       <n-gi span="1 l:4">
-        <!-- 公告内容 -->
+        <!-- Section -->
         <NSpace vertical :size="24">
           <n-card size="small" class="rounded-xl">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                筛选题集
+                Filter Problem Sets
               </n-h2>
             </template>
             <!-- <template #header-extra>
               <n-flex align="center">
                 <n-text class="text-sm">
-                  题目总数
+                  Total Problems
                 </n-text>
                 <n-text class="text-2xl font-bold">
                   {{ problemcount?.total ? problemcount.total : 0 }}
                 </n-text>
                 <n-text class="text-green-600 dark:text-green-400 text-xs flex items-center">
                   <icon-park-outline-arrow-up class="mr-1" />
-                  较上月增长 {{ problemcount?.growthRate * 100 }} %
+                  Up from last month: {{ problemcount?.growthRate * 100 }} %
                 </n-text>
               </n-flex>
             </template> -->
@@ -132,7 +132,7 @@ function resetHandle() {
               <n-gi span="1 l:1">
                 <n-input
                   v-model:value="pageParam.keyword"
-                  placeholder="搜索题集"
+                  placeholder="Search problem sets"
                   clearable
                   @keyup.enter="loadData"
                   @clear="() => { pageParam.keyword = ''; loadData() }"
@@ -141,7 +141,7 @@ function resetHandle() {
               <n-gi span="1 l:1">
                 <n-select
                   v-model:value="pageParam.categoryId"
-                  placeholder="选择分类"
+                  placeholder="Select a category"
                   clearable
                   :options="categoryOptions"
                   @clear="() => { pageParam.categoryId = null; loadData() }"
@@ -150,7 +150,7 @@ function resetHandle() {
               <n-gi span="1 l:1">
                 <n-select
                   v-model:value="pageParam.difficulty"
-                  placeholder="选择难度"
+                  placeholder="Select a difficulty"
                   clearable
                   :options="difficultyOptions"
                   @clear="() => { pageParam.difficulty = null; loadData() }"
@@ -160,10 +160,10 @@ function resetHandle() {
             <template #footer>
               <n-input-group class="flex justify-end">
                 <NButton type="warning" @click="resetHandle">
-                  重置筛选
+                  Reset
                 </NButton>
                 <NButton type="primary" @click="loadData">
-                  应用筛选
+                  Apply Filters
                 </NButton>
               </n-input-group>
             </template>
@@ -172,14 +172,14 @@ function resetHandle() {
           <n-card class="rounded-xl" size="small" content-style="padding: 0">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                题集列表
+                Problem Set List
               </n-h2>
             </template>
             <template #header-extra>
               <n-text>
-                当前共 <span class="text-blue-600 dark:text-blue-400 font-medium">
+                Total: <span class="text-blue-600 dark:text-blue-400 font-medium">
                   {{ pageData?.total ? pageData.total : 0 }}
-                </span> 条数据
+                </span> items
               </n-text>
             </template>
             <SetSkeleton01 v-if="!pageData" />
@@ -215,9 +215,9 @@ function resetHandle() {
                           <n-space vertical>
                             <n-flex vertical>
                               <n-flex align="center">
-                                <!-- 限时题集 -->
+                                <!-- Section -->
                                 <NTag v-if="item.setType === 2" size="small" type="error">
-                                  {{ item.timeStatusName || '未知状态' }}
+                                  {{ item.timeStatusName || 'Unknown Status' }}
                                 </NTag>
                                 <NTag size="small" type="success">
                                   {{ item.setTypeName }}
@@ -266,7 +266,7 @@ function resetHandle() {
                 show-size-picker
                 :page-count="pageData ? Number(pageData.pages) : 0"
                 :page-sizes="[10, 20, 30, 50].map(size => ({
-                  label: `${size} 每页`,
+                  label: `${size} per page`,
                   value: size,
                 }))"
                 :page-slot="3"
@@ -288,7 +288,7 @@ function resetHandle() {
           <n-card size="small" class="rounded-xl" content-style="padding: 0">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                热门题集
+                Popular Problem Sets
               </n-h2>
             </template>
             <ListSkeleton02 v-if="!setRankingListData" />

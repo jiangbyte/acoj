@@ -1,4 +1,4 @@
-// 轮询工具类
+// Implementation note.
 export class PollingTool {
   private intervalId: NodeJS.Timeout | null = null
   private isPaused: boolean = false
@@ -10,15 +10,15 @@ export class PollingTool {
     private intervalMs: number = 5000,
   ) {}
 
-  // 启动轮询
+  // Implementation note.
   start(): void {
     if (this.intervalId) {
-      console.warn('轮询已经在运行中')
+      console.warn('Polling is already running')
       return
     }
 
     this.isPaused = false
-    this.executeTask() // 立即执行一次任务
+    this.executeTask() // Implementation note.
 
     this.intervalId = setInterval(() => {
       if (!this.isPaused) {
@@ -27,60 +27,60 @@ export class PollingTool {
     }, this.intervalMs)
 
     this.calculateNextExecution()
-    console.log('轮询已启动')
+    console.log('Polling started')
   }
 
-  // 执行任务
+  // Implementation note.
   private async executeTask(): Promise<void> {
     try {
       this.lastExecuted = new Date()
       await this.task()
     }
     catch (error) {
-      console.error('轮询任务执行出错:', error)
+      console.error('Polling task failed:', error)
     }
     finally {
       this.calculateNextExecution()
     }
   }
 
-  // 计算下一次执行时间
+  // Implementation note.
   private calculateNextExecution(): void {
     if (this.lastExecuted) {
       this.nextExecution = new Date(this.lastExecuted.getTime() + this.intervalMs)
     }
   }
 
-  // 暂停轮询
+  // Implementation note.
   pause(): void {
     if (!this.intervalId) {
-      console.warn('轮询未运行，无法暂停')
+      console.warn('Polling is not running and cannot be paused')
       return
     }
 
     this.isPaused = true
-    console.log('轮询已暂停')
+    console.log('Polling paused')
   }
 
-  // 恢复轮询
+  // Implementation note.
   resume(): void {
     if (!this.intervalId) {
-      console.warn('轮询未运行，无法恢复')
+      console.warn('Polling is not running and cannot be resumed')
       return
     }
 
     if (!this.isPaused) {
-      console.warn('轮询未暂停，无需恢复')
+      console.warn('Polling is not paused')
       return
     }
 
     this.isPaused = false
-    // 立即执行一次任务，然后继续按间隔执行
+    // Implementation note.
     this.executeTask()
-    console.log('轮询已恢复')
+    console.log('Polling resumed')
   }
 
-  // 停止轮询
+  // Implementation note.
   stop(): void {
     if (this.intervalId) {
       clearInterval(this.intervalId)
@@ -90,13 +90,13 @@ export class PollingTool {
     this.isPaused = false
     this.lastExecuted = null
     this.nextExecution = null
-    console.log('轮询已停止')
+    console.log('Polling stopped')
   }
 
-  // 更新轮询间隔
+  // Implementation note.
   updateInterval(newIntervalMs: number): void {
     if (newIntervalMs <= 0) {
-      throw new Error('轮询间隔必须大于0')
+      throw new Error('Polling interval must be greater than 0')
     }
 
     const wasRunning = !!this.intervalId && !this.isPaused
@@ -111,16 +111,16 @@ export class PollingTool {
       this.start()
     }
 
-    console.log(`轮询间隔已更新为: ${newIntervalMs}ms`)
+    console.log(`Polling interval updated to: ${newIntervalMs}ms`)
   }
 
-  // 更新任务
+  // Implementation note.
   updateTask(newTask: () => void | Promise<void>): void {
     this.task = newTask
-    console.log('轮询任务已更新')
+    console.log('Polling task updated')
   }
 
-  // 获取状态信息
+  // Implementation note.
   getStatus(): {
     isRunning: boolean
     isPaused: boolean

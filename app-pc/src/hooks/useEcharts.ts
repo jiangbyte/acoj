@@ -1,11 +1,11 @@
-// 系列类型的定义后缀都为 SeriesOption
+// Implementation note.
 import type {
   BarSeriesOption,
   LineSeriesOption,
   PieSeriesOption,
   RadarSeriesOption,
 } from 'echarts/charts'
-// 组件类型的定义后缀都为 ComponentOption
+// Implementation note.
 import type {
   DatasetComponentOption,
   GridComponentOption,
@@ -18,13 +18,13 @@ import type {
 import { BarChart, LineChart, PieChart, RadarChart } from 'echarts/charts'
 
 import {
-  DatasetComponent, // 数据集组件
+  DatasetComponent, // Implementation note.
   GridComponent,
   LegendComponent,
   TitleComponent,
   ToolboxComponent,
   TooltipComponent,
-  TransformComponent, // 内置数据转换器组件 (filter, sort)
+  TransformComponent, // Implementation note.
 } from 'echarts/components'
 import * as echarts from 'echarts/core'
 
@@ -33,7 +33,7 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { useTemplateRef } from 'vue'
 import { useElementSize } from '@vueuse/core'
 
-// 通过 ComposeOption 来组合出一个只有必须组件和图表的 Option 类型
+// Implementation note.
 export type ECOption = echarts.ComposeOption<
   | BarSeriesOption
   | PieSeriesOption
@@ -47,7 +47,7 @@ export type ECOption = echarts.ComposeOption<
   | RadarSeriesOption
 >
 
-// 注册必须的组件
+// Implementation note.
 echarts.use([
   TitleComponent,
   TooltipComponent,
@@ -66,8 +66,8 @@ echarts.use([
 ])
 
 /**
- * Echarts hooks函数
- * @description 按需引入图表组件，没注册的组件需要先引入
+  * Implementation details.
+  * Implementation details.
  */
 export function useEcharts(ref: string, chartOptions: Ref<ECOption>) {
   const el = useTemplateRef<HTMLLIElement>(ref)
@@ -81,7 +81,7 @@ export function useEcharts(ref: string, chartOptions: Ref<ECOption>) {
   const isRendered = () => Boolean(el && chart)
 
   async function render() {
-    // 宽或高不存在时不渲染
+    // Implementation note.
     if (!width || !height)
       return
 

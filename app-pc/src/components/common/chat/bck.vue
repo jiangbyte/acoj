@@ -3,7 +3,7 @@ import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { v4 as uuidv4 } from 'uuid'
 import MdViewer from '@/components/common/editor/md/MarkdownViewer.vue'
 
-// 定义 props
+// Implementation note.
 const props = defineProps({
   problemId: {
     type: String,
@@ -19,18 +19,18 @@ const props = defineProps({
   },
 })
 
-// 监听 props 变化
+// Implementation note.
 watch(() => props.problemId, (newVal) => {
-  console.log('问题ID变化:', newVal)
-  // 可以在这里重新加载对应问题的数据
+  console.log('Problem ID changed:', newVal)
+  // Implementation note.
 })
 
 watch(() => props.userCode, (newVal) => {
-  console.log('代码变化:', newVal)
+  console.log('Code changed:', newVal)
 })
 
 watch(() => props.language, (newVal) => {
-  console.log('语言变化:', newVal)
+  console.log('Language changed:', newVal)
 })
 
 const gateway = import.meta.env.VITE_GATEWAY
@@ -50,35 +50,35 @@ const messages = ref<Array<{ id: string, content: string, type: 'user' | 'bot', 
 const isLoading = ref(false)
 const controller = ref<AbortController | null>(null)
 
-// 预定义的提示词模板
+// Implementation note.
 const promptTemplates = {
-  generate_solution: '请为这个问题生成详细的解题思路，包括算法设计和实现方法。',
-  analyze_code: '请分析我的代码，指出其中的问题和改进建议。',
-  explain_complexity: '请解释这个解法的时间复杂度和空间复杂度。',
-  boundary_cases: '请列出这个问题的边界情况和特殊测试用例。',
-  optimize_code: '请帮我优化这段代码，提高性能和可读性。',
-  chat: '', // 用户自定义输入
+  generate_solution: 'Develop a detailed solution approach, including the algorithm and implementation.',
+  analyze_code: 'Analyze my code and suggest improvements.',
+  explain_complexity: 'Explain the time and space complexity of this solution.',
+  boundary_cases: 'List edge cases and special test cases for this problem.',
+  optimize_code: 'Optimize this code for performance and readability.',
+  chat: '', // Implementation note.
 }
 
-// 获取消息类型对应的标签
+// Implementation note.
 function getMessageTypeLabel(messageType: string) {
   const labels = {
-    generate_solution: '解题思路',
-    analyze_code: '代码分析',
-    explain_complexity: '复杂度分析',
-    boundary_cases: '边界情况',
-    optimize_code: '代码优化',
-    chat: '对话',
+    generate_solution: 'Solution Approach',
+    analyze_code: 'Code Analysis',
+    explain_complexity: 'Complexity Analysis',
+    boundary_cases: 'Edge Cases',
+    optimize_code: 'Code Optimization',
+    chat: 'Chat',
   }
-  return labels[messageType] || '对话'
+  return labels[messageType] || 'Chat'
 }
 
-// 连接并发送消息
+// Implementation note.
 function sendMessage() {
   if (!llmMessageParam.value.message.trim())
     return
 
-  // 生成会话ID（如果是新会话）
+  // Implementation note.
   if (!llmMessageParam.value.conversantId) {
     llmMessageParam.value.conversantId = `task-${uuidv4()}`
   }
@@ -87,7 +87,7 @@ function sendMessage() {
   const userMessage = llmMessageParam.value.message
   const currentMessage = userMessage
 
-  // 添加用户消息到界面
+  // Implementation note.
   messages.value.push({
     id: uuidv4(),
     content: userMessage,
@@ -96,10 +96,10 @@ function sendMessage() {
     messageType: 'chat',
   })
 
-  // 清空输入框
+  // Implementation note.
   llmMessageParam.value.message = ''
 
-  // 添加机器人消息占位符
+  // Implementation note.
   const botMessageId = uuidv4()
   messages.value.push({
     id: botMessageId,
@@ -111,11 +111,11 @@ function sendMessage() {
 
   isLoading.value = true
 
-  // 创建中止控制器
+  // Implementation note.
   controller.value = new AbortController()
 
   fetchEventSource(`${gateway + pathPrefix}chat/stream`, {
-    method: 'POST', // 通常是POST请求发送消息
+    method: 'POST', // Implementation note.
     headers: {
       'Content-Type': 'application/json',
     },
@@ -129,57 +129,57 @@ function sendMessage() {
 
     onopen: async (response) => {
       if (response.ok) {
-        console.log('SSE连接已建立')
+        console.log('SSE connection established')
       }
       else if (response.status === 401 || response.status === 403) {
-        console.error('认证失败')
-        throw new Error('认证失败')
+        console.error('Authentication failed')
+        throw new Error('Authentication failed')
       }
       else {
-        console.error('连接失败:', response.status)
-        throw new Error(`连接失败: ${response.status}`)
+        console.error('Connection failed:', response.status)
+        throw new Error(`Connection failed: ${response.status}`)
       }
     },
 
     onmessage: (event) => {
-      // 处理服务器返回的消息
+      // Implementation note.
       try {
         if (event.data) {
           const data = JSON.parse(event.data)
-          // 更新机器人消息内容
+          // Implementation note.
           const botMessageIndex = messages.value.findIndex(msg => msg.id === botMessageId)
           if (botMessageIndex !== -1) {
             messages.value[botMessageIndex].content += data.content || data.message || ''
-            // 更新消息的时间戳
+            // Implementation note.
             messages.value[botMessageIndex].timestamp = data.timestamp || ''
-            // 更新消息类型
+            // Implementation note.
             messages.value[botMessageIndex].messageType = data.messageType || ''
           }
         }
       }
       catch (error) {
-        console.error('解析消息错误:', error)
+        console.error('Failed to parse message:', error)
       }
     },
 
     onerror: (error) => {
-      console.error('SSE错误:', error)
+      console.error('SSE error:', error)
       isLoading.value = false
-      // 可以在这里显示错误信息
+      // Implementation note.
       const botMessageIndex = messages.value.findIndex(msg => msg.id === botMessageId)
       if (botMessageIndex !== -1) {
-        messages.value[botMessageIndex].content = '抱歉，发生错误，请重试。'
+        messages.value[botMessageIndex].content = 'Sorry, something went wrong. Please try again.'
       }
     },
 
     onclose: () => {
-      console.log('SSE连接关闭')
+      console.log('SSE connection closed')
       isLoading.value = false
     },
   })
 }
 
-// 停止发送
+// StopSend
 function stopSending() {
   if (controller.value) {
     controller.value.abort()
@@ -187,7 +187,7 @@ function stopSending() {
   }
 }
 
-// 清空对话
+// Clear Chat
 function clearMessages() {
   messages.value = []
   llmMessageParam.value.conversantId = ''
@@ -204,13 +204,13 @@ function handleCollapse() {
     vertical
     :size="0"
   >
-    <!-- 对话内容区域 -->
+    <!-- Section -->
     <n-flex ref="chatContainer" vertical class="overflow-scroll" :class="{ 'h-104': !isCollapse, 'h-145': isCollapse }">
       <div>
         <n-empty
           v-if="messages.length === 0"
           class="flex flex-col items-center justify-center py-12"
-          description="暂无判题结果"
+          description="No judge result"
         >
           <template #icon>
             <n-icon size="40" class="text-gray-300 dark:text-gray-600">
@@ -218,7 +218,7 @@ function handleCollapse() {
             </n-icon>
           </template>
           <n-text depth="3" class="text-center max-w-xs">
-            还没有消息，快来提问吧！
+            No messages yet. Ask a question to get started
           </n-text>
         </n-empty>
         <div v-for="message in messages" :key="message.id">
@@ -226,10 +226,10 @@ function handleCollapse() {
             <n-flex vertical :size="4">
               <div class="flex items-center justify-between">
                 <n-tag v-if="message.messageType === 'chat'" type="primary" size="small">
-                  对话
+                  Chat
                 </n-tag>
                 <!-- <n-tag type="primary" size="small">
-                  提问/解析/优化
+                  Ask / Analyze / Optimize
                 </n-tag> -->
                 <n-time :time="message.timestamp" />
               </div>
@@ -243,13 +243,13 @@ function handleCollapse() {
             <MdViewer :model-value="message.content" />
           </div>
           <span v-if="isLoading && message.type === 'bot' && !message.content" class="typing-indicator">
-            思考中...
+            Thinking...
           </span>
         </div>
       </div>
     </n-flex>
 
-    <!-- 输入区域 -->
+    <!-- Section -->
     <n-card size="small">
       <NFlex
         vertical
@@ -261,34 +261,34 @@ function handleCollapse() {
               type="primary"
               size="small"
             >
-              生成解题思路
+              Generate Solution
             </n-button>
             <n-button
               size="small"
             >
-              分析我的代码
+              Analyze My Code
             </n-button>
           </n-flex>
           <n-button
             size="small"
             @click="handleCollapse"
           >
-            {{ isCollapse ? '展开' : '收起' }}
+            {{ isCollapse ? 'Expand' : 'Collapse' }}
           </n-button>
         </n-flex>
         <n-flex v-if="!isCollapse">
           <n-button round size="tiny">
-            解释时间复杂度
+            Explain Complexity
           </n-button>
           <n-button round size="tiny">
-            有哪些边界情况需要考虑
+            What edge cases should I consider?
           </n-button>
         </n-flex>
         <NInput
           v-if="!isCollapse"
           v-model:value="llmMessageParam.message"
           type="textarea"
-          placeholder="遇到问题？向AI描述你的疑问或需要帮助的地方。例如：如何优化这段代码的时间复杂度？或者：为什么我的代码在这个测试用例上失败了？"
+          placeholder="Need help? Ask AI a question, such as how to improve this code or why it fails a test case."
           :autosize="{ minRows: 4, maxRows: 4 }"
           @keydown.enter.prevent="sendMessage"
         />
@@ -305,7 +305,7 @@ function handleCollapse() {
             <template #icon>
               <icon-park-outline-send />
             </template>
-            发送
+            Send
           </NButton>
           <NButton
             secondary
@@ -316,7 +316,7 @@ function handleCollapse() {
             <template #icon>
               <icon-park-outline-close />
             </template>
-            停止
+            Stop
           </NButton>
           <NButton
             secondary
@@ -327,7 +327,7 @@ function handleCollapse() {
             <template #icon>
               <icon-park-outline-clear />
             </template>
-            清空
+            Clear
           </NButton>
         </NFlex>
       </NFlex>

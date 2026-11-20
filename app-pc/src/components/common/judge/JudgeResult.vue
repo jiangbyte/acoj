@@ -15,7 +15,7 @@ const CodeEditor = defineAsyncComponent({
   loader: () => import('@/components/common/editor/code/CodeEditor.vue'),
   // loader: () =>
   //   new Promise((resolve) => {
-  //     // 模拟 3 秒延迟
+  // Implementation note.
   //     setTimeout(() => {
   //       resolve(import('@/components/common/editor/code/CodeEditor.vue'))
   //     }, 3000)
@@ -30,7 +30,7 @@ const CodeEditor = defineAsyncComponent({
           justifyContent: 'center',
         },
       }, [
-        h(NSpin, { size: 'small', description: '代码预览器加载中...' }, { }),
+        h(NSpin, { size: 'small', description: 'Loading code preview...' }, { }),
       ])
     },
   },
@@ -45,14 +45,14 @@ watch(() => props.resultTaskData, (newValue) => {
 })
 
 function refreshSimilarityData() {
-  // 调用获取判题结果的API
+  // Implementation note.
   useDataSubmitFetch().dataSubmitDetail({ id: props.resultTaskData.id }).then(({ data }) => {
     if (data) {
-      // 更新结果数据
+      // Implementation note.
       similarityData.value = data
 
       window.$notification.success({
-        title: '刷新完成',
+        title: 'Refreshed',
         duration: 3000,
       })
     }
@@ -66,40 +66,40 @@ function refreshSimilarityData() {
       <n-flex align="center" justify="center">
         <NSpin size="small" />
         <n-text type="info">
-          判题中... ({{ pollingCount }}/{{ maxPollingCount }})
+          Judging... ({{ pollingCount }}/{{ maxPollingCount }})
         </n-text>
       </n-flex>
     </n-alert>
 
     <n-card v-if="isPolling || resultTaskData.id" class="w-full max-w-3xl mx-auto" :bordered="false" size="small">
       <n-space vertical :size="16">
-        <!-- 头部信息 -->
+        <!-- Section -->
         <JudgeResultHeader :result-task-data="resultTaskData" />
 
         <n-flex justify="end">
           <n-button size="small" type="primary" @click="refreshSimilarityData">
-            刷新
+            Refresh
           </n-button>
         </n-flex>
 
-        <!-- 判题结果详情 -->
+        <!-- Section -->
         <JudgeResultStats :result-task-data="resultTaskData" />
 
         <!-- <n-alert type="info">
-          代码相似度可以稍后在状态中查看，或者稍等片刻点击 <n-button size="small" type="primary" @click="refreshSimilarityData">刷新</n-button>
+          You can view code similarity later under Status, or wait a moment and click <n-button size="small" type="primary" @click="refreshSimilarityData">Refresh</n-button>
         </n-alert> -->
 
-        <!-- 代码相似度 -->
+        <!-- Code Similarity -->
         <!-- <SimilarityReport v-if="resultTaskData.submitType" :result-task-data="similarityData" /> -->
 
         <!-- <n-card v-if="resultTaskData?.message" size="small" hoverable>
           <n-code :language="resultTaskData?.language" :code="resultTaskData?.message" show-line-numbers word-wrap />
         </n-card> -->
-        <!-- 错误信息 -->
+        <!-- Error Details -->
         <n-card v-if="resultTaskData.message" size="small" class="rounded-xl">
           <template #header>
             <n-h2 class="pb-0 mb-0">
-              错误信息
+              Error Details
             </n-h2>
           </template>
           <!-- <n-code :language="detailData?.language" :code="detailData?.message" show-line-numbers word-wrap /> -->
@@ -119,14 +119,14 @@ function refreshSimilarityData() {
       </n-space>
     </n-card>
 
-    <n-empty v-else class="flex flex-col items-center justify-center py-12" description="暂无判题结果">
+    <n-empty v-else class="flex flex-col items-center justify-center py-12" description="No judge result">
       <template #icon>
         <n-icon size="40" class="text-gray-300 dark:text-gray-600">
           <icon-park-outline-info />
         </n-icon>
       </template>
       <n-text depth="3" class="text-center max-w-xs">
-        您还没有提交过代码，或者找不到对应的判题结果
+        No submission or judge result was found
       </n-text>
     </n-empty>
   </div>

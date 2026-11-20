@@ -13,7 +13,7 @@ interface Props {
 
 defineProps<Props>()
 
-// 懒加载重量级组件
+// Implementation note.
 // const MdViewer = defineAsyncComponent(() =>
 //   import('@/components/common/editor/md/MarkdownViewer.vue'),
 // )
@@ -29,7 +29,7 @@ defineProps<Props>()
 //           justifyContent: 'center',
 //         },
 //       }, [
-//         h(NSpin, { size: 'small', description: '加载中...' }, { }),
+// Implementation note.
 //       ])
 //     },
 //   },
@@ -67,17 +67,17 @@ defineProps<Props>()
     <n-flex>
       <ProblemStatItem
         :icon="TimeOutline"
-        label="时间限制"
+        label="Time Limit"
         :value="`${detailData?.maxTime} ms`"
       />
       <ProblemStatItem
         :icon="HardwareChipOutline"
-        label="内存限制"
+        label="Memory Limit"
         :value="`${detailData?.maxMemory} KB`"
       />
       <ProblemStatItem
         :icon="BarChartOutline"
-        label="通过率"
+        label="Acceptance Rate"
         :value="`${detailData?.acceptance} %`"
       />
     </n-flex>

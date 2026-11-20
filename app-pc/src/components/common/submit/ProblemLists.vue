@@ -15,7 +15,7 @@ const moduleTypeRef = ref()
 const moduleIdRef = ref()
 const setProblemColumns: DataTableColumns<any> = [
   {
-    title: '状态',
+    title: 'Status',
     align: 'center',
     key: 'currentUserSolved',
     width: 60,
@@ -33,7 +33,7 @@ const setProblemColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '题目',
+    title: 'Problem',
     key: 'title',
     width: 150,
     ellipsis: {
@@ -41,7 +41,7 @@ const setProblemColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '难度',
+    title: 'Difficulty',
     key: 'difficultyName',
     align: 'center',
     width: 60,
@@ -50,7 +50,7 @@ const setProblemColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '操作',
+    title: 'Actions',
     key: 'action',
     fixed: 'right',
     width: 60,
@@ -64,14 +64,14 @@ const setProblemColumns: DataTableColumns<any> = [
             query: { setId: AesCrypto.encrypt(moduleIdRef.value), problemId: AesCrypto.encrypt(row.id) },
           })
         },
-      }, { default: () => '开始' })
+      }, { default: () => 'Start' })
     },
   },
 ]
 
 const contestProblemColumns: DataTableColumns<any> = [
   {
-    title: '状态',
+    title: 'Status',
     align: 'center',
     key: 'currentUserSolved',
     width: 60,
@@ -89,7 +89,7 @@ const contestProblemColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '编号',
+    title: 'ID',
     key: 'problemCode',
     width: 50,
     ellipsis: {
@@ -97,7 +97,7 @@ const contestProblemColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '题目',
+    title: 'Problem',
     key: 'problemIdName',
     width: 150,
     ellipsis: {
@@ -105,7 +105,7 @@ const contestProblemColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '操作',
+    title: 'Actions',
     key: 'action',
     fixed: 'right',
     width: 60,
@@ -119,7 +119,7 @@ const contestProblemColumns: DataTableColumns<any> = [
             query: { contestId: AesCrypto.encrypt(moduleIdRef.value), problemId: AesCrypto.encrypt(row.problemId) },
           })
         },
-      }, { default: () => '开始' })
+      }, { default: () => 'Start' })
     },
   },
 ]
@@ -159,7 +159,7 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" placement="left" width="500" @after-leave="doClose">
-    <NDrawerContent title="题目列表">
+    <NDrawerContent title="Problem List">
       <template v-if="moduleTypeRef === 'SET'">
         <n-data-table
           :columns="setProblemColumns"
@@ -184,7 +184,7 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
         </NSpace>
       </template>

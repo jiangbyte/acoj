@@ -51,7 +51,7 @@ const proSetSolvedUserDataParam = ref({
 
 const columns: DataTableColumns<any> = [
   {
-    title: '状态',
+    title: 'Status',
     align: 'center',
     key: 'currentUserSolved',
     width: 60,
@@ -69,7 +69,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '题目',
+    title: 'Problem',
     key: 'title',
     width: 150,
     ellipsis: {
@@ -77,7 +77,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '分类',
+    title: 'Category',
     key: 'categoryName',
     width: 90,
     render: (row) => {
@@ -85,7 +85,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '标签',
+    title: 'Tags',
     key: 'tagNames',
     width: 180,
     render: (row) => {
@@ -93,7 +93,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '难度',
+    title: 'Difficulty',
     key: 'difficultyName',
     align: 'center',
     width: 60,
@@ -102,7 +102,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '通过率',
+    title: 'Acceptance Rate',
     key: 'acceptance',
     width: 100,
     align: 'center',
@@ -111,7 +111,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '解决',
+    title: 'Solved',
     key: 'solved',
     width: 100,
     align: 'center',
@@ -120,7 +120,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '操作',
+    title: 'Actions',
     key: 'action',
     fixed: 'right',
     width: 60,
@@ -135,7 +135,7 @@ const columns: DataTableColumns<any> = [
             query: { setId: AesCrypto.encrypt(originalId), problemId: AesCrypto.encrypt(row.id) },
           })
         },
-      }, { default: () => '开始' })
+      }, { default: () => 'Start' })
     },
   },
 ]
@@ -147,7 +147,7 @@ const submitColumns: DataTableColumns<any> = [
   //   ellipsis: true,
   // },
   {
-    title: '题目',
+    title: 'Problem',
     key: 'problemIdName',
     ellipsis: {
       tooltip: true,
@@ -155,7 +155,7 @@ const submitColumns: DataTableColumns<any> = [
     width: 120,
   },
   {
-    title: '用户',
+    title: 'User',
     key: 'user',
     width: 150,
     render(row: any) {
@@ -188,7 +188,7 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '状态',
+    title: 'Status',
     key: 'statusName',
     width: 100,
     render: (row) => {
@@ -205,7 +205,7 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '编程语言',
+    title: 'Programming Language',
     key: 'languageName',
     width: 80,
     render: (row) => {
@@ -213,7 +213,7 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '长度(byte)',
+    title: 'Size (bytes)',
     key: 'codeLength',
     width: 80,
     render: (row) => {
@@ -221,7 +221,7 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '执行类型',
+    title: 'Run Type',
     key: 'submitTypeName',
     width: 90,
     render: (row) => {
@@ -229,7 +229,7 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '耗时(ms)',
+    title: 'Time (ms)',
     key: 'maxTime',
     width: 80,
     render: (row) => {
@@ -237,7 +237,7 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '内存(Kb)',
+    title: 'Memory (KB)',
     key: 'maxMemory',
     width: 80,
     render: (row) => {
@@ -245,7 +245,7 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
   // {
-  //   title: '相似度(%)',
+  //   title: 'Similarity(%)',
   //   key: 'similarity',
   //   width: 80,
   //   render: (row) => {
@@ -253,21 +253,21 @@ const submitColumns: DataTableColumns<any> = [
   //   },
   // },
   // {
-  //   title: '行为标记',
+  //   title: 'Flag',
   //   key: 'similarityCategoryName',
   //   ellipsis: true,
   //   width: 80,
   //   render: (row) => {
-  //     return row.similarityCategoryName ? row.similarityCategoryName : '未触发'
+  //     return row.similarityCategoryName ? row.similarityCategoryName : 'Not Triggered'
   //   },
   // },
   // {
-  //   title: '检测任务',
+  //   title: 'Detection Task',
   //   key: 'taskId',
   //   width: 80,
   // },
   {
-    title: '提交时间',
+    title: 'Submitted',
     key: 'createTime',
     width: 100,
     render(row: any) {
@@ -275,7 +275,7 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '更新时间',
+    title: 'Updated',
     key: 'updateTime',
     width: 100,
     render(row: any) {
@@ -285,12 +285,12 @@ const submitColumns: DataTableColumns<any> = [
 ]
 const userColumns: DataTableColumns<any> = [
   {
-    title: '用户组',
+    title: 'User Group',
     key: 'groupIdName',
     width: 150,
   },
   {
-    title: '用户',
+    title: 'User',
     key: 'user',
     width: 150,
     render(row: any) {
@@ -323,7 +323,7 @@ const userColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '签名',
+    title: 'Bio',
     key: 'quote',
     ellipsis: {
       tooltip: true,
@@ -331,21 +331,21 @@ const userColumns: DataTableColumns<any> = [
     width: 200,
   },
   {
-    title: '性别',
+    title: 'Gender',
     key: 'gender',
     width: 100,
     render: (value) => {
       if (value.gender === 1) {
-        return '男'
+        return 'Male'
       }
       else if (value.gender === 2) {
-        return '女'
+        return 'Female'
       }
-      return '未知'
+      return 'Unknown'
     },
   },
   {
-    title: '邮箱',
+    title: 'Email',
     key: 'email',
     ellipsis: {
       tooltip: true,
@@ -356,7 +356,7 @@ const userColumns: DataTableColumns<any> = [
 
 const processColumns: DataTableColumns<any> = [
   {
-    title: '用户',
+    title: 'User',
     key: 'user',
     width: 150,
     render(row: any) {
@@ -385,17 +385,17 @@ const processColumns: DataTableColumns<any> = [
     },
   },
   {
-    title: '已解决题目数',
+    title: 'Problems Solved',
     key: 'solvedCount',
     width: 90,
   },
   {
-    title: '总提交数',
+    title: 'Total Submissions',
     key: 'submitCount',
     width: 90,
   },
   {
-    title: '通过率',
+    title: 'Acceptance Rate',
     key: 'passRate',
     width: 90,
     render: (row) => {
@@ -439,16 +439,16 @@ function handleClickImage() {
   imageRef.value?.showPreview()
 }
 
-// 倒计时相关
+// Implementation note.
 const countdownDuration = ref(0)
 const countdownActive = ref(false)
 const countdownType = ref<'start' | 'end'>('start')
 
 /**
- * 按当前时间计算一次倒计时时长；由 NCountdown 自行滴答，禁止秒级重算以免 NSpace 异常叠渲染。
+  * Implementation details.
  */
 function calculateCountdown() {
-  // 1. 非限时题集直接关闭倒计时
+  // Implementation note.
   if (detailData.value?.setType !== 2) {
     countdownActive.value = false
     return
@@ -458,7 +458,7 @@ function calculateCountdown() {
   const startTime = Number(detailData.value.startTime)
   const endTime = Number(detailData.value.endTime)
 
-  // 2. 赛前：距开始；赛中：距结束；否则停表
+  // Implementation note.
   if (now < startTime) {
     countdownDuration.value = startTime - now
     countdownType.value = 'start'
@@ -474,16 +474,16 @@ function calculateCountdown() {
   }
 }
 
-// 题集详情就绪后只计算一次；到点由 NCountdown @finish 刷新页面
+// Implementation note.
 watch(() => detailData.value, (newVal) => {
   if (newVal?.setType === 2) {
     calculateCountdown()
   }
 })
 
-// 自定义倒计时显示格式 - 时分秒
+// Implementation note.
 function renderCountdown({ hours, minutes, seconds }: { hours: number, minutes: number, seconds: number }) {
-  return `${hours.toString().padStart(2, '0')} 时 ${minutes.toString().padStart(2, '0')} 分 ${seconds.toString().padStart(2, '0')} 秒`
+  return `${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`
 }
 
 function onfinishTime() {
@@ -509,10 +509,10 @@ function onfinishTime() {
             <n-gi span="1 l:3" class="relative">
               <img
                 :src="detailData?.cover" class="w-full
-               <!-- 手机：只有上部圆角 -->
+               <!-- Section -->
                 rounded-t-xl rounded-tr-xl rounded-tl-xl
                 rounded-br-none rounded-bl-none
-                <!-- 电脑：只有左侧圆角 -->
+                <!-- Section -->
                 m:rounded-l-xl m:rounded-bl-xl m:rounded-tl-xl
                 m:rounded-r-none m:rounded-tr-none m:rounded-br-none
                 l:rounded-l-xl l:rounded-bl-xl l:rounded-tl-xl
@@ -541,9 +541,9 @@ function onfinishTime() {
                   <template #description>
                     <NSpace vertical>
                       <n-flex>
-                        <!-- 限时题集 -->
+                        <!-- Section -->
                         <NTag v-if="detailData?.setType === 2" size="small" type="error">
-                          {{ detailData?.timeStatusName || '未知状态' }}
+                          {{ detailData?.timeStatusName || 'Unknown Status' }}
                         </NTag>
                         <NTag size="small" type="success">
                           {{ detailData?.setTypeName }}
@@ -579,16 +579,16 @@ function onfinishTime() {
           </n-grid>
         </n-card>
       </n-gi>
-      <!-- 左侧主内容 -->
+      <!-- Section -->
 
-      <!-- 左侧主内容 -->
+      <!-- Section -->
       <n-gi span="1 l:5">
-        <!-- 公告内容 -->
+        <!-- Section -->
         <NSpace vertical :size="24">
           <n-card class="rounded-xl" size="small">
             <n-tabs type="line" animated>
-              <n-tab-pane name="problems" tab="题目">
-                <!-- 题目筛选和搜索 -->
+              <n-tab-pane name="problems" tab="Problem">
+                <!-- Section -->
                 <div class="bg-white p-y-2">
                   <div class="divide-y divide-gray-100 dark:divide-gray-700">
                     <n-data-table
@@ -602,7 +602,7 @@ function onfinishTime() {
                   </div>
                 </div>
               </n-tab-pane>
-              <n-tab-pane name="submissions" tab="提交">
+              <n-tab-pane name="submissions" tab="Submit">
                 <div class="divide-y divide-gray-100 dark:divide-gray-700">
                   <n-data-table
                     :columns="submitColumns"
@@ -619,7 +619,7 @@ function onfinishTime() {
                   show-size-picker
                   :page-count="submitPageData ? Number(submitPageData.pages) : 0"
                   :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                    label: `${(i + 1) * 10} 每页`,
+                    label: `${(i + 1) * 10} per page`,
                     value: (i + 1) * 10,
                   }))"
                   :page-slot="3"
@@ -628,7 +628,7 @@ function onfinishTime() {
                   @update:page-size="loadData"
                 />
               </n-tab-pane>
-              <n-tab-pane name="users" tab="用户">
+              <n-tab-pane name="users" tab="User">
                 <div class="divide-y divide-gray-100 dark:divide-gray-700">
                   <n-data-table
                     :columns="userColumns"
@@ -645,7 +645,7 @@ function onfinishTime() {
                   show-size-picker
                   :page-count="proSetSolvedUserData ? Number(proSetSolvedUserData.pages) : 0"
                   :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                    label: `${(i + 1) * 10} 每页`,
+                    label: `${(i + 1) * 10} per page`,
                     value: (i + 1) * 10,
                   }))"
                   :page-slot="3"
@@ -660,19 +660,19 @@ function onfinishTime() {
       </n-gi>
 
       <n-gi span="1 l:2">
-        <!-- 公告内容 -->
+        <!-- Section -->
         <NSpace vertical :size="24">
           <n-card class="rounded-xl" size="small">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                题集信息与统计
+                Problem Set Details
               </n-h2>
             </template>
             <div class="mb-4 flex flex-col gap-3">
-              <!-- 倒计时显示 -->
+              <!-- Section -->
               <NSpace v-if="detailData?.setType === 2 && countdownActive" align="center" :size="0">
                 <NText depth="3">
-                  {{ countdownType === 'start' ? '开始倒计时：' : '结束倒计时：' }}
+                  {{ countdownType === 'start' ? 'Starts in:' : 'Ends in:' }}
                 </NText>
                 <NCountdown
                   :key="`${countdownType}-${countdownDuration}`"
@@ -684,7 +684,7 @@ function onfinishTime() {
               </NSpace>
               <NSpace v-if="detailData?.setType === 2" align="center" :size="0">
                 <NText depth="3">
-                  开始时间：
+                  Starts:
                 </NText>
                 <NText>
                   <NTime :time="Number(detailData?.startTime) || 0" />
@@ -692,7 +692,7 @@ function onfinishTime() {
               </NSpace>
               <NSpace v-if="detailData?.setType === 2" align="center" :size="0">
                 <NText depth="3">
-                  结束时间：
+                  Ends:
                 </NText>
                 <NText>
                   <NTime :time="Number(detailData?.endTime) || 0" />
@@ -700,7 +700,7 @@ function onfinishTime() {
               </NSpace>
               <NSpace align="center" :size="0">
                 <NText depth="3">
-                  题目数量：
+                  Problems:
                 </NText>
                 <NText>
                   {{ setProblemPageData?.length ? setProblemPageData.length : 0 }}
@@ -708,7 +708,7 @@ function onfinishTime() {
               </NSpace>
               <NSpace align="center" :size="0">
                 <NText depth="3">
-                  AI 使用：
+                  AI Assistance:
                 </NText>
                 <NText>
                   {{ detailData?.useAiName }}
@@ -716,7 +716,7 @@ function onfinishTime() {
               </NSpace>
               <NSpace align="center" :size="0">
                 <NText depth="3">
-                  总提交数：
+                  Total Submissions:
                 </NText>
                 <NText>
                   {{ detailData?.submitCount ? detailData?.submitCount : 0 }}
@@ -724,7 +724,7 @@ function onfinishTime() {
               </NSpace>
               <NSpace align="center" :size="0">
                 <NText depth="3">
-                  平均通过率：
+                  Average Acceptance:
                 </NText>
                 <NText>
                   {{ detailData?.avgAcceptance ? detailData?.avgAcceptance : 0 }}
@@ -732,7 +732,7 @@ function onfinishTime() {
               </NSpace>
               <NSpace align="center" :size="0">
                 <NText depth="3">
-                  参与人数：
+                  Participants:
                 </NText>
                 <NText>
                   {{ detailData?.participantUserCount ? detailData?.participantUserCount : 0 }}
@@ -740,7 +740,7 @@ function onfinishTime() {
               </NSpace>
             </div>
             <n-alert v-if="detailData?.setType === 2" show-icon type="warning">
-              限时题集请注意时间及时刷新页面：开始时间到达时请刷新页面，结束时间到达将锁定题集，无法提交。
+              Refresh the page when the timed set starts. Submissions are locked when it ends.
             </n-alert>
           </n-card>
         </NSpace>

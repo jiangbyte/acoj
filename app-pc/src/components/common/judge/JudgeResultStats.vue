@@ -9,19 +9,19 @@ defineProps<Props>()
 <template>
   <div class="grid grid-cols-3 md:grid-cols-3 gap-4">
     <n-card size="small" hoverable>
-      <n-text>长度(B)</n-text>
+      <n-text>Size (B)</n-text>
       <div class="text-xl font-bold">
         {{ resultTaskData?.codeLength ? resultTaskData?.codeLength : 0 }}
       </div>
     </n-card>
     <n-card size="small" hoverable>
-      <n-text>时间(ms)</n-text>
+      <n-text>Time (ms)</n-text>
       <div class="text-xl font-bold">
         {{ resultTaskData?.maxTime ? resultTaskData?.maxTime : 0 }}
       </div>
     </n-card>
     <n-card size="small" hoverable>
-      <n-text>内存(KB)</n-text>
+      <n-text>Memory (KB)</n-text>
       <div class="text-xl font-bold">
         {{ resultTaskData?.maxMemory ? resultTaskData?.maxMemory : 0 }}
       </div>

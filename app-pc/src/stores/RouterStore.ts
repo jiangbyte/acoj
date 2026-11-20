@@ -96,7 +96,7 @@ function createRoutes(routes: SiteRoute.RowRoute[]): RouteRecordRaw {
     name: 'webroot',
     redirect: '/index',
     component: Layout,
-    meta: { title: '系统', icon: 'icon-park-outline:web-page' },
+    meta: { title: 'System', icon: 'icon-park-outline:web-page' },
     children: resultRouter as unknown as RouteRecordRaw[],
   }
 }

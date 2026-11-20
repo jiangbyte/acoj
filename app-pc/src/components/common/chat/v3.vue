@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import MdViewer from '@/components/common/editor/md/MarkdownViewer.vue'
 import { useLMMessageStore, useTokenStore } from '@/stores'
 
-// 定义 props
+// Implementation note.
 const props = defineProps({
   problemId: {
     type: String,
@@ -20,17 +20,17 @@ const props = defineProps({
   },
 })
 
-// 监听 props 变化
+// Implementation note.
 watch(() => props.problemId, (newVal) => {
-  console.log('问题ID变化:', newVal)
+  console.log('Problem ID changed:', newVal)
 })
 
 watch(() => props.userCode, (newVal) => {
-  console.log('代码变化:', newVal)
+  console.log('Code changed:', newVal)
 })
 
 watch(() => props.language, (newVal) => {
-  console.log('语言变化:', newVal)
+  console.log('Language changed:', newVal)
 })
 
 const gateway = import.meta.env.VITE_GATEWAY
@@ -55,45 +55,45 @@ type MessageType = 'analyze-problem-boundary-conditions'
   | 'generate-solution-idea'
   | 'optimize-code'
   | 'chat'
-// 预定义的提示词模板
+// Implementation note.
 const promptTemplates: Record<MessageType, string> = {
-  'generate-solution-idea': '请为这个问题生成详细的解题思路，包括算法设计和实现方法。',
-  'analyze-user-code-complexity': '请解释这个解法的时间复杂度和空间复杂度。',
-  'analyze-problem-boundary-conditions': '请列出这个问题的边界情况和特殊测试用例。',
-  'optimize-code': '请帮我优化这段代码，提高性能和可读性。',
+  'generate-solution-idea': 'Develop a detailed solution approach, including the algorithm and implementation.',
+  'analyze-user-code-complexity': 'Explain the time and space complexity of this solution.',
+  'analyze-problem-boundary-conditions': 'List edge cases and special test cases for this problem.',
+  'optimize-code': 'Optimize this code for performance and readability.',
   'chat': '',
 }
 
-// 获取消息类型对应的标签
+// Implementation note.
 function getMessageTypeLabel(messageType: string) {
   const labels: Record<MessageType, string> = {
-    'analyze-problem-boundary-conditions': '分析边界',
-    'analyze-user-code-complexity': '分析复杂度',
-    'generate-solution-idea': '解题思路',
-    'optimize-code': '优化代码',
-    'chat': '默认对话',
+    'analyze-problem-boundary-conditions': 'Analyze Edge Cases',
+    'analyze-user-code-complexity': 'Analyze Complexity',
+    'generate-solution-idea': 'Solution Approach',
+    'optimize-code': 'Optimize Code',
+    'chat': 'Chat',
   }
-  return labels[messageType as MessageType] || '默认对话'
+  return labels[messageType as MessageType] || 'Chat'
 }
 
 const tokenStore = useTokenStore()
-// 连接并发送消息
+// Implementation note.
 function sendMessage(customMessage?: string, messageType: string = 'chat') {
   const finalMessage = customMessage || llmMessageParam.value.message
   if (!finalMessage.trim())
     return
 
-  // 生成会话ID（如果是新会话）
+  // Implementation note.
   if (!llmMessageParam.value.conversationId) {
     llmMessageParam.value.conversationId = `task-${uuidv4()}`
   }
 
-  // 更新消息类型和内容
+  // Implementation note.
   llmMessageParam.value.messageType = messageType
   llmMessageParam.value.userCode = props.userCode
   llmMessageParam.value.language = props.language
 
-  // 添加用户消息到界面
+  // Implementation note.
   messages.value.push({
     id: uuidv4(),
     content: finalMessage,
@@ -104,7 +104,7 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
 
   llmMessageParam.value.message = ''
 
-  // 添加机器人消息占位符
+  // Implementation note.
   const botMessageId = uuidv4()
   messages.value.push({
     id: botMessageId,
@@ -116,7 +116,7 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
 
   isLoading.value = true
 
-  // 创建中止控制器
+  // Implementation note.
   controller.value = new AbortController()
 
   fetchEventSource(`${gateway + pathPrefix}chat/stream`, {
@@ -137,15 +137,15 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
 
     onopen: async (response) => {
       if (response.ok) {
-        console.log('SSE连接已建立')
+        console.log('SSE connection established')
       }
       else if (response.status === 401 || response.status === 403) {
-        console.error('认证失败')
-        throw new Error('认证失败')
+        console.error('Authentication failed')
+        throw new Error('Authentication failed')
       }
       else {
-        console.error('连接失败:', response.status)
-        throw new Error(`连接失败: ${response.status}`)
+        console.error('Connection failed:', response.status)
+        throw new Error(`Connection failed: ${response.status}`)
       }
     },
 
@@ -162,27 +162,27 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
         }
       }
       catch (error) {
-        console.error('解析消息错误:', error)
+        console.error('Failed to parse message:', error)
       }
     },
 
     onerror: (error) => {
-      console.error('SSE错误:', error)
+      console.error('SSE error:', error)
       isLoading.value = false
       const botMessageIndex = messages.value.findIndex(msg => msg.id === botMessageId)
       if (botMessageIndex !== -1) {
-        messages.value[botMessageIndex].content = '抱歉，发生错误，请重试。'
+        messages.value[botMessageIndex].content = 'Sorry, something went wrong. Please try again.'
       }
     },
 
     onclose: () => {
-      console.log('SSE连接关闭')
+      console.log('SSE connection closed')
       isLoading.value = false
     },
   })
 }
 
-// 按钮点击处理函数
+// Implementation note.
 function handleButtonClick(messageType: MessageType) {
   const prompt = promptTemplates[messageType]
   if (prompt) {
@@ -190,7 +190,7 @@ function handleButtonClick(messageType: MessageType) {
   }
 }
 
-// 停止发送
+// StopSend
 function stopSending() {
   if (controller.value) {
     controller.value.abort()
@@ -198,7 +198,7 @@ function stopSending() {
   }
 }
 
-// 清空对话
+// Clear Chat
 // function clearMessages() {
 //   messages.value = []
 //   llmMessageParam.value.conversationId = ''
@@ -210,11 +210,11 @@ function handleCollapse() {
 }
 
 const messageStore = useLMMessageStore()
-// 生成存储键
+// Implementation note.
 const getStorageKey = computed(() => {
   return `llm-chat-${props.problemId}`
 })
-// 从本地存储加载消息
+// Implementation note.
 function loadMessages() {
   if (typeof window === 'undefined')
     return
@@ -223,18 +223,18 @@ function loadMessages() {
   if (stored) {
     try {
       messages.value = JSON.parse(stored)
-      // 恢复会话ID
+      // Implementation note.
       if (messages.value.length > 0) {
         llmMessageParam.value.conversationId = `task-${uuidv4()}`
       }
     }
     catch (error) {
-      console.error('加载聊天记录失败:', error)
+      console.error('Failed to load chat history:', error)
     }
   }
 }
 
-// 保存消息到本地存储
+// Implementation note.
 function saveMessages() {
   if (typeof window === 'undefined')
     return
@@ -243,21 +243,21 @@ function saveMessages() {
     localStorage.setItem(getStorageKey.value, JSON.stringify(messages.value))
   }
   catch (error) {
-    console.error('保存聊天记录失败:', error)
+    console.error('Failed to save chat history:', error)
   }
 }
 
-// 监听消息变化并保存
+// Implementation note.
 watch(messages, () => {
   saveMessages()
 }, { deep: true })
 
-// 组件挂载时加载消息
+// Implementation note.
 onMounted(() => {
   loadMessages()
 })
 
-// 清空对话时也清除存储
+// Implementation note.
 function clearMessages() {
   messages.value = []
   llmMessageParam.value.conversationId = ''
@@ -272,13 +272,13 @@ function clearMessages() {
     vertical
     :size="0"
   >
-    <!-- 对话内容区域 -->
+    <!-- Section -->
     <n-flex ref="chatContainer" vertical class="overflow-scroll" :class="{ 'h-104': !isCollapse, 'h-145': isCollapse }">
       <div>
         <n-empty
           v-if="messages.length === 0"
           class="flex flex-col items-center justify-center py-12"
-          description="暂无对话记录"
+          description="No conversations"
         >
           <template #icon>
             <n-icon size="40" class="text-gray-300 dark:text-gray-600">
@@ -286,7 +286,7 @@ function clearMessages() {
             </n-icon>
           </template>
           <n-text depth="3" class="text-center max-w-xs">
-            还没有消息，点击下方按钮开始对话！
+            No messages yet. Choose an action below to start
           </n-text>
         </n-empty>
         <div v-for="message in messages" :key="message.id">
@@ -315,13 +315,13 @@ function clearMessages() {
             </n-card>
           </div>
           <span v-if="isLoading && message.type === 'bot' && !message.content" class="typing-indicator">
-            思考中...
+            Thinking...
           </span>
         </div>
       </div>
     </n-flex>
 
-    <!-- 输入区域 -->
+    <!-- Section -->
     <n-card size="small">
       <NFlex
         vertical
@@ -334,39 +334,39 @@ function clearMessages() {
               size="small"
               @click="handleButtonClick('generate-solution-idea')"
             >
-              解题思路
+              Solution Approach
             </n-button>
             <n-button
               size="small"
               @click="handleButtonClick('analyze-user-code-complexity')"
             >
-              分析复杂度
+              Analyze Complexity
             </n-button>
             <n-button
               size="small"
               @click="handleButtonClick('optimize_code')"
             >
-              优化代码
+              Optimize Code
             </n-button>
             <n-button
               size="small"
               @click="handleButtonClick('analyze-problem-boundary-conditions')"
             >
-              分析边界
+              Analyze Edge Cases
             </n-button>
           </n-flex>
           <n-button
             size="small"
             @click="handleCollapse"
           >
-            {{ isCollapse ? '展开' : '收起' }}
+            {{ isCollapse ? 'Expand' : 'Collapse' }}
           </n-button>
         </n-flex>
         <NInput
           v-if="!isCollapse"
           v-model:value="llmMessageParam.message"
           type="textarea"
-          placeholder="遇到问题？向AI描述你的疑问或需要帮助的地方。例如：如何优化这段代码的时间复杂度？或者：为什么我的代码在这个测试用例上失败了？"
+          placeholder="Need help? Ask AI a question, such as how to improve this code or why it fails a test case."
           :autosize="{ minRows: 4, maxRows: 4 }"
           @keydown.enter.prevent="sendMessage()"
         />
@@ -383,7 +383,7 @@ function clearMessages() {
             <template #icon>
               <icon-park-outline-send />
             </template>
-            发送
+            Send
           </NButton>
           <NButton
             secondary
@@ -394,7 +394,7 @@ function clearMessages() {
             <template #icon>
               <icon-park-outline-close />
             </template>
-            停止
+            Stop
           </NButton>
           <NButton
             secondary
@@ -405,7 +405,7 @@ function clearMessages() {
             <template #icon>
               <icon-park-outline-clear />
             </template>
-            清空
+            Clear
           </NButton>
         </NFlex>
       </NFlex>

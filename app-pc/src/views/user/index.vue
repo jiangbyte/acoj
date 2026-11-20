@@ -45,9 +45,9 @@ loadData()
       responsive="screen"
       class="min-h-[calc(100vh-12rem)]"
     >
-      <!-- 左侧主内容 -->
+      <!-- Section -->
       <n-gi span="1 l:2">
-        <!-- 公告内容 -->
+        <!-- Section -->
         <NSpace vertical :size="24">
           <n-card
             class="mb-2 rounded-xl" :bordered="false" :style="{
@@ -70,14 +70,14 @@ loadData()
                 <NSpace align="center">
                   <n-h2 class="pb-0 mb-0">
                     <n-ellipsis :line-clamp="1">
-                      {{ detailData?.nickname || '未知用户' }}
+                      {{ detailData?.nickname || 'Unknown User' }}
                     </n-ellipsis>
                   </n-h2>
                 </NSpace>
                 <NSpace vertical>
                   <NSpace size="small" align="center">
                     <n-tag size="small" type="info">
-                      {{ detailData?.genderName || '未知' }}
+                      {{ detailData?.genderName || 'Unknown' }}
                     </n-tag>
                   </NSpace>
                 </NSpace>
@@ -87,7 +87,7 @@ loadData()
             <n-space vertical>
               <NSpace size="small">
                 <NText>
-                  所属组
+                 Group
                 </NText>
                 <NTag size="small" type="success">
                   {{ detailData?.groupIdName }}
@@ -95,7 +95,7 @@ loadData()
               </NSpace>
               <n-space align="center">
                 <NText>
-                  注册时间
+                  Joined
                 </NText>
                 <n-tag size="small" type="info">
                   <n-time :time="Number(detailData?.createTime) || Date.now()" />
@@ -103,7 +103,7 @@ loadData()
               </n-space>
               <NSpace size="small">
                 <NText>
-                  邮箱地址
+                  Email
                 </NText>
                 <n-tag size="small" type="info">
                   {{ detailData?.email }}
@@ -111,7 +111,7 @@ loadData()
               </NSpace>
               <NSpace size="small" align="center">
                 <NText>
-                  个性签名
+                  Bio
                 </NText>
                 <NText depth="3">
                   {{ detailData?.quote }}
@@ -121,7 +121,7 @@ loadData()
           </n-card>
         </NSpace>
       </n-gi>
-      <!-- 右侧边栏 -->
+      <!-- Section -->
       <n-gi span="1 l:4">
         <NSpace
           vertical
@@ -139,7 +139,7 @@ loadData()
                   {{ detailData?.solvedProblem ? detailData?.solvedProblem : 0 }}
                 </div>
                 <div class="text-sm text-gray-500 dark:text-gray-400">
-                  已解决题目
+                  Solved Problems
                 </div>
               </n-card>
             </n-gi>
@@ -149,7 +149,7 @@ loadData()
                   {{ detailData?.participatedSet ? detailData?.participatedSet : 0 }}
                 </div>
                 <div class="text-sm text-gray-500 dark:text-gray-400">
-                  参与题集
+                  Problem Sets
                 </div>
               </n-card>
             </n-gi>
@@ -159,7 +159,7 @@ loadData()
                   {{ detailData?.activeScore ? detailData?.activeScore : 0 }}
                 </div>
                 <div class="text-sm text-gray-500 dark:text-gray-400">
-                  活跃指数
+                  Activity Score
                 </div>
               </n-card>
             </n-gi>
@@ -176,7 +176,7 @@ loadData()
               />
             </div>
             <n-text depth="3">
-              注：AC热力图数据来自正式提交记录
+              Note: The AC heatmap uses official submissions
             </n-text>
           </n-card>
         </NSpace>
@@ -186,7 +186,7 @@ loadData()
 </template>
 
 <style scoped>
-/* 使用深度选择器修改子组件样式 */
+/* Component styles. */
 :deep(.custom-heatmap .vch__day__label) {
   font-size: 8px;
 }
@@ -197,7 +197,7 @@ loadData()
   font-size: 10px;
 }
 
-/* 图片悬停效果 */
+/* Component styles. */
 img {
   transition: transform 0.3s ease;
 }

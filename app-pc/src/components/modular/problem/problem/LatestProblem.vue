@@ -23,7 +23,7 @@ defineProps<{
         <!-- <template #header-extra>
           <n-space align="center">
             <n-text depth="3">
-              通过率
+              Acceptance Rate
             </n-text>
             <n-tag size="small" type="info">
               {{ item.acceptance }} %
@@ -86,11 +86,11 @@ defineProps<{
             <n-tag class="mr-4" size="small" type="info">
               {{ item.categoryName }}
             </n-tag>
-            <span>通过率: {{ item.acceptance }} %</span>
+            <span>Acceptance Rate: {{ item.acceptance }} %</span>
           </div>
         </div>
         <div class="mt-4 md:mt-0 flex items-center text-sm text-gray-500 dark:text-gray-400">
-          <span>发布于 <n-time :time="item.createTime" /></span>
+          <span>Published <n-time :time="item.createTime" /></span>
         </div>
       </div>
     </div>

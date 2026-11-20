@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 提交样本库 API请求
+  * Implementation details.
  */
 export function useDataLibraryFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useDataLibraryFetch() {
   const table = 'data/library'
 
   /*
-     * 提交样本库 默认数据
+      * Implementation details.
      */
   const dataLibraryDefaultData = {
     id: '',
@@ -30,12 +30,12 @@ export function useDataLibraryFetch() {
   }
   return {
     /*
-    * 提交样本库 默认数据
+     * Implementation details.
     */
     dataLibraryDefaultData,
 
     /*
-     * 提交样本库 分页接口
+      * Implementation details.
      */
     dataLibraryPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -46,28 +46,28 @@ export function useDataLibraryFetch() {
     },
 
     /*
-     * 提交样本库 新增接口
+      * Implementation details.
      */
     dataLibraryAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 提交样本库 修改接口
+      * Implementation details.
      */
     dataLibraryEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 提交样本库 删除接口
+      * Implementation details.
      */
     dataLibraryDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 提交样本库 详情接口
+      * Implementation details.
      */
     dataLibraryDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

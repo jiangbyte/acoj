@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 报告库 API请求
+  * Implementation details.
  */
 export function useTaskReportsFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useTaskReportsFetch() {
   const table = 'task/reports'
 
   /*
-     * 报告库 默认数据
+      * Implementation details.
      */
   const taskReportsDefaultData = {
     id: '',
@@ -33,12 +33,12 @@ export function useTaskReportsFetch() {
   }
   return {
     /*
-    * 报告库 默认数据
+     * Implementation details.
     */
     taskReportsDefaultData,
 
     /*
-     * 报告库 分页接口
+      * Implementation details.
      */
     taskReportsPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -49,28 +49,28 @@ export function useTaskReportsFetch() {
     },
 
     /*
-     * 报告库 新增接口
+      * Implementation details.
      */
     taskReportsAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 报告库 修改接口
+      * Implementation details.
      */
     taskReportsEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 报告库 删除接口
+      * Implementation details.
      */
     taskReportsDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 报告库 详情接口
+      * Implementation details.
      */
     taskReportsDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 题集进度 API请求
+  * Implementation details.
  */
 export function useDataProgressFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useDataProgressFetch() {
   const table = 'data/progress'
 
   /*
-     * 题集进度 默认数据
+      * Implementation details.
      */
   const dataProgressDefaultData = {
     id: '',
@@ -27,12 +27,12 @@ export function useDataProgressFetch() {
   }
   return {
     /*
-    * 题集进度 默认数据
+     * Implementation details.
     */
     dataProgressDefaultData,
 
     /*
-     * 题集进度 分页接口
+      * Implementation details.
      */
     dataProgressPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -43,28 +43,28 @@ export function useDataProgressFetch() {
     },
 
     /*
-     * 题集进度 新增接口
+      * Implementation details.
      */
     dataProgressAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 题集进度 修改接口
+      * Implementation details.
      */
     dataProgressEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 题集进度 删除接口
+      * Implementation details.
      */
     dataProgressDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 题集进度 详情接口
+      * Implementation details.
      */
     dataProgressDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

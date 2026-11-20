@@ -3,13 +3,13 @@ import CryptoJS from 'crypto-js'
 const SECRET_KEY = import.meta.env.VITE_SECRET_KEY
 
 /**
- * AES 加密工具类
+  * Implementation details.
  */
 export class AesCrypto {
   /**
-   * 加密字符串
-   * @param plainText 要加密的明文
-   * @returns 加密后的密文
+    * Implementation details.
+    * Implementation details.
+    * Implementation details.
    */
   static encrypt(plainText: string): string {
     if (!plainText)
@@ -18,9 +18,9 @@ export class AesCrypto {
   }
 
   /**
-   * 解密字符串
-   * @param cipherText 要解密的密文
-   * @returns 解密后的明文
+    * Implementation details.
+    * Implementation details.
+    * Implementation details.
    */
   static decrypt(cipherText: string): string {
     if (!cipherText)

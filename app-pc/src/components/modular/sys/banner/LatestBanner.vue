@@ -9,7 +9,7 @@ const router = useRouter()
 function openLink(item: any) {
   const isOpenNew = item.targetBlank
   if (item.jumpModule === 'HREF') {
-    // HREF默认跳转外部链接
+    // Implementation note.
     window.open(item.jumpTarget, '_blank')
   }
   if (item.jumpModule === 'NOTICE') {
@@ -50,30 +50,30 @@ const router = useRouter()
 function openLink(item: any) {
   const isOpenNew = item.targetBlank
 
-  // 统一处理路由跳转，支持新页面打开
+  // Implementation note.
   const handleRoute = (routeConfig: any, isExternal = false) => {
     if (isOpenNew && !isExternal) {
-      // 在新页面打开内部路由
+      // Implementation note.
       const route = router.resolve(routeConfig)
       window.open(route.href, '_blank')
     }
     else if (isOpenNew && isExternal) {
-      // 外部链接直接在新窗口打开
+      // Implementation note.
       window.open(routeConfig, '_blank')
     }
     else if (!isOpenNew && !isExternal) {
-      // 在当前页面打开内部路由
+      // Implementation note.
       router.push(routeConfig)
     }
     else {
-      // 外部链接在当前页面打开
+      // Implementation note.
       window.location.href = routeConfig
     }
   }
 
   switch (item.jumpModule) {
     case 'HREF':
-      // HREF默认跳转外部链接
+      // Implementation note.
       handleRoute(item.jumpTarget, true)
       break
     case 'NOTICE':
@@ -148,7 +148,7 @@ function openLink(item: any) {
               round
               @click="openLink(item)"
             >
-              {{ item.buttonText || '了解更多' }}
+              {{ item.buttonText || 'Learn More' }}
               <template #icon>
                 <icon-park-outline-hand-right />
               </template>
@@ -161,18 +161,18 @@ function openLink(item: any) {
 </template>
 
 <style scoped>
-/* 基础样式补充，Unocss未覆盖的部分 */
-/* 确保平滑滚动 */
+/* Component styles. */
+/* Component styles. */
 html {
   scroll-behavior: smooth;
 }
 
-/* 链接样式统一 */
+/* Component styles. */
 a {
   text-decoration: none;
 }
 
-/* 图片加载过渡 */
+/* Component styles. */
 img {
   transition: opacity 0.3s ease-in-out;
 }
@@ -256,7 +256,7 @@ img:hover {
   max-width: 600px;
 }
 
-/* 动画效果 */
+/* Component styles. */
 @keyframes fadeIn {
   from {
     opacity: 0;

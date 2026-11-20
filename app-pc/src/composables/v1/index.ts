@@ -1,6 +1,6 @@
 // src/composables/v1/index.ts
 
-// 导出 data 目录下的所有 API
+// Implementation note.
 export * from './data/DataLibraryApi'
 export * from './data/DataProblemApi'
 export * from './data/DataProgressApi'
@@ -14,7 +14,7 @@ export * from './data/DataContestParticipantApi'
 export * from './data/DataContestProblemApi'
 export * from './data/DataContestAuthApi'
 
-// 导出 sys 目录下的所有 API
+// Implementation note.
 export * from './sys/SysArticleApi'
 export * from './sys/SysBannerApi'
 export * from './sys/SysCategoryApi'
@@ -28,8 +28,8 @@ export * from './sys/SysUserApi'
 export * from './sys/SysConversationApi'
 export * from './sys/AuthApi'
 
-// 导出 ranking 目录下的所有 API
+// Implementation note.
 export * from './ranking/UserRankingApi'
 
-// 导出其他 API
+// Implementation note.
 export * from './FileApi'

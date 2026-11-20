@@ -27,7 +27,7 @@ defineProps<{
               </n-ellipsis>
             </n-text>
             <n-text depth="3">
-              解题 {{ item.solvedCount }}
+              Solved {{ item.solvedCount }}
             </n-text>
           </n-space>
         </n-space>
@@ -49,18 +49,18 @@ defineProps<{
         </div>
         <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
           <n-text depth="3">
-            通过率: {{ item.acceptanceRate }} %
+            Acceptance Rate: {{ item.acceptanceRate }} %
           </n-text>
           <span class="mx-1">•</span>
           <n-text depth="3">
-            解题: {{ item.solvedCount }} 道
+            Solved: {{ item.solvedCount }}
           </n-text>
         </div>
       </div>
     </div>
   </div>
   <n-button text class="text-center w-full p-4" @click="$router.push({ path: '/ranking' })">
-    查看完整排行榜
+    View Full Rankings
   </n-button> -->
 </template>
 

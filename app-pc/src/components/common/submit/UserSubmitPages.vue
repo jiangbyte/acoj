@@ -30,7 +30,7 @@ const CodeEditor = defineAsyncComponent({
           justifyContent: 'center',
         },
       }, [
-        h(NSpin, { size: 'small', description: '代码预览器加载中...' }, { }),
+        h(NSpin, { size: 'small', description: 'Loading code preview...' }, { }),
       ])
     },
   },
@@ -42,42 +42,42 @@ const { dataModuleSubmitPage } = useDataSubmitFetch()
 
 const columns: DataTableColumns<any> = [
   {
-    title: '语言',
+    title: 'Language',
     key: 'languageName',
     render: (row) => {
       return h(NTag, { size: 'small' }, { default: () => row.languageName })
     },
   },
   {
-    title: '执行类型',
+    title: 'Run Type',
     key: 'submitTypeName',
     render: (row) => {
       return h(NTag, { size: 'small', type: row.submitType ? 'info' : 'warning' }, { default: () => row.submitTypeName })
     },
   },
   {
-    title: '长度',
+    title: 'Size',
     key: 'codeLength',
     render: (row) => {
       return h(NTag, { size: 'small' }, { default: () => row.codeLength })
     },
   },
   {
-    title: '耗时',
+    title: 'Time',
     key: 'maxTime',
     render: (row) => {
       return h(NTag, { size: 'small' }, { default: () => row.maxTime })
     },
   },
   {
-    title: '内存',
+    title: 'Memory',
     key: 'maxMemory',
     render: (row) => {
       return h(NTag, { size: 'small' }, { default: () => row.maxMemory })
     },
   },
   {
-    title: '执行状态',
+    title: 'Run Status',
     key: 'statusName',
     render: (row) => {
       return h(NTag, { size: 'small', type:
@@ -119,13 +119,13 @@ loadData()
 const columnSortFieldOptions = computed<any[]>(() => {
   return [
     { label: 'ID', value: 'id' },
-    { label: '创建时间', value: 'createTime' },
-    { label: '更新时间', value: 'updateTime' },
+    { label: 'Created', value: 'createTime' },
+    { label: 'Updated', value: 'updateTime' },
   ]
 })
 const sortOrderOptions = computed(() => [
-  { label: '升序', value: 'ASCEND' },
-  { label: '降序', value: 'DESCEND' },
+  { label: 'Ascending', value: 'ASCEND' },
+  { label: 'Descending', value: 'DESCEND' },
 ])
 
 const showModal = ref(false)
@@ -144,13 +144,13 @@ function rowProps(row: any) {
 }
 
 function refreshSimilarityData() {
-  // 调用获取判题结果的API
+  // Implementation note.
   useDataSubmitFetch().dataSubmitDetail({ id: similarityData.value.id }).then(({ data }) => {
     if (data) {
-      // 更新结果数据
+      // Implementation note.
       similarityData.value = data
 
-      window.$message.success('刷新完成')
+      window.$message.success('Refreshed')
     }
   })
 }
@@ -163,14 +163,14 @@ function refreshSimilarityData() {
       justify="space-between"
     >
       <div>
-        状态列表
+        Status List
       </div>
       <n-flex
         align="center"
         :size="12"
       >
         <NText depth="3">
-          共 {{ pageData?.total }} 次提交
+          {{ pageData?.total }} submissions
         </NText>
         <NPopselect
           v-model:value="pageParam.sortField"
@@ -201,7 +201,7 @@ function refreshSimilarityData() {
         </n-button>
       </n-flex>
     </n-flex>
-    <!-- 题目表格 -->
+    <!-- Section -->
     <n-data-table
       :columns="columns"
       :data="pageData?.records"
@@ -219,7 +219,7 @@ function refreshSimilarityData() {
         show-size-picker
         :page-count="pageData ? Number(pageData.pages) : 0"
         :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-          label: `${(i + 1) * 10} 每页`,
+          label: `${(i + 1) * 10} per page`,
           value: (i + 1) * 10,
         }))"
         :page-slot="3"
@@ -234,28 +234,28 @@ function refreshSimilarityData() {
     <n-modal
       v-model:show="showModal"
       preset="card"
-      title="提交详情"
+      title="Submission Details"
       style="max-width: 700px;"
     >
       <n-scrollbar style="max-height: 500px">
         <n-space vertical :size="16">
-          <!-- 头部信息 -->
+          <!-- Section -->
           <JudgeResultHeader :result-task-data="modalData" />
 
           <n-flex justify="end">
             <n-button size="small" type="primary" @click="refreshSimilarityData">
-              刷新
+              Refresh
             </n-button>
           </n-flex>
 
-          <!-- 判题结果详情 -->
+          <!-- Section -->
           <JudgeResultStats :result-task-data="modalData" />
 
           <NSpace vertical :size="24">
             <n-card v-if="modalData?.message" size="small" class="rounded-xl">
               <template #header>
                 <n-h2 class="pb-0 mb-0">
-                  错误信息
+                  Error Details
                 </n-h2>
               </template>
               <CodeEditor
@@ -274,7 +274,7 @@ function refreshSimilarityData() {
             <n-card size="small" class="rounded-xl">
               <template #header>
                 <n-h2 class="pb-0 mb-0">
-                  提交代码
+                  Submit Code
                 </n-h2>
               </template>
               <template #header-extra>

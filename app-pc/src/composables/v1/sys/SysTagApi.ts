@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 标签 API请求
+  * Implementation details.
  */
 export function useSysTagFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useSysTagFetch() {
   const table = 'sys/tag'
 
   /*
-     * 标签 默认数据
+      * Implementation details.
      */
   const sysTagDefaultData = {
     id: '',
@@ -21,12 +21,12 @@ export function useSysTagFetch() {
   }
   return {
     /*
-    * 标签 默认数据
+     * Implementation details.
     */
     sysTagDefaultData,
 
     /*
-     * 标签 分页接口
+      * Implementation details.
      */
     sysTagPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -37,28 +37,28 @@ export function useSysTagFetch() {
     },
 
     /*
-     * 标签 新增接口
+      * Implementation details.
      */
     sysTagAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 标签 修改接口
+      * Implementation details.
      */
     sysTagEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 标签 删除接口
+      * Implementation details.
      */
     sysTagDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 标签 详情接口
+      * Implementation details.
      */
     sysTagDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {
@@ -68,7 +68,7 @@ export function useSysTagFetch() {
       })
     },
     /*
-     * 标签 选项接口
+      * Implementation details.
      */
     sysTagOptions(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/options`, {

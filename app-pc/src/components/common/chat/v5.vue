@@ -5,7 +5,7 @@ import { useTokenStore } from '@/stores'
 import { useSysConversationFetch } from '@/composables/v1'
 import MdViewer from '@/components/common/editor/md/MarkdownViewer.vue'
 
-// 定义 props
+// Implementation note.
 const props = defineProps({
   problemId: {
     type: String,
@@ -45,20 +45,20 @@ const controller = ref<AbortController | null>(null)
 
 const tokenStore = useTokenStore()
 
-// 连接并发送消息
+// Implementation note.
 function sendMessage(messageType: string = 'DailyConversation') {
-  // 生成会话ID（如果是新会话）
+  // Implementation note.
   if (!chatRequestParam.value.conversationId) {
     chatRequestParam.value.conversationId = `task-${uuidv4()}`
   }
   isLoading.value = true
 
-  // 更新消息类型和内容
+  // Implementation note.
   chatRequestParam.value.messageType = messageType
   chatRequestParam.value.userCode = props.userCode
   chatRequestParam.value.language = props.language
 
-  // 创建中止控制器
+  // Implementation note.
   controller.value = new AbortController()
 
   fetchEventSource(sysConversationStreamUrl, {
@@ -80,43 +80,43 @@ function sendMessage(messageType: string = 'DailyConversation') {
 
     onopen: async (response) => {
       if (response.ok) {
-        console.log('SSE连接已建立')
+        console.log('SSE connection established')
       }
       else {
-        window.$message?.error(`连接失败: ${response.status}`)
+        window.$message?.error(`Connection failed: ${response.status}`)
       }
     },
     onmessage: (event) => {
       try {
         if (event.data) {
           const data = JSON.parse(event.data)
-          console.log('接收到消息:', data)
-          // TODO 处理消息
+          console.log('Message received:', data)
+          // TODO: Review this implementation.
         }
       }
       catch (error) {
-        console.error('解析消息错误:', error)
-        window.$message?.error('接收消息格式错误')
+        console.error('Failed to parse message:', error)
+        window.$message?.error('Invalid response format')
       }
     },
     onerror: (error) => {
-      console.error('SSE错误:', error)
-      window.$message?.error('连接错误，已停止接收消息')
+      console.error('SSE error:', error)
+      window.$message?.error('Connection error. Response stopped')
       isLoading.value = false
     },
     onclose: () => {
-      console.log('SSE连接关闭')
+      console.log('SSE connection closed')
       isLoading.value = false
     },
   })
 }
 
-// 按钮点击处理函数
+// Implementation note.
 function handleButtonClick(messageType: any) {
   sendMessage(messageType)
 }
 
-// 停止发送
+// StopSend
 function stopSending() {
   if (controller.value) {
     controller.value.abort()
@@ -124,7 +124,7 @@ function stopSending() {
   }
 }
 
-// 清空对话
+// Clear Chat
 function clearMessages() {
   chatRequestParam.value.conversationId = ''
 }
@@ -134,7 +134,7 @@ function handleCollapse() {
   isCollapse.value = !isCollapse.value
 }
 
-// 组件挂载时，如果有会话ID则加载历史记录
+// Implementation note.
 onMounted(() => {
 })
 </script>
@@ -148,7 +148,7 @@ onMounted(() => {
       <div>
         <n-empty
           class="flex flex-col items-center justify-center py-12"
-          description="暂无对话记录"
+          description="No conversations"
         >
           <template #icon>
             <n-icon size="40" class="text-gray-300 dark:text-gray-600">
@@ -156,7 +156,7 @@ onMounted(() => {
             </n-icon>
           </template>
           <n-text depth="3" class="text-center max-w-xs">
-            还没有消息，点击下方按钮开始对话！
+            No messages yet. Choose an action below to start
           </n-text>
         </n-empty>
         <div v-for="message in messages" :key="message.responseTime">
@@ -187,13 +187,13 @@ onMounted(() => {
             </n-card>
           </div>
           <span v-if="isLoading && message.messageRole === 'ASSISTANT' && !message.messageContent" class="typing-indicator">
-            思考中...
+            Thinking...
           </span>
         </div>
       </div>
     </n-flex>
     <!-- <MdViewer :model-value="messageContentRef" /> -->
-    <!-- 输入区域 -->
+    <!-- Section -->
     <n-card size="small">
       <NFlex
         vertical
@@ -206,46 +206,46 @@ onMounted(() => {
               size="small"
               @click="handleButtonClick('ProblemSolvingIdeas')"
             >
-              解题思路
+              Solution Approach
             </n-button>
             <n-button
               size="small"
               :disabled="!props.userCode && !props.language"
               @click="handleButtonClick('AnalyzeComplexity')"
             >
-              分析复杂度
+              Analyze Complexity
             </n-button>
             <n-button
               size="small"
               :disabled="!props.userCode && !props.language"
               @click="handleButtonClick('OptimizeCode')"
             >
-              优化代码
+              Optimize Code
             </n-button>
             <n-button
               size="small"
               @click="handleButtonClick('AnalyzeBoundary')"
             >
-              分析边界
+              Analyze Edge Cases
             </n-button>
             <n-button
               size="small"
             >
-              对话历史
+              Chat History
             </n-button>
           </n-flex>
           <n-button
             size="small"
             @click="handleCollapse"
           >
-            {{ isCollapse ? '展开' : '收起' }}
+            {{ isCollapse ? 'Expand' : 'Collapse' }}
           </n-button>
         </n-flex>
         <NInput
           v-if="!isCollapse"
           v-model:value="chatRequestParam.messageContent"
           type="textarea"
-          placeholder="遇到问题？向 AI 描述你的疑问或需要帮助的地方。例如：如何优化这段代码的时间复杂度？"
+          placeholder="Need help? Ask AI a question, such as how to improve this code's time complexity."
           :autosize="{ minRows: 4, maxRows: 4 }"
           @keydown.enter.prevent="sendMessage()"
         />
@@ -263,7 +263,7 @@ onMounted(() => {
             <template #icon>
               <icon-park-outline-send />
             </template>
-            发送
+            Send
           </NButton>
           <NButton
             secondary
@@ -275,7 +275,7 @@ onMounted(() => {
             <template #icon>
               <icon-park-outline-close />
             </template>
-            停止
+            Stop
           </NButton>
           <NButton
             secondary
@@ -286,7 +286,7 @@ onMounted(() => {
             <template #icon>
               <icon-park-outline-clear />
             </template>
-            清空
+            Clear
           </NButton>
         </NFlex>
       </NFlex>

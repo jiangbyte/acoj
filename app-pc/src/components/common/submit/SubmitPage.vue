@@ -15,7 +15,7 @@ interface Props {
   moduleType: string
 }
 
-// 懒加载重量级组件
+// Implementation note.
 const CodeEditor = defineAsyncComponent({
   loader: () => import('@/components/common/editor/code/CodeEditor.vue'),
   loadingComponent: {
@@ -28,7 +28,7 @@ const CodeEditor = defineAsyncComponent({
           justifyContent: 'center',
         },
       }, [
-        h(NSpin, { size: 'small', description: '代码编辑器加载中...' }, { }),
+        h(NSpin, { size: 'small', description: 'Loading code editor...' }, { }),
       ])
     },
   },
@@ -86,12 +86,12 @@ const resultTaskData = ref({
   id: undefined,
   judgeTaskId: undefined,
   userId: undefined,
-  userIdName: '未知用户',
+  userIdName: 'Unknown User',
   userAvatar: undefined,
   moduleId: undefined,
   moduleType: undefined,
   problemId: undefined,
-  problemIdName: '未知题目',
+  problemIdName: 'Unknown Problem',
   language: undefined,
   languageName: undefined,
   code: undefined,
@@ -116,15 +116,15 @@ const resultTaskData = ref({
 
 const submitTaskId = ref('')
 
-// 在组件数据部分添加
+// Implementation note.
 const poller = ref<Poller<any> | null>(null)
 const isPolling = ref(false)
 const pollingCount = ref(0)
-const MAX_POLLING_COUNT = 40 // 最大轮询次数，防止无限轮询
+const MAX_POLLING_COUNT = 40 // Implementation note.
 
-// 判题结果轮询函数
+// Implementation note.
 async function startResultPolling(taskId: string) {
-  // 如果已有轮询器在运行，先停止
+  // Implementation note.
   if (poller.value) {
     poller.value.stop()
   }
@@ -133,43 +133,43 @@ async function startResultPolling(taskId: string) {
     return
   }
 
-  // 重置轮询计数
+  // Implementation note.
   pollingCount.value = 0
 
-  // 创建新的轮询器
+  // Implementation note.
   poller.value = new Poller(
     {
-      interval: 2000, // 2秒轮询一次
+      interval: 2000, // Implementation note.
       immediate: true,
     },
     {
       onPoll: async () => {
         pollingCount.value++
 
-        // 检查是否超过最大轮询次数
+        // Implementation note.
         if (pollingCount.value > MAX_POLLING_COUNT) {
-          // window.$message.warning('判题超时，请稍后手动查看结果')
+          // window.$message.warning('Judging Timed Out，Please check the result again later')
           window.$dialog.warning({
-            title: '判题超时',
-            content: '请稍后手动查看结果',
+            title: 'Judging Timed Out',
+            content: 'Please check the result again later',
           })
           poller.value?.stop()
           return null
         }
 
         try {
-          // 调用获取判题结果的API
+          // Implementation note.
           useDataSubmitFetch().dataSubmitDetail({ id: taskId }).then(({ data }) => {
-            // 更新结果数据
+            // Implementation note.
             resultTaskData.value = data
 
             if (data.isFinish) {
-              // 触发结果轮询结束
+              // Implementation note.
               poller.value?.stop(() => {
                 isPolling.value = false
                 activeTab.value = 'result'
                 window.$notification.success({
-                  title: '判题完成',
+                  title: 'Judging Complete',
                   duration: 3000,
                 })
               })
@@ -177,12 +177,12 @@ async function startResultPolling(taskId: string) {
           })
         }
         catch (error) {
-          console.error('获取判题结果失败:', error)
-          // 发生错误时停止轮询
+          console.error('Failed to get judge result:', error)
+          // Implementation note.
           poller.value?.stop(() => {
-            // window.$message.error('获取判题结果失败')
+            // window.$message.error('Failed to get judge result')
             window.$notification.error({
-              title: '获取判题结果失败',
+              title: 'Failed to get judge result',
               duration: 3000,
             })
           })
@@ -190,30 +190,30 @@ async function startResultPolling(taskId: string) {
         }
       },
       onStart: () => {
-        console.log('开始轮询判题结果')
+        console.log('Started polling judge result')
         isPolling.value = true
         activeTab.value = 'result'
-        // window.$message.info('代码已提交，正在判题中...')
+        // window.$message.info('Code submitted. Judging...')
         window.$notification.info({
-          title: '代码已提交，正在判题中...',
+          title: 'Code submitted. Judging...',
           duration: 3000,
         })
       },
       onStop: () => {
-        console.log('停止轮询判题结果')
+        console.log('Stopped polling judge result')
         isPolling.value = false
         pollingCount.value = 0
       },
     },
   )
 }
-// 手动停止判题轮询
+// Implementation note.
 function stopPollingManually() {
   if (poller.value && isPolling.value) {
     poller.value.stop(() => {
-      // window.$message.info('已停止判题结果查询')
+      // window.$message.info('Stopped checking judge results')
       window.$notification.info({
-        title: '已停止判题结果查询',
+        title: 'Stopped checking judge results',
         duration: 3000,
       })
       isPolling.value = false
@@ -228,7 +228,7 @@ function executeCode(type: boolean) {
     return
   }
 
-  // 任务ID生成
+  // Implementation note.
   submitParam.value.judgeTaskId = `task-${uuidv4()}`
 
   if (props.moduleType === 'SET') {
@@ -237,14 +237,14 @@ function executeCode(type: boolean) {
     useDataSubmitFetch().dataSubmitSetExecute(submitParam.value).then(({ data }) => {
       if (data) {
         submitTaskId.value = data
-        // 开始轮询判题结果
+        // Started polling judge result
         startResultPolling(data)
       }
     }).catch((error) => {
-      console.error('提交代码失败:', error)
-      // window.$message.error('提交失败，请重试')
+      console.error('Failed to submit code:', error)
+      // window.$message.error('Submission failed. Please try again')
       window.$notification.error({
-        title: '提交失败',
+        title: 'Submission Failed',
         duration: 3000,
       })
     })
@@ -255,14 +255,14 @@ function executeCode(type: boolean) {
     useDataSubmitFetch().dataSubmitExecute(submitParam.value).then(({ data }) => {
       if (data) {
         submitTaskId.value = data
-        // 开始轮询判题结果
+        // Started polling judge result
         startResultPolling(data)
       }
     }).catch((error) => {
-      console.error('提交代码失败:', error)
-      // window.$message.error('提交失败，请重试')
+      console.error('Failed to submit code:', error)
+      // window.$message.error('Submission failed. Please try again')
       window.$notification.error({
-        title: '提交失败',
+        title: 'Submission Failed',
         duration: 3000,
       })
     })
@@ -273,27 +273,27 @@ function executeCode(type: boolean) {
     useDataSubmitFetch().dataSubmitContestExecute(submitParam.value).then(({ data }) => {
       if (data) {
         submitTaskId.value = data
-        // 开始轮询判题结果
+        // Started polling judge result
         startResultPolling(data)
       }
     }).catch((error) => {
-      console.error('提交代码失败:', error)
-      // window.$message.error('提交失败，请重试')
+      console.error('Failed to submit code:', error)
+      // window.$message.error('Submission failed. Please try again')
       window.$notification.error({
-        title: '提交失败',
+        title: 'Submission Failed',
         duration: 3000,
       })
     })
   }
 }
-// 在组件卸载时清理轮询器
+// Implementation note.
 onUnmounted(() => {
   if (poller.value) {
     poller.value.destroy()
   }
 })
 
-// 获取语言选项
+// Implementation note.
 const languageOptions = computed(() => {
   // if (!detailData.value?.codeTemplate)
   //   return []
@@ -303,21 +303,21 @@ const languageOptions = computed(() => {
   }))
 })
 
-// 语言切换处理
+// Implementation note.
 function handleLanguageChange(lang: string) {
   stopPollingManually()
-  // 不使用模板时，不处理
+  // Implementation note.
   if (!detailData.value.useTemplate) {
     submitParam.value.code = ''
     return
   }
-  // 没有模板时，不处理
+  // Implementation note.
   if (!detailData.value?.codeTemplate) {
     return
   }
 
   if (detailData.value.useTemplate) {
-    // 有模板时，使用模板
+    // Implementation note.
     const selectedTemplate = detailData.value.codeTemplate.find((t: { language: string }) => t.language === lang)
     if (selectedTemplate) {
       submitParam.value.code = selectedTemplate.template
@@ -328,7 +328,7 @@ function handleLanguageChange(lang: string) {
   }
 }
 
-// =============== 结果轮询 结束 =================
+// Implementation note.
 const isMobile = ref(false)
 function checkIfMobile() {
   const userAgent = navigator.userAgent.toLowerCase()
@@ -350,39 +350,39 @@ const problemListRef = ref()
 </script>
 
 <template>
-  <!-- 移动端只显示题目内容 -->
+  <!-- Section -->
   <template v-if="isMobile">
     <NCard class="h-full" size="small" :bordered="false">
       <NFlex vertical :size="16" class="h-full">
         <NTabs v-model:value="activeTab" class="pt-72px" type="line" animated>
-          <NTabPane name="description" tab="题目描述">
+          <NTabPane name="description" tab="Problem Description">
             <ProblemDescription :detail-data="detailData" />
           </NTabPane>
-          <NTabPane name="submissions" tab="提交历史">
+          <NTabPane name="submissions" tab="Submission History">
             <UserSubmitPages v-if="props.moduleType === 'PROBLEM'" :module-id="routeProblemId" :problem-id="routeProblemId" module-type="PROBLEM" />
             <UserSubmitPages v-if="props.moduleType === 'SET'" :module-id="String(routeSetId)" :problem-id="routeProblemId" module-type="SET" />
             <UserSubmitPages v-if="props.moduleType === 'CONTEST'" :module-id="String(routeContestId)" :problem-id="routeProblemId" module-type="CONTEST" />
           </NTabPane>
-          <NTabPane name="submit" tab="提交代码">
+          <NTabPane name="submit" tab="Submit Code">
             <n-card size="small">
               <n-space align="center" justify="space-between">
                 <n-select
                   v-model:value="submitParam.language"
                   :options="languageOptions"
-                  placeholder="请选择语言"
+                  placeholder="Select a language"
                   class="w-50"
                   data-testid="language-select"
                   @update:value="handleLanguageChange"
                 />
                 <n-space align="center">
                   <n-button v-if="isPolling" size="small" data-testid="polling-stop-button" @click="stopPollingManually">
-                    停止
+                    Stop
                   </n-button>
                   <n-button data-testid="test-submit-button" :disabled="!submitParam.language || !submitParam.code || isPolling" @click="executeCode(false)">
-                    运行
+                    Run
                   </n-button>
                   <n-button data-testid="judge-submit-button" type="primary" :disabled="!submitParam.language || !submitParam.code || isPolling" @click="executeCode(true)">
-                    提交
+                    Submit
                   </n-button>
                 </n-space>
               </n-space>
@@ -394,7 +394,7 @@ const problemListRef = ref()
           </NTabPane>
           <NTabPane
             name="result"
-            tab="判题结果"
+            tab="Judge Result"
           >
             <JudgeResult
               :is-polling="isPolling"
@@ -404,13 +404,13 @@ const problemListRef = ref()
             />
           </NTabPane>
           <!--
-            非题集时，使用题目自身的 useAi 来判是否要启用 LLM 聊天
-            题集时 也就是 isSet = true 时，使用 setUseAi 来判断是否要启用 LLM 聊天
+            Standalone problems use their own useAi setting to enable AI chat.
+            Problem sets use setUseAi instead.
             -->
           <NTabPane
             v-if="props.moduleType !== 'CONTEST' && (props.moduleType === 'SET' ? detailData?.setUseAi : detailData?.useAi)"
             name="assistant"
-            tab="增强解析"
+            tab="AI Analysis"
           >
             <KeepAlive>
               <LLMChat
@@ -423,7 +423,7 @@ const problemListRef = ref()
           </NTabPane>
           <template v-if="props.moduleType !== 'PROBLEM'" #suffix>
             <n-button text @click="problemListRef.doOpen(props.moduleType, theModuleId)">
-              题目列表
+              Problem List
             </n-button>
           </template>
         </NTabs>
@@ -431,7 +431,7 @@ const problemListRef = ref()
     </NCard>
   </template>
   <template v-else>
-    <!-- 题目内容与提交区域 -->
+    <!-- Section -->
     <NSplit
       direction="horizontal"
       :max="0.7"
@@ -439,7 +439,7 @@ const problemListRef = ref()
       :default-size="0.5"
       class="max-w-full p-0 mt-18 h-[calc(100vh-72px)]"
     >
-      <!-- 左侧题目内容区域 -->
+      <!-- Section -->
       <template #1>
         <NCard
           class="h-full flex flex-col"
@@ -449,7 +449,7 @@ const problemListRef = ref()
             vertical
             :size="16"
           >
-            <!-- 题目相关内容的标签页 -->
+            <!-- Section -->
             <NTabs
               v-model:value="activeTab"
               type="line"
@@ -457,13 +457,13 @@ const problemListRef = ref()
             >
               <NTabPane
                 name="description"
-                tab="题目描述"
+                tab="Problem Description"
               >
                 <ProblemDescription :detail-data="detailData" />
               </NTabPane>
               <NTabPane
                 name="submissions"
-                tab="提交历史"
+                tab="Submission History"
               >
                 <UserSubmitPages v-if="props.moduleType === 'PROBLEM'" :module-id="routeProblemId" :problem-id="routeProblemId" module-type="PROBLEM" />
                 <UserSubmitPages v-if="props.moduleType === 'SET'" :module-id="String(routeSetId)" :problem-id="routeProblemId" module-type="SET" />
@@ -471,7 +471,7 @@ const problemListRef = ref()
               </NTabPane>
               <NTabPane
                 name="result"
-                tab="判题结果"
+                tab="Judge Result"
               >
                 <JudgeResult
                   :is-polling="isPolling"
@@ -483,7 +483,7 @@ const problemListRef = ref()
               <NTabPane
                 v-if="props.moduleType !== 'CONTEST' && (props.moduleType === 'SET' ? detailData?.setUseAi : detailData?.useAi)"
                 name="assistant"
-                tab="增强解析"
+                tab="AI Analysis"
               >
                 <!-- <LLMChat
                   :problem-id="originalId"
@@ -501,7 +501,7 @@ const problemListRef = ref()
               </NTabPane>
               <template v-if="props.moduleType !== 'PROBLEM'" #suffix>
                 <n-button text @click="problemListRef.doOpen(props.moduleType, theModuleId)">
-                  题目列表
+                  Problem List
                 </n-button>
               </template>
             </NTabs>
@@ -509,26 +509,26 @@ const problemListRef = ref()
         </NCard>
       </template>
 
-      <!-- 右侧代码编辑和提交区域 -->
+      <!-- Section -->
       <template #2>
         <n-card size="small">
           <n-space align="center" justify="space-between">
             <n-select
               v-model:value="submitParam.language"
               :options="languageOptions"
-              placeholder="请选择语言"
+              placeholder="Select a language"
               class="w-50"
               @update:value="handleLanguageChange"
             />
             <n-space align="center">
               <n-button v-if="isPolling" @click="stopPollingManually">
-                停止
+                Stop
               </n-button>
               <n-button :disabled="!submitParam.language || !submitParam.code || isPolling" @click="executeCode(false)">
-                运行
+                Run
               </n-button>
               <n-button type="primary" :disabled="!submitParam.language || !submitParam.code || isPolling" @click="executeCode(true)">
-                提交
+                Submit
               </n-button>
             </n-space>
           </n-space>

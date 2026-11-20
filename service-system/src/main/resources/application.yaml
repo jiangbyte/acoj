@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: service-system
+  jackson:
+    time-zone: Asia/Shanghai
+    locale: en_US
   profiles:
     active: @profiles.active@
   cloud:

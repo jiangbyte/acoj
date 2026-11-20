@@ -6,48 +6,48 @@ import { useTokenStore } from '@/stores'
 
 const gateway = import.meta.env.VITE_GATEWAY
 
-// message 弹窗
+// Implementation note.
 const { message } = createDiscreteApi(['message'])
 
-/** 未登录/过期处理锁，避免并发 401 连弹 toast、重复跳转 */
+/** Implementation details. */
 let unauthorizedHandling = false
 
 /**
- * 判断业务/HTTP 是否未登录或无权限（后端统一 code=401）
+  * Implementation details.
  */
 function isUnauthorized(status: number, jsonData?: Record<string, any>) {
   return status === 401 || String(jsonData?.code) === '401'
 }
 
 /**
- * 清理本地登录态，提示一次并跳转登录页（登录/注册页除外）
+  * Implementation details.
  */
 async function handleUnauthorized() {
-  // 1. 已在处理中则直接忽略，防并发请求刷屏
+  // Implementation note.
   if (unauthorizedHandling)
     return
   unauthorizedHandling = true
 
-  // 2. 清理 token，并区分「未登录」与「登录过期」文案
+  // Implementation note.
   const tokenStore = useTokenStore()
   const hadToken = !!tokenStore.getToken
   tokenStore.resetToken()
-  const tip = hadToken ? '登录过期，请重新登录' : '请先登录'
+  const tip = hadToken ? 'Your session has expired. Please sign in again' : 'Please sign in first'
 
   try {
-    // 3. 懒加载 router，避免与 stores/utils 循环依赖
+    // Implementation note.
     const { router } = await import('@/router')
     const current = router.currentRoute.value
     const onAuthPage = current.name === 'login' || current.name === 'register'
       || current.path === '/login' || current.path === '/register'
 
-    // 4. 已在登录相关页：只提示，不再跳转
+    // Implementation note.
     if (onAuthPage) {
       message.error(tip)
       return
     }
 
-    // 5. 提示一次并跳转登录，带回跳地址
+    // Implementation note.
     message.error(tip)
     const redirect = current.name === '404' ? undefined : current.fullPath
     await router.replace({ path: '/login', query: redirect ? { redirect } : undefined })
@@ -60,7 +60,7 @@ async function handleUnauthorized() {
 }
 
 function showErrorMessage(jsonData: Record<string, any>) {
-  const text = jsonData.message || jsonData.error || '请求失败'
+  const text = jsonData.message || jsonData.error || 'Request failed'
   if (jsonData.code) {
     message.error(`${text} (${jsonData.code})`)
   }
@@ -77,19 +77,19 @@ const alovaInstance = createAlova({
   timeout: 60 * 1000,
 
   beforeRequest(method) {
-    // 1. 仅在有 token 时附加 Authorization
+    // Implementation note.
     const tokenStore = useTokenStore()
     const token = tokenStore.getToken
     if (token) {
       method.config.headers.Authorization = token
     }
 
-    // 2. FormData 上传：必须去掉 Content-Type，由浏览器自动带 multipart boundary
+    // Implementation note.
     if (typeof FormData !== 'undefined' && method.data instanceof FormData) {
       delete method.config.headers['Content-Type']
       delete method.config.headers['content-type']
     }
-    // 3. 表单提交内容类型转换
+    // Implementation note.
     else if (method.meta?.isFormPost) {
       method.config.headers['Content-Type'] = 'application/x-www-form-urlencoded'
       method.data = new URLSearchParams(method.data as URLSearchParams).toString()
@@ -98,7 +98,7 @@ const alovaInstance = createAlova({
 
   responded: {
     onSuccess: async (response, method) => {
-      // 1. 解析响应体
+      // Implementation note.
       const { status } = response
       let jsonData: Record<string, any> = {}
       try {
@@ -108,13 +108,13 @@ const alovaInstance = createAlova({
         jsonData = {}
       }
 
-      // 2. 未登录/过期：统一登出并跳登录
+      // Implementation note.
       if (isUnauthorized(status, jsonData)) {
         await handleUnauthorized()
         return jsonData
       }
 
-      // 3. 成功响应
+      // Implementation note.
       if (status === 200) {
         if (method.meta?.isBlob) {
           return response.blob()
@@ -126,14 +126,14 @@ const alovaInstance = createAlova({
         return jsonData
       }
 
-      // 4. 其他 HTTP 失败
+      // Implementation note.
       showErrorMessage(jsonData)
       return jsonData
     },
 
     onError: async (error, _method) => {
       if (!unauthorizedHandling) {
-        message.error(error?.message || '网络异常，请稍后重试')
+        message.error(error?.message || 'Network error. Please try again later')
       }
     },
 

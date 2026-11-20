@@ -4,12 +4,12 @@ import { AesCrypto } from '@/utils'
 import { NSpin } from 'naive-ui'
 // import CodeEditor from '@/components/common/editor/code/CodeEditor.vue'
 
-// 懒加载重量级组件
+// Implementation note.
 const CodeEditor = defineAsyncComponent({
   loader: () => import('@/components/common/editor/code/CodeEditor.vue'),
   // loader: () =>
   //   new Promise((resolve) => {
-  //     // 模拟 3 秒延迟
+  // Implementation note.
   //     setTimeout(() => {
   //       resolve(import('@/components/common/editor/code/CodeEditor.vue'))
   //     }, 3000)
@@ -24,7 +24,7 @@ const CodeEditor = defineAsyncComponent({
           justifyContent: 'center',
         },
       }, [
-        h(NSpin, { size: 'small', description: '代码预览器加载中...' }, { }),
+        h(NSpin, { size: 'small', description: 'Loading code preview...' }, { }),
       ])
     },
   },
@@ -46,20 +46,20 @@ async function loadData() {
     }
   }
   catch {
-    // 错误处理
+    // Implementation note.
   }
 }
 
 loadData()
 
 function refreshSimilarityData() {
-  // 调用获取判题结果的API
+  // Implementation note.
   useDataSubmitFetch().dataSubmitDetail({ id: detailData.value.id }).then(({ data }) => {
     if (data) {
-      // 更新结果数据
+      // Implementation note.
       detailData.value = data
 
-      window.$message.success('刷新完成')
+      window.$message.success('Refreshed')
     }
   })
 }
@@ -73,7 +73,7 @@ function refreshSimilarityData() {
       :y-gap="24"
       responsive="screen"
     >
-      <!-- 右侧边栏 -->
+      <!-- Section -->
       <n-gi span="1 l:2">
         <NSpace
           vertical
@@ -82,22 +82,22 @@ function refreshSimilarityData() {
           <n-card class="rounded-xl" size="small">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                提交信息
+                Submission Details
               </n-h2>
             </template>
             <n-space vertical :size="16">
               <JudgeResultHeader :result-task-data="detailData" />
               <n-flex justify="end">
                 <n-button size="small" type="primary" @click="refreshSimilarityData">
-                  刷新
+                  Refresh
                 </n-button>
               </n-flex>
-              <!-- 判题结果详情 -->
+              <!-- Section -->
               <JudgeResultStats :result-task-data="detailData" class="w-full" />
             </n-space>
             <!-- <n-space v-if="detailData?.submitType" vertical class="w-full mt-4" :size="16">
               <n-space align="center" justify="space-between">
-                <n-text>代码相似度</n-text>
+                <n-text>Code Similarity</n-text>
                 <n-space align="center">
                   <n-tag v-if="detailData?.similarityCategoryName" type="info">
                     {{ detailData?.similarityCategoryName }}
@@ -113,20 +113,20 @@ function refreshSimilarityData() {
                 :percentage="(detailData?.similarity || 0) * 100"
               />
               <n-alert type="info" show-icon>
-                代码克隆检测用于辅助判断代码相似度，结果仅供参考
+                Clone detection estimates code similarity and is for reference only
               </n-alert>
             </n-space> -->
           </n-card>
         </NSpace>
       </n-gi>
-      <!-- 左侧主内容 -->
+      <!-- Section -->
       <n-gi span="1 l:4">
-        <!-- 公告内容 -->
+        <!-- Section -->
         <NSpace vertical :size="24">
           <n-card v-if="detailData?.message" size="small" class="rounded-xl">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                错误信息
+                Error Details
               </n-h2>
             </template>
             <!-- <n-code :language="detailData?.language" :code="detailData?.message" show-line-numbers word-wrap /> -->
@@ -146,7 +146,7 @@ function refreshSimilarityData() {
           <n-card size="small" class="rounded-xl">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                提交代码
+                Submit Code
               </n-h2>
             </template>
             <template #header-extra>

@@ -19,7 +19,7 @@ defineProps<Props>()
         <div class="flex items-center gap-2">
           <n-text class="text-xl font-bold">
             <n-ellipsis style="width: 90px">
-              {{ resultTaskData?.userIdName || '未知用户' }}
+              {{ resultTaskData?.userIdName || 'Unknown User' }}
             </n-ellipsis>
           </n-text>
           <n-tag
@@ -33,26 +33,26 @@ defineProps<Props>()
               ? 'error'
               : 'success'"
           >
-            {{ resultTaskData?.statusName || '未知状态' }}
+            {{ resultTaskData?.statusName || 'Unknown Status' }}
           </n-tag>
         </div>
         <n-flex vertical :size="6">
           <n-text class="text-gray-500 dark:text-gray-400" depth="3">
-            提交了题目 <n-tag size="small">
+            submitted <n-tag size="small">
               <n-ellipsis style="width: 90px">
-                {{ resultTaskData?.problemIdName || '未知题目' }}
+                {{ resultTaskData?.problemIdName || 'Unknown Problem' }}
               </n-ellipsis>
             </n-tag>
           </n-text>
           <n-flex align="center">
             <n-text class="text-gray-500 dark:text-gray-400" depth="3">
-              使用语言 <n-tag size="small">
-                {{ resultTaskData?.languageName || '未知语言' }}
+              Language <n-tag size="small">
+                {{ resultTaskData?.languageName || 'Unknown Language' }}
               </n-tag>
             </n-text>
             <n-text class="text-gray-500 dark:text-gray-400" depth="3">
-              提交类型 <n-tag size="small" :type="resultTaskData?.submitType ? 'info' : 'warning'">
-                {{ resultTaskData?.submitTypeName || '未知类型' }}
+              Submission Type <n-tag size="small" :type="resultTaskData?.submitType ? 'info' : 'warning'">
+                {{ resultTaskData?.submitTypeName || 'Unknown Type' }}
               </n-tag>
             </n-text>
           </n-flex>
@@ -62,10 +62,10 @@ defineProps<Props>()
     <template #footer>
       <n-flex align="center" justify="space-between">
         <n-text class="block text-gray-400 text-sm mt-1">
-          提交时间: <n-time :time="resultTaskData?.createTime" />
+          Submitted: <n-time :time="resultTaskData?.createTime" />
         </n-text>
         <!-- <n-text class="block text-gray-400 text-sm mt-1">
-          更新时间: <n-time :time="resultTaskData?.updateTime" />
+          Updated: <n-time :time="resultTaskData?.updateTime" />
         </n-text> -->
       </n-flex>
     </template>

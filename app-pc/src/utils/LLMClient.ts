@@ -17,11 +17,11 @@ export class LLMClient {
   }
 
   /**
-   * 创建并处理服务器发送事件 (SSE) 流
+    * Implementation details.
    */
   async chatStream(options: ChatStreamOptions): Promise<void> {
     const {
-      message = '你好，你是谁？',
+      message = 'Hello, who are you?',
       problemId,
       conversantId,
       onMessage,
@@ -48,7 +48,7 @@ export class LLMClient {
           'Accept': 'text/event-stream',
           'Cache-Control': 'no-cache',
         },
-        signal, // 添加信号控制
+        signal, // Implementation note.
       })
 
       if (!response.ok) {
@@ -75,13 +75,13 @@ export class LLMClient {
 
           buffer += decoder.decode(value, { stream: true })
 
-          // 改进的SSE解析逻辑
+          // Implementation note.
           let position = 0
           while (position < buffer.length) {
-            // 查找下一个换行符
+            // Implementation note.
             const lineEnd = buffer.indexOf('\n', position)
             if (lineEnd === -1)
-              break // 没有完整的行
+              break // Implementation note.
 
             const line = buffer.slice(position, lineEnd).trim()
             position = lineEnd + 1
@@ -94,7 +94,7 @@ export class LLMClient {
             }
           }
 
-          // 保留未处理的部分
+          // Implementation note.
           buffer = buffer.slice(position)
         }
       }
@@ -104,7 +104,7 @@ export class LLMClient {
     }
     catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
-        // 请求被取消，不触发onError
+        // Implementation note.
         return
       }
       if (onError) {
@@ -139,7 +139,7 @@ export class LLMClient {
 
     const cancel = () => {
       isCancelled = true
-      // 这里可以添加额外的取消逻辑
+      // Implementation note.
     }
 
     return {

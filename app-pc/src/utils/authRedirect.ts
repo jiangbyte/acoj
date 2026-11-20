@@ -1,5 +1,5 @@
 /**
- * 解析登录/注册后的安全跳转路径（仅允许站内相对路径）。
+  * Implementation details.
  */
 export function resolveAuthRedirect(raw: unknown, fallback = '/'): string {
   if (typeof raw !== 'string' || !raw) {

@@ -5,7 +5,7 @@ import { useTokenStore } from '@/stores'
 import { useSysConversationFetch } from '@/composables/v1'
 import MdViewer from '@/components/common/editor/md/MarkdownViewer.vue'
 
-// 定义 props
+// Implementation note.
 const props = defineProps({
   problemId: {
     type: String,
@@ -42,27 +42,27 @@ const isUserStopped = ref(false)
 
 const tokenStore = useTokenStore()
 
-// 连接并发送消息
+// Implementation note.
 function sendMessage(messageType: string = 'DailyConversation') {
   if (!chatRequestParam.value.messageContent.trim() && messageType === 'DailyConversation') {
-    window.$message?.warning('请输入消息内容')
+    window.$message?.warning('Enter a message')
     return
   }
 
-  // 重置停止状态
+  // Implementation note.
   isUserStopped.value = false
 
-  // 生成会话ID（如果是新会话）
+  // Implementation note.
   if (!chatRequestParam.value.conversationId) {
     chatRequestParam.value.conversationId = `task-${uuidv4()}`
-    console.log('生成会话ID:', chatRequestParam.value.conversationId)
+    console.log('Generated conversation ID:', chatRequestParam.value.conversationId)
   }
 
   isLoading.value = true
   currentAssistantMessage.value = ''
   currentMessageType.value = messageType
 
-  // 根据消息类型确定要发送的内容
+  // Implementation note.
   let messageContentToSend = ''
   let userDisplayMessage = ''
 
@@ -71,18 +71,18 @@ function sendMessage(messageType: string = 'DailyConversation') {
     userDisplayMessage = chatRequestParam.value.messageContent
   }
   else {
-    // 对于功能按钮，设置对应的消息内容
+    // Implementation note.
     const buttonMessages = {
-      ProblemSolvingIdeas: '请帮我分析这道题的解题思路',
-      AnalyzeComplexity: '请帮我分析这段代码的时间复杂度和空间复杂度',
-      OptimizeCode: '请帮我优化这段代码',
-      AnalyzeBoundary: '请帮我分析这道题的边界情况',
+      ProblemSolvingIdeas: 'Help me develop an approach to this problem',
+      AnalyzeComplexity: 'Analyze the time and space complexity of this code',
+      OptimizeCode: 'Help me optimize this code',
+      AnalyzeBoundary: 'Help me identify edge cases for this problem',
     } as const
-    messageContentToSend = buttonMessages[messageType as keyof typeof buttonMessages] || '请帮我分析这个问题'
+    messageContentToSend = buttonMessages[messageType as keyof typeof buttonMessages] || 'Help me analyze this problem'
     userDisplayMessage = messageContentToSend
   }
 
-  // 添加用户消息到消息列表
+  // Implementation note.
   messages.value.push({
     conversationId: chatRequestParam.value.conversationId,
     messageContent: userDisplayMessage,
@@ -91,10 +91,10 @@ function sendMessage(messageType: string = 'DailyConversation') {
     responseTime: Date.now(),
   })
 
-  // 创建中止控制器
+  // Implementation note.
   controller.value = new AbortController()
 
-  console.log('发送请求:', {
+  console.log('Sending request:', {
     conversationId: chatRequestParam.value.conversationId,
     problemId: chatRequestParam.value.problemId,
     messageContent: messageContentToSend,
@@ -123,42 +123,42 @@ function sendMessage(messageType: string = 'DailyConversation') {
 
     onopen: async (response) => {
       if (response.ok) {
-        console.log('SSE连接已建立')
+        console.log('SSE connection established')
         return
       }
-      window.$message?.error(`连接失败: ${response.status}`)
+      window.$message?.error(`Connection failed: ${response.status}`)
       handleRequestEnd(false)
-      // 非 2xx 必须抛出，否则会进入重试循环
+      // Implementation note.
       throw new Error(`SSE connection failed: ${response.status}`)
     },
     // onmessage: (event) => {
     //   try {
     //     if (event.data) {
     //       const data = JSON.parse(event.data)
-    //       console.log('接收到消息:', data)
+    //       console.log('Message received:', data)
 
-    //       // 处理流式消息
+    // Implementation note.
     //       if (data.messageContent) {
     //         const content = data.messageContent
     //         currentAssistantMessage.value += content
 
-    //         // 更新最后一条助手消息的内容
+    // Implementation note.
     //         const lastMessageIndex = messages.value.length - 1
     //         if (lastMessageIndex >= 0 && messages.value[lastMessageIndex].messageRole === 'ASSISTANT') {
     //           messages.value[lastMessageIndex].messageContent = currentAssistantMessage.value
     //         }
     //       }
 
-    //       // 处理消息结束
+    // Implementation note.
     //       if (data.finishReason || data.finished) {
-    //         console.log('消息接收完成')
+    //         console.log('Message complete')
     //         handleRequestEnd(true)
     //       }
     //     }
     //   }
     //   catch (error) {
-    //     console.error('解析消息错误:', error)
-    //     window.$message?.error('接收消息格式错误')
+    //     console.error('Failed to parse message:', error)
+    //     window.$message?.error('Invalid response format')
     //     handleRequestEnd(true)
     //   }
     // },
@@ -166,12 +166,12 @@ function sendMessage(messageType: string = 'DailyConversation') {
       try {
         if (event.data) {
           const data = JSON.parse(event.data)
-          console.log('接收到消息:', data)
+          console.log('Message received:', data)
 
-          // 处理流式消息
+          // Implementation note.
           if (data.messageContent) {
             const content = data.messageContent
-            // 如果是第一条助手消息，先创建消息条目
+            // Implementation note.
             if (!currentAssistantMessage.value) {
               messages.value.push({
                 conversationId: chatRequestParam.value.conversationId,
@@ -185,62 +185,62 @@ function sendMessage(messageType: string = 'DailyConversation') {
             }
             currentAssistantMessage.value += content
 
-            // 更新最后一条助手消息的内容
+            // Implementation note.
             const lastMessageIndex = messages.value.length - 1
             if (lastMessageIndex >= 0 && messages.value[lastMessageIndex].messageRole === 'ASSISTANT') {
               messages.value[lastMessageIndex].messageContent = currentAssistantMessage.value
             }
           }
 
-          // 处理消息结束
+          // Implementation note.
           if (data.finishReason || data.finished) {
-            console.log('消息接收完成')
+            console.log('Message complete')
             handleRequestEnd(true)
           }
         }
       }
       catch (error) {
-        console.error('解析消息错误:', error)
-        window.$message?.error('接收消息格式错误')
+        console.error('Failed to parse message:', error)
+        window.$message?.error('Invalid response format')
         handleRequestEnd(true)
       }
     },
     onerror: (error) => {
-      console.error('SSE错误:', error)
-      // 如果是用户主动停止，不显示错误消息
+      console.error('SSE error:', error)
+      // Implementation note.
       if (!isUserStopped.value) {
-        window.$message?.error('连接错误，已停止接收消息')
+        window.$message?.error('Connection error. Response stopped')
       }
       handleRequestEnd(true)
-      // fetch-event-source：onerror 未抛出时会自动无限重试
+      // Implementation note.
       throw error
     },
     onclose: () => {
-      console.log('SSE连接关闭')
+      console.log('SSE connection closed')
       handleRequestEnd(true)
     },
   })
 
-  // 清空输入框（仅对日常对话）
+  // Implementation note.
   if (messageType === 'DailyConversation') {
     chatRequestParam.value.messageContent = ''
   }
 }
-// 按钮点击处理函数
+// Implementation note.
 function handleButtonClick(messageType: string | undefined) {
   sendMessage(messageType)
 }
-// 统一处理请求结束逻辑
+// Implementation note.
 function handleRequestEnd(isCompleted: boolean) {
   isLoading.value = false
 
   const lastMessageIndex = messages.value.length - 1
   if (lastMessageIndex >= 0 && messages.value[lastMessageIndex].messageRole === 'ASSISTANT') {
-    // 更新消息状态
+    // Implementation note.
     messages.value[lastMessageIndex].isCompleted = isCompleted
     messages.value[lastMessageIndex].isStopped = isUserStopped.value
 
-    // 如果消息为空且不是用户停止，可能是连接异常，移除空消息
+    // Implementation note.
     if (!messages.value[lastMessageIndex].messageContent && !isUserStopped.value) {
       messages.value.pop()
     }
@@ -250,24 +250,24 @@ function handleRequestEnd(isCompleted: boolean) {
   controller.value = null
 }
 
-// 停止发送
+// StopSend
 function stopSending() {
   if (controller.value) {
     isUserStopped.value = true
     controller.value.abort()
     isLoading.value = false
 
-    // 立即更新最后一条助手消息的状态
+    // Implementation note.
     const lastMessageIndex = messages.value.length - 1
     if (lastMessageIndex >= 0 && messages.value[lastMessageIndex].messageRole === 'ASSISTANT') {
       messages.value[lastMessageIndex].isStopped = true
     }
 
-    window.$message?.info('已停止生成')
+    window.$message?.info('Generation stopped')
   }
 }
 
-// 清空对话
+// Clear Chat
 function clearMessages() {
   messages.value = []
   chatRequestParam.value.conversationId = ''
@@ -280,17 +280,17 @@ function handleCollapse() {
   isCollapse.value = !isCollapse.value
 }
 
-// 判断是否显示加载状态
+// Implementation note.
 function shouldShowTyping(message: any) {
   return !message.messageContent && !message.isCompleted && !message.isStopped
 }
 
-// 判断是否显示停止提示
+// Implementation note.
 function shouldShowStopped(message: any) {
   return message.isStopped && message.messageContent
 }
 
-// 自动滚动到底部
+// Implementation note.
 function scrollToBottom() {
   nextTick(() => {
     const chatContainer = document.querySelector('.overflow-scroll')
@@ -300,24 +300,24 @@ function scrollToBottom() {
   })
 }
 
-// 监听消息变化，自动滚动
+// Implementation note.
 watch(messages, () => {
   scrollToBottom()
 }, { deep: true })
 
-// 组件挂载时，如果有会话ID则加载历史记录
+// Implementation note.
 onMounted(() => {
-  // 这里可以添加加载历史消息的逻辑
+  // Implementation note.
 })
 
-// 添加消息类型映射函数
+// Implementation note.
 function getMessageTypeText(type: string | number) {
   const typeMap = {
-    DailyConversation: '对话',
-    ProblemSolvingIdeas: '解题思路',
-    AnalyzeComplexity: '复杂度分析',
-    OptimizeCode: '代码优化',
-    AnalyzeBoundary: '边界分析',
+    DailyConversation: 'Chat',
+    ProblemSolvingIdeas: 'Solution Approach',
+    AnalyzeComplexity: 'Complexity Analysis',
+    OptimizeCode: 'Code Optimization',
+    AnalyzeBoundary: 'Edge Case Analysis',
   } as const
   return typeMap[type as keyof typeof typeMap]
 }
@@ -333,7 +333,7 @@ function getMessageTypeText(type: string | number) {
         <n-empty
           v-if="messages.length === 0"
           class="flex flex-col items-center justify-center py-12"
-          description="暂无对话记录"
+          description="No conversations"
         >
           <template #icon>
             <n-icon size="40" class="text-gray-300 dark:text-gray-600">
@@ -341,12 +341,12 @@ function getMessageTypeText(type: string | number) {
             </n-icon>
           </template>
           <n-text depth="3" class="text-center max-w-xs">
-            还没有消息，点击下方按钮开始对话！
+            No messages yet. Choose an action below to start
           </n-text>
         </n-empty>
-        <!-- 消息列表 -->
+        <!-- Section -->
         <div v-for="(message, index) in messages" :key="index">
-          <!-- 用户消息 -->
+          <!-- Section -->
           <n-card v-if="message.messageRole === 'USER'" size="small" class="bg-#f0f7ff mb-4" :bordered="false">
             <n-flex vertical :size="4">
               <div class="flex items-center justify-between">
@@ -361,7 +361,7 @@ function getMessageTypeText(type: string | number) {
             </n-flex>
           </n-card>
 
-          <!-- 助手消息 -->
+          <!-- Section -->
           <n-card v-if="message.messageRole === 'ASSISTANT'" size="small" class="mb-4">
             <n-flex vertical :size="4">
               <n-flex align="center" justify="space-between">
@@ -371,10 +371,10 @@ function getMessageTypeText(type: string | number) {
                 <n-time :time="message.responseTime" />
               </n-flex>
 
-              <!-- 优化后的消息显示逻辑 -->
+              <!-- Section -->
               <MdViewer v-if="message.messageContent" :model-value="message.messageContent" />
               <n-spin v-if="shouldShowTyping(message)" size="small">
-                思考中...
+                Thinking...
               </n-spin>
 
               <div v-if="shouldShowStopped(message)" class="stopped-indicator">
@@ -382,7 +382,7 @@ function getMessageTypeText(type: string | number) {
                   <n-icon size="14">
                     <icon-park-outline-info />
                   </n-icon>
-                  已停止生成
+                  Generation stopped
                 </n-text>
               </div>
             </n-flex>
@@ -391,7 +391,7 @@ function getMessageTypeText(type: string | number) {
       </div>
     </n-flex>
 
-    <!-- 输入区域保持不变 -->
+    <!-- Section -->
     <n-card size="small">
       <NFlex
         vertical
@@ -404,47 +404,47 @@ function getMessageTypeText(type: string | number) {
               size="small"
               @click="handleButtonClick('ProblemSolvingIdeas')"
             >
-              解题思路
+              Solution Approach
             </n-button>
             <n-button
               size="small"
               :disabled="!props.userCode && !props.language"
               @click="handleButtonClick('AnalyzeComplexity')"
             >
-              分析复杂度
+              Analyze Complexity
             </n-button>
             <n-button
               size="small"
               :disabled="!props.userCode && !props.language"
               @click="handleButtonClick('OptimizeCode')"
             >
-              优化代码
+              Optimize Code
             </n-button>
             <n-button
               size="small"
               @click="handleButtonClick('AnalyzeBoundary')"
             >
-              分析边界
+              Analyze Edge Cases
             </n-button>
             <n-button
               size="small"
               @click="clearMessages"
             >
-              清空对话
+              Clear Chat
             </n-button>
           </n-flex>
           <n-button
             size="small"
             @click="handleCollapse"
           >
-            {{ isCollapse ? '展开' : '收起' }}
+            {{ isCollapse ? 'Expand' : 'Collapse' }}
           </n-button>
         </n-flex>
         <NInput
           v-if="!isCollapse"
           v-model:value="chatRequestParam.messageContent"
           type="textarea"
-          placeholder="遇到问题？向 AI 描述你的疑问或需要帮助的地方。例如：如何优化这段代码的时间复杂度？"
+          placeholder="Need help? Ask AI a question, such as how to improve this code's time complexity."
           :autosize="{ minRows: 4, maxRows: 4 }"
           @keydown.enter.exact.prevent="sendMessage()"
         />
@@ -462,7 +462,7 @@ function getMessageTypeText(type: string | number) {
             <template #icon>
               <icon-park-outline-send />
             </template>
-            发送
+            Send
           </NButton>
           <NButton
             secondary
@@ -474,7 +474,7 @@ function getMessageTypeText(type: string | number) {
             <template #icon>
               <icon-park-outline-close />
             </template>
-            停止
+            Stop
           </NButton>
         </NFlex>
       </NFlex>

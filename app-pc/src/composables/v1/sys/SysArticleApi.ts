@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 系统文章 API请求
+  * Implementation details.
  */
 export function useSysArticleFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useSysArticleFetch() {
   const table = 'sys/article'
 
   /*
-     * 系统文章 默认数据
+      * Implementation details.
      */
   const sysArticleDefaultData = {
     id: '',
@@ -31,12 +31,12 @@ export function useSysArticleFetch() {
   }
   return {
     /*
-    * 系统文章 默认数据
+     * Implementation details.
     */
     sysArticleDefaultData,
 
     /*
-     * 系统文章 分页接口
+      * Implementation details.
      */
     sysArticlePage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -47,28 +47,28 @@ export function useSysArticleFetch() {
     },
 
     /*
-     * 系统文章 新增接口
+      * Implementation details.
      */
     sysArticleAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 系统文章 修改接口
+      * Implementation details.
      */
     sysArticleEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 系统文章 删除接口
+      * Implementation details.
      */
     sysArticleDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 系统文章 详情接口
+      * Implementation details.
      */
     sysArticleDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

@@ -23,7 +23,7 @@ async function loadData() {
 
   useSysDictFetch().sysDictOptions({ dictType: 'SYS_GENDER' }).then(({ data }) => {
     // genderRef.value = data
-    // 对value进行num转换
+    // Implementation note.
     genderRef.value = data.map((item: { label: string, value: number }) => {
       item.value = Number(item.value)
       return item
@@ -40,24 +40,24 @@ function updateProfile() {
           loadData()
         })
         isEdit.value = false
-        window.$message.success('个人资料更新成功')
+        window.$message.success('Profile updated')
       }
     })
   }
 }
 
 function updateAvatar(objectName: string, displayUrl?: string) {
-  // 1. 先本地回显，避免等接口时头像空白
+  // Implementation note.
   if (displayUrl) {
     profileData.value.avatar = displayUrl
   }
-  // 2. 落库（后端按登录用户更新，不依赖本地 id）
+  // Implementation note.
   useSysUserFetch().sysUserUpdateAvatar({
     id: profileData.value.id,
     img: objectName,
   }).then(({ success }) => {
     if (success) {
-      window.$message.success('头像更新成功')
+      window.$message.success('Avatar updated')
       loadData()
       window.dispatchEvent(new CustomEvent('acoj:profile-updated'))
     }
@@ -72,7 +72,7 @@ function updateBackground(objectName: string, displayUrl?: string) {
     img: objectName,
   }).then(({ success }) => {
     if (success) {
-      window.$message.success('背景图更新成功')
+      window.$message.success('Cover image updated')
       loadData()
       window.dispatchEvent(new CustomEvent('acoj:profile-updated'))
     }
@@ -93,9 +93,9 @@ function updatePassword() {
       if (valid) {
         passwordData.value.id = userInfo.value.id
         useSysUserFetch().sysUserUpdatePassword(passwordData.value).then(({ success }) => {
-          // window.$message.success('密码更新成功')
+          // window.$message.success('Password updated')
           if (success) {
-            window.$message.success('密码更新成功')
+            window.$message.success('Password updated')
             updatePasswordReset()
           }
         })
@@ -129,7 +129,7 @@ const passwordRules = {
   oldPassword: [
     {
       required: true,
-      message: '请输入旧密码',
+      message: 'Enter your current password',
       trigger: ['input', 'blur'],
     },
   ],
@@ -137,7 +137,7 @@ const passwordRules = {
     {
       required: true,
       validator: validatePasswordStartWith,
-      message: '两次密码输入不一致',
+      message: 'Passwords do not match',
       trigger: ['input', 'blur'],
     },
   ],
@@ -145,7 +145,7 @@ const passwordRules = {
     {
       required: true,
       validator: validatePasswordSame,
-      message: '两次密码输入不一致',
+      message: 'Passwords do not match',
       trigger: ['blur', 'password-input'],
     },
   ],
@@ -155,35 +155,35 @@ const profileRules = {
   username: [
     {
       required: true,
-      message: '请输入用户名',
+      message: 'Enter your username',
       trigger: ['input', 'blur'],
     },
   ],
   nickname: [
     {
       required: true,
-      message: '请输入昵称',
+      message: 'Enter your nickname',
       trigger: ['input', 'blur'],
     },
   ],
   email: [
     {
       required: true,
-      message: '请输入邮箱',
+      message: 'Enter your email',
       trigger: ['input', 'blur'],
     },
   ],
   quote: [
     {
       required: true,
-      message: '请输入个性签名',
+      message: 'Enter a bio',
       trigger: ['input', 'blur'],
     },
   ],
   gender: [
     {
       required: true,
-      message: '请选择性别',
+      message: 'Select a gender',
       // trigger: ['input', 'blur'],
     },
   ],
@@ -198,19 +198,19 @@ const profileRules = {
       :y-gap="24"
       responsive="screen"
     >
-      <!-- 左侧主内容 -->
+      <!-- Section -->
       <n-gi span="1 l:2">
-        <!-- 公告内容 -->
+        <!-- Section -->
         <NSpace vertical :size="24">
           <n-card size="small" class="rounded-xl">
             <template #header>
               <n-h3 class="pb-0 mb-0">
-                头像设置
+                Avatar
               </n-h3>
             </template>
             <n-space align="center" :wrap="false">
               <div class="w-24 h-24 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
-                <img :src="profileData?.avatar" alt="当前头像" class="w-full h-full object-cover">
+                <img :src="profileData?.avatar" alt="Current avatar" class="w-full h-full object-cover">
               </div>
               <n-space vertical>
                 <FileUploadButton
@@ -219,11 +219,11 @@ const profileRules = {
                   :is-image="true"
                   :enable-crop="true"
                   :crop-aspect="1"
-                  buttontext="上传新头像"
+                  buttontext="Upload New Avatar"
                   @success="updateAvatar"
                 />
                 <n-text depth="3">
-                  推荐尺寸: 200x200像素，支持JPG、PNG格式，文件大小不超过2MB
+                  Recommended: 200×200 px, JPG or PNG, up to 2 MB
                 </n-text>
               </n-space>
             </n-space>
@@ -232,24 +232,24 @@ const profileRules = {
           <n-card size="small" class="rounded-xl">
             <template #header>
               <n-h3 class="pb-0 mb-0">
-                卡片背景
+                Profile Cover
               </n-h3>
             </template>
             <n-space vertical>
               <div class="relative h-40 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
                 <img :src="profileData?.background" class="w-full h-full object-cover">
                 <div class="absolute right-3 bottom-3 px-3 py-1.5 text-sm transition-colors">
-                  <FileUploadButton v-model="profileData.background" :is-image="true" buttontext="更换封面" type="primary" @success="updateBackground" />
+                  <FileUploadButton v-model="profileData.background" :is-image="true" buttontext="Change Cover" type="primary" @success="updateBackground" />
                 </div>
               </div>
               <n-text depth="3" class="w-full">
-                推荐尺寸: 1920x500像素，支持JPG、PNG格式，文件大小不超过5MB
+                Recommended: 1920×500 px, JPG or PNG, up to 5 MB
               </n-text>
             </n-space>
           </n-card>
         </NSpace>
       </n-gi>
-      <!-- 右侧边栏 -->
+      <!-- Section -->
       <n-gi span="1 l:4">
         <NSpace
           vertical
@@ -258,7 +258,7 @@ const profileRules = {
           <n-card size="small" class="rounded-xl">
             <template #header>
               <n-h3 class="pb-0 mb-0">
-                个人信息
+                Profile
               </n-h3>
             </template>
             <n-form
@@ -269,44 +269,44 @@ const profileRules = {
               :rules="profileRules"
             >
               <n-grid cols="4 m:8" :x-gap="24" responsive="screen">
-                <n-form-item-gi :span="4" label="用户名" path="username">
-                  <n-input v-model:value="profileData.username" placeholder="请输入用户名" :disabled="!isEdit" />
+                <n-form-item-gi :span="4" label="Username" path="username">
+                  <n-input v-model:value="profileData.username" placeholder="Enter your username" :disabled="!isEdit" />
                 </n-form-item-gi>
-                <n-form-item-gi :span="4" label="昵称" path="nickname">
-                  <n-input v-model:value="profileData.nickname" placeholder="请输入昵称" :disabled="!isEdit" />
+                <n-form-item-gi :span="4" label="Nickname" path="nickname">
+                  <n-input v-model:value="profileData.nickname" placeholder="Enter your nickname" :disabled="!isEdit" />
                 </n-form-item-gi>
-                <n-form-item-gi :span="4" label="电子邮箱" path="email">
-                  <n-input v-model:value="profileData.email" placeholder="请输入电子邮箱" :disabled="!isEdit" />
+                <n-form-item-gi :span="4" label="Email" path="email">
+                  <n-input v-model:value="profileData.email" placeholder="Enter your email" :disabled="!isEdit" />
                 </n-form-item-gi>
-                <n-form-item-gi :span="4" label="学号" path="studentNumber">
-                  <n-input v-model:value="profileData.studentNumber" placeholder="请输入学号" :disabled="!isEdit" />
+                <n-form-item-gi :span="4" label="Student ID" path="studentNumber">
+                  <n-input v-model:value="profileData.studentNumber" placeholder="Enter your student ID" :disabled="!isEdit" />
                 </n-form-item-gi>
-                <n-form-item-gi :span="4" label="手机号" path="telephone">
-                  <n-input v-model:value="profileData.telephone" placeholder="请输入手机号" :disabled="!isEdit" />
+                <n-form-item-gi :span="4" label="Phone" path="telephone">
+                  <n-input v-model:value="profileData.telephone" placeholder="Enter your phone number" :disabled="!isEdit" />
                 </n-form-item-gi>
-                <n-form-item-gi :span="4" label="性别" path="gender">
+                <n-form-item-gi :span="4" label="Gender" path="gender">
                   <NSelect
                     v-model:value="profileData.gender"
-                    placeholder="请选择性别"
+                    placeholder="Select a gender"
                     :options="genderRef"
                     :disabled="!isEdit"
                   />
                 </n-form-item-gi>
-                <n-form-item-gi span="12 m:24" label="个人签名" path="quote">
-                  <n-input v-model:value="profileData.quote" type="textarea" placeholder="请输入个人签名" :disabled="!isEdit" />
+                <n-form-item-gi span="12 m:24" label="Bio" path="quote">
+                  <n-input v-model:value="profileData.quote" type="textarea" placeholder="Enter a bio" :disabled="!isEdit" />
                 </n-form-item-gi>
               </n-grid>
             </n-form>
             <template #footer>
               <n-flex justify="end">
                 <n-button v-if="isEdit" @click="isEdit = false">
-                  取消
+                  Cancel
                 </n-button>
                 <n-button v-if="!isEdit" type="primary" @click="isEdit = true">
-                  编辑
+                  Edit
                 </n-button>
                 <n-button v-if="isEdit" type="primary" @click="updateProfile">
-                  保存更改
+                  Save Changes
                 </n-button>
               </n-flex>
             </template>
@@ -322,15 +322,15 @@ const profileRules = {
           <n-card size="small" class="rounded-xl">
             <template #header>
               <n-h3 class="pb-0 mb-0">
-                安全设置
+                Security
               </n-h3>
             </template>
             <n-space align="center" justify="space-between">
               <n-text depth="3" class="w-full">
-                建议定期更换密码以保证账户安全
+                Change your password regularly to keep your account secure
               </n-text>
               <n-button type="warning" @click="showPasswordModal = true">
-                修改密码
+                Change Password
               </n-button>
             </n-space>
           </n-card>
@@ -342,7 +342,7 @@ const profileRules = {
       :mask-closable="false"
       preset="card"
       style="width: 400px;"
-      title="密码修改"
+      title="Change Password"
       @negative-click="() => { showPasswordModal = false }"
       @update:show="updatePasswordReset"
     >
@@ -355,23 +355,23 @@ const profileRules = {
           :rules="passwordRules"
         >
           <n-grid :cols="12" :x-gap="24">
-            <n-form-item-gi :span="12" label="旧密码" path="oldPassword">
-              <n-input v-model:value="passwordData.oldPassword" placeholder="请输入旧密码" show-password-on="click" type="password" />
+            <n-form-item-gi :span="12" label="Current Password" path="oldPassword">
+              <n-input v-model:value="passwordData.oldPassword" placeholder="Enter your current password" show-password-on="click" type="password" />
             </n-form-item-gi>
-            <n-form-item-gi :span="12" label="新密码" path="newPassword">
-              <n-input v-model:value="passwordData.newPassword" placeholder="请输入新密码" show-password-on="click" type="password" />
+            <n-form-item-gi :span="12" label="New Password" path="newPassword">
+              <n-input v-model:value="passwordData.newPassword" placeholder="Enter a new password" show-password-on="click" type="password" />
             </n-form-item-gi>
-            <n-form-item-gi :span="12" label="确认密码" path="confirmPassword">
-              <n-input v-model:value="passwordData.confirmPassword" placeholder="请确认新密码" show-password-on="click" type="password" />
+            <n-form-item-gi :span="12" label="Confirm Password" path="confirmPassword">
+              <n-input v-model:value="passwordData.confirmPassword" placeholder="Confirm your new password" show-password-on="click" type="password" />
             </n-form-item-gi>
           </n-grid>
         </n-form>
         <n-flex justify="end" align="center">
           <n-button @click="updatePasswordReset">
-            取消
+            Cancel
           </n-button>
           <n-button type="primary" @click="updatePassword">
-            确认修改
+            Confirm Change
           </n-button>
         </n-flex>
       </n-flex>
@@ -380,7 +380,7 @@ const profileRules = {
 </template>
 
 <style scoped>
-/* 基础样式补充 */
+/* Component styles. */
 html {
   scroll-behavior: smooth;
 }
@@ -389,7 +389,7 @@ a {
   text-decoration: none;
 }
 
-/* 图片悬停效果 */
+/* Component styles. */
 img {
   transition: transform 0.3s ease;
 }
@@ -398,7 +398,7 @@ img:hover {
   transform: scale(1.03);
 }
 
-/* 导航栏滚动效果 */
+/* Component styles. */
 header {
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
@@ -412,7 +412,7 @@ header.scrolled {
   background-color: #1f2937;
 }
 
-/* 开关按钮样式 */
+/* Component styles. */
 input:checked + label {
   background-color: #3b82f6;
 }

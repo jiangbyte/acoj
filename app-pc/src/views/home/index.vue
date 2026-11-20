@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useDataProblemFetch, useDataSetFetch, useSysBannerFetch, useSysNoticeFetch, useUserRankingFetch } from '@/composables/v1'
 
-// 列表数据
+// Implementation note.
 const bannerListData = ref()
 const noticeListData = ref()
 const problemListData = ref()
@@ -9,7 +9,7 @@ const problemUserRankingListData = ref()
 const problemRankingListData = ref()
 const setRankingListData = ref()
 
-// 获取列表数据
+// Implementation note.
 async function loadData() {
   useSysBannerFetch().sysBannerLatest().then(({ data }) => {
     bannerListData.value = data ?? []
@@ -19,23 +19,23 @@ async function loadData() {
     noticeListData.value = data ?? []
   })
 
-  // 获取最新题目数据
+  // Implementation note.
   useDataProblemFetch().dataProblemLatest().then(({ data }) => {
     problemListData.value = data
   })
 
-  // 获取Top10排行榜
+  // Implementation note.
   useUserRankingFetch().useUserRankingTop().then(({ data }) => {
     problemUserRankingListData.value = data
     console.log(data)
   })
 
-  // 获取Top10排行榜
+  // Implementation note.
   useDataProblemFetch().dataProblemHot().then(({ data }) => {
     problemRankingListData.value = data
   })
 
-  // 获取Top10排行榜
+  // Implementation note.
   useDataSetFetch().dataSetHot().then(({ data }) => {
     setRankingListData.value = data
     console.log(data)
@@ -53,19 +53,19 @@ loadData()
       :y-gap="24"
       responsive="screen"
     >
-      <!-- 左侧主内容 -->
+      <!-- Section -->
       <n-gi span="1 l:6">
         <BannerSkeleton01 v-if="!bannerListData" />
         <EmptyData v-else-if="!bannerListData.length" />
         <LatestBanner v-else :banner-list-data="bannerListData" />
       </n-gi>
-      <!-- 左侧主内容 -->
+      <!-- Section -->
       <n-gi span="1 l:4">
         <n-space vertical :size="24">
           <n-card class="rounded-xl" size="small" content-style="padding: 0">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                全站公告
+                Announcements
               </n-h2>
             </template>
             <ListSkeleton01 v-if="!noticeListData" />
@@ -75,12 +75,12 @@ loadData()
           <n-card class="rounded-xl" size="small" content-style="padding: 0">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                最新题目
+                Latest Problems
               </n-h2>
             </template>
             <template #header-extra>
               <n-button text @click="$router.push({ path: '/problems' })">
-                查看全部
+                View All
               </n-button>
             </template>
 
@@ -91,18 +91,18 @@ loadData()
         </n-space>
       </n-gi>
 
-      <!-- 右侧边栏 -->
+      <!-- Section -->
       <n-gi span="1 l:2">
         <n-space vertical :size="24">
           <n-card size="small" class="rounded-xl" content-style="padding: 0">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                用户排行榜
+                User Rankings
               </n-h2>
             </template>
             <template #header-extra>
               <n-button text @click="$router.push({ path: '/ranking' })">
-                查看全部
+                View All
               </n-button>
             </template>
             <ListSkeleton01 v-if="!problemUserRankingListData" />
@@ -112,7 +112,7 @@ loadData()
           <n-card size="small" class="rounded-xl" content-style="padding: 0">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                热门题目
+                Popular Problems
               </n-h2>
             </template>
             <ListSkeleton02 v-if="!problemRankingListData" />
@@ -122,7 +122,7 @@ loadData()
           <n-card size="small" class="rounded-xl" content-style="padding: 0">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                热门题集
+                Popular Problem Sets
               </n-h2>
             </template>
             <ListSkeleton02 v-if="!setRankingListData" />
@@ -199,7 +199,7 @@ loadData()
   max-width: 600px;
 }
 
-/* 动画效果 */
+/* Component styles. */
 @keyframes fadeIn {
   from {
     opacity: 0;

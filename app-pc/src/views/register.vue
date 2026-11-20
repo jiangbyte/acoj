@@ -35,7 +35,7 @@ const tokenStore = useTokenStore()
 const userStore = useUserStore()
 
 /**
- * 拉取验证码并同步写入表单 uuid。
+  * Implementation details.
  */
 async function loadCaptcha() {
   const { data } = await captcha()
@@ -61,7 +61,7 @@ async function handleRegister(e?: Event) {
     await formRef.value?.validate()
   }
   catch {
-    window.$message.error('请填写完整且合法的信息')
+    window.$message.error('Please enter complete and valid information')
     return
   }
 
@@ -78,7 +78,7 @@ async function handleRegister(e?: Event) {
           }
         }
         catch {
-          // 资料拉取失败不阻断注册跳转
+          // Implementation note.
         }
         const target = resolveAuthRedirect(route.query.redirect)
         await router.replace(target)
@@ -98,11 +98,11 @@ async function handleRegister(e?: Event) {
 
 <template>
   <AuthShell
-    title="欢迎注册 ACOJ"
-    subtitle="「在线评测、简洁、高效」的刷题平台"
+    title="Welcome to ACOJ"
+    subtitle="A simple, efficient online judge"
   >
     <div class="auth-form-title">
-      账号注册
+      Create Account
     </div>
     <NForm
       ref="formRef"
@@ -118,7 +118,7 @@ async function handleRegister(e?: Event) {
           v-model:value="formData.username"
           data-testid="username-inp"
           :input-props="{ autocomplete: 'username' }"
-          placeholder="用户名（字母开头，2-15位）"
+          placeholder="Username (2–15 characters, starting with a letter)"
           clearable
         />
       </NFormItem>
@@ -127,7 +127,7 @@ async function handleRegister(e?: Event) {
           v-model:value="formData.email"
           data-testid="email-inp"
           :input-props="{ autocomplete: 'email' }"
-          placeholder="请输入邮箱"
+          placeholder="Enter your email"
           clearable
         />
       </NFormItem>
@@ -138,7 +138,7 @@ async function handleRegister(e?: Event) {
           show-password-on="click"
           data-testid="password-inp"
           :input-props="{ autocomplete: 'new-password' }"
-          placeholder="密码（6-20位）"
+          placeholder="Password (6–20 characters)"
         />
       </NFormItem>
       <NFormItem path="captchaCode">
@@ -146,21 +146,21 @@ async function handleRegister(e?: Event) {
           <NInput
             v-model:value="formData.captchaCode"
             data-testid="captcha-inp"
-            placeholder="请输入验证码"
+            placeholder="Enter the verification code"
             class="captcha-row__input"
           />
           <button
             type="button"
             class="captcha-row__img"
-            title="点击刷新验证码"
+            title="Refresh verification code"
             @click="refreshCaptcha"
           >
             <img
               v-if="captchaRef.captcha"
               :src="captchaRef.captcha"
-              alt="验证码"
+              alt="Verification Code"
             >
-            <span v-else>点击刷新</span>
+            <span v-else>Click to refresh</span>
           </button>
         </div>
       </NFormItem>
@@ -174,18 +174,18 @@ async function handleRegister(e?: Event) {
       class="auth-submit"
       @click="handleRegister"
     >
-      注册
+      Sign Up
     </NButton>
     <div class="auth-links">
       <NText depth="3">
-        已有账号？
+        Already have an account?
       </NText>
       <NButton
         text
         type="primary"
         @click="$router.push('/login')"
       >
-        登录
+        Sign In
       </NButton>
     </div>
   </AuthShell>

@@ -25,7 +25,7 @@ const version = import.meta.env.VITE_VERSION
 <!--      </n-gi> -->
 <!--      <n-gi span="6" class="flex flex-col gap-4 items-center"> -->
 <!--        <div> -->
-<!--          关注 -->
+<!-- Section -->
 <!--        </div> -->
 <!--        <div> -->
 <!--          Github -->

@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 用户解决 API请求
+  * Implementation details.
  */
 export function useDataSolvedFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useDataSolvedFetch() {
   const table = 'data/solved'
 
   /*
-     * 用户解决 默认数据
+      * Implementation details.
      */
   const dataSolvedDefaultData = {
     id: '',
@@ -26,12 +26,12 @@ export function useDataSolvedFetch() {
   }
   return {
     /*
-    * 用户解决 默认数据
+     * Implementation details.
     */
     dataSolvedDefaultData,
 
     /*
-     * 用户解决 分页接口
+      * Implementation details.
      */
     dataSolvedPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -42,28 +42,28 @@ export function useDataSolvedFetch() {
     },
 
     /*
-     * 用户解决 新增接口
+      * Implementation details.
      */
     dataSolvedAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 用户解决 修改接口
+      * Implementation details.
      */
     dataSolvedEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 用户解决 删除接口
+      * Implementation details.
      */
     dataSolvedDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 用户解决 详情接口
+      * Implementation details.
      */
     dataSolvedDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

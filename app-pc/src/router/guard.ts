@@ -1,7 +1,7 @@
 import { useRouterStore, useTabStore, useTokenStore } from '@/stores'
 import type { Router } from 'vue-router'
 
-/** 可匿名访问的路由前缀（含详情子路径） */
+/** Implementation details. */
 const PUBLIC_ROUTE_PREFIXES = [
   '/home',
   '/problems',
@@ -28,7 +28,7 @@ export function setupRouterGuard(router: Router) {
   const tabStore = useTabStore()
 
   router.beforeEach(async (to, _from, next) => {
-    // 1. 外链
+    // Implementation note.
     if (to.meta.extraLink) {
       if (to.meta.extraLinkEnabled) {
         window.open(to.meta.extraLink as string)
@@ -37,12 +37,12 @@ export function setupRouterGuard(router: Router) {
       return
     }
 
-    // 2. 加载条
+    // Implementation note.
     window.$loadingBar?.start()
 
-    // 3. 公开路由直接放行
+    // Implementation note.
     if (isPublicRoute(to.path)) {
-      // 已登录访问登录/注册 → 回首页
+      // Implementation note.
       if ((to.name === 'login' || to.name === 'register') && tokenStore.isLogined) {
         next({ path: '/' })
         return
@@ -51,7 +51,7 @@ export function setupRouterGuard(router: Router) {
       return
     }
 
-    // 4. 未登录访问受保护页 → 登录并带回跳
+    // Implementation note.
     if (!tokenStore.isLogined) {
       const redirect = to.name === '404' ? undefined : to.fullPath
       next({ path: '/login', query: redirect ? { redirect } : undefined })

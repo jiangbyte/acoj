@@ -32,12 +32,12 @@ defineProps<{
           <n-space align="center">
             <n-space align="center" :size="0">
               <n-text depth="3">
-                参与人数：{{ item.participantUserCount ? item.participantUserCount : 0 }}
+                Participants:{{ item.participantUserCount ? item.participantUserCount : 0 }}
               </n-text>
             </n-space>
             <n-space align="center" :size="0">
               <n-text depth="3">
-                通过率：{{ item.avgAcceptance ? item.avgAcceptance : 0 }} %
+                Acceptance Rate：{{ item.avgAcceptance ? item.avgAcceptance : 0 }} %
               </n-text>
             </n-space>
           </n-space>
@@ -64,11 +64,11 @@ defineProps<{
           </n-button>
           <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
             <n-text depth="3">
-              通过率: {{ item.avgAcceptance }} %
+              Acceptance Rate: {{ item.avgAcceptance }} %
             </n-text>
             <span class="mx-1">•</span>
             <n-text depth="3">
-              参与: {{ item.participantUserCount }} 人
+              Participants: {{ item.participantUserCount }}
             </n-text>
           </div>
         </div>

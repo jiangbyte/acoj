@@ -36,7 +36,7 @@ async function loadData() {
     isLoading.value = false
   }
 
-  // 获取下拉列表数据
+  // Implementation note.
   const { data: languageData } = await sysDictOptions({ dictType: 'ALLOW_LANGUAGE' })
   if (languageData) {
     languageOptions.value = languageData
@@ -68,7 +68,7 @@ const columns: DataTableColumns<any> = [
   //   ellipsis: true,
   // },
   {
-    title: '题目',
+    title: 'Problem',
     key: 'problemIdName',
     ellipsis: {
       tooltip: true,
@@ -76,7 +76,7 @@ const columns: DataTableColumns<any> = [
     width: 120,
   },
   {
-    title: '用户',
+    title: 'User',
     key: 'user',
     width: 150,
     render(row: any) {
@@ -109,7 +109,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '状态',
+    title: 'Status',
     key: 'statusName',
     width: 100,
     render: (row) => {
@@ -126,7 +126,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '编程语言',
+    title: 'Programming Language',
     key: 'languageName',
     width: 80,
     render: (row) => {
@@ -134,7 +134,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '长度(byte)',
+    title: 'Size (bytes)',
     key: 'codeLength',
     width: 80,
     render: (row) => {
@@ -142,7 +142,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '执行类型',
+    title: 'Run Type',
     key: 'submitTypeName',
     width: 90,
     render: (row) => {
@@ -150,7 +150,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '耗时(ms)',
+    title: 'Time (ms)',
     key: 'maxTime',
     width: 80,
     render: (row) => {
@@ -158,7 +158,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '内存(Kb)',
+    title: 'Memory (KB)',
     key: 'maxMemory',
     width: 80,
     render: (row) => {
@@ -166,7 +166,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   // {
-  //   title: '相似度(%)',
+  //   title: 'Similarity(%)',
   //   key: 'similarity',
   //   width: 80,
   //   render: (row) => {
@@ -174,16 +174,16 @@ const columns: DataTableColumns<any> = [
   //   },
   // },
   // {
-  //   title: '行为标记',
+  //   title: 'Flag',
   //   key: 'similarityCategoryName',
   //   ellipsis: true,
   //   width: 80,
   //   render: (row) => {
-  //     return row.similarityCategoryName ? row.similarityCategoryName : '未触发'
+  //     return row.similarityCategoryName ? row.similarityCategoryName : 'Not Triggered'
   //   },
   // },
   // {
-  //   title: '检测任务',
+  //   title: 'Detection Task',
   //   key: 'taskId',
   //   ellipsis: {
   //     tooltip: true,
@@ -191,7 +191,7 @@ const columns: DataTableColumns<any> = [
   //   width: 80,
   // },
   {
-    title: '提交时间',
+    title: 'Submitted',
     key: 'createTime',
     width: 80,
     render(row: any) {
@@ -199,7 +199,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '更新时间',
+    title: 'Updated',
     key: 'updateTime',
     width: 80,
     render(row: any) {
@@ -239,7 +239,7 @@ function rowProps(row: any) {
       :y-gap="24"
       responsive="screen"
     >
-      <!-- 右侧边栏 -->
+      <!-- Section -->
       <n-gi span="1 l:2">
         <NSpace
           vertical
@@ -248,20 +248,20 @@ function rowProps(row: any) {
           <n-card size="small" class="rounded-xl">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                筛选提交
+                Filter Submissions
               </n-h2>
             </template>
             <!-- <template #header-extra>
               <n-flex align="center">
                 <n-text class="text-sm">
-                  题目总数
+                  Total Problems
                 </n-text>
                 <n-text class="text-2xl font-bold">
                   {{ problemcount?.total ? problemcount.total : 0 }}
                 </n-text>
                 <n-text class="text-green-600 dark:text-green-400 text-xs flex items-center">
                   <icon-park-outline-arrow-up class="mr-1" />
-                  较上月增长 {{ problemcount?.growthRate * 100 }} %
+                  Up from last month: {{ problemcount?.growthRate * 100 }} %
                 </n-text>
               </n-flex>
             </template> -->
@@ -274,7 +274,7 @@ function rowProps(row: any) {
               <n-gi span="1 l:1">
                 <n-select
                   v-model:value="pageParam.language"
-                  placeholder="选择语言"
+                  placeholder="Select a language"
                   clearable
                   :options="languageOptions"
                   @clear="() => { pageParam.language = null; loadData() }"
@@ -283,7 +283,7 @@ function rowProps(row: any) {
               <n-gi span="1 l:1">
                 <n-select
                   v-model:value="pageParam.status"
-                  placeholder="选择判题状态"
+                  placeholder="Select a judge status"
                   clearable
                   :options="statusOptions"
                   @clear="() => { pageParam.status = null; loadData() }"
@@ -292,7 +292,7 @@ function rowProps(row: any) {
               <n-gi span="1 l:1">
                 <n-select
                   v-model:value="pageParam.submitType"
-                  placeholder="选择提交类型"
+                  placeholder="Select a submission type"
                   clearable
                   :options="submitTypeOptions"
                   @clear="() => { pageParam.submitType = null; loadData() }"
@@ -302,16 +302,16 @@ function rowProps(row: any) {
             <template #footer>
               <n-input-group class="flex justify-end">
                 <NButton type="warning" @click="resetHandle">
-                  重置筛选
+                  Reset
                 </NButton>
                 <NButton type="primary" @click="loadData">
-                  应用筛选
+                  Apply Filters
                 </NButton>
               </n-input-group>
             </template>
           </n-card>
 
-          <!-- 提交状态统计概览 -->
+          <!-- Section -->
           <!-- <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
             <div v-for="(item, index) in statusCount" :key="index" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
               <div class="font-bold">
@@ -324,21 +324,21 @@ function rowProps(row: any) {
           </div> -->
         </NSpace>
       </n-gi>
-      <!-- 左侧主内容 -->
+      <!-- Section -->
       <n-gi span="1 l:4">
-        <!-- 公告内容 -->
+        <!-- Section -->
         <NSpace vertical :size="24">
           <n-card class="rounded-xl" size="small" content-style="padding: 0">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                提交记录
+                Submissions
               </n-h2>
             </template>
             <template #header-extra>
               <NText>
-                当前共 <span class="text-blue-600 dark:text-blue-400 font-medium">
+                Total: <span class="text-blue-600 dark:text-blue-400 font-medium">
                   {{ pageData?.total ? pageData?.total : 0 }}
-                </span> 条数据
+                </span> items
               </NText>
             </template>
             <n-data-table
@@ -358,7 +358,7 @@ function rowProps(row: any) {
                 show-size-picker
                 :page-count="pageData ? Number(pageData.pages) : 0"
                 :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                  label: `${(i + 1) * 10} 每页`,
+                  label: `${(i + 1) * 10} per page`,
                   value: (i + 1) * 10,
                 }))"
                 :page-slot="3"

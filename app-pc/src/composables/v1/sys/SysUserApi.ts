@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 用户 API请求
+  * Implementation details.
  */
 export function useSysUserFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useSysUserFetch() {
   const table = 'sys/user'
 
   /*
-     * 用户 默认数据
+      * Implementation details.
      */
   const sysUserDefaultData = {
     id: '',
@@ -35,12 +35,12 @@ export function useSysUserFetch() {
   }
   return {
     /*
-    * 用户 默认数据
+     * Implementation details.
     */
     sysUserDefaultData,
 
     /*
-     * 用户 分页接口
+      * Implementation details.
      */
     sysUserPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -51,28 +51,28 @@ export function useSysUserFetch() {
     },
 
     /*
-     * 用户 新增接口
+      * Implementation details.
      */
     sysUserAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 用户 修改接口
+      * Implementation details.
      */
     sysUserEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 用户 删除接口
+      * Implementation details.
      */
     sysUserDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 用户 详情接口
+      * Implementation details.
      */
     sysUserDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {
@@ -89,7 +89,7 @@ export function useSysUserFetch() {
       })
     },
     /*
-     * 用户 信息接口
+      * Implementation details.
      */
     getProfile() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/profile`)

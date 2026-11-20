@@ -4,86 +4,86 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'root',
-    redirect: '/home', // 默认重定向到首页
-    component: () => import('@/layouts/index.vue'), // 主布局组件
+    redirect: '/home', // Implementation note.
+    component: () => import('@/layouts/index.vue'), // Implementation note.
     children: [
-      // 首页
+      // Home
       {
         path: 'home',
         name: 'home',
         component: () => import('@/views/home/index.vue'),
-        meta: { title: '首页', icon: 'home' },
+        meta: { title: 'Home', icon: 'home' },
       },
-      // 题库
+      // Problems
       {
         path: 'problems',
         name: 'problems',
         component: () => import('@/views/problems/index.vue'),
-        meta: { title: '题库', icon: 'book' },
+        meta: { title: 'Problems', icon: 'book' },
       },
-      // 题库
+      // Problems
       {
         path: 'groups',
         name: 'groups',
         component: () => import('@/views/groups/index.vue'),
-        meta: { title: '群组', icon: 'book' },
+        meta: { title: 'Groups', icon: 'book' },
       },
       {
         path: 'contests',
         name: 'contests',
         component: () => import('@/views/contests/index.vue'),
-        meta: { title: '竞赛', icon: 'folder' },
+        meta: { title: 'Contests', icon: 'folder' },
       },
-      // 题单详情
+      // Implementation note.
       {
         path: 'contests/detail',
         name: 'contest_detail',
         component: () => import('@/views/contests/detail.vue'),
-        meta: { title: '竞赛详情', icon: 'folder' },
+        meta: { title: 'Contest Details', icon: 'folder' },
         beforeEnter: (to) => {
           if (!to.query.contestId) {
             return '/'
           }
         },
       },
-      // 排行榜
+      // Rankings
       {
         path: 'ranking',
         name: 'ranking',
         component: () => import('@/views/ranking/index.vue'),
-        meta: { title: '排行榜', icon: 'trophy' },
+        meta: { title: 'Rankings', icon: 'trophy' },
       },
-      // 题单
+      // Implementation note.
       {
         path: 'sets',
         name: 'sets',
         component: () => import('@/views/sets/index.vue'),
-        meta: { title: '题集训练', icon: 'folder' },
+        meta: { title: 'Problem Sets', icon: 'folder' },
       },
-      // 题单详情
+      // Implementation note.
       {
         path: 'sets/detail',
         name: 'proset_detail',
         component: () => import('@/views/sets/detail.vue'),
-        meta: { title: '题集训练详情', icon: 'folder' },
+        meta: { title: 'Problem Set Details', icon: 'folder' },
         beforeEnter: (to) => {
           if (!to.query.set) {
             return '/'
           }
         },
       },
-      // 提交记录（仍使用主布局）
+      // Implementation note.
       {
         path: 'status',
         name: 'status',
         component: () => import('@/views/status/index.vue'),
-        meta: { title: '提交记录', icon: 'list' },
+        meta: { title: 'Submissions', icon: 'list' },
       },
       {
         path: 'status/problem',
         name: 'problem_submit_detail',
         component: () => import('@/views/status/problem.vue'),
-        meta: { title: '提交记录', icon: 'list' },
+        meta: { title: 'Submissions', icon: 'list' },
         beforeEnter: (to) => {
           if (!to.query.submit) {
             return '/'
@@ -94,7 +94,7 @@ export const routes: RouteRecordRaw[] = [
         path: '/user',
         name: 'user',
         component: () => import('@/views/user/index.vue'),
-        meta: { title: '用户主页' },
+        meta: { title: 'User Profile' },
         beforeEnter: (to) => {
           if (!to.query.userId) {
             return '/'
@@ -105,7 +105,7 @@ export const routes: RouteRecordRaw[] = [
         path: '/profile',
         name: 'profile',
         component: () => import('@/views/user/profile.vue'),
-        meta: { title: '个人信息' },
+        meta: { title: 'Profile' },
         // beforeEnter: (to) => {
         //   if (!to.query.user) {
         //     return '/'
@@ -116,7 +116,7 @@ export const routes: RouteRecordRaw[] = [
         path: '/notice',
         name: 'notice_detail',
         component: () => import('@/views/notice/notice.vue'),
-        meta: { title: '公开公告' },
+        meta: { title: 'Public Notice' },
         beforeEnter: (to) => {
           if (!to.query.notice) {
             return '/'
@@ -125,18 +125,18 @@ export const routes: RouteRecordRaw[] = [
       },
     ],
   },
-  // 提交布局路由（独立布局，无菜单）
+  // Implementation note.
   {
     path: '/submit',
     name: 'submit-root',
-    component: () => import('@/layouts/ProblemSubmit.vue'), // 提交专用布局
+    component: () => import('@/layouts/ProblemSubmit.vue'), // Implementation note.
     children: [
-      // 提交页面（全屏代码编辑）
+      // Implementation note.
       {
         path: '/p',
         name: 'problem_submit',
         component: () => import('@/views/problems/submit.vue'),
-        meta: { title: '提交代码' },
+        meta: { title: 'Submit Code' },
         beforeEnter: (to) => {
           if (!to.query.problemId) {
             return '/'
@@ -147,7 +147,7 @@ export const routes: RouteRecordRaw[] = [
         path: '/s',
         name: 'set_submit',
         component: () => import('@/views/sets/submit.vue'),
-        meta: { title: '提交代码' },
+        meta: { title: 'Submit Code' },
         // beforeEnter: (to) => {
         //   if (!to.query.setId || !to.query.problemId) {
         //     return '/'
@@ -158,7 +158,7 @@ export const routes: RouteRecordRaw[] = [
         path: '/c',
         name: 'contest_submit',
         component: () => import('@/views/contests/submit.vue'),
-        meta: { title: '提交代码' },
+        meta: { title: 'Submit Code' },
         // beforeEnter: (to) => {
         //   if (!to.query.setId || !to.query.problemId) {
         //     return '/'
@@ -167,36 +167,36 @@ export const routes: RouteRecordRaw[] = [
       },
     ],
   },
-  // 公开路由（无布局）
-  // 登录页面
+  // Implementation note.
+  // Implementation note.
   {
     path: '/login',
     name: 'login',
     component: () => import('@/views/login.vue'),
     meta: {
-      title: '登录',
+      title: 'Sign In',
     },
   },
-  // 注册页面
+  // Implementation note.
   {
     path: '/register',
     name: 'register',
     component: () => import('@/views/register.vue'),
     meta: {
-      title: '注册',
+      title: 'Sign Up',
     },
   },
-  // 重置密码
+  // Reset Password
   {
     path: '/forget',
     name: 'forget',
     component: () => import('@/views/forget.vue'),
     meta: {
-      title: '重置密码',
+      title: 'Reset Password',
     },
   },
-  // 错误页面
-  // 404页面
+  // Implementation note.
+  // Implementation note.
   {
     path: '/:pathMatch(.*)*',
     component: () => import('@/views/404.vue'),

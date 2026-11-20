@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { RankColorUtil } from '@/utils'
 
-// 定义 props
+// Implementation note.
 const props = defineProps({
   rank: {
     type: [Number, String],
@@ -21,7 +21,7 @@ const props = defineProps({
   <div
     v-else
   >
-    未上榜
+    Not Ranked
   </div>
 </template>
 

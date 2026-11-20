@@ -14,25 +14,25 @@ const model = defineModel<string>()
 </template>
 
 <style scoped>
-/* 创建层叠上下文 */
+/* Component styles. */
 .mdpre {
   /* position: relative; */
   z-index: 1;
 }
 
-/* 重置代码标题栏的层级 */
+/* Component styles. */
 :deep(.md-editor-code-head) {
   z-index: 5 !important;
   /* position: relative; */
 }
 
-/* 确保代码块容器不会创建高层级 */
+/* Component styles. */
 :deep(.md-editor-code) {
   /* position: relative; */
   z-index: 1;
 }
 
-/* 预览区域整体层级控制 */
+/* Component styles. */
 :deep(.md-editor-preview) {
   /* position: relative; */
   z-index: 1;

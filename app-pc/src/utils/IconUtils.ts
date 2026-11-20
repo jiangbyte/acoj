@@ -1,7 +1,7 @@
 import { NIcon } from 'naive-ui'
 import { Icon } from '@iconify/vue/offline'
 /**
- * 根据 icon 名称渲染图标
+  * Implementation details.
  */
 export function iconCreate(icon?: string, props?: import('naive-ui').IconProps) {
   if (!icon)
@@ -11,7 +11,7 @@ export function iconCreate(icon?: string, props?: import('naive-ui').IconProps) 
 }
 
 /**
- *  根据 icon 名称渲染图标
+  * Implementation details.
  */
 export function iconRender(icon?: string, props?: import('naive-ui').IconProps) {
   if (!icon)

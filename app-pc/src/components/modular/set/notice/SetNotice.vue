@@ -6,7 +6,7 @@ const loading = ref(true)
 
 const { sysNoticeLatest10 } = useSysNoticeFetch()
 
-// 模拟获取公告数据
+// Implementation note.
 async function loadData() {
   loading.value = true
   const { data } = await sysNoticeLatest10()
@@ -25,7 +25,7 @@ loadData()
     <template #header>
       <n-space align="center" justify="start">
         <div>
-          最新公告
+          Latest Notices
         </div>
       </n-space>
     </template>
@@ -53,7 +53,7 @@ loadData()
               </n-ellipsis>
               <n-space align="center" justify="space-between" class="mt-2">
                 <n-tag size="small" type="info" round>
-                  最新
+                  Latest
                 </n-tag>
                 <n-space align="center">
                   <n-icon class="mt-1.2">

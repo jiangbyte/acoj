@@ -8,13 +8,13 @@ export const usernameRule: FormItemRule = {
   trigger: ['blur', 'input'],
   validator(_rule, value: string) {
     if (!value) {
-      return new Error('请输入用户名')
+      return new Error('Enter your username')
     }
     if (value.length < 2 || value.length > 15) {
-      return new Error('用户名长度必须在2-15位之间')
+      return new Error('Username must be 2–15 characters')
     }
     if (!USERNAME_REGEX.test(value)) {
-      return new Error('用户名须字母开头，仅含字母、数字、下划线')
+      return new Error('Username must start with a letter and contain only letters, numbers, and underscores')
     }
     return true
   },
@@ -25,10 +25,10 @@ export const passwordRule: FormItemRule = {
   trigger: ['blur', 'input'],
   validator(_rule, value: string) {
     if (!value) {
-      return new Error('请输入密码')
+      return new Error('Enter your password')
     }
     if (value.length < 6 || value.length > 20) {
-      return new Error('密码长度须为6-20位')
+      return new Error('Password must be 6–20 characters')
     }
     return true
   },
@@ -39,10 +39,10 @@ export const emailRule: FormItemRule = {
   trigger: ['blur', 'input'],
   validator(_rule, value: string) {
     if (!value) {
-      return new Error('请输入邮箱')
+      return new Error('Enter your email')
     }
     if (!EMAIL_REGEX.test(value)) {
-      return new Error('邮箱格式错误')
+      return new Error('Enter a valid email address')
     }
     return true
   },
@@ -50,6 +50,6 @@ export const emailRule: FormItemRule = {
 
 export const captchaRule: FormItemRule = {
   required: true,
-  message: '请输入验证码',
+  message: 'Enter the verification code',
   trigger: ['blur', 'input'],
 }
