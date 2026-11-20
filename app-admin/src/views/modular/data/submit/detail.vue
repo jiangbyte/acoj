@@ -24,12 +24,12 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="详情">
+    <NDrawerContent title="Details">
       <NDescriptions label-placement="left" bordered :column="1">
-        <NDescriptionsItem label="主键">
+        <NDescriptionsItem label="ID">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="用户">
+        <NDescriptionsItem label="User">
           <!-- {{ formData.userId }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -40,16 +40,16 @@ defineExpose({
             <NText>{{ formData.userIdName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="提交模块">
+        <NDescriptionsItem label="Submission Module">
           {{ FormatModuleType(formData.moduleType) }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题目">
+        <NDescriptionsItem label="Problem">
           {{ formData.problemIdName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="编程语言">
+        <NDescriptionsItem label="Language">
           {{ formData.languageName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="源代码">
+        <NDescriptionsItem label="Source Code">
           <NCode
             :code="formData.code"
             :language="formData.language"
@@ -57,22 +57,22 @@ defineExpose({
             show-line-numbers
           />
         </NDescriptionsItem>
-        <NDescriptionsItem label="源代码长度">
+        <NDescriptionsItem label="Source Length">
           {{ formData.codeLength }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="执行类型">
+        <NDescriptionsItem label="Run Type">
           {{ formData.submitTypeName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="最大耗时">
+        <NDescriptionsItem label="Maximum Time">
           {{ formData.maxTime }} ms
         </NDescriptionsItem>
-        <NDescriptionsItem label="最大内存使用">
+        <NDescriptionsItem label="Maximum Memory">
           {{ formData.maxMemory }} KB
         </NDescriptionsItem>
-        <NDescriptionsItem label="执行结果消息">
+        <NDescriptionsItem label="Run Result Message">
           {{ formData.message }}
         </NDescriptionsItem>
-        <!-- <NDescriptionsItem label="测试用例结果">
+        <!-- <NDescriptionsItem label="Test Case Results">
           <NCode
             :code="JSON.stringify(formData.testCase, null, 2)"
             language="json"
@@ -80,31 +80,31 @@ defineExpose({
             show-line-numbers
           />
         </NDescriptionsItem> -->
-        <NDescriptionsItem label="执行状态">
+        <NDescriptionsItem label="RunStatus">
           {{ formData.statusName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="流程流转完成">
+        <NDescriptionsItem label="Workflow Complete">
           {{ formData.isFinishName }}
         </NDescriptionsItem>
-        <!-- <NDescriptionsItem label="相似度">
+        <!-- <NDescriptionsItem label="Similarity">
           {{ formData.similarity * 100 }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="相似检测任务ID">
+        <NDescriptionsItem label="Similarity Task ID">
           {{ formData.taskId }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="报告ID">
+        <NDescriptionsItem label="Report ID">
           {{ formData.reportId }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="相似分级">
+        <NDescriptionsItem label="Similarity Level">
           {{ formData.similarityCategoryName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="相似检测任务ID">
+        <NDescriptionsItem label="Similarity Task ID">
           {{ formData.judgeTaskId }}
         </NDescriptionsItem> -->
-        <NDescriptionsItem label="创建时间">
+        <NDescriptionsItem label="Created At">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建者">
+        <NDescriptionsItem label="Created By">
           <!-- {{ formData.createUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -115,10 +115,10 @@ defineExpose({
             <NText>{{ formData.createUserName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新时间">
+        <NDescriptionsItem label="Updated At">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新人">
+        <NDescriptionsItem label="Updated By">
           <!-- {{ formData.updateUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -136,7 +136,7 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
         </NSpace>
       </template>

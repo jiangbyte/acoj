@@ -3,7 +3,7 @@ import { useProSetFetch } from '@/composables'
 import type { DataTableColumns } from 'naive-ui'
 import { NImage } from 'naive-ui'
 
-// 定义 props 和 emits
+// Define props and emits
 const props = defineProps<{
   setId?: string
   problemId?: string
@@ -25,33 +25,33 @@ const setColumns: DataTableColumns<any> = [
     multiple: false,
   },
   {
-    title: '标题',
+    title: 'Title',
     key: 'title',
     ellipsis: true,
   },
   {
-    title: '题集类型',
+    title: 'Set Type',
     key: 'setTypeName',
     ellipsis: true,
   },
   {
-    title: '封面',
+    title: 'Cover',
     key: 'cover',
     render: (row) => {
       return h(NImage, { src: row.cover, width: 50, height: 50, objectFit: 'cover' })
     },
   },
   {
-    title: '分类',
+    title: 'Category',
     key: 'categoryName',
     ellipsis: true,
   },
   {
-    title: '难度',
+    title: 'Difficulty',
     key: 'difficultyName',
   },
   {
-    title: 'LLM启用',
+    title: 'LLM Enabled',
     key: 'isLlmEnhancedName',
   },
 ]
@@ -61,69 +61,69 @@ const problemColumns: DataTableColumns<any> = [
     multiple: false,
   },
   {
-    title: '分类',
+    title: 'Category',
     key: 'categoryName',
     ellipsis: true,
   },
   {
-    title: '标题',
+    title: 'Title',
     key: 'title',
     ellipsis: true,
   },
   {
-    title: '来源',
+    title: 'Source',
     key: 'source',
     ellipsis: true,
   },
   //   {
-  //     title: '链接',
+  //     title: 'Link',
   //     key: 'url',
   //     ellipsis: true,
   //   },
   {
-    title: '时间限制',
+    title: 'Time Limit',
     key: 'maxTime',
     ellipsis: true,
   },
   {
-    title: '内存限制',
+    title: 'Memory Limit',
     key: 'maxMemory',
     ellipsis: true,
   },
   {
-    title: '阈值',
+    title: 'Threshold',
     key: 'threshold',
   },
   // {
-  //   title: '用例',
+  //   title: 'Test Cases',
   //   key: 'testCase',
   // },
   // {
-  //   title: '开放语言',
+  //   title: 'Allowed Languages',
   //   key: 'allowedLanguages',
   // },
   {
-    title: '难度',
+    title: 'Difficulty',
     key: 'difficultyName',
   },
   {
-    title: '公开',
+    title: 'Public',
     key: 'isPublicName',
   },
   {
-    title: 'LLM启用',
+    title: 'LLM Enabled',
     key: 'isLlmEnhancedName',
   },
   {
-    title: '使用模板',
+    title: 'Use Template',
     key: 'useTemplateName',
   },
   // {
-  //   title: '模板代码',
+  //   title: 'Template Code',
   //   key: 'codeTemplate',
   // },
 //   {
-//     title: '解决',
+//     title: 'Solved',
 //     key: 'solved',
 //   },
 ]
@@ -207,10 +207,10 @@ function handleSubmit() {
   toggleShow(false)
 }
 
-// 添加监听，当选择变化时立即更新
+// Watch selections and update immediately
 watch(setCheckedRowKeys, (newVal) => {
   if (newVal.length > 0) {
-    // 找到选中的题集标题
+    // Find the selected set title
     const selectedSet = setPageData.value?.records.find((item: any) => item.id === newVal[0])
     setTitle.value = selectedSet?.title || ''
     emit('update:setId', newVal[0])
@@ -222,7 +222,7 @@ watch(setCheckedRowKeys, (newVal) => {
 
 watch(problemCheckedRowKeys, (newVal) => {
   if (newVal.length > 0) {
-    // 找到选中的题目
+    // Find the selected problem
     const selectedProblem = problemData.value?.find((item: any) => item.id === newVal[0])
     problemTitle.value = selectedProblem?.title || ''
     emit('update:problemId', newVal[0])
@@ -245,21 +245,21 @@ watch(problemCheckedRowKeys, (newVal) => {
           <template #header>
             <n-space vertical>
               <n-space align="center">
-                <n-form-item :show-feedback="false" label="关键词" label-placement="left">
-                  <n-input v-model:value="setPageParam.keyword" placeholder="请输入关键词" />
+                <n-form-item :show-feedback="false" label="Keywords" label-placement="left">
+                  <n-input v-model:value="setPageParam.keyword" placeholder="Enter keywords" />
                 </n-form-item>
                 <n-space align="center">
                   <n-button type="primary" @click="loadData">
                     <template #icon>
                       <icon-park-outline-search />
                     </template>
-                    搜索
+                    Search
                   </n-button>
                   <n-button type="warning" @click="setResetHandle">
                     <template #icon>
                       <icon-park-outline-refresh />
                     </template>
-                    重置
+                    Reset
                   </n-button>
                 </n-space>
               </n-space>
@@ -280,10 +280,10 @@ watch(problemCheckedRowKeys, (newVal) => {
             <NSpace align="center" justify="space-between" class="w-full">
               <NSpace align="center">
                 <NP type="info" show-icon>
-                  当前数据 {{ setPageData?.records.length }} 条
+                  Current: {{ setPageData?.records.length }} records
                 </NP>
                 <NP type="info" show-icon>
-                  选中了 {{ setCheckedRowKeys.length }} 行
+                  Selected: {{ setCheckedRowKeys.length }} rows
                 </NP>
               </NSpace>
               <NPagination
@@ -302,21 +302,21 @@ watch(problemCheckedRowKeys, (newVal) => {
           <template #header>
             <n-space vertical>
               <n-space align="center">
-                <n-form-item :show-feedback="false" label="关键词" label-placement="left">
-                  <n-input v-model:value="problemDataParam.keyword" placeholder="请输入关键词" />
+                <n-form-item :show-feedback="false" label="Keywords" label-placement="left">
+                  <n-input v-model:value="problemDataParam.keyword" placeholder="Enter keywords" />
                 </n-form-item>
                 <n-space align="center">
                   <n-button type="primary" @click="loadProblemsData">
                     <template #icon>
                       <icon-park-outline-search />
                     </template>
-                    搜索
+                    Search
                   </n-button>
                   <n-button type="warning" @click="problemResetHandle">
                     <template #icon>
                       <icon-park-outline-refresh />
                     </template>
-                    重置
+                    Reset
                   </n-button>
                 </n-space>
               </n-space>
@@ -337,10 +337,10 @@ watch(problemCheckedRowKeys, (newVal) => {
             <NSpace align="center" justify="space-between" class="w-full">
               <NSpace align="center">
                 <NP type="info" show-icon>
-                  当前数据 {{ problemData.length }} 条
+                  Current: {{ problemData.length }} records
                 </NP>
                 <NP type="info" show-icon>
-                  选中了 {{ problemCheckedRowKeys.length }} 行
+                  Selected: {{ problemCheckedRowKeys.length }} rows
                 </NP>
               </NSpace>
               <!-- <NPagination
@@ -356,19 +356,19 @@ watch(problemCheckedRowKeys, (newVal) => {
       <NSpace align="center" justify="space-between" class="w-full">
         <NSpace align="center">
           <NP type="info" show-icon>
-            当前题集 {{ setTitle ? setTitle : '-' }} {{ setCheckedRowKeys.length > 0 ? `(${setCheckedRowKeys[0]})` : '' }}
+            Current set: {{ setTitle ? setTitle : '-' }} {{ setCheckedRowKeys.length > 0 ? `(${setCheckedRowKeys[0]})` : '' }}
           </NP>
           <NP type="info" show-icon>
-            选中题目 {{ problemTitle ? problemTitle : '-' }} {{ problemCheckedRowKeys.length > 0 ? `(${problemCheckedRowKeys[0]})` : '' }}
+            Selected problem: {{ problemTitle ? problemTitle : '-' }} {{ problemCheckedRowKeys.length > 0 ? `(${problemCheckedRowKeys[0]})` : '' }}
           </NP>
         </NSpace>
 
         <n-space align="center" justify="end">
           <n-button @click="toggleShow(false)">
-            取消
+            Cancel
           </n-button>
           <n-button type="primary" @click="handleSubmit">
-            确认
+            Confirm
           </n-button>
         </n-space>
       </NSpace>

@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 大模型对话 API请求
+ * LLM Conversation API requests
  */
 export function useSysConversationFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useSysConversationFetch() {
   const table = 'sys/conversation'
 
   /*
-     * 大模型对话 默认数据
+     * LLM Conversation default data
      */
   const sysConversationDefaultData = {
     id: '',
@@ -39,12 +39,12 @@ export function useSysConversationFetch() {
   }
   return {
     /*
-    * 大模型对话 默认数据
+    * LLM Conversation default data
     */
     sysConversationDefaultData,
 
     /*
-     * 大模型对话 分页接口
+     * LLM Conversation pagination endpoint
      */
     sysConversationPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -55,28 +55,28 @@ export function useSysConversationFetch() {
     },
 
     /*
-     * 大模型对话 新增接口
+     * LLM Conversation create endpoint
      */
     sysConversationAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 大模型对话 修改接口
+     * LLM Conversation update endpoint
      */
     sysConversationEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 大模型对话 删除接口
+     * LLM Conversation delete endpoint
      */
     sysConversationDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 大模型对话 详情接口
+     * LLM Conversation details endpoint
      */
     sysConversationDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

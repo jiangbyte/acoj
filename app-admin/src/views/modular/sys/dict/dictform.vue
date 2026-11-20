@@ -10,19 +10,19 @@ const { sysDictDefaultData, sysDictAdd, sysDictEdit } = useSysDictFetch()
 const formData = ref<any>({ ...sysDictDefaultData })
 const rules = {
   dictType: [
-    { required: true, message: '请输入字典类型', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Dictionary Type', trigger: ['input', 'blur'] },
   ],
   typeLabel: [
-    { required: true, message: '请输入类型名称', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Type Name', trigger: ['input', 'blur'] },
   ],
   dictValue: [
-    { required: true, message: '请输入字典值', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Dictionary Value', trigger: ['input', 'blur'] },
   ],
   dictLabel: [
-    { required: true, message: '请输入字典标签', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Dictionary Label', trigger: ['input', 'blur'] },
   ],
   sortOrder: [
-    { required: true, message: '请输入排序', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Sort Order', type: 'number', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -39,13 +39,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await sysDictEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await sysDictAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -71,31 +71,31 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键ID" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键ID" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="IDID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="类型名称" path="typeLabel">
-          <NInput v-model:value="formData.typeLabel" placeholder="请输入类型名称" />
+        <!-- Text input -->
+        <NFormItem label="Type Name" path="typeLabel">
+          <NInput v-model:value="formData.typeLabel" placeholder="Enter Type Name" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="字典类型（编码）" path="dictType">
-          <NInput v-model:value="formData.dictType" placeholder="请输入字典类型" />
+        <!-- Text input -->
+        <NFormItem label="Dictionary Type（Code）" path="dictType">
+          <NInput v-model:value="formData.dictType" placeholder="Enter Dictionary Type" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="字典标签（名称）" path="dictLabel">
-          <NInput v-model:value="formData.dictLabel" placeholder="请输入字典标签" />
+        <!-- Text input -->
+        <NFormItem label="Dictionary Label（Name）" path="dictLabel">
+          <NInput v-model:value="formData.dictLabel" placeholder="Enter Dictionary Label" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="字典值" path="dictValue">
-          <NInput v-model:value="formData.dictValue" placeholder="请输入字典值" />
+        <!-- Text input -->
+        <NFormItem label="Dictionary Value" path="dictValue">
+          <NInput v-model:value="formData.dictValue" placeholder="Enter Dictionary Value" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="排序" path="sortOrder">
-          <NInputNumber v-model:value="formData.sortOrder" :min="0" :max="100" placeholder="请输入排序" />
+        <!-- Number input -->
+        <NFormItem label="Sort Order" path="sortOrder">
+          <NInputNumber v-model:value="formData.sortOrder" :min="0" :max="100" placeholder="Enter Sort Order" />
         </NFormItem>
       </NForm>
       <template #footer>
@@ -104,13 +104,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

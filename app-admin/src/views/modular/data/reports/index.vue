@@ -2,7 +2,7 @@
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
 import { useTaskReportsFetch } from '@/composables/v1'
-import { FormatModuleType } from '@/utils'
+import { FormatModuleType, actionDeleteBtn, actionIconBtn } from '@/utils'
 import Form from './form.vue'
 import Detail from './detail.vue'
 
@@ -14,101 +14,95 @@ const columns: DataTableColumns<any> = [
     type: 'selection',
   },
   {
-    title: '报告类型',
+    title: 'Report Type',
     key: 'reportTypeName',
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: '任务ID',
+    title: 'Task ID',
     key: 'taskId',
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: '提交模块',
+    title: 'Submission Module',
     key: 'moduleType',
     render: (row) => FormatModuleType(row.moduleType),
   },
   {
-    title: '题目',
+    title: 'Problem',
     key: 'problemIdName',
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: '克隆对数',
+    title: 'Clone Pair Count',
     key: 'sampleCount',
   },
   // {
-  //   title: '相似组数量',
+  //   title: 'Similar Group Count',
   //   key: 'similarityGroupCount',
   // },
   {
-    title: '平均相似度',
+    title: 'Average Similarity',
     key: 'avgSimilarity',
     render(row: any) {
       return row.avgSimilarity * 100
     },
   },
   {
-    title: '最大相似度',
+    title: 'Maximum Similarity',
     key: 'maxSimilarity',
     render(row: any) {
       return row.maxSimilarity * 100
     },
   },
   {
-    title: '检测阈值',
+    title: 'Check Threshold',
     key: 'threshold',
   },
   // {
-  //   title: '相似度分布',
+  //   title: 'Similarity Distribution',
   //   key: 'similarityDistribution',
   // },
   // {
-  //   title: '程度统计',
+  //   title: 'Level Statistics',
   //   key: 'degreeStatistics',
   // },
   {
-    title: '检测模式',
+    title: 'Check Mode',
     key: 'checkModeName',
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: '操作',
+    title: 'Actions',
     key: 'action',
-    width: 160,
+    width: 100,
     fixed: 'right',
     render(row: any) {
-      return h(NSpace, { align: 'center' }, () => [
+      return h(NSpace, { align: 'center', wrap: false }, () => [
         // h(NButton, {
         //   type: 'primary',
         //   size: 'small',
         //   onClick: () => formRef.value.doOpen(row, true),
-        // }, () => '编辑'),
-        // h(NButton, { size: 'small', type: 'warning', onClick: () => {} }, () => '相似报告'),
-        h(NButton, {
-          type: 'primary',
-          size: 'small',
+        // }, () => 'Edit'),
+        // h(NButton, { size: 'small', type: 'warning', onClick: () => {} }, () => 'Similarity Report'),
+        actionIconBtn({
+          kind: 'stats',
           onClick: () => {
             router.push({
               path: `/visualization/submit/report/${row.id}/task/${row.taskId}`,
             })
           },
-        }, () => '数据统计'),
-        // h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '数据详情'),
-        h(NPopconfirm, {
-          onPositiveClick: () => deleteHandle(row),
-        }, {
-          default: () => '确认删除',
-          trigger: () => h(NButton, { size: 'small', type: 'error' }, () => '删除'),
         }),
+        // h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => 'DataDetails'),
+        actionDeleteBtn(() => deleteHandle(row)),
       ])
     },
   },
@@ -117,13 +111,13 @@ const columns: DataTableColumns<any> = [
 const columnSortFieldOptions = computed<any[]>(() => {
   return [
     { label: 'ID', value: 'id' },
-    { label: '创建时间', value: 'createTime' },
-    { label: '更新时间', value: 'updateTime' },
+    { label: 'Created At', value: 'createTime' },
+    { label: 'Updated At', value: 'updateTime' },
   ]
 })
 const sortOrderOptions = computed(() => [
-  { label: '升序', value: 'ASCEND' },
-  { label: '降序', value: 'DESCEND' },
+  { label: 'Ascending', value: 'ASCEND' },
+  { label: 'Descending', value: 'DESCEND' },
 ])
 const displayKey = ref<string[]>(
   columns
@@ -183,7 +177,7 @@ async function deleteHandle(row: any) {
   }]
   const { success } = await taskReportsDelete(param)
   if (success) {
-    window.$message.success('删除成功')
+    window.$message.success('Deleted successfully')
     await loadData()
   }
 }
@@ -192,7 +186,7 @@ async function deleteBatchHandle() {
   const param = checkedRowKeys.value.map(id => ({ id }))
   const { success } = await taskReportsDelete(param)
   if (success) {
-    window.$message.success('删除成功')
+    window.$message.success('Deleted successfully')
     await loadData()
     checkedRowKeys.value = []
   }
@@ -205,21 +199,21 @@ async function deleteBatchHandle() {
       <NSpace vertical>
         <NSpace align="center">
           <NSpace align="center">
-            <NFormItem :show-feedback="false" label="关键词" label-placement="left">
-              <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" clearable @clear="resetHandle" />
+            <NFormItem :show-feedback="false" label="Keywords" label-placement="left">
+              <NInput v-model:value="pageParam.keyword" placeholder="Enter keywords" clearable @clear="resetHandle" />
             </NFormItem>
             <NSpace align="center">
               <NButton type="primary" @click="loadData">
                 <template #icon>
                   <IconParkOutlineSearch />
                 </template>
-                搜索
+                Search
               </NButton>
               <NButton type="warning" @click="resetHandle">
                 <template #icon>
                   <IconParkOutlineRefresh />
                 </template>
-                重置
+                Reset
               </NButton>
             </NSpace>
           </NSpace>
@@ -230,15 +224,15 @@ async function deleteBatchHandle() {
               <template #icon>
                 <IconParkOutlinePlus />
               </template>
-              创建
+              Create
             </NButton> -->
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
-                确认删除
+                Confirm delete
               </template>
               <template #trigger>
                 <NButton type="error">
-                  删除
+                  Delete
                 </NButton>
               </template>
             </NPopconfirm>
@@ -311,10 +305,10 @@ async function deleteBatchHandle() {
         <NSpace align="center" justify="space-between" class="w-full">
           <NSpace align="center">
             <NP type="info" show-icon>
-              当前数据 {{ pageData?.records.length }} 条
+              Current: {{ pageData?.records.length }} records
             </NP>
             <NP type="info" show-icon>
-              选中了 {{ checkedRowKeys.length }} 行
+              Selected: {{ checkedRowKeys.length }} rows
             </NP>
           </NSpace>
           <NPagination
@@ -324,7 +318,7 @@ async function deleteBatchHandle() {
             :page-count="pageData ? Number(pageData.pages) : 0"
             show-size-picker
             :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-              label: `${(i + 1) * 10} 每页`,
+              label: `${(i + 1) * 10} per page`,
               value: (i + 1) * 10,
             }))"
             :page-slot="5"

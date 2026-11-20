@@ -10,7 +10,7 @@ const emit = defineEmits(['update:value'])
 
 const localValue = ref<string>(props.modelValue)
 
-// 当父组件传递的值变化时，更新本地状态
+// Update local state when the parent value changes
 watch(
   () => props.modelValue,
   (newValue) => {
@@ -18,14 +18,14 @@ watch(
   },
 )
 
-// 当本地状态变化时，通知父组件
+// Notify the parent when local state changes
 watch(localValue, (newValue) => {
   emit('update:value', newValue)
 })
 
 const sortOptions = [
-  { label: '升序', value: 'asc' },
-  { label: '降序', value: 'desc' },
+  { label: 'Ascending', value: 'asc' },
+  { label: 'Descending', value: 'desc' },
 ]
 </script>
 
@@ -33,7 +33,7 @@ const sortOptions = [
   <NSelect
     v-model:value="localValue"
     :options="sortOptions"
-    placeholder="请选择排序方式"
+    placeholder="Select sort order"
   />
   <!-- <NRadioGroup v-model:value="localValue">
     <NRadio

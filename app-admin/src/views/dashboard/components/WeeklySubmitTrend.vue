@@ -14,7 +14,7 @@ const submitDate = computed(() => chartData.value?.map((v: any) => v.data))
 const submitCountData = computed(() => chartData.value?.map((v: any) => v.submitCount))
 const passCountData = computed(() => chartData.value?.map((v: any) => v.passCount))
 
-// 折线图
+// Line chart
 const lineOptions = ref<ECOption>({
   tooltip: {
     trigger: 'axis',
@@ -53,7 +53,7 @@ const lineOptions = ref<ECOption>({
   series: [
     {
       color: '#0063ff',
-      name: '提交数',
+      name: 'Submissions',
       type: 'line',
       smooth: true,
       stack: 'Total',
@@ -67,11 +67,11 @@ const lineOptions = ref<ECOption>({
           colorStops: [
             {
               offset: 0,
-              color: 'rgba(0, 99, 255, 0.3)', // 主题色半透明
+              color: 'rgba(0, 99, 255, 0.3)', // Semi-transparent theme color
             },
             {
               offset: 1,
-              color: 'rgba(0, 99, 255, 0.05)', // 更淡的主题色
+              color: 'rgba(0, 99, 255, 0.05)', // Lighter theme color
             },
           ],
         },
@@ -83,7 +83,7 @@ const lineOptions = ref<ECOption>({
     },
     {
       color: '#00c48c',
-      name: '通过数',
+      name: 'Accepted',
       type: 'line',
       smooth: true,
       stack: 'Total',
@@ -117,7 +117,7 @@ const lineOptions = ref<ECOption>({
     },
   ],
   legend: {
-    data: ['提交数', '通过数'],
+    data: ['Submissions', 'Accepted'],
     textStyle: {
       color: '#666',
     },
@@ -128,7 +128,7 @@ const lineOptions = ref<ECOption>({
 }) as Ref<ECOption>
 useEcharts('lineRef', lineOptions)
 
-// 更新option的函数
+// Function that updates the chart options
 function updateOption() {
   lineOptions.value = {
     ...lineOptions.value,

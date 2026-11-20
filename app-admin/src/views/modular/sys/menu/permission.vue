@@ -30,18 +30,18 @@ async function doSubmit() {
       loading.value = true
       const { success } = await sysMenuAssignMenuPermission(formData.value)
       if (success) {
-        window.$message.success('处理成功')
+        window.$message.success('Processed successfully')
       }
       //   if (isEdit.value) {
       //     const { success } = await sysMenuEdit(formData.value)
       //     if (success) {
-      //       window.$message.success('修改成功')
+      //       window.$message.success('Updated successfully')
       //     }
       //   }
       //   else {
       //     const { success } = await sysMenuAdd(formData.value)
       //     if (success) {
-      //       window.$message.success('新增成功')
+      //       window.$message.success('Created successfully')
       //     }
       //   }
       emit('submit', true)
@@ -64,7 +64,7 @@ function doOpen(row: any = null, edit: boolean = false) {
 
   useAuthFetch().permissionList().then(({ data }) => {
     // permissionOptions.value = data
-    // 处理data，第一层禁用 disabled: true，第二层name处理为 name(value),子为permissions
+    // Process data: disable the first level, format second-level names as name(value), and use permissions for children
     permissionOptions.value = data.map(item => ({
       label: `${item.controllerName}(${item.controller})`,
       key: item.controller,
@@ -84,10 +84,10 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem label="菜单权限" path="permissions">
+        <!-- Text input -->
+        <NFormItem label="MenuPermissions" path="permissions">
           <n-tree
             v-model:checked-keys="formData.permissions"
             block-line
@@ -106,13 +106,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

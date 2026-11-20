@@ -10,7 +10,7 @@ const formRef = ref()
 
 const { dataLibraryiUserPage, dataLibraryiUserGroupList } = useDataLibraryFetch()
 const defaultFormData = {
-  // 基础范围
+  // Base range
   moduleType: null,
   moduleId: null,
   problemId: null,
@@ -45,10 +45,10 @@ const formData = ref({ ...defaultFormData })
 
 const rules = {
   problemId: [
-    { required: true, message: '请选择题目', trigger: ['input', 'blur'] },
+    { required: true, message: 'Select Problem', trigger: ['input', 'blur'] },
   ],
   language: [
-    { required: true, message: '请选择语言', trigger: ['input', 'blur'] },
+    { required: true, message: 'Select Language', trigger: ['input', 'blur'] },
   ],
 }
 
@@ -67,7 +67,7 @@ function doClose() {
 
 async function doSubmit() {
   if (Number(libraryBatchCount.value.checkCount) <= 1 || Number(libraryBatchCount.value.checkCount) > 200) {
-    window.$message.warning(`检测份数 ${libraryBatchCount.value.checkCount} 为边界值，无法提交`)
+    window.$message.warning(`Submission count ${libraryBatchCount.value.checkCount} is out of range and cannot be submitted`)
     return
   }
 
@@ -77,14 +77,14 @@ async function doSubmit() {
       try {
         const { data } = await useTaskSimilarityFetch().taskSimilarityBatch(formData.value)
         if (data) {
-          window.$message.success(`检测任务已提交，将处理 ${libraryBatchCount.value.checkCount} 份提交`)
+          window.$message.success(`Check submitted; processing ${libraryBatchCount.value.checkCount} submissions`)
           emit('submit', data)
           doClose()
         }
       }
       // eslint-disable-next-line unused-imports/no-unused-vars
       catch (error) {
-        window.$message.error('任务提交失败')
+        window.$message.error('Failed to submit task')
       }
       finally {
         loading.value = false
@@ -95,10 +95,10 @@ async function doSubmit() {
 
 function handleConfirm() {
   window.$dialog.info({
-    title: '提示',
-    content: `将处理 ${libraryBatchCount.value.checkCount} 份提交，稍后可在【检测统计】中查看详情`,
-    positiveText: '确定',
-    negativeText: '取消（该操作将关闭检测窗口）',
+    title: 'Notice',
+    content: `Process ${libraryBatchCount.value.checkCount} submissions，View details later under Check Statistics`,
+    positiveText: 'OK',
+    negativeText: 'Cancel and close',
     onPositiveClick: () => {
       doSubmit()
     },
@@ -118,7 +118,7 @@ async function doOpen(row: any, moduleType: string) {
   formData.value.moduleType = moduleType as any
 
   console.log('=============')
-  // 仓库中有效的代码
+  // Valid code in the repository
   // useDataLibraryFetch().dataLibraryProblems({
   //   moduleType,
   //   moduleId: row.id as any,
@@ -150,7 +150,7 @@ const columns: DataTableColumns<any> = [
     type: 'selection',
   },
   {
-    title: '昵称',
+    title: 'Nickname',
     key: 'nickname',
     render(row: any) {
       return h(
@@ -178,7 +178,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '用户组',
+    title: 'User Group',
     key: 'groupIdName',
   },
 ]
@@ -210,7 +210,7 @@ watch(
       value: language,
     }))
   },
-  { immediate: true }, // 初始化时执行一次
+  { immediate: true }, // Run once during initialization
 )
 
 function updateQcount() {
@@ -225,15 +225,15 @@ function updateQcount() {
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="代码相似度检测配置">
-      <NAlert type="info" class="mb-4">系统限制：最多处理 <NTag size="small" type="info">200</NTag>份提交</NAlert>
+    <NDrawerContent title="Code Similarity Settings">
+      <NAlert type="info" class="mb-4">System limit: process up to <NTag size="small" type="info">200</NTag> submissions</NAlert>
 
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="130">
-        <NCard title="检测范围" size="small" class="mb-4">
-          <NFormItem label="题目选择" path="problemId">
+        <NCard title="Check Scope" size="small" class="mb-4">
+          <NFormItem label="Problem" path="problemId">
             <NSelect
               v-model:value="formData.problemId"
-              placeholder="请选择要检测的题目"
+              placeholder="Select a problem to check"
               label-field="title"
               value-field="id"
               :options="setProblemOptions"
@@ -243,10 +243,10 @@ function updateQcount() {
               }"
             />
           </NFormItem>
-          <NFormItem label="编程语言" path="language">
+          <NFormItem label="Language" path="language">
             <NSelect
               v-model:value="formData.language"
-              placeholder="请选择检测语言"
+              placeholder="Select a language"
               :options="languageOptions"
               :disabled="!formData.problemId"
               @update-value="(e) => {
@@ -255,36 +255,36 @@ function updateQcount() {
               }"
             />
           </NFormItem>
-          <NFormItem label="时间范围">
+          <NFormItem label="Time Range">
             <NDatePicker
               v-model:value="formData.timeRange"
               type="datetimerange"
               clearable
-              placeholder="选择时间范围（可选）"
+              placeholder="Select a time range (optional)"
               @update-value="(e) => updateQcount()"
             />
           </NFormItem>
         </NCard>
-        <NCard title="检测策略" size="small" class="mb-4">
-          <NFormItem label="对比模式">
+        <NCard title="Check Strategy" size="small" class="mb-4">
+          <NFormItem label="Comparison Mode">
             <NRadioGroup v-model:value="formData.compareMode">
               <NSpace>
                 <NRadio value="PAIR_BY_PAIR">
-                  两两对比
+                  Pairwise
                 </NRadio>
                 <NRadio value="MULTI_BY_MULTI">
-                  用户对比
+                  Compare users
                 </NRadio>
               </NSpace>
             </NRadioGroup>
           </NFormItem>
-          <NFormItem v-if="formData.compareMode === 'MULTI_BY_MULTI'" label="用户列表">
+          <NFormItem v-if="formData.compareMode === 'MULTI_BY_MULTI'" label="Users">
             <NCard size="small" class="flex-1 mb-4">
               <NSpace vertical>
                 <NSpace align="center" justify="space-between">
                   <NSpace align="center">
                     <NText>
-                      用户组筛选
+                      Filter by user group
                     </NText>
                     <NTreeSelect
                       v-model:value="formData.groupId"
@@ -295,7 +295,7 @@ function updateQcount() {
                       :indent="12"
                       class="w-60"
                       clearable
-                      placeholder="请选择用户组"
+                      placeholder="Select a user group"
                       @update:value="(e) => {
                         updateQcount()
                         handleUserGroupChange(e)
@@ -304,7 +304,7 @@ function updateQcount() {
                     />
                   </NSpace>
                   <NP type="info" show-icon>
-                    当前数据 {{ pageData?.records.length }} 条
+                    Current: {{ pageData?.records.length }} records
                   </NP>
                 </NSpace>
                 <NDataTable
@@ -325,7 +325,7 @@ function updateQcount() {
                 <NSpace align="center" justify="space-between" class="w-full">
                   <NSpace align="center">
                     <NP type="info" show-icon>
-                      选中了 {{ formData.userIds?.length }} 行
+                      Selected: {{ formData.userIds?.length }} rows
                     </NP>
                   </NSpace>
                   <NPagination
@@ -340,50 +340,50 @@ function updateQcount() {
               </template>
             </NCard>
           </NFormItem>
-          <NFormItem v-if="formData.compareMode === 'PAIR_BY_PAIR'" label="代码筛选">
+          <NFormItem v-if="formData.compareMode === 'PAIR_BY_PAIR'" label="Code Filter">
             <NRadioGroup v-model:value="formData.codeFilter" @update-value="(e) => updateQcount()">
               <NRadio value="VALID_SUBMIT">
-                有效提交
+                Valid submissions
               </NRadio>
               <NRadio value="TIME_WINDOW">
-                时间窗口（{{ formData.codeFilterTimeWindow }}分钟内）
+                Time window ({{ formData.codeFilterTimeWindow }} min)
               </NRadio>
             </NRadioGroup>
           </NFormItem>
           <n-grid v-if="formData.compareMode === 'PAIR_BY_PAIR' && formData.codeFilter === 'TIME_WINDOW'" :cols="12" :x-gap="12">
-            <n-form-item-gi :span="8" label="时间窗口（分钟）">
+            <n-form-item-gi :span="8" label="Time window (minutes)">
               <NInputNumber v-model:value="formData.codeFilterTimeWindow" :min="1" :max="120" @update:value="updateQcount" />
             </n-form-item-gi>
           </n-grid>
         </NCard>
-        <NCard title="参数控制" size="small" class="mb-4">
-          <NFormItem label="匹配敏感度">
+        <NCard title="Parameters" size="small" class="mb-4">
+          <NFormItem label="Match sensitivity">
             <NSpace vertical class="w-full">
               <NSlider
                 v-model:value="formData.minMatchLength"
                 :step="1"
                 :min="5"
                 :max="15"
-                :marks="{ 5: '宽松', 10: '标准', 15: '严格' }"
+                :marks="{ 5: 'Lenient', 10: 'Standard', 15: 'Strict' }"
               />
             </NSpace>
           </NFormItem>
         </NCard>
-        <NCard title="检测预览" size="small">
+        <NCard title="Preview" size="small">
           <NSpace vertical class="w-full">
             <NSpace vertical>
               <NSpace justify="space-between">
-                <NText>总提交数量：</NText>
+                <NText>Total submissions:</NText>
                 <NTag>{{ libraryBatchCount.totalCount }}</NTag>
               </NSpace>
               <NSpace justify="space-between">
-                <NText>实际检测数量：</NText>
+                <NText>Submissions checked:</NText>
                 <NTag>
                   {{ libraryBatchCount.checkCount }}
                 </NTag>
               </NSpace>
               <NSpace justify="space-between">
-                <NText>对比组合数：</NText>
+                <NText>Comparison pairs:</NText>
                 <NTag type="info">
                   {{ libraryBatchCount.compareCount }}
                 </NTag>
@@ -396,7 +396,7 @@ function updateQcount() {
       <template #footer>
         <NSpace align="center" justify="end">
           <NButton @click="doClose">
-            取消
+            Cancel
           </NButton>
           <NButton
             type="primary"
@@ -404,7 +404,7 @@ function updateQcount() {
             :disabled="Number(libraryBatchCount.checkCount) <= 1 || Number(libraryBatchCount.checkCount) > 200"
             @click="handleConfirm"
           >
-            {{ `开始检测 (${libraryBatchCount.checkCount}份)` }}
+            {{ `Start check (${libraryBatchCount.checkCount})` }}
           </NButton>
         </NSpace>
       </template>

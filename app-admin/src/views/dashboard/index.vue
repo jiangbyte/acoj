@@ -35,7 +35,7 @@ loadData()
             justify="space-between"
             align="center"
           >
-            <NStatistic label="今日提交">
+            <NStatistic label="Submissions Today">
               <NNumberAnimation
                 :from="0"
                 :to="totalProblemSubmitAnalyse?.dailySubmit"
@@ -51,7 +51,7 @@ loadData()
           </NSpace>
           <template #footer>
             <NSpace justify="space-between">
-              <span>总提交数</span>
+              <span>Total Submissions</span>
               <span><NNumberAnimation
                 :from="0"
                 :to="totalProblemSubmitAnalyse?.totalSubmit"
@@ -67,7 +67,7 @@ loadData()
             justify="space-between"
             align="center"
           >
-            <NStatistic label="今日AC">
+            <NStatistic label="Accepted Today">
               <NNumberAnimation
                 :from="0"
                 :to="totalProblemSubmitAnalyse?.dailyAC"
@@ -83,7 +83,7 @@ loadData()
           </NSpace>
           <template #footer>
             <NSpace justify="space-between">
-              <span>总AC数</span>
+              <span>Total Accepted</span>
               <span><NNumberAnimation
                 :from="0"
                 :to="totalProblemSubmitAnalyse?.totalAC"
@@ -99,7 +99,7 @@ loadData()
             justify="space-between"
             align="center"
           >
-            <NStatistic label="本周活跃">
+            <NStatistic label="Active This Week">
               <NNumberAnimation
                 :from="0"
                 :to="totalUserAnalyse?.weeklyActiveUser"
@@ -115,7 +115,7 @@ loadData()
           </NSpace>
           <template #footer>
             <NSpace justify="space-between">
-              <span>注册用户</span>
+              <span>Registered Users</span>
               <span><NNumberAnimation
                 :from="0"
                 :to="totalUserAnalyse?.registerUser"
@@ -131,7 +131,7 @@ loadData()
             justify="space-between"
             align="center"
           >
-            <NStatistic label="题目数量">
+            <NStatistic label="Problems">
               <NNumberAnimation
                 :from="0"
                 :to="totalProblemAnalyse?.problems"
@@ -147,7 +147,7 @@ loadData()
           </NSpace>
           <template #footer>
             <NSpace justify="space-between">
-              <span>通过率</span>
+              <span>Acceptance Rate</span>
               <span>{{ totalProblemAnalyse?.passRate ? totalProblemAnalyse?.passRate : 0 }}%</span>
             </NSpace>
           </template>
@@ -161,22 +161,22 @@ loadData()
             :tabs-padding="20"
             pane-style="padding: 20px;"
           >
-            <NTabPane name="周提交趋势">
+            <NTabPane name="Weekly Submission Trend">
               <WeeklySubmitTrend />
             </NTabPane>
-            <NTabPane name="日提交趋势">
+            <NTabPane name="Daily Submission Trend">
               <TodayHourlySubmitTrend />
             </NTabPane>
           </NTabs>
         </NCard>
       </NGi>
       <NGi :span="8">
-        <NCard title="题目通过率">
+        <NCard title="Problem Acceptance Rate">
           <ProblemRateChart />
         </NCard>
       </NGi>
       <NGi :span="6">
-        <NCard title="语言分布">
+        <NCard title="Language Distribution">
           <LanguageChart />
         </NCard>
       </NGi>

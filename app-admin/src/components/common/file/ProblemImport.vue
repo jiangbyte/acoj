@@ -8,7 +8,7 @@ const emit = defineEmits<{
   (e: 'error', error?: Error): void
 }>()
 
-// 上传状态枚举
+// Upload status enum
 enum UploadStatus {
   IDLE = 'idle',
   UPLOADING = 'uploading',
@@ -38,7 +38,7 @@ const fileListLengthRef = ref(0)
 
 function handleChange(options: { fileList: UploadFileInfo[] }) {
   fileListLengthRef.value = options.fileList.length
-  // 当文件列表变化时重置状态（除非正在上传中）
+  // Reset status when the file list changes unless an upload is active
   if (uploadStatus.value !== UploadStatus.UPLOADING) {
     uploadStatus.value = UploadStatus.IDLE
     uploadProgress.value = 0
@@ -56,7 +56,7 @@ async function FileUploadRequest({
     uploadProgress.value = 0
     isLoading.value = true
 
-    // 模拟上传进度
+    // Simulate upload progress
     const progressInterval = setInterval(() => {
       if (uploadProgress.value < 90) {
         uploadProgress.value += 10
@@ -64,13 +64,13 @@ async function FileUploadRequest({
       }
     }, 200)
 
-    // 创建 FormData 对象
+    // Create a FormData object
     const submitData = new FormData()
 
-    // 添加文件
+    // Add the file
     submitData.append('file', file.file as File)
 
-    // 添加其他参数
+    // Add other parameters
     submitData.append('threshold', formData.value.threshold.toString())
     submitData.append('useAi', formData.value.useAi.toString())
     submitData.append('isPublic', formData.value.isPublic.toString())
@@ -93,32 +93,32 @@ async function FileUploadRequest({
       })
     }
 
-    window.$message.info('文件上传中，请稍候...')
+    window.$message.info('Uploading file. Please wait...')
 
     const { data, success } = await dataProblemImport(submitData)
 
-    // 清除进度定时器并设置完成
+    // Clear the progress timer and mark complete
     clearInterval(progressInterval)
     uploadProgress.value = 100
     onProgress?.({ percent: 100 })
 
     if (success) {
       uploadStatus.value = UploadStatus.SUCCESS
-      window.$message.success(`导入成功！成功导入 ${data?.successCount || 0}/${data?.totalCount || 0} 道题目`)
+      window.$message.success(`Imported: ${data?.successCount || 0}/${data?.totalCount || 0}  problems`)
 
-      // 如果有错误信息，显示警告
+      // Show a warning when errors exist
       if (data?.errors && data.errors.length > 0) {
-        window.$message.warning(`部分题目导入失败：${data.errors.join('; ')}`)
+        window.$message.warning(`Some problems failed to import: ${data.errors.join('; ')}`)
       }
 
       emit('success', 'OK')
-      // 上传成功后关闭模态框
+      // Close the modal after upload
       setTimeout(() => {
         handleClose()
       }, 1500)
     }
     else {
-      throw new Error(data?.message || '导入失败')
+      throw new Error(data?.message || 'Import failed')
     }
 
     isLoading.value = false
@@ -127,7 +127,7 @@ async function FileUploadRequest({
   catch (error) {
     console.error('Upload failed:', error)
     uploadStatus.value = UploadStatus.ERROR
-    const errorMessage = error instanceof Error ? error.message : '上传失败，请重试'
+    const errorMessage = error instanceof Error ? error.message : 'Upload failed. Please try again'
     window.$message.error(errorMessage)
     emit('error', error instanceof Error ? error : new Error('Upload failed'))
     onError()
@@ -166,12 +166,12 @@ const categoryOptions = ref()
 const tagOptions = ref()
 
 async function doOpen() {
-  // 重置状态
+  // Reset status
   uploadStatus.value = UploadStatus.IDLE
   uploadProgress.value = 0
   fileListLengthRef.value = 0
 
-  // 获取下拉列表数据
+  // Load dropdown options
   const { data: difficultyData } = await sysDictOptions({ dictType: 'PROBLEM_DIFFICULTY' })
   if (difficultyData) {
     difficultyOptions.value = difficultyData.map((item: any) => {
@@ -206,65 +206,65 @@ defineExpose({
 
 const rules = {
   categoryId: [
-    { required: true, message: '请输入分类', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Category', trigger: ['input', 'blur'] },
   ],
   allowedLanguages: [{
     type: 'array',
     required: true,
     trigger: ['blur', 'change'],
-    message: '请选择语言',
+    message: 'Select Language',
   }],
   tagIds: [{
     type: 'array',
     required: true,
     trigger: ['blur', 'change'],
-    message: '请选择标签',
+    message: 'Select Tag',
   }],
   difficulty: [
-    { required: true, message: '请输入难度', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Difficulty', type: 'number', trigger: ['input', 'blur'] },
   ],
   threshold: [
-    { required: true, message: '请输入阈值', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Threshold', type: 'number', trigger: ['input', 'blur'] },
   ],
 }
 
-// 添加一个 ref 来访问上传组件
+// Add a ref for the upload component
 const uploadRef = ref()
 
 function handleSubmit() {
-  // 如果正在上传中，不允许重复提交
+  // Prevent duplicate submission while uploading
   if (uploadStatus.value === UploadStatus.UPLOADING) {
-    window.$message.warning('文件正在上传中，请稍候...')
+    window.$message.warning('A file is uploading，Please wait...')
     return
   }
 
-  // 验证表单
+  // Validate the form
   formRef.value?.validate((errors) => {
     if (!errors) {
-      // 表单验证通过，触发文件上传
+      // Upload after form validation succeeds
       if (uploadRef.value && fileListLengthRef.value > 0) {
         uploadStatus.value = UploadStatus.UPLOADING
         uploadProgress.value = 0
-        // 手动触发上传
+        // Trigger upload manually
         uploadRef.value.submit()
       }
       else {
-        window.$message.error('请先选择要上传的文件')
+        window.$message.error('Select a file to upload first')
       }
     }
     else {
-      window.$message.error('请完善表单信息')
+      window.$message.error('Complete the form')
     }
   })
 }
 
 function handleClose() {
-  // 如果正在上传中，提示用户
+  // Warn the user if an upload is in progress
   if (uploadStatus.value === UploadStatus.UPLOADING) {
-    window.$message.warning('文件正在上传中，关闭窗口将取消上传')
+    window.$message.warning('A file is uploading，Closing the window will cancel the upload')
   }
   showImportModal.value = false
-  // 重置状态
+  // Reset status
   setTimeout(() => {
     uploadStatus.value = UploadStatus.IDLE
     uploadProgress.value = 0
@@ -272,21 +272,21 @@ function handleClose() {
   formData.value = { ...defaultFormData }
 }
 
-// 根据上传状态获取按钮文本
+// Get button text for the upload status
 const getSubmitButtonText = computed(() => {
   switch (uploadStatus.value) {
     case UploadStatus.UPLOADING:
-      return `上传中 ${uploadProgress.value}%`
+      return `Uploading ${uploadProgress.value}%`
     case UploadStatus.SUCCESS:
-      return '上传成功'
+      return 'Uploaded successfully'
     case UploadStatus.ERROR:
-      return '上传失败，重试'
+      return 'Upload failed，Retry'
     default:
-      return '执行'
+      return 'Run'
   }
 })
 
-// 根据上传状态获取按钮类型
+// Get button type for the upload status
 const getSubmitButtonType = computed(() => {
   switch (uploadStatus.value) {
     case UploadStatus.SUCCESS:
@@ -298,15 +298,15 @@ const getSubmitButtonType = computed(() => {
   }
 })
 
-// 根据上传状态判断按钮是否禁用
+// Determine whether the button is disabled from upload status
 const isSubmitButtonDisabled = computed(() => {
   return !fileListLengthRef.value || uploadStatus.value === UploadStatus.UPLOADING
 })
 
 function handleTagUpdate(newValue: string[], option: any) {
   if (newValue.length > 2) {
-    window.$message.warning(`最多只能选择 ${2} 个标签`)
-    // 截断
+    window.$message.warning(`You can select up to ${2} tags`)
+    // Truncate
     formData.value.tagIds = formData.value.tagIds.slice(0, 2)
     return
   }
@@ -319,45 +319,45 @@ function handleTagUpdate(newValue: string[], option: any) {
     v-model:show="showImportModal"
     preset="card"
     class="w-200"
-    title="题目导入"
+    title="Import Problems"
     :bordered="false"
     :mask-closable="false"
     @close="handleClose"
   >
     <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
       <n-grid :cols="24" :x-gap="24">
-        <n-form-item-gi :span="12" label="分类" path="categoryId">
+        <n-form-item-gi :span="12" label="Category" path="categoryId">
           <NSelect
             v-model:value="formData.categoryId"
-            placeholder="请选择分类"
+            placeholder="Select Category"
             :options="categoryOptions"
             clearable
             remote
           />
         </n-form-item-gi>
-        <n-form-item-gi :span="12" label="难度" path="difficulty">
+        <n-form-item-gi :span="12" label="Difficulty" path="difficulty">
           <NSelect
             v-model:value="formData.difficulty"
-            placeholder="请选择难度"
+            placeholder="Select Difficulty"
             :options="difficultyOptions"
             clearable
             remote
           />
         </n-form-item-gi>
-        <n-form-item-gi :span="12" label="开放语言" path="allowedLanguages">
+        <n-form-item-gi :span="12" label="Allowed Languages" path="allowedLanguages">
           <NSelect
             v-model:value="formData.allowedLanguages"
-            placeholder="请选择开放语言"
+            placeholder="Select Allowed Languages"
             :options="allowLanguageOptions"
             multiple
             clearable
             remote
           />
         </n-form-item-gi>
-        <n-form-item-gi :span="12" label="标签" path="tagIds">
+        <n-form-item-gi :span="12" label="Tag" path="tagIds">
           <NSelect
             v-model:value="formData.tagIds"
-            placeholder="请选择标签"
+            placeholder="Select Tag"
             :options="tagOptions"
             clearable
             multiple
@@ -365,12 +365,12 @@ function handleTagUpdate(newValue: string[], option: any) {
             @update:value="handleTagUpdate"
           />
         </n-form-item-gi>
-        <n-form-item-gi :span="12" label="阈值" path="threshold">
+        <n-form-item-gi :span="12" label="Threshold" path="threshold">
           <!-- <NInputNumber
             v-model:value="formData.threshold"
             :min="0"
             :max="1.0"
-            placeholder="请输入阈值"
+            placeholder="Enter Threshold"
             :step="0.1"
             :precision="1"
           /> -->
@@ -382,53 +382,53 @@ function handleTagUpdate(newValue: string[], option: any) {
             :marks="{ 0.5: '0.5', 0.8: '0.8', 1.0: '1.0' }"
           />
         </n-form-item-gi>
-        <n-form-item-gi :span="12" label="使用AI" path="useAi">
+        <n-form-item-gi :span="12" label="Use AI" path="useAi">
           <NRadioGroup v-model:value="formData.useAi">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </n-form-item-gi>
-        <n-form-item-gi :span="12" label="是否公开" path="isPublic">
+        <n-form-item-gi :span="12" label="Public" path="isPublic">
           <NRadioGroup v-model:value="formData.isPublic">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </n-form-item-gi>
-        <n-form-item-gi :span="12" label="是否上架" path="isVisible">
+        <n-form-item-gi :span="12" label="Published" path="isVisible">
           <NRadioGroup v-model:value="formData.isVisible">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </n-form-item-gi>
         <n-gi :span="24" class="mb-4">
           <n-text>
             <n-tag type="primary" size="small">
-              公开
-            </n-tag> 与 <n-tag type="primary" size="small">
-              上架
-            </n-tag> 处理 Web 题库显示，均开启时显示该题。<n-tag type="primary" size="small">
-              公开
-            </n-tag> 标记是否为题集中私有题目。题集组题时受是否<n-tag type="primary" size="small">
-              上架
-            </n-tag> 标记限制。
+              Public
+            </n-tag> and <n-tag type="primary" size="small">
+              Published
+            </n-tag> control display in the web problem library. The problem appears when both are enabled.<n-tag type="primary" size="small">
+              Public
+            </n-tag> marks a problem as private to a set. Set composition is restricted by the<n-tag type="primary" size="small">
+              Published
+            </n-tag> setting.
           </n-text>
         </n-gi>
       </n-grid>
     </NForm>
 
-    <!-- 上传状态提示 -->
+    <!-- UploadStatusNotice -->
     <div v-if="uploadStatus !== UploadStatus.IDLE" class="mb-4">
       <n-alert
         :type="uploadStatus === UploadStatus.SUCCESS ? 'success'
@@ -445,9 +445,9 @@ function handleTagUpdate(newValue: string[], option: any) {
         <div class="flex items-center justify-between">
           <span>
             {{
-              uploadStatus === UploadStatus.UPLOADING ? '文件上传中，请稍候...'
-              : uploadStatus === UploadStatus.SUCCESS ? '文件上传成功！'
-                : '文件上传失败，请重试'
+              uploadStatus === UploadStatus.UPLOADING ? 'Uploading file. Please wait...'
+              : uploadStatus === UploadStatus.SUCCESS ? 'File uploaded'
+                : 'Upload failed. Please try again'
             }}
           </span>
           <n-progress
@@ -465,10 +465,10 @@ function handleTagUpdate(newValue: string[], option: any) {
     <n-space vertical>
       <n-space align="center">
         <n-p depth="3" style="margin: 0">
-          请上传有效的fps文件(xml格式), 支持单个xml文件上传和Zip压缩包上传
+          Upload a valid FPS file (XML), either as a single XML file or a ZIP archive
         </n-p>
         <n-p v-if="uploadStatus === UploadStatus.UPLOADING" depth="3" style="margin: 0">
-          上传进度: {{ uploadProgress }}%
+          Upload progress: {{ uploadProgress }}%
         </n-p>
       </n-space>
       <NUpload
@@ -486,7 +486,7 @@ function handleTagUpdate(newValue: string[], option: any) {
           <template #icon>
             <IconParkOutlinePlus />
           </template>
-          上传
+          Upload
         </n-button>
       </NUpload>
     </n-space>
@@ -494,7 +494,7 @@ function handleTagUpdate(newValue: string[], option: any) {
     <template #footer>
       <n-space align="center" justify="end">
         <n-button :disabled="uploadStatus === UploadStatus.UPLOADING" @click="handleClose">
-          取消
+          Cancel
         </n-button>
         <n-button
           :type="getSubmitButtonType"

@@ -387,7 +387,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         DifficultyDistribution simple = new DifficultyDistribution();
         simple.setDifficulty(1);
         simple.setCount(simpleCount);
-        simple.setDifficultyName("简单");
+        simple.setDifficultyName("Easy");
         if (totalCount == 0) {
             simple.setPercentage(BigDecimal.ZERO);
         } else {
@@ -401,7 +401,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         DifficultyDistribution medium = new DifficultyDistribution();
         medium.setDifficulty(2);
         medium.setCount(mediumCount);
-        medium.setDifficultyName("中等");
+        medium.setDifficultyName("Medium");
         if (totalCount == 0) {
             medium.setPercentage(BigDecimal.ZERO);
         } else {
@@ -415,7 +415,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         DifficultyDistribution hard = new DifficultyDistribution();
         hard.setDifficulty(3);
         hard.setCount(hardCount);
-        hard.setDifficultyName("困难");
+        hard.setDifficultyName("Hard");
         if (totalCount == 0) {
             hard.setPercentage(BigDecimal.ZERO);
         } else {

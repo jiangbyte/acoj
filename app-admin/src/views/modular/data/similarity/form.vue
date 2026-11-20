@@ -10,55 +10,55 @@ const { taskSimilarityDefaultData, taskSimilarityAdd, taskSimilarityEdit } = use
 const formData = ref<any>({ ...taskSimilarityDefaultData })
 const rules = {
   taskId: [
-    { required: true, message: '请输入任务ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Task ID', trigger: ['input', 'blur'] },
   ],
   problemId: [
-    { required: true, message: '请输入题目ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Problem ID', trigger: ['input', 'blur'] },
   ],
   setId: [
-    { required: true, message: '请输入题集ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Set ID', trigger: ['input', 'blur'] },
   ],
   language: [
-    { required: true, message: '请输入编程语言', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Language', trigger: ['input', 'blur'] },
   ],
   similarity: [
-    { required: true, message: '请输入相似度', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Similarity', type: 'number', trigger: ['input', 'blur'] },
   ],
   submitUser: [
-    { required: true, message: '请输入提交用户', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter SubmissionUser', trigger: ['input', 'blur'] },
   ],
   submitCode: [
-    { required: true, message: '请输入源代码', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Source Code', trigger: ['input', 'blur'] },
   ],
   submitCodeLength: [
-    { required: true, message: '请输入源代码长度', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Source Length', type: 'number', trigger: ['input', 'blur'] },
   ],
   submitId: [
-    { required: true, message: '请输入提交ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Submission ID', trigger: ['input', 'blur'] },
   ],
   submitTokenName: [
-    { required: true, message: '请输入提交用户Token名称', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Submission User Token Name', trigger: ['input', 'blur'] },
   ],
   submitTokenTexts: [
-    { required: true, message: '请输入提交用户Token内容', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Submission User Token Content', trigger: ['input', 'blur'] },
   ],
   originUser: [
-    { required: true, message: '请输入样本用户', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Sample User', trigger: ['input', 'blur'] },
   ],
   originCode: [
-    { required: true, message: '请输入样本源代码', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Sample Source Code', trigger: ['input', 'blur'] },
   ],
   originCodeLength: [
-    { required: true, message: '请输入样本源代码长度', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Sample Source Length', type: 'number', trigger: ['input', 'blur'] },
   ],
   originId: [
-    { required: true, message: '请输入样本提交ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Sample Submission ID', trigger: ['input', 'blur'] },
   ],
   originTokenName: [
-    { required: true, message: '请输入样本用户Token名称', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Sample User Token Name', trigger: ['input', 'blur'] },
   ],
   originTokenTexts: [
-    { required: true, message: '请输入样本用户Token内容', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Sample User Token Content', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -75,13 +75,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await taskSimilarityEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await taskSimilarityAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -107,109 +107,109 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="任务ID" path="taskId">
-          <NInput v-model:value="formData.taskId" placeholder="请输入任务ID" />
+        <!-- Text input -->
+        <NFormItem label="Task ID" path="taskId">
+          <NInput v-model:value="formData.taskId" placeholder="Enter Task ID" />
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="手动" path="taskType">
+        <!-- Boolean selector -->
+        <NFormItem label="Manual" path="taskType">
           <NRadioGroup v-model:value="formData.taskType">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="题目ID" path="problemId">
-          <NInput v-model:value="formData.problemId" placeholder="请输入题目ID" />
+        <!-- Text input -->
+        <NFormItem label="Problem ID" path="problemId">
+          <NInput v-model:value="formData.problemId" placeholder="Enter Problem ID" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="题集ID" path="setId">
-          <NInput v-model:value="formData.setId" placeholder="请输入题集ID" />
+        <!-- Text input -->
+        <NFormItem label="Set ID" path="setId">
+          <NInput v-model:value="formData.setId" placeholder="Enter Set ID" />
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="是否是题集提交" path="isSet">
+        <!-- Boolean selector -->
+        <NFormItem label="Set Submission" path="isSet">
           <NRadioGroup v-model:value="formData.isSet">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="编程语言" path="language">
-          <NInput v-model:value="formData.language" placeholder="请输入编程语言" />
+        <!-- Text input -->
+        <NFormItem label="Language" path="language">
+          <NInput v-model:value="formData.language" placeholder="Enter Language" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="相似度" path="similarity">
-          <NInputNumber v-model:value="formData.similarity" :min="0" :max="100" placeholder="请输入相似度" />
+        <!-- Number input -->
+        <NFormItem label="Similarity" path="similarity">
+          <NInputNumber v-model:value="formData.similarity" :min="0" :max="100" placeholder="Enter Similarity" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="提交用户" path="submitUser">
-          <NInput v-model:value="formData.submitUser" placeholder="请输入提交用户" />
+        <!-- Text input -->
+        <NFormItem label="SubmissionUser" path="submitUser">
+          <NInput v-model:value="formData.submitUser" placeholder="Enter SubmissionUser" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="源代码" path="submitCode">
-          <NInput v-model:value="formData.submitCode" placeholder="请输入源代码" />
+        <!-- Text input -->
+        <NFormItem label="Source Code" path="submitCode">
+          <NInput v-model:value="formData.submitCode" placeholder="Enter Source Code" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="源代码长度" path="submitCodeLength">
-          <NInputNumber v-model:value="formData.submitCodeLength" :min="0" :max="100" placeholder="请输入源代码长度" />
+        <!-- Number input -->
+        <NFormItem label="Source Length" path="submitCodeLength">
+          <NInputNumber v-model:value="formData.submitCodeLength" :min="0" :max="100" placeholder="Enter Source Length" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="提交ID" path="submitId">
-          <NInput v-model:value="formData.submitId" placeholder="请输入提交ID" />
+        <!-- Text input -->
+        <NFormItem label="Submission ID" path="submitId">
+          <NInput v-model:value="formData.submitId" placeholder="Enter Submission ID" />
         </NFormItem>
-        <!-- 日期选择 -->
-        <NFormItem label="提交时间" path="submitTime">
+        <!-- Date selector -->
+        <NFormItem label="Submitted At" path="submitTime">
           <NDatePicker v-model:value="formData.submitTime" type="datetime" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="提交用户Token名称" path="submitTokenName">
-          <NInput v-model:value="formData.submitTokenName" placeholder="请输入提交用户Token名称" />
+        <!-- Text input -->
+        <NFormItem label="Submission User Token Name" path="submitTokenName">
+          <NInput v-model:value="formData.submitTokenName" placeholder="Enter Submission User Token Name" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="提交用户Token内容" path="submitTokenTexts">
-          <NInput v-model:value="formData.submitTokenTexts" placeholder="请输入提交用户Token内容" />
+        <!-- Text input -->
+        <NFormItem label="Submission User Token Content" path="submitTokenTexts">
+          <NInput v-model:value="formData.submitTokenTexts" placeholder="Enter Submission User Token Content" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="样本用户" path="originUser">
-          <NInput v-model:value="formData.originUser" placeholder="请输入样本用户" />
+        <!-- Text input -->
+        <NFormItem label="Sample User" path="originUser">
+          <NInput v-model:value="formData.originUser" placeholder="Enter Sample User" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="样本源代码" path="originCode">
-          <NInput v-model:value="formData.originCode" placeholder="请输入样本源代码" />
+        <!-- Text input -->
+        <NFormItem label="Sample Source Code" path="originCode">
+          <NInput v-model:value="formData.originCode" placeholder="Enter Sample Source Code" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="样本源代码长度" path="originCodeLength">
-          <NInputNumber v-model:value="formData.originCodeLength" :min="0" :max="100" placeholder="请输入样本源代码长度" />
+        <!-- Number input -->
+        <NFormItem label="Sample Source Length" path="originCodeLength">
+          <NInputNumber v-model:value="formData.originCodeLength" :min="0" :max="100" placeholder="Enter Sample Source Length" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="样本提交ID" path="originId">
-          <NInput v-model:value="formData.originId" placeholder="请输入样本提交ID" />
+        <!-- Text input -->
+        <NFormItem label="Sample Submission ID" path="originId">
+          <NInput v-model:value="formData.originId" placeholder="Enter Sample Submission ID" />
         </NFormItem>
-        <!-- 日期选择 -->
-        <NFormItem label="样本提交时间" path="originTime">
+        <!-- Date selector -->
+        <NFormItem label="Sample Submitted At" path="originTime">
           <NDatePicker v-model:value="formData.originTime" type="datetime" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="样本用户Token名称" path="originTokenName">
-          <NInput v-model:value="formData.originTokenName" placeholder="请输入样本用户Token名称" />
+        <!-- Text input -->
+        <NFormItem label="Sample User Token Name" path="originTokenName">
+          <NInput v-model:value="formData.originTokenName" placeholder="Enter Sample User Token Name" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="样本用户Token内容" path="originTokenTexts">
-          <NInput v-model:value="formData.originTokenTexts" placeholder="请输入样本用户Token内容" />
+        <!-- Text input -->
+        <NFormItem label="Sample User Token Content" path="originTokenTexts">
+          <NInput v-model:value="formData.originTokenTexts" placeholder="Enter Sample User Token Content" />
         </NFormItem>
       </NForm>
       <template #footer>
@@ -218,13 +218,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

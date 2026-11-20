@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 竞赛 API请求
+ * Contest API requests
  */
 export function useDataContestFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useDataContestFetch() {
   const table = 'data/contest'
 
   /*
-     * 竞赛 默认数据
+     * Contest default data
      */
   const dataContestDefaultData = {
     id: '',
@@ -41,12 +41,12 @@ export function useDataContestFetch() {
   }
   return {
     /*
-    * 竞赛 默认数据
+    * Contest default data
     */
     dataContestDefaultData,
 
     /*
-     * 竞赛 分页接口
+     * Contest pagination endpoint
      */
     dataContestPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -57,28 +57,28 @@ export function useDataContestFetch() {
     },
 
     /*
-     * 竞赛 新增接口
+     * Contest create endpoint
      */
     dataContestAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 竞赛 修改接口
+     * Contest update endpoint
      */
     dataContestEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 竞赛 删除接口
+     * Contest delete endpoint
      */
     dataContestDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 竞赛 详情接口
+     * Contest details endpoint
      */
     dataContestDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

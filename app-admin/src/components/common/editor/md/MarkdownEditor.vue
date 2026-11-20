@@ -18,7 +18,7 @@ const toolbarsExclude: ToolbarNames[] = [
 ]
 
 async function uploadImage(files: Array<File>, callBack: UploadImgCallBack) {
-  // // 遍历文件数组
+  // // Iterate over the file array
   // for (let i = 0; i < files.length; i++) {
   //   const file = files[i]
   //   const formData = new FormData()
@@ -26,7 +26,7 @@ async function uploadImage(files: Array<File>, callBack: UploadImgCallBack) {
   //   const { data, success } = await upload(formData)
   //   if (success && data) {
   //     window.$message.success('Successfully upload')
-  //     console.log(data) // 获取上传后的图片地址
+  //     console.log(data) // Get the uploaded image URL
 
   //     const imageData = {
   //       url: data,

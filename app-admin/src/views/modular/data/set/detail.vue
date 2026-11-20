@@ -24,53 +24,53 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="详情">
+    <NDrawerContent title="Details">
       <NDescriptions label-placement="left" bordered :column="1">
-        <NDescriptionsItem label="主键">
+        <NDescriptionsItem label="ID">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题集类型">
+        <NDescriptionsItem label="Set Type">
           {{ formData.setTypeName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="标题">
+        <NDescriptionsItem label="Title">
           {{ formData.title }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="封面">
+        <NDescriptionsItem label="Cover">
           <!-- {{ formData.cover }} -->
           <NImage :src="formData.cover" width="100" height="100" object-fit="cover" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="描述">
+        <NDescriptionsItem label="Description">
           <!-- {{ formData.description }} -->
           <MDViewer :model-value="formData.description" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="分类">
+        <NDescriptionsItem label="Category">
           {{ formData.categoryName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="难度">
+        <NDescriptionsItem label="Difficulty">
           {{ formData.difficultyName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="开始时间">
+        <NDescriptionsItem label="Starts At">
           <NTime v-if="Number(formData.setType) === 2" :time="Number(formData.startTime)" />
           <div v-else>
             -
           </div>
         </NDescriptionsItem>
-        <NDescriptionsItem label="结束时间">
+        <NDescriptionsItem label="Ends At">
           <NTime v-if="Number(formData.setType) === 2" :time="Number(formData.endTime)" />
           <div v-else>
             -
           </div>
         </NDescriptionsItem>
-        <NDescriptionsItem label="上架">
+        <NDescriptionsItem label="Published">
           {{ formData.isVisibleName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="使用AI">
+        <NDescriptionsItem label="Use AI">
           {{ formData.useAiName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建时间">
+        <NDescriptionsItem label="Created At">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建者">
+        <NDescriptionsItem label="Created By">
           <!-- {{ formData.createUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -81,10 +81,10 @@ defineExpose({
             <NText>{{ formData.createUserName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新时间">
+        <NDescriptionsItem label="Updated At">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新人">
+        <NDescriptionsItem label="Updated By">
           <!-- {{ formData.updateUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -102,7 +102,7 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
         </NSpace>
       </template>

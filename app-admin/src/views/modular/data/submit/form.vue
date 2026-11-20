@@ -10,52 +10,52 @@ const { dataSubmitDefaultData, dataSubmitAdd, dataSubmitEdit } = useDataSubmitFe
 const formData = ref<any>({ ...dataSubmitDefaultData })
 const rules = {
   userId: [
-    { required: true, message: '请输入用户ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter User ID', trigger: ['input', 'blur'] },
   ],
   setId: [
-    { required: true, message: '请输入题集ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Set ID', trigger: ['input', 'blur'] },
   ],
   problemId: [
-    { required: true, message: '请输入题目ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Problem ID', trigger: ['input', 'blur'] },
   ],
   language: [
-    { required: true, message: '请输入编程语言', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Language', trigger: ['input', 'blur'] },
   ],
   code: [
-    { required: true, message: '请输入源代码', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Source Code', trigger: ['input', 'blur'] },
   ],
   codeLength: [
-    { required: true, message: '请输入源代码长度', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Source Length', type: 'number', trigger: ['input', 'blur'] },
   ],
   maxTime: [
-    { required: true, message: '请输入最大耗时', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Maximum Time', type: 'number', trigger: ['input', 'blur'] },
   ],
   maxMemory: [
-    { required: true, message: '请输入最大内存使用', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Maximum Memory', type: 'number', trigger: ['input', 'blur'] },
   ],
   message: [
-    { required: true, message: '请输入执行结果消息', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Run Result Message', trigger: ['input', 'blur'] },
   ],
   testCase: [
-    { required: true, message: '请输入测试用例结果', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Test Case Results', trigger: ['input', 'blur'] },
   ],
   status: [
-    { required: true, message: '请输入执行状态', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter RunStatus', trigger: ['input', 'blur'] },
   ],
   similarity: [
-    { required: true, message: '请输入相似度', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Similarity', type: 'number', trigger: ['input', 'blur'] },
   ],
   taskId: [
-    { required: true, message: '请输入相似检测任务ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Similarity Task ID', trigger: ['input', 'blur'] },
   ],
   reportId: [
-    { required: true, message: '请输入报告ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Report ID', trigger: ['input', 'blur'] },
   ],
   similarityCategory: [
-    { required: true, message: '请输入相似分级', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Similarity Level', trigger: ['input', 'blur'] },
   ],
   judgeTaskId: [
-    { required: true, message: '请输入相似检测任务ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Similarity Task ID', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -72,13 +72,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await dataSubmitEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await dataSubmitAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -104,108 +104,108 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="用户ID" path="userId">
-          <NInput v-model:value="formData.userId" placeholder="请输入用户ID" />
+        <!-- Text input -->
+        <NFormItem label="User ID" path="userId">
+          <NInput v-model:value="formData.userId" placeholder="Enter User ID" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="题集ID" path="setId">
-          <NInput v-model:value="formData.setId" placeholder="请输入题集ID" />
+        <!-- Text input -->
+        <NFormItem label="Set ID" path="setId">
+          <NInput v-model:value="formData.setId" placeholder="Enter Set ID" />
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="是否是题集提交" path="isSet">
+        <!-- Boolean selector -->
+        <NFormItem label="Set Submission" path="isSet">
           <NRadioGroup v-model:value="formData.isSet">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="题目ID" path="problemId">
-          <NInput v-model:value="formData.problemId" placeholder="请输入题目ID" />
+        <!-- Text input -->
+        <NFormItem label="Problem ID" path="problemId">
+          <NInput v-model:value="formData.problemId" placeholder="Enter Problem ID" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="编程语言" path="language">
-          <NInput v-model:value="formData.language" placeholder="请输入编程语言" />
+        <!-- Text input -->
+        <NFormItem label="Language" path="language">
+          <NInput v-model:value="formData.language" placeholder="Enter Language" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="源代码" path="code">
-          <NInput v-model:value="formData.code" placeholder="请输入源代码" />
+        <!-- Text input -->
+        <NFormItem label="Source Code" path="code">
+          <NInput v-model:value="formData.code" placeholder="Enter Source Code" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="源代码长度" path="codeLength">
-          <NInputNumber v-model:value="formData.codeLength" :min="0" :max="100" placeholder="请输入源代码长度" />
+        <!-- Number input -->
+        <NFormItem label="Source Length" path="codeLength">
+          <NInputNumber v-model:value="formData.codeLength" :min="0" :max="100" placeholder="Enter Source Length" />
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="执行类型" path="submitType">
+        <!-- Boolean selector -->
+        <NFormItem label="Run Type" path="submitType">
           <NRadioGroup v-model:value="formData.submitType">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="最大耗时" path="maxTime">
-          <NInputNumber v-model:value="formData.maxTime" :min="0" :max="100" placeholder="请输入最大耗时" />
+        <!-- Number input -->
+        <NFormItem label="Maximum Time" path="maxTime">
+          <NInputNumber v-model:value="formData.maxTime" :min="0" :max="100" placeholder="Enter Maximum Time" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="最大内存使用" path="maxMemory">
-          <NInputNumber v-model:value="formData.maxMemory" :min="0" :max="100" placeholder="请输入最大内存使用" />
+        <!-- Number input -->
+        <NFormItem label="Maximum Memory" path="maxMemory">
+          <NInputNumber v-model:value="formData.maxMemory" :min="0" :max="100" placeholder="Enter Maximum Memory" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="执行结果消息" path="message">
-          <NInput v-model:value="formData.message" placeholder="请输入执行结果消息" />
+        <!-- Text input -->
+        <NFormItem label="Run Result Message" path="message">
+          <NInput v-model:value="formData.message" placeholder="Enter Run Result Message" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="测试用例结果" path="testCase">
-          <NInput v-model:value="formData.testCase" placeholder="请输入测试用例结果" />
+        <!-- Text input -->
+        <NFormItem label="Test Case Results" path="testCase">
+          <NInput v-model:value="formData.testCase" placeholder="Enter Test Case Results" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="执行状态" path="status">
-          <NInput v-model:value="formData.status" placeholder="请输入执行状态" />
+        <!-- Text input -->
+        <NFormItem label="RunStatus" path="status">
+          <NInput v-model:value="formData.status" placeholder="Enter RunStatus" />
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="流程流转是否完成" path="isFinish">
+        <!-- Boolean selector -->
+        <NFormItem label="Workflow Complete" path="isFinish">
           <NRadioGroup v-model:value="formData.isFinish">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="相似度" path="similarity">
-          <NInputNumber v-model:value="formData.similarity" :min="0" :max="100" placeholder="请输入相似度" />
+        <!-- Number input -->
+        <NFormItem label="Similarity" path="similarity">
+          <NInputNumber v-model:value="formData.similarity" :min="0" :max="100" placeholder="Enter Similarity" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="相似检测任务ID" path="taskId">
-          <NInput v-model:value="formData.taskId" placeholder="请输入相似检测任务ID" />
+        <!-- Text input -->
+        <NFormItem label="Similarity Task ID" path="taskId">
+          <NInput v-model:value="formData.taskId" placeholder="Enter Similarity Task ID" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="报告ID" path="reportId">
-          <NInput v-model:value="formData.reportId" placeholder="请输入报告ID" />
+        <!-- Text input -->
+        <NFormItem label="Report ID" path="reportId">
+          <NInput v-model:value="formData.reportId" placeholder="Enter Report ID" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="相似分级" path="similarityCategory">
-          <NInput v-model:value="formData.similarityCategory" placeholder="请输入相似分级" />
+        <!-- Text input -->
+        <NFormItem label="Similarity Level" path="similarityCategory">
+          <NInput v-model:value="formData.similarityCategory" placeholder="Enter Similarity Level" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="相似检测任务ID" path="judgeTaskId">
-          <NInput v-model:value="formData.judgeTaskId" placeholder="请输入相似检测任务ID" />
+        <!-- Text input -->
+        <NFormItem label="Similarity Task ID" path="judgeTaskId">
+          <NInput v-model:value="formData.judgeTaskId" placeholder="Enter Similarity Task ID" />
         </NFormItem>
       </NForm>
       <template #footer>
@@ -214,13 +214,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

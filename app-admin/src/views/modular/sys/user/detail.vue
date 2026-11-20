@@ -21,9 +21,9 @@ defineExpose({
 })
 function getGenderText(gender: 0 | 1 | 2) {
   const genderMap = {
-    1: '男',
-    2: '女',
-    0: '未知',
+    1: 'Male',
+    2: 'Female',
+    0: 'Unknown',
   }
   return genderMap[gender]
 }
@@ -31,45 +31,45 @@ function getGenderText(gender: 0 | 1 | 2) {
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="详情">
+    <NDrawerContent title="Details">
       <NDescriptions label-placement="left" bordered :column="1">
-        <NDescriptionsItem label="主键">
+        <NDescriptionsItem label="ID">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="用户组">
+        <NDescriptionsItem label="User Group">
           {{ formData.groupIdName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="用户名">
+        <NDescriptionsItem label="username">
           {{ formData.username }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="昵称">
+        <NDescriptionsItem label="Nickname">
           {{ formData.nickname }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="头像">
+        <NDescriptionsItem label="Avatar">
           <NImage :src="formData.avatar" width="100" height="100" object-fit="cover" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="背景图片">
+        <NDescriptionsItem label="Background Image">
           <NImage :src="formData.background" width="100" height="100" object-fit="cover" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="签名">
+        <NDescriptionsItem label="Bio">
           {{ formData.quote }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="性别">
+        <NDescriptionsItem label="Gender">
           {{ getGenderText(formData.gender) }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="邮箱">
+        <NDescriptionsItem label="Email">
           {{ formData.email }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="电话">
+        <NDescriptionsItem label="Phone">
           {{ formData.telephone }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="学号">
+        <NDescriptionsItem label="Student ID">
           {{ formData.studentNumber }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建时间">
+        <NDescriptionsItem label="Created At">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建者">
+        <NDescriptionsItem label="Created By">
           <!-- {{ formData.createUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -80,10 +80,10 @@ function getGenderText(gender: 0 | 1 | 2) {
             <NText>{{ formData.createUserName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新时间">
+        <NDescriptionsItem label="Updated At">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新人">
+        <NDescriptionsItem label="Updated By">
           <!-- {{ formData.updateUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -101,7 +101,7 @@ function getGenderText(gender: 0 | 1 | 2) {
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
         </NSpace>
       </template>

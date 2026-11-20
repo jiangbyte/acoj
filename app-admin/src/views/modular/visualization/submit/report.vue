@@ -3,10 +3,11 @@ import { useSysGroupFetch, useTaskReportsFetch, useTaskSimilarityFetch } from '@
 import type { DataTableColumns, SelectOption } from 'naive-ui'
 import { NAvatar, NButton, NEllipsis, NSpace, NTag, NText, NTime } from 'naive-ui'
 import CodeEditor from '@/components/common/editor/code/CodeEditor.vue'
+import { actionIconBtn } from '@/utils'
 
 const route = useRoute()
-const reportId = route.params.reportId // 获取 reportId
-const taskId = route.params.taskId // 获取 taskId
+const reportId = route.params.reportId // Get reportId
+const taskId = route.params.taskId // Get taskId
 
 const showModal = ref(false)
 const groupOptionsLoading = ref(false)
@@ -14,7 +15,7 @@ const groupOptions = ref<SelectOption[]>([])
 
 const columns: DataTableColumns<any> = [
   // {
-  //   title: '任务ID',
+  //   title: 'Task ID',
   //   key: 'taskId',
   //   width: 100,
   //   ellipsis: {
@@ -22,7 +23,7 @@ const columns: DataTableColumns<any> = [
   //   },
   // },
   {
-    title: '相似度(%)',
+    title: 'Similarity(%)',
     key: 'similarity',
     width: 100,
     render: (row) => {
@@ -30,7 +31,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '提交用户',
+    title: 'SubmissionUser',
     key: 'submitUser',
     width: 100,
     render(row: any) {
@@ -63,12 +64,12 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '代码长度',
+    title: 'Code Length',
     key: 'submitCodeLength',
     width: 50,
   },
   {
-    title: '提交ID',
+    title: 'Submission ID',
     key: 'submitId',
     width: 100,
     ellipsis: {
@@ -76,7 +77,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '样本用户',
+    title: 'Sample User',
     key: 'originUser',
     width: 100,
     render(row: any) {
@@ -109,12 +110,12 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '代码长度',
+    title: 'Code Length',
     key: 'originCodeLength',
     width: 50,
   },
   {
-    title: '提交ID',
+    title: 'Submission ID',
     key: 'originId',
     width: 100,
     ellipsis: {
@@ -122,7 +123,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '样本记录时间',
+    title: 'Sample Recorded At',
     key: 'originTime',
     width: 100,
     render: (row) => {
@@ -130,19 +131,19 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '操作',
+    title: 'Actions',
     key: 'action',
-    width: 50,
+    width: 72,
     fixed: 'right',
     render(row: any) {
-      return h(NSpace, { align: 'center' }, () => [
-        h(NButton, { type: 'primary', size: 'small', onClick: () => dataDetail(row) }, () => '查看详情'),
+      return h(NSpace, { align: 'center', wrap: false }, () => [
+        actionIconBtn({ kind: 'view', onClick: () => dataDetail(row) }),
         // h(NButton, {
         //   type: 'primary',
         //   size: 'small',
         //   disabled: row.canUseSimilarReport !== true,
         //   onClick: () => { reportRef.value.doOpen(row) },
-        // }, () => '相似报告'),
+        // }, () => 'Similarity Report'),
       ])
     },
   },
@@ -201,26 +202,26 @@ loadData()
           <div class="flex justify-between items-center">
             <div>
               <h2 class="text-[clamp(1.25rem,3vw,1.75rem)] font-bold mb-2">
-                克隆统计
+                Clone Statistics
               </h2>
               <NSpace align="center">
                 <NTag v-if="detailData?.reportTypeName">
                   {{ detailData?.reportTypeName ? detailData.reportTypeName : '-' }}
                 </NTag>
                 <NTag>
-                  {{ detailData?.taskType ? '人工' : '自动' }}
+                  {{ detailData?.taskType ? 'Manual' : 'Automatic' }}
                 </NTag>
                 <NText depth="3">
-                  检测时间: <NTime :time="detailData?.createTime" /> | 任务ID: {{ detailData?.id }}
+                  Checked At: <NTime :time="detailData?.createTime" /> | Task ID: {{ detailData?.id }}
                 </NText>
               </NSpace>
             </div>
             <div class="flex space-x-3">
               <!-- <button class="px-4 py-2 bg-white border border-gray-medium rounded-md text-sm text-gray-dark hover:bg-gray-light transition-colors">
-            <i class="fa fa-download mr-1" /> 导出报告
+            <i class="fa fa-download mr-1" /> Export Report
           </button>
           <button class="px-4 py-2 bg-primary text-white rounded-md text-sm hover:bg-primary/90 transition-colors">
-            <i class="fa fa-refresh mr-1" /> 重新检测
+            <i class="fa fa-refresh mr-1" /> Run Again
           </button> -->
             </div>
           </div>
@@ -232,7 +233,7 @@ loadData()
                 : 'grid grid-cols-3 md:grid-cols-3 gap-4',
             ]"
           >
-            <n-card v-if="detailData?.isSet" size="small" title="题集" class="rounded-xl">
+            <n-card v-if="detailData?.isSet" size="small" title="Problem Set" class="rounded-xl">
               <div class="flex items-center">
                 <n-icon size="30" class="mr-3">
                   <icon-park-outline-book />
@@ -252,7 +253,7 @@ loadData()
                 </NSpace>
               </div>
             </n-card>
-            <n-card size="small" title="题目" class="rounded-xl">
+            <n-card size="small" title="Problem" class="rounded-xl">
               <div class="flex items-center">
                 <n-icon size="30" class="mr-3">
                   <icon-park-outline-book />
@@ -272,7 +273,7 @@ loadData()
                 </NSpace>
               </div>
             </n-card>
-            <n-card size="small" title="统计" class="rounded-xl">
+            <n-card size="small" title="Statistics" class="rounded-xl">
               <div class="flex items-center">
                 <n-icon size="30" class="mr-3">
                   <icon-park-outline-chart-pie />
@@ -280,20 +281,20 @@ loadData()
                 <NSpace class="w-full" justify="space-between">
                   <NSpace :size="1" vertical>
                     <p class="font-medium">
-                      共生成 <NTag size="small">
+                      Generated <NTag size="small">
                         {{ detailData?.sampleCount ? detailData.sampleCount : 0 }}
-                      </NTag> 份克隆对
+                      </NTag>  clone pairs
                     </p>
                     <p class="font-medium">
-                      发现 <NTag size="small">
+                      Found <NTag size="small">
                         {{ detailData?.similarityGroupCount ? detailData.similarityGroupCount : 0 }}
-                      </NTag> 个相似分布
+                      </NTag>  similarity groups
                     </p>
                   </NSpace>
                 </NSpace>
               </div>
             </n-card>
-            <n-card size="small" title="指标" class="rounded-xl">
+            <n-card size="small" title="Metrics" class="rounded-xl">
               <div class="flex items-center">
                 <n-icon size="30" class="mr-3">
                   <icon-park-outline-data />
@@ -301,12 +302,12 @@ loadData()
                 <NSpace class="w-full" justify="space-between">
                   <NSpace :size="1" vertical>
                     <p class="font-medium">
-                      平均相似度：<NTag size="small">
+                      Average Similarity：<NTag size="small">
                         {{ detailData?.avgSimilarity ? (detailData?.avgSimilarity * 100).toFixed(2) : 0 }} %
                       </NTag>
                     </p>
                     <p class="font-medium">
-                      最高相似度：<NTag size="small">
+                      Maximum Similarity：<NTag size="small">
                         {{ detailData?.maxSimilarity ? (detailData?.maxSimilarity * 100).toFixed(2) : 0 }} %
                       </NTag>
                     </p>
@@ -317,10 +318,10 @@ loadData()
           </div>
 
           <n-flex align="center" :wrap="false">
-            <n-card size="small" title="相似度分布统计" class="rounded-xl h-300px">
+            <n-card size="small" title="Similarity Distribution" class="rounded-xl h-300px">
               <SimilarityDistributionChart :value="detailData?.similarityDistribution || []" />
             </n-card>
-            <n-card size="small" title="可疑程度统计" class="rounded-xl h-300px w-200">
+            <n-card size="small" title="Suspicion Levels" class="rounded-xl h-300px w-200">
               <div class="flex flex-col gap-2">
                 <div v-for="(item, index) in detailData?.degreeStatistics" :key="index">
                   <div class="flex items-center justify-between w-full">
@@ -328,7 +329,7 @@ loadData()
                       {{ item.cloneLevelName }} (≥{{ (item.similarity * 100).toFixed(2) }}%)
                     </NText>
                     <NText class="mr-4">
-                      {{ item.count }} 对
+                      {{ item.count }} pairs
                     </NText>
                   </div>
                   <n-progress
@@ -339,12 +340,12 @@ loadData()
                 </div>
               </div>
               <template #footer>
-                高度疑似克隆可能涉及抄袭行为；轻度疑似克隆可能是思路巧合。
+                Highly suspicious clones may indicate plagiarism; low similarity may be coincidental.
               </template>
             </n-card>
           </n-flex>
 
-          <n-card size="small" title="疑似克隆对列表" class="rounded-xl">
+          <n-card size="small" title="Suspected Clone Pairs" class="rounded-xl">
             <template #header-extra>
               <NSpace align="center">
                 <n-tree-select
@@ -353,12 +354,12 @@ loadData()
                   label-field="name"
                   key-field="id"
                   :indent="12"
-                  placeholder="筛选用户组"
+                  placeholder="Filter by user group"
                   class="w-50"
                 />
-                <n-input placeholder="搜索提交用户用户名" />
+                <n-input placeholder="SearchSubmissionUserusername" />
                 <NButton type="primary" @click="loadData">
-                  搜索
+                  Search
                 </NButton>
               </NSpace>
             </template>
@@ -378,7 +379,7 @@ loadData()
               show-size-picker
               :page-count="pageData ? Number(pageData.pages) : 0"
               :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                label: `${(i + 1) * 10} 每页`,
+                label: `${(i + 1) * 10} per page`,
                 value: (i + 1) * 10,
               }))"
               class="flex justify-center items-center p-x-6 pt-6 pb-2"
@@ -393,7 +394,7 @@ loadData()
     <n-modal
       v-model:show="showModal"
       preset="card"
-      title="疑似详情"
+      title="Suspicion Details"
       size="small"
       class="w-1200px"
     >
@@ -412,7 +413,7 @@ loadData()
               </NText>
             </NSpace>
             <div>
-              提交时间：<NTime :time="Number(similarityDataDetail.submitTime) || Date.now()" />
+              Submitted At：<NTime :time="Number(similarityDataDetail.submitTime) || Date.now()" />
             </div>
           </NSpace>
           <NScrollbar class="h-[calc(600px-8rem)]">
@@ -427,10 +428,10 @@ loadData()
               }"
             />
             <NText>
-              代码长度：{{ similarityDataDetail?.submitCodeLength || 0 }}
+              Code Length：{{ similarityDataDetail?.submitCodeLength || 0 }}
             </NText>
             <n-collapse class="mt-2">
-              <n-collapse-item title="语法Token" name="1">
+              <n-collapse-item title="Syntax Tokens" name="1">
                 <NCode
                   :code="JSON.stringify(similarityDataDetail.submitTokenName, null)"
                   language="json"
@@ -438,7 +439,7 @@ loadData()
                   show-line-numbers
                 />
               </n-collapse-item>
-              <n-collapse-item title="词法Token" name="2">
+              <n-collapse-item title="Lexical Tokens" name="2">
                 <NCode
                   :code="JSON.stringify(similarityDataDetail.submitTokenTexts, null)"
                   language="json"
@@ -463,7 +464,7 @@ loadData()
               </NText>
             </NSpace>
             <div>
-              提交时间：<NTime :time="Number(similarityDataDetail.originTime) || Date.now()" />
+              Submitted At：<NTime :time="Number(similarityDataDetail.originTime) || Date.now()" />
             </div>
           </NSpace>
           <NScrollbar class="h-[calc(600px-8rem)]">
@@ -478,10 +479,10 @@ loadData()
               }"
             />
             <NText>
-              代码长度：{{ similarityDataDetail?.originCodeLength || 0 }}
+              Code Length：{{ similarityDataDetail?.originCodeLength || 0 }}
             </NText>
             <n-collapse class="mt-2">
-              <n-collapse-item title="语法Token" name="1">
+              <n-collapse-item title="Syntax Tokens" name="1">
                 <NCode
                   :code="JSON.stringify(similarityDataDetail.originTokenName, null)"
                   language="json"
@@ -489,7 +490,7 @@ loadData()
                   show-line-numbers
                 />
               </n-collapse-item>
-              <n-collapse-item title="词法Token" name="2">
+              <n-collapse-item title="Lexical Tokens" name="2">
                 <NCode
                   :code="JSON.stringify(similarityDataDetail.originTokenTexts, null)"
                   language="json"
@@ -505,7 +506,7 @@ loadData()
         </n-gi>
       </n-grid>
       <template #action>
-        相似度：{{ (similarityDataDetail.similarity * 100) || 0 }} %
+        Similarity：{{ (similarityDataDetail.similarity * 100) || 0 }} %
       </template>
     </n-modal>
   </div>

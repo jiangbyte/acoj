@@ -10,19 +10,19 @@ const { dataProgressDefaultData, dataProgressAdd, dataProgressEdit } = useDataPr
 const formData = ref<any>({ ...dataProgressDefaultData })
 const rules = {
   userId: [
-    { required: true, message: '请输入用户ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter User ID', trigger: ['input', 'blur'] },
   ],
   setId: [
-    { required: true, message: '请输入题集ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Set ID', trigger: ['input', 'blur'] },
   ],
   problemId: [
-    { required: true, message: '请输入题目ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Problem ID', trigger: ['input', 'blur'] },
   ],
   status: [
-    { required: true, message: '请输入状态', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Status', trigger: ['input', 'blur'] },
   ],
   extraJson: [
-    { required: true, message: '请输入额外信息', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Extra Information', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -39,13 +39,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await dataProgressEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await dataProgressAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -71,45 +71,45 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="用户ID" path="userId">
-          <NInput v-model:value="formData.userId" placeholder="请输入用户ID" />
+        <!-- Text input -->
+        <NFormItem label="User ID" path="userId">
+          <NInput v-model:value="formData.userId" placeholder="Enter User ID" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="题集ID" path="setId">
-          <NInput v-model:value="formData.setId" placeholder="请输入题集ID" />
+        <!-- Text input -->
+        <NFormItem label="Set ID" path="setId">
+          <NInput v-model:value="formData.setId" placeholder="Enter Set ID" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="题目ID" path="problemId">
-          <NInput v-model:value="formData.problemId" placeholder="请输入题目ID" />
+        <!-- Text input -->
+        <NFormItem label="Problem ID" path="problemId">
+          <NInput v-model:value="formData.problemId" placeholder="Enter Problem ID" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="状态" path="status">
-          <NInput v-model:value="formData.status" placeholder="请输入状态" />
+        <!-- Text input -->
+        <NFormItem label="Status" path="status">
+          <NInput v-model:value="formData.status" placeholder="Enter Status" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="额外信息" path="extraJson">
-          <NInput v-model:value="formData.extraJson" placeholder="请输入额外信息" />
+        <!-- Text input -->
+        <NFormItem label="Extra Information" path="extraJson">
+          <NInput v-model:value="formData.extraJson" placeholder="Enter Extra Information" />
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="是否完成" path="completed">
+        <!-- Boolean selector -->
+        <NFormItem label="Completed" path="completed">
           <NRadioGroup v-model:value="formData.completed">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- 日期选择 -->
-        <NFormItem label="完成时间" path="completedAt">
+        <!-- Date selector -->
+        <NFormItem label="Completed At" path="completedAt">
           <NDatePicker v-model:value="formData.completedAt" type="datetime" />
         </NFormItem>
       </NForm>
@@ -119,13 +119,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

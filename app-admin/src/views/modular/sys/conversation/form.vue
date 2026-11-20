@@ -10,55 +10,55 @@ const { sysConversationDefaultData, sysConversationAdd, sysConversationEdit } = 
 const formData = ref<any>({ ...sysConversationDefaultData })
 const rules = {
   conversationId: [
-    { required: true, message: '请输入对话ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Conversation ID', trigger: ['input', 'blur'] },
   ],
   problemId: [
-    { required: true, message: '请输入题目ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Problem ID', trigger: ['input', 'blur'] },
   ],
   setId: [
-    { required: true, message: '请输入题集ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Set ID', trigger: ['input', 'blur'] },
   ],
   userId: [
-    { required: true, message: '请输入用户ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter User ID', trigger: ['input', 'blur'] },
   ],
   messageType: [
-    { required: true, message: '请输入消息类型', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Message Type', trigger: ['input', 'blur'] },
   ],
   messageRole: [
-    { required: true, message: '请输入消息角色', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Message Role', trigger: ['input', 'blur'] },
   ],
   messageContent: [
-    { required: true, message: '请输入消息内容', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Message Content', trigger: ['input', 'blur'] },
   ],
   userCode: [
-    { required: true, message: '请输入用户代码', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter User Code', trigger: ['input', 'blur'] },
   ],
   language: [
-    { required: true, message: '请输入代码语言', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Code Language', trigger: ['input', 'blur'] },
   ],
   promptTokens: [
-    { required: true, message: '请输入提示Tokens', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter NoticeTokens', type: 'number', trigger: ['input', 'blur'] },
   ],
   completionTokens: [
-    { required: true, message: '请输入完成Tokens', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Completion Tokens', type: 'number', trigger: ['input', 'blur'] },
   ],
   totalTokens: [
-    { required: true, message: '请输入总Tokens', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Total Tokens', type: 'number', trigger: ['input', 'blur'] },
   ],
   streamingDuration: [
-    { required: true, message: '请输入流式传输总耗时', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Streaming Duration', type: 'number', trigger: ['input', 'blur'] },
   ],
   status: [
-    { required: true, message: '请输入状态', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Status', trigger: ['input', 'blur'] },
   ],
   errorMessage: [
-    { required: true, message: '请输入错误信息', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Error Message', trigger: ['input', 'blur'] },
   ],
   userPlatform: [
-    { required: true, message: '请输入用户平台', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter User Platform', trigger: ['input', 'blur'] },
   ],
   ipAddress: [
-    { required: true, message: '请输入IP地址', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter IP Address', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -75,13 +75,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await sysConversationEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await sysConversationAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -107,94 +107,94 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="对话ID" path="conversationId">
-          <NInput v-model:value="formData.conversationId" placeholder="请输入对话ID" />
+        <!-- Text input -->
+        <NFormItem label="Conversation ID" path="conversationId">
+          <NInput v-model:value="formData.conversationId" placeholder="Enter Conversation ID" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="题目ID" path="problemId">
-          <NInput v-model:value="formData.problemId" placeholder="请输入题目ID" />
+        <!-- Text input -->
+        <NFormItem label="Problem ID" path="problemId">
+          <NInput v-model:value="formData.problemId" placeholder="Enter Problem ID" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="题集ID" path="setId">
-          <NInput v-model:value="formData.setId" placeholder="请输入题集ID" />
+        <!-- Text input -->
+        <NFormItem label="Set ID" path="setId">
+          <NInput v-model:value="formData.setId" placeholder="Enter Set ID" />
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="题集对话" path="isSet">
+        <!-- Boolean selector -->
+        <NFormItem label="Set Conversation" path="isSet">
           <NRadioGroup v-model:value="formData.isSet">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="用户ID" path="userId">
-          <NInput v-model:value="formData.userId" placeholder="请输入用户ID" />
+        <!-- Text input -->
+        <NFormItem label="User ID" path="userId">
+          <NInput v-model:value="formData.userId" placeholder="Enter User ID" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="消息类型" path="messageType">
-          <NInput v-model:value="formData.messageType" placeholder="请输入消息类型" />
+        <!-- Text input -->
+        <NFormItem label="Message Type" path="messageType">
+          <NInput v-model:value="formData.messageType" placeholder="Enter Message Type" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="消息角色" path="messageRole">
-          <NInput v-model:value="formData.messageRole" placeholder="请输入消息角色" />
+        <!-- Text input -->
+        <NFormItem label="Message Role" path="messageRole">
+          <NInput v-model:value="formData.messageRole" placeholder="Enter Message Role" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="消息内容" path="messageContent">
-          <NInput v-model:value="formData.messageContent" placeholder="请输入消息内容" />
+        <!-- Text input -->
+        <NFormItem label="Message Content" path="messageContent">
+          <NInput v-model:value="formData.messageContent" placeholder="Enter Message Content" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="用户代码" path="userCode">
-          <NInput v-model:value="formData.userCode" placeholder="请输入用户代码" />
+        <!-- Text input -->
+        <NFormItem label="User Code" path="userCode">
+          <NInput v-model:value="formData.userCode" placeholder="Enter User Code" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="代码语言" path="language">
-          <NInput v-model:value="formData.language" placeholder="请输入代码语言" />
+        <!-- Text input -->
+        <NFormItem label="Code Language" path="language">
+          <NInput v-model:value="formData.language" placeholder="Enter Code Language" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="提示Tokens" path="promptTokens">
-          <NInputNumber v-model:value="formData.promptTokens" :min="0" :max="100" placeholder="请输入提示Tokens" />
+        <!-- Number input -->
+        <NFormItem label="NoticeTokens" path="promptTokens">
+          <NInputNumber v-model:value="formData.promptTokens" :min="0" :max="100" placeholder="Enter NoticeTokens" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="完成Tokens" path="completionTokens">
-          <NInputNumber v-model:value="formData.completionTokens" :min="0" :max="100" placeholder="请输入完成Tokens" />
+        <!-- Number input -->
+        <NFormItem label="Completion Tokens" path="completionTokens">
+          <NInputNumber v-model:value="formData.completionTokens" :min="0" :max="100" placeholder="Enter Completion Tokens" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="总Tokens" path="totalTokens">
-          <NInputNumber v-model:value="formData.totalTokens" :min="0" :max="100" placeholder="请输入总Tokens" />
+        <!-- Number input -->
+        <NFormItem label="Total Tokens" path="totalTokens">
+          <NInputNumber v-model:value="formData.totalTokens" :min="0" :max="100" placeholder="Enter Total Tokens" />
         </NFormItem>
-        <!-- 日期选择 -->
-        <NFormItem label="响应时间" path="responseTime">
+        <!-- Date selector -->
+        <NFormItem label="Response Time" path="responseTime">
           <NDatePicker v-model:value="formData.responseTime" type="datetime" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="流式传输总耗时" path="streamingDuration">
-          <NInputNumber v-model:value="formData.streamingDuration" :min="0" :max="100" placeholder="请输入流式传输总耗时" />
+        <!-- Number input -->
+        <NFormItem label="Streaming Duration" path="streamingDuration">
+          <NInputNumber v-model:value="formData.streamingDuration" :min="0" :max="100" placeholder="Enter Streaming Duration" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="状态" path="status">
-          <NInput v-model:value="formData.status" placeholder="请输入状态" />
+        <!-- Text input -->
+        <NFormItem label="Status" path="status">
+          <NInput v-model:value="formData.status" placeholder="Enter Status" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="错误信息" path="errorMessage">
-          <NInput v-model:value="formData.errorMessage" placeholder="请输入错误信息" />
+        <!-- Text input -->
+        <NFormItem label="Error Message" path="errorMessage">
+          <NInput v-model:value="formData.errorMessage" placeholder="Enter Error Message" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="用户平台" path="userPlatform">
-          <NInput v-model:value="formData.userPlatform" placeholder="请输入用户平台" />
+        <!-- Text input -->
+        <NFormItem label="User Platform" path="userPlatform">
+          <NInput v-model:value="formData.userPlatform" placeholder="Enter User Platform" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="IP地址" path="ipAddress">
-          <NInput v-model:value="formData.ipAddress" placeholder="请输入IP地址" />
+        <!-- Text input -->
+        <NFormItem label="IP Address" path="ipAddress">
+          <NInput v-model:value="formData.ipAddress" placeholder="Enter IP Address" />
         </NFormItem>
       </NForm>
       <template #footer>
@@ -203,13 +203,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

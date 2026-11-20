@@ -1,14 +1,14 @@
 interface ClientStoreState {
   clientId: string | null
-  createdAt: number | null // 时间戳
-  expiresAt: number | null // 过期时间戳
+  createdAt: number | null // Timestamp
+  expiresAt: number | null // Expiration timestamp
 }
 
-// 客户端ID的有效期，这里设置为1小时(3600000毫秒)
+// Client ID validity period, set to one hour (3,600,000 ms)
 const CLIENT_ID_EXPIRY = 3600000
 
 function generateClientId(): string {
-  // 生成UUID v4格式的唯一ID
+  // Generate a unique UUID v4
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = Math.random() * 16 | 0
     const v = c === 'x' ? r : (r & 0x3 | 0x8)
@@ -27,21 +27,21 @@ export const useClientStore = defineStore('clientStore', {
   getters: {},
   actions: {
     initializeClientId() {
-      // 检查是否存在有效的客户端ID
+      // Check for a valid client ID
       if (!this.clientId || !this.expiresAt || Date.now() > this.expiresAt) {
-        // 生成新的客户端ID
+        // Generate a new client ID
         this.clientId = generateClientId()
         this.createdAt = Date.now()
         this.expiresAt = Date.now() + CLIENT_ID_EXPIRY
 
-        // 设置定时器，在过期时自动刷新
+        // Schedule an automatic refresh at expiration
         const timeToExpiry = this.expiresAt - Date.now()
         setTimeout(() => {
           this.refreshClientId()
         }, timeToExpiry)
       }
       else {
-        // 已存在有效ID，设置剩余时间的定时器
+        // A valid ID exists; schedule a timer for the remaining duration
         const timeToExpiry = this.expiresAt - Date.now()
         setTimeout(() => {
           this.refreshClientId()
@@ -50,18 +50,18 @@ export const useClientStore = defineStore('clientStore', {
     },
 
     refreshClientId() {
-      // 刷新客户端ID
+      // Refresh the client ID
       this.clientId = generateClientId()
       this.createdAt = Date.now()
       this.expiresAt = Date.now() + CLIENT_ID_EXPIRY
 
-      // 重新设置定时器
+      // Reset the timer
       setTimeout(() => {
         this.refreshClientId()
       }, CLIENT_ID_EXPIRY)
     },
   },
   persist: {
-    storage: localStorage, // 使用localStorage而不是sessionStorage，确保页面关闭后仍能保留
+    storage: localStorage, // Use localStorage instead of sessionStorage so the value persists after closing the page
   },
 })

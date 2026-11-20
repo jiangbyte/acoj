@@ -30,41 +30,41 @@ async function loadData() {
   loading.value = true
   const { data } = await sysConfigList(listParam.value)
   if (data) {
-    // configType 为 '5' 的项（系统配置）
+    // configType items with value 5 (system configuration)
     const filteredColumns = data.filter((col: any) => col.configType === '5')
     listData.value = filteredColumns.map((item: SysConfigItem) => ({
       ...item,
-      // 初始化每个项目的当前值，根据组件类型进行数据转换
+      // Initialize each item value and convert it based on component type
       currentValue: convertValueForComponent(item.value, item.componentType),
     }))
     loading.value = false
   }
 }
 
-// 根据组件类型转换值
+// Convert values by component type
 function convertValueForComponent(value: string, componentType: string): any {
   switch (componentType) {
-    case '1': // 单选框
+    case '1': // Radio
       return value === 'true' || value === '1'
-    case '4': // 数字输入
-    case '5': // 数字输入
+    case '4': // Number input
+    case '5': // Number input
       return value ? Number(value) : null
-    case '6': // 文件上传
+    case '6': // FileUpload
       return value || ''
     default:
       return value || ''
   }
 }
 
-// 将值转换回字符串格式用于保存
+// Convert values back to strings for saving
 function convertValueForSave(value: any, componentType: string): string {
   switch (componentType) {
-    case '1': // 单选框
+    case '1': // Radio
       return value ? 'true' : 'false'
-    case '4': // 数字输入
-    case '5': // 数字输入
+    case '4': // Number input
+    case '5': // Number input
       return value?.toString() || ''
-    case '6': // 文件上传
+    case '6': // FileUpload
       return value || ''
     default:
       return value || ''
@@ -84,21 +84,21 @@ async function doSubmit(item: SysConfigItem) {
   try {
     const { success } = await sysConfigEdit(submitData)
     if (success) {
-      window.$message.success(`${item.name} 修改成功`)
-      // 更新原始值
+      window.$message.success(`${item.name} Updated successfully`)
+      // Update the original value
       item.value = submitData.value
     }
   }
   catch (error) {
-    console.error('保存失败:', error)
-    window.$message.error(`${item.name} 修改失败`)
+    console.error('Save failed:', error)
+    window.$message.error(`${item.name} Update failed`)
   }
   finally {
     savingIds.value.delete(item.id)
   }
 }
 
-// 检查值是否有变化
+// Check whether the value changed
 function hasValueChanged(item: SysConfigItem): boolean {
   const originalValue = convertValueForComponent(item.value, item.componentType)
   return item.currentValue !== originalValue
@@ -129,64 +129,64 @@ function hasValueChanged(item: SysConfigItem): boolean {
                 <n-form-item :show-label="false" :path="`config_${item.id}`">
                   <div class="flex flex-col gap-3">
                     <div class="flex-1">
-                      <!-- 单选框组 -->
+                      <!-- Radio group -->
                       <NRadioGroup
                         v-if="item.componentType === '1'"
                         v-model:value="item.currentValue"
                       >
                         <NRadio :value="true">
-                          是
+                          Yes
                         </NRadio>
                         <NRadio :value="false">
-                          否
+                          No
                         </NRadio>
                       </NRadioGroup>
 
-                      <!-- 文本输入 -->
+                      <!-- Text input -->
                       <n-input
                         v-else-if="item.componentType === '2'"
                         v-model:value="item.currentValue"
-                        :placeholder="`请输入${item.name}`"
+                        :placeholder="`Enter ${item.name}`"
                       />
 
-                      <!-- 文本域 -->
+                      <!-- Textarea -->
                       <n-input
                         v-else-if="item.componentType === '3'"
                         v-model:value="item.currentValue"
                         type="textarea"
-                        :placeholder="`请输入${item.name}`"
+                        :placeholder="`Enter ${item.name}`"
                         :rows="3"
                       />
 
-                      <!-- 数字输入 -->
+                      <!-- Number input -->
                       <n-input-number
                         v-else-if="item.componentType === '4'"
                         v-model:value="item.currentValue"
-                        :placeholder="`请输入${item.name}`"
+                        :placeholder="`Enter ${item.name}`"
                         class="w-full"
                       />
 
-                      <!-- 数字输入（另一种类型） -->
+                      <!-- Number input（alternate type） -->
                       <n-input-number
                         v-else-if="item.componentType === '5'"
                         v-model:value="item.currentValue"
-                        :placeholder="`请输入${item.name}`"
+                        :placeholder="`Enter ${item.name}`"
                         :step="0.01"
                         class="w-full"
                       />
 
-                      <!-- 文件上传 -->
+                      <!-- FileUpload -->
                       <FileUpload
                         v-else-if="item.componentType === '6'"
                         v-model="item.currentValue"
                         :is-image="true"
                       />
 
-                      <!-- 未知组件类型的回退 -->
+                      <!-- Fallback for unknown component types -->
                       <n-input
                         v-else
                         v-model:value="item.currentValue"
-                        :placeholder="`请输入${item.name}`"
+                        :placeholder="`Enter ${item.name}`"
                       />
                     </div>
                   </div>
@@ -196,7 +196,7 @@ function hasValueChanged(item: SysConfigItem): boolean {
                 </template>
                 <template #footer>
                   <n-ellipsis :line-clamp="1">
-                    {{ item.description ? item.description : '暂无描述' }}
+                    {{ item.description ? item.description : 'No description' }}
                   </n-ellipsis>
                 </template>
                 <template #header-extra>
@@ -206,7 +206,7 @@ function hasValueChanged(item: SysConfigItem): boolean {
                     :disabled="!hasValueChanged(item)"
                     @click="doSubmit(item)"
                   >
-                    {{ savingIds.has(item.id) ? '保存中...' : '保存' }}
+                    {{ savingIds.has(item.id) ? 'Saving...' : 'Save' }}
                   </n-button>
                 </template>
               </n-card>

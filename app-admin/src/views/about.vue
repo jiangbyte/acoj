@@ -1,22 +1,22 @@
 <script lang="ts" setup>
-// 技术栈数据
+// Technology stack data
 const frontendTechStack = [
-  { technology: 'Vue 3', purpose: '前端框架', description: '渐进式JavaScript框架' },
-  { technology: 'TypeScript', purpose: '编程语言', description: '类型安全的JavaScript超集' },
-  { technology: 'Naive UI', purpose: 'UI组件库', description: 'Vue 3组件库' },
-  { technology: 'Vite', purpose: '构建工具', description: '下一代前端工具链' },
-  { technology: 'Pinia', purpose: '状态管理', description: 'Vue状态管理库' },
+  { technology: 'Vue 3', purpose: 'Frontend Framework', description: 'Progressive JavaScript framework' },
+  { technology: 'TypeScript', purpose: 'Language', description: 'Type-safe JavaScript superset' },
+  { technology: 'Naive UI', purpose: 'UI Component Library', description: 'Vue 3 component library' },
+  { technology: 'Vite', purpose: 'Build Tool', description: 'Next-generation frontend tooling' },
+  { technology: 'Pinia', purpose: 'State Management', description: 'Vue state management library' },
 ]
 
 const backendTechStack = [
-  { technology: 'Redis', purpose: '缓存', description: '内存数据存储' },
-  { technology: 'MySQL', purpose: '数据库', description: '关系型数据库' },
-  { technology: 'Spring Boot', purpose: '后端框架', description: 'Java Web开发框架' },
-  { technology: 'Spring Cloud', purpose: '微服务框架', description: 'Spring Boot的微服务框架' },
-  { technology: 'Spring Cloud Alibaba', purpose: '微服务框架', description: 'Spring Cloud的扩展' },
-  { technology: 'Nacos', purpose: '服务注册与发现', description: '服务注册与发现' },
-  { technology: 'RabbitMQ', purpose: '消息队列', description: '消息队列' },
-  { technology: 'Docker', purpose: '容器化', description: '容器化平台' },
+  { technology: 'Redis', purpose: 'Cache', description: 'In-memory data store' },
+  { technology: 'MySQL', purpose: 'Database', description: 'Relational database' },
+  { technology: 'Spring Boot', purpose: 'Backend Framework', description: 'Java web framework' },
+  { technology: 'Spring Cloud', purpose: 'Microservices Framework', description: 'Microservices framework for Spring Boot' },
+  { technology: 'Spring Cloud Alibaba', purpose: 'Microservices Framework', description: 'Spring Cloud extensions' },
+  { technology: 'Nacos', purpose: 'Service Discovery', description: 'Service Discovery' },
+  { technology: 'RabbitMQ', purpose: 'Message Queue', description: 'Message Queue' },
+  { technology: 'Docker', purpose: 'Containerization', description: 'Container platform' },
 ]
 </script>
 
@@ -24,10 +24,10 @@ const backendTechStack = [
   <div class="flex flex-col h-full w-full">
     <n-card size="small" class="flex-1 pb-11">
       <n-space vertical>
-        <n-text>关于</n-text>
+        <n-text>About</n-text>
         <n-space vertical>
           <n-text depth="1">
-            ACOJ 在线评测系统。
+            ACOJ online judge system.
           </n-text>
           <n-space>
             <n-button
@@ -51,16 +51,16 @@ const backendTechStack = [
             </n-button>
           </n-space>
         </n-space>
-        <n-text>技术栈</n-text>
+        <n-text>Technology Stack</n-text>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- 前端技术栈 -->
-          <n-card title="前端技术" size="small">
+          <!-- Frontend technology stack -->
+          <n-card title="Frontend" size="small">
             <n-table :bordered="false" :single-line="false">
               <thead>
                 <tr>
-                  <th>技术</th>
-                  <th>用途</th>
-                  <th>描述</th>
+                  <th>Technology</th>
+                  <th>Purpose</th>
+                  <th>Description</th>
                 </tr>
               </thead>
               <tbody>
@@ -77,14 +77,14 @@ const backendTechStack = [
             </n-table>
           </n-card>
 
-          <!-- 后端技术栈 -->
-          <n-card title="后端技术" size="small">
+          <!-- Backend technology stack -->
+          <n-card title="Backend" size="small">
             <n-table :bordered="false" :single-line="false">
               <thead>
                 <tr>
-                  <th>技术</th>
-                  <th>用途</th>
-                  <th>描述</th>
+                  <th>Technology</th>
+                  <th>Purpose</th>
+                  <th>Description</th>
                 </tr>
               </thead>
               <tbody>

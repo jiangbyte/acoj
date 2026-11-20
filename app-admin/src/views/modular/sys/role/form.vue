@@ -11,19 +11,19 @@ const { sysRoleDefaultData, sysRoleAdd, sysRoleEdit } = useSysRoleFetch()
 const formData = ref<any>({ ...sysRoleDefaultData })
 const rules = {
   name: [
-    { required: true, message: '请输入名称', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Name', trigger: ['input', 'blur'] },
   ],
   code: [
-    { required: true, message: '请输入编码', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Code', trigger: ['input', 'blur'] },
   ],
   dataScope: [
-    { required: true, message: '请选择数据范围', trigger: ['input', 'blur'] },
+    { required: true, message: 'Select a data scope', trigger: ['input', 'blur'] },
   ],
   description: [
-    { required: true, message: '请输入描述', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Description', trigger: ['input', 'blur'] },
   ],
   level: [
-    { required: true, message: '请输入角色层级', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Role Level', type: 'number', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -40,13 +40,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await sysRoleEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await sysRoleAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -93,34 +93,34 @@ watch(
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="名称" path="name">
-          <NInput v-model:value="formData.name" placeholder="请输入名称" />
+        <!-- Text input -->
+        <NFormItem label="Name" path="name">
+          <NInput v-model:value="formData.name" placeholder="Enter Name" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="编码" path="code">
-          <NInput v-model:value="formData.code" placeholder="请输入编码" :disabled="isEdit" />
+        <!-- Text input -->
+        <NFormItem label="Code" path="code">
+          <NInput v-model:value="formData.code" placeholder="Enter Code" :disabled="isEdit" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="描述" path="description">
-          <NInput v-model:value="formData.description" placeholder="请输入描述" />
+        <!-- Text input -->
+        <NFormItem label="Description" path="description">
+          <NInput v-model:value="formData.description" placeholder="Enter Description" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="数据范围" path="dataScope">
-          <!-- <NInput v-model:value="formData.dataScope" placeholder="请输入描述" /> -->
+        <!-- Text input -->
+        <NFormItem label="Data Scope" path="dataScope">
+          <!-- <NInput v-model:value="formData.dataScope" placeholder="Enter Description" /> -->
           <NSelect
             v-model:value="formData.dataScope"
-            placeholder="请选择数据范围"
+            placeholder="Select a data scope"
             :options="dataScopeRef"
           />
         </NFormItem>
-        <NFormItem v-if="formData.dataScope === 'SPECIFIED_GROUP'" label="用户组" path="assignGroupIds">
+        <NFormItem v-if="formData.dataScope === 'SPECIFIED_GROUP'" label="User Group" path="assignGroupIds">
           <n-tree-select
             v-model:value="formData.assignGroupIds"
             :options="groupOptions"
@@ -130,9 +130,9 @@ watch(
             multiple
           />
         </NFormItem>
-        <!-- 数字输入 -->
-        <!-- <NFormItem label="角色层级" path="level">
-          <NInputNumber v-model:value="formData.level" :min="0" :max="100" placeholder="请输入角色层级" />
+        <!-- Number input -->
+        <!-- <NFormItem label="Role Level" path="level">
+          <NInputNumber v-model:value="formData.level" :min="0" :max="100" placeholder="Enter Role Level" />
         </NFormItem> -->
       </NForm>
       <template #footer>
@@ -141,13 +141,13 @@ watch(
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

@@ -24,30 +24,30 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="详情">
+    <NDrawerContent title="Details">
       <NDescriptions label-placement="left" bordered :column="1">
-        <NDescriptionsItem label="主键">
+        <NDescriptionsItem label="ID">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="任务ID">
+        <NDescriptionsItem label="Task ID">
           {{ formData.taskId }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="手动">
+        <NDescriptionsItem label="Manual">
           {{ formData.taskTypeName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题目">
+        <NDescriptionsItem label="Problem">
           {{ formData.problemIdName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="提交模块">
+        <NDescriptionsItem label="Submission Module">
           {{ FormatModuleType(formData.moduleType) }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="编程语言">
+        <NDescriptionsItem label="Language">
           {{ formData.languageName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="相似度">
+        <NDescriptionsItem label="Similarity">
           {{ formData.similarity }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="提交用户">
+        <NDescriptionsItem label="SubmissionUser">
           <!-- {{ formData.submitUser }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -58,7 +58,7 @@ defineExpose({
             <NText>{{ formData.submitUserName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="源代码">
+        <NDescriptionsItem label="Source Code">
           <!-- {{ formData.submitCode }} -->
           <NCode
             :code="formData.submitCode"
@@ -67,16 +67,16 @@ defineExpose({
             show-line-numbers
           />
         </NDescriptionsItem>
-        <NDescriptionsItem label="源代码长度">
+        <NDescriptionsItem label="Source Length">
           {{ formData.submitCodeLength }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="提交ID">
+        <NDescriptionsItem label="Submission ID">
           {{ formData.submitId }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="提交时间">
+        <NDescriptionsItem label="Submitted At">
           <NTime :time="Number(formData.submitTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="提交用户Token名称">
+        <NDescriptionsItem label="Submission User Token Name">
           <!-- {{ formData.submitTokenName }} -->
           <NCode
             :code="JSON.stringify(formData.submitTokenName, null)"
@@ -85,7 +85,7 @@ defineExpose({
             show-line-numbers
           />
         </NDescriptionsItem>
-        <NDescriptionsItem label="提交用户Token内容">
+        <NDescriptionsItem label="Submission User Token Content">
           <!-- {{ formData.submitTokenTexts }} -->
           <NCode
             :code="JSON.stringify(formData.submitTokenTexts, null)"
@@ -94,7 +94,7 @@ defineExpose({
             show-line-numbers
           />
         </NDescriptionsItem>
-        <NDescriptionsItem label="样本用户">
+        <NDescriptionsItem label="Sample User">
           <!-- {{ formData.originUser }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -105,7 +105,7 @@ defineExpose({
             <NText>{{ formData.originUserName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="样本源代码">
+        <NDescriptionsItem label="Sample Source Code">
           <!-- {{ formData.originCode }} -->
           <NCode
             :code="formData.originCode"
@@ -114,16 +114,16 @@ defineExpose({
             show-line-numbers
           />
         </NDescriptionsItem>
-        <NDescriptionsItem label="样本源代码长度">
+        <NDescriptionsItem label="Sample Source Length">
           {{ formData.originCodeLength }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="样本提交ID">
+        <NDescriptionsItem label="Sample Submission ID">
           {{ formData.originId }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="样本提交时间">
+        <NDescriptionsItem label="Sample Submitted At">
           <NTime :time="Number(formData.originTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="样本用户Token名称">
+        <NDescriptionsItem label="Sample User Token Name">
           <!-- {{ formData.originTokenName }} -->
           <NCode
             :code="JSON.stringify(formData.originTokenName, null)"
@@ -132,7 +132,7 @@ defineExpose({
             show-line-numbers
           />
         </NDescriptionsItem>
-        <NDescriptionsItem label="样本用户Token内容">
+        <NDescriptionsItem label="Sample User Token Content">
           <!-- {{ formData.originTokenTexts }} -->
           <NCode
             :code="JSON.stringify(formData.originTokenTexts, null)"
@@ -141,10 +141,10 @@ defineExpose({
             show-line-numbers
           />
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建时间">
+        <NDescriptionsItem label="Created At">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建者">
+        <NDescriptionsItem label="Created By">
           <!-- {{ formData.createUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -155,10 +155,10 @@ defineExpose({
             <NText>{{ formData.createUserName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新时间">
+        <NDescriptionsItem label="Updated At">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新人">
+        <NDescriptionsItem label="Updated By">
           <!-- {{ formData.updateUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -176,7 +176,7 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
         </NSpace>
       </template>

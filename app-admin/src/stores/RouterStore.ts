@@ -27,7 +27,7 @@
 //   actions: {
 //     async initAuthRoute() {
 //       const { getRawMenus } = useSysMenu()
-//       // 动态获取菜单
+//       // Load menus dynamically
 //       const { data, success } = await getRawMenus()
 //       if (success && data) {
 //         return data
@@ -107,7 +107,7 @@
 //     redirect: '/index',
 //     component: Layout,
 //     meta: {
-//       title: '系统',
+//       title: 'System',
 //       icon: 'icon-park-outline:web-page',
 //     },
 //     children: [],
@@ -228,7 +228,7 @@ export const useRouterStore = defineStore('route-store', {
     async initAuthRoute() {
       const { data, success } = await useSysMenuFetch().sysMenuAuthList()
       // return success && data ? data : rawMenus
-      console.log('认证菜单-->', data)
+      console.log('Authorized menus -->', data)
       return success && data ? data : []
       // return rawMenus
     },
@@ -237,7 +237,7 @@ export const useRouterStore = defineStore('route-store', {
       this.isInit = false
       const rowRoutes = await this.initAuthRoute()
       if (!rowRoutes || rowRoutes.length === 0) {
-        console.error('获取菜单数据失败')
+        console.error('Failed to load menu data')
         return
       }
 
@@ -247,8 +247,8 @@ export const useRouterStore = defineStore('route-store', {
       const routes = createRoutes(rowRoutes)
       router.addRoute(routes)
 
-      // 验证路由是否添加成功
-      console.log('路由添加后的路由表:', router.getRoutes())
+      // Verify that the route was added successfully
+      console.log('Routes after registration:', router.getRoutes())
 
       this.menus = createMenus(rowRoutes)
       this.cacheRoutes = rowRoutes.filter((i: any) => i.keepAlive).map((i: any) => i.name)
@@ -280,7 +280,7 @@ function createRoutes(routes: SiteRoute.RowRoute[]): RouteRecordRaw {
   const resultRouter = arrayTree(
     standardizedRoutes(routes).map(item => ({
       ...item,
-      // 目录（menuType=0）或已有子路由时禁止 redirect，避免点父级跳首个子页
+      // Disable redirects for directories (menuType=0) or routes with children so selecting a parent does not open its first child
       redirect: isDirectoryMeta(item.meta) ? undefined : item.redirect,
       component: item.componentPath && !item.redirect && !isDirectoryMeta(item.meta)
         ? modules[`/src/views${item.componentPath}`]
@@ -288,30 +288,30 @@ function createRoutes(routes: SiteRoute.RowRoute[]): RouteRecordRaw {
     })),
   ) as SiteRoute.Route[]
 
-  // 建树后再清一遍父级 redirect（此时已有 children）
+  // Clear parent redirects after building the tree, when children are available
   clearDirectoryRedirect(resultRouter)
 
-  console.log('标准化后的路由表:', resultRouter)
+  console.log('Normalized routes:', resultRouter)
 
   return {
     path: '/webroot',
     name: 'webroot',
     redirect: '/index',
     component: Layout,
-    meta: { title: '系统', icon: 'icon-park-outline:web-page' },
+    meta: { title: 'System', icon: 'icon-park-outline:web-page' },
     children: resultRouter as unknown as RouteRecordRaw[],
   }
 }
 
 /**
- * 是否目录型菜单（注意 menuType 数字 0 不能用 !menuType 判断）。
+ * Whether this is a directory menu (numeric menuType 0 cannot be checked with !menuType).
  */
 function isDirectoryMeta(meta?: SiteRoute.Route['meta'] | Record<string, any>) {
   return Number(meta?.menuType) === 0
 }
 
 /**
- * 递归清除目录/有子节点路由的 redirect。
+ * Recursively remove redirects from directories and routes with children.
  */
 function clearDirectoryRedirect(routes: SiteRoute.Route[]) {
   routes.forEach((route) => {
@@ -326,7 +326,7 @@ function clearDirectoryRedirect(routes: SiteRoute.Route[]) {
 }
 
 function createMenus(userRoutes: SiteRoute.RowRoute[]) {
-  // 1. 先建树（此时尚无 label；必须建树后才能根据 children 判断目录）
+  // 1. Build the tree first (labels do not exist yet; children are needed to identify directories)
   const fullTree = arrayTree(
     standardizedRoutes(userRoutes)
       .sort((a, b) => (Number(a.meta.sort) || 0) - (Number(b.meta.sort) || 0))
@@ -341,7 +341,7 @@ function createMenus(userRoutes: SiteRoute.RowRoute[]) {
       })),
   )
 
-  // 2. 过滤不可见节点，并在有 children 后生成 label（目录绝不包 RouterLink）
+  // 2. Filter hidden nodes and generate labels after children exist (directories never use RouterLink)
   const filterVisibleMenus = (menus: any[]): any[] => {
     return menus
       .filter((menu) => {

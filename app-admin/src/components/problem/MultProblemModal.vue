@@ -2,14 +2,14 @@
 import { useProProblemFetch } from '@/composables'
 import type { DataTableColumns } from 'naive-ui'
 
-// 定义 props 和 emits
+// Define props and emits
 const props = defineProps<{
-  value?: string // 接收父组件传递的值
+  value?: string // Value passed by the parent
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:value', value: string): void // 定义更新事件
-  (e: 'update:select', value: string): void // 定义更新事件
+  (e: 'update:value', value: string): void // Define update event
+  (e: 'update:select', value: string): void // Define update event
 }>()
 
 const columns: DataTableColumns<any> = [
@@ -17,67 +17,67 @@ const columns: DataTableColumns<any> = [
     type: 'selection',
   },
   {
-    title: '分类',
+    title: 'Category',
     key: 'categoryName',
     ellipsis: true,
   },
   {
-    title: '标题',
+    title: 'Title',
     key: 'title',
     ellipsis: true,
   },
   {
-    title: '来源',
+    title: 'Source',
     key: 'source',
     ellipsis: true,
   },
   //   {
-  //     title: '链接',
+  //     title: 'Link',
   //     key: 'url',
   //     ellipsis: true,
   //   },
   {
-    title: '时间限制',
+    title: 'Time Limit',
     key: 'maxTime',
   },
   {
-    title: '内存限制',
+    title: 'Memory Limit',
     key: 'maxMemory',
   },
   {
-    title: '阈值',
+    title: 'Threshold',
     key: 'threshold',
   },
   // {
-  //   title: '用例',
+  //   title: 'Test Cases',
   //   key: 'testCase',
   // },
   // {
-  //   title: '开放语言',
+  //   title: 'Allowed Languages',
   //   key: 'allowedLanguages',
   // },
   {
-    title: '难度',
+    title: 'Difficulty',
     key: 'difficultyName',
   },
   {
-    title: '公开',
+    title: 'Public',
     key: 'isPublicName',
   },
   {
-    title: 'LLM启用',
+    title: 'LLM Enabled',
     key: 'isLlmEnhancedName',
   },
   {
-    title: '使用模板',
+    title: 'Use Template',
     key: 'useTemplateName',
   },
   // {
-  //   title: '模板代码',
+  //   title: 'Template Code',
   //   key: 'codeTemplate',
   // },
 //   {
-//     title: '解决',
+//     title: 'Solved',
 //     key: 'solved',
 //   },
 ]
@@ -127,13 +127,13 @@ function toggleShow(show: boolean) {
 
 function handleSubmit() {
   if (checkedRowKeys.value.length > 0) {
-    emit('update:value', checkedRowKeys.value) // 发送更新事件
-    emit('update:select', checkedRowKeys.value) // 发送更新事件
+    emit('update:value', checkedRowKeys.value) // Emit update event
+    emit('update:select', checkedRowKeys.value) // Emit update event
   }
   toggleShow(false)
 }
 
-// 添加监听，当选择变化时立即更新
+// Watch selections and update immediately
 watch(checkedRowKeys, (newVal) => {
   if (newVal.length > 0) {
     emit('update:value', newVal)
@@ -153,21 +153,21 @@ watch(checkedRowKeys, (newVal) => {
     <template #header>
       <n-space vertical>
         <n-space align="center">
-          <n-form-item :show-feedback="false" label="关键词" label-placement="left">
-            <n-input v-model:value="pageParam.keyword" placeholder="请输入关键词" />
+          <n-form-item :show-feedback="false" label="Keywords" label-placement="left">
+            <n-input v-model:value="pageParam.keyword" placeholder="Enter keywords" />
           </n-form-item>
           <n-space align="center">
             <n-button type="primary" @click="loadData">
               <template #icon>
                 <icon-park-outline-search />
               </template>
-              搜索
+              Search
             </n-button>
             <n-button type="warning" @click="resetHandle">
               <template #icon>
                 <icon-park-outline-refresh />
               </template>
-              重置
+              Reset
             </n-button>
           </n-space>
         </n-space>
@@ -187,10 +187,10 @@ watch(checkedRowKeys, (newVal) => {
       <NSpace align="center" justify="space-between" class="w-full">
         <NSpace align="center">
           <NP type="info" show-icon>
-            当前数据 {{ pageData?.records.length }} 条
+            Current: {{ pageData?.records.length }} records
           </NP>
           <NP type="info" show-icon>
-            选中了 {{ checkedRowKeys.length }} 行
+            Selected: {{ checkedRowKeys.length }} rows
           </NP>
         </NSpace>
         <NPagination
@@ -203,10 +203,10 @@ watch(checkedRowKeys, (newVal) => {
 
         <n-space align="center" justify="end">
           <n-button @click="toggleShow(false)">
-            取消
+            Cancel
           </n-button>
           <n-button type="primary" @click="handleSubmit">
-            确认
+            Confirm
           </n-button>
         </n-space>
       </NSpace>

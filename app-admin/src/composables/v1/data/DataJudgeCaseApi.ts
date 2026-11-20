@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 判题结果用例 API请求
+ * Judge Result Case API requests
  */
 export function useDataJudgeCaseFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useDataJudgeCaseFetch() {
   const table = 'data/judge/case'
 
   /*
-     * 判题结果用例 默认数据
+     * Judge Result Case default data
      */
   const dataJudgeCaseDefaultData = {
     id: '',
@@ -34,12 +34,12 @@ export function useDataJudgeCaseFetch() {
   }
   return {
     /*
-    * 判题结果用例 默认数据
+    * Judge Result Case default data
     */
     dataJudgeCaseDefaultData,
 
     /*
-     * 判题结果用例 分页接口
+     * Judge Result Case pagination endpoint
      */
     dataJudgeCasePage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -50,28 +50,28 @@ export function useDataJudgeCaseFetch() {
     },
 
     /*
-     * 判题结果用例 新增接口
+     * Judge Result Case create endpoint
      */
     dataJudgeCaseAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 判题结果用例 修改接口
+     * Judge Result Case update endpoint
      */
     dataJudgeCaseEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 判题结果用例 删除接口
+     * Judge Result Case delete endpoint
      */
     dataJudgeCaseDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 判题结果用例 详情接口
+     * Judge Result Case details endpoint
      */
     dataJudgeCaseDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

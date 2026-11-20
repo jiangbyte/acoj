@@ -37,7 +37,7 @@ function handleError() {
   isLoading.value = false
 }
 
-// 刷新iframe（保持当前URL）
+// Refresh the iframe while preserving the current URL
 function refreshIframe() {
   if (!iframeRef.value)
     return
@@ -48,7 +48,7 @@ function refreshIframe() {
   isLoading.value = true
 }
 
-// 重新加载iframe（重新设置src）
+// Reload the iframe by resetting src
 function reloadIframe() {
   if (!iframeRef.value)
     return
@@ -58,7 +58,7 @@ function reloadIframe() {
   isLoading.value = true
 }
 
-// 强制重新加载（添加时间戳避免缓存）
+// Force reload with a timestamp to bypass cache
 function forceReloadIframe() {
   if (!iframeRef.value)
     return
@@ -74,16 +74,16 @@ function forceReloadIframe() {
 
 <template>
   <div class="w-full h-full flex flex-col relative">
-    <!-- 操作条 -->
+    <!-- Action bar -->
     <n-flex align="center" justify="space-between" class="p-2 bg-white">
-      <!-- 状态显示 -->
+      <!-- StatusShow -->
       <div class="flex items-center space-x-4 text-sm text-gray-600">
         <div class="flex items-center space-x-1">
           <div
             class="w-2 h-2 rounded-full"
             :class="isLoading ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'"
           />
-          <span>{{ isLoading ? '加载中...' : '已加载' }}</span>
+          <span>{{ isLoading ? 'Loading...' : 'Loaded' }}</span>
         </div>
 
         <n-tooltip trigger="hover">
@@ -107,7 +107,7 @@ function forceReloadIframe() {
               <icon-park-outline-refresh />
             </n-icon>
           </template>
-          刷新
+          Refresh
         </n-button>
 
         <n-button
@@ -119,7 +119,7 @@ function forceReloadIframe() {
               <icon-park-outline-refresh />
             </n-icon>
           </template>
-          重新加载
+          Reload
         </n-button>
 
         <n-button
@@ -131,14 +131,14 @@ function forceReloadIframe() {
               <icon-park-outline-refresh />
             </n-icon>
           </template>
-          强制刷新
+          Force Refresh
         </n-button>
       </div>
     </n-flex>
 
-    <!-- 内容区域 -->
+    <!-- Content area -->
     <div class="flex-1 relative">
-      <!-- 加载状态 -->
+      <!-- Loading state -->
       <div
         v-if="isLoading"
         class="absolute inset-0 flex items-center justify-center bg-white z-10"
@@ -146,7 +146,7 @@ function forceReloadIframe() {
         <div class="text-center">
           <n-spin size="large" />
           <div class="mt-4 text-gray-500">
-            正在加载...
+            Loading...
           </div>
         </div>
       </div>

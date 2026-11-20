@@ -428,10 +428,10 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         }
         Integer difficultyLevel = dataProblem.getDifficulty();
         return switch (difficultyLevel) {
-            case 1 -> "简单";
-            case 2 -> "中等";
-            case 3 -> "困难";
-            default -> "未知";
+            case 1 -> "Easy";
+            case 2 -> "Medium";
+            case 3 -> "Hard";
+            default -> "Unknown";
         };
     }
 

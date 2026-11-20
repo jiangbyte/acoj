@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { actionDeleteBtn, actionIconBtn } from '@/utils'
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NCard, NDataTable, NImage, NPagination, NPopconfirm, NSpace, NTag, NTime } from 'naive-ui'
 import { useDataContestFetch } from '@/composables/v1'
@@ -14,7 +15,7 @@ const columns: DataTableColumns<any> = [
     type: 'selection',
   },
   {
-    title: '竞赛标题',
+    title: 'Contest Title',
     key: 'title',
     width: 120,
     ellipsis: {
@@ -22,15 +23,15 @@ const columns: DataTableColumns<any> = [
     },
   },
   // {
-  //   title: '竞赛描述',
+  //   title: 'Contest Description',
   //   key: 'description',
   // },
   // {
-  //   title: '规则类型',
+  //   title: 'Rule Type',
   //   key: 'ruleType',
   // },
   {
-    title: '分类',
+    title: 'Category',
     key: 'category',
     width: 120,
     ellipsis: {
@@ -38,7 +39,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '封面',
+    title: 'Cover',
     key: 'cover',
     width: 90,
     render: (row) => {
@@ -46,20 +47,20 @@ const columns: DataTableColumns<any> = [
     },
   },
   // {
-  //   title: '最大团队成员数',
+  //   title: 'Maximum Team Size',
   //   key: 'maxTeamMembers',
   // },
   // {
-  //   title: '团队赛',
+  //   title: 'Team Contest',
   //   key: 'isTeamContestName',
   //   width: 90,
   // },
   // {
-  //   title: '访问密码',
+  //   title: 'Access Password',
   //   key: 'password',
   // },
   // {
-  //   title: '报名开始时间',
+  //   title: 'Registration Starts',
   //   key: 'registerStartTime',
   //   width: 180,
   //   render: (row) => {
@@ -67,7 +68,7 @@ const columns: DataTableColumns<any> = [
   //   },
   // },
   // {
-  //   title: '报名结束时间',
+  //   title: 'Registration Ends',
   //   key: 'registerEndTime',
   //   width: 180,
   //   render: (row) => {
@@ -75,7 +76,7 @@ const columns: DataTableColumns<any> = [
   //   },
   // },
   {
-    title: '竞赛开始时间',
+    title: 'Contest Starts',
     key: 'contestStartTime',
     width: 180,
     render: (row) => {
@@ -83,7 +84,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '竞赛结束时间',
+    title: 'Contest Ends',
     key: 'contestEndTime',
     width: 180,
     render: (row) => {
@@ -91,34 +92,34 @@ const columns: DataTableColumns<any> = [
     },
   },
   // {
-  //   title: '封榜时间(分钟)',
+  //   title: 'Scoreboard Freeze (minutes)',
   //   width: 120,
   //   key: 'frozenTime',
   // },
   // {
-  //   title: '罚时(分钟)',
+  //   title: 'Penalty (minutes)',
   //   width: 110,
   //   key: 'penaltyTime',
   // },
   // {
-  //   title: '允许语言',
+  //   title: 'Allowed Languages',
   //   key: 'allowedLanguages',
   // },
   // {
-  //   title: '状态',
+  //   title: 'Status',
   //   key: 'status',
   // },
   // {
-  //   title: '排序',
+  //   title: 'Sort Order',
   //   key: 'sort',
   // },
   {
-    title: '公开',
+    title: 'Public',
     key: 'isPublicName',
     width: 90,
   },
   {
-    title: '上架',
+    title: 'Published',
     key: 'isVisibleName',
     render: (row) => {
       return h(NTag, {
@@ -127,35 +128,17 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '操作',
+    title: 'Actions',
     key: 'action',
-    width: 380,
+    width: 228,
     fixed: 'right',
     render(row: any) {
-      return h(NSpace, { align: 'center' }, () => [
-        h(NButton, {
-          type: 'primary',
-          size: 'small',
-          onClick: () => formRef.value.doOpen(row, true),
-        }, () => '编辑'),
-        h(NButton, {
-          type: 'success',
-          size: 'small',
-          onClick: () => problemManageSelectModalRef.value.doOpen(row, 'CONTEST'),
-        }, () => '题目管理'),
-        h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
-        h(NButton, {
-          type: 'primary',
-          size: 'small',
-          // disabled: row.canUseSimilarReport !== true,
-          onClick: () => similaritySelectFormRef.value.doOpen(row, 'CONTEST'),
-        }, () => '相似检测'),
-        h(NPopconfirm, {
-          onPositiveClick: () => deleteHandle(row),
-        }, {
-          default: () => '确认删除',
-          trigger: () => h(NButton, { size: 'small', type: 'error' }, () => '删除'),
-        }),
+      return h(NSpace, { align: 'center', wrap: false }, () => [
+        actionIconBtn({ kind: 'edit', onClick: () => formRef.value.doOpen(row, true) }),
+        actionIconBtn({ kind: 'problems', type: 'success', onClick: () => problemManageSelectModalRef.value.doOpen(row, 'CONTEST') }),
+        actionIconBtn({ kind: 'detail', onClick: () => detailRef.value.doOpen(row) }),
+        actionIconBtn({ kind: 'similarity', onClick: () => similaritySelectFormRef.value.doOpen(row, 'CONTEST') }),
+        actionDeleteBtn(() => deleteHandle(row)),
       ])
     },
   },
@@ -164,13 +147,13 @@ const columns: DataTableColumns<any> = [
 const columnSortFieldOptions = computed<any[]>(() => {
   return [
     { label: 'ID', value: 'id' },
-    { label: '创建时间', value: 'createTime' },
-    { label: '更新时间', value: 'updateTime' },
+    { label: 'Created At', value: 'createTime' },
+    { label: 'Updated At', value: 'updateTime' },
   ]
 })
 const sortOrderOptions = computed(() => [
-  { label: '升序', value: 'ASCEND' },
-  { label: '降序', value: 'DESCEND' },
+  { label: 'Ascending', value: 'ASCEND' },
+  { label: 'Descending', value: 'DESCEND' },
 ])
 const displayKey = ref<string[]>(
   columns
@@ -230,7 +213,7 @@ async function deleteHandle(row: any) {
   }]
   const { success } = await dataContestDelete(param)
   if (success) {
-    window.$message.success('删除成功')
+    window.$message.success('Deleted successfully')
     await loadData()
   }
 }
@@ -239,7 +222,7 @@ async function deleteBatchHandle() {
   const param = checkedRowKeys.value.map(id => ({ id }))
   const { success } = await dataContestDelete(param)
   if (success) {
-    window.$message.success('删除成功')
+    window.$message.success('Deleted successfully')
     await loadData()
     checkedRowKeys.value = []
   }
@@ -252,21 +235,21 @@ async function deleteBatchHandle() {
       <NSpace vertical>
         <NSpace align="center">
           <NSpace align="center">
-            <NFormItem :show-feedback="false" label="关键词" label-placement="left">
-              <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" />
+            <NFormItem :show-feedback="false" label="Keywords" label-placement="left">
+              <NInput v-model:value="pageParam.keyword" placeholder="Enter keywords" />
             </NFormItem>
             <NSpace align="center">
               <NButton type="primary" @click="loadData">
                 <template #icon>
                   <IconParkOutlineSearch />
                 </template>
-                搜索
+                Search
               </NButton>
               <NButton type="warning" @click="resetHandle">
                 <template #icon>
                   <IconParkOutlineRefresh />
                 </template>
-                重置
+                Reset
               </NButton>
             </NSpace>
           </NSpace>
@@ -277,15 +260,15 @@ async function deleteBatchHandle() {
               <template #icon>
                 <IconParkOutlinePlus />
               </template>
-              创建
+              Create
             </NButton>
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
-                确认删除
+                Confirm delete
               </template>
               <template #trigger>
                 <NButton type="error">
-                  删除
+                  Delete
                 </NButton>
               </template>
             </NPopconfirm>
@@ -358,10 +341,10 @@ async function deleteBatchHandle() {
         <NSpace align="center" justify="space-between" class="w-full">
           <NSpace align="center">
             <NP type="info" show-icon>
-              当前数据 {{ pageData?.records.length }} 条
+              Current: {{ pageData?.records.length }} records
             </NP>
             <NP type="info" show-icon>
-              选中了 {{ checkedRowKeys.length }} 行
+              Selected: {{ checkedRowKeys.length }} rows
             </NP>
           </NSpace>
           <NPagination
@@ -371,7 +354,7 @@ async function deleteBatchHandle() {
             :page-count="pageData ? Number(pageData.pages) : 0"
             show-size-picker
             :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-              label: `${(i + 1) * 10} 每页`,
+              label: `${(i + 1) * 10} per page`,
               value: (i + 1) * 10,
             }))"
             :page-slot="5"

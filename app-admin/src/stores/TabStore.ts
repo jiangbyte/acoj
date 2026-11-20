@@ -62,13 +62,13 @@ export const useTabStore = defineStore('tab-store', {
         router.push('/')
       }
     },
-    // 关闭全部非固定的标签
+    // Close all unpinned tabs
     closeAllUnpinnedTabs() {
-      // 如果当前标签是非固定标签且会被关闭，需要跳转到固定标签或首页
+      // If the current unpinned tab will close, navigate to a pinned tab or the home page
       const currentTabWillBeClosed = this.tabs.some(tab => tab.path === this.currentPath)
 
       if (currentTabWillBeClosed) {
-        // 优先跳转到固定标签
+        // Prefer a pinned tab
         if (this.pinedTabs.length > 0) {
           router.push(this.pinedTabs[0].path as string)
         }
@@ -77,28 +77,28 @@ export const useTabStore = defineStore('tab-store', {
         }
       }
 
-      // 清除非固定标签
+      // Remove unpinned tabs
       this.tabs = []
     },
-    // 关闭除了当前页外的所有标签
+    // Close all tabs except the current one
     closeOtherTabs() {
       if (!this.currentPath) {
         return
       }
 
-      // 保留固定标签和当前标签
+      // Keep pinned tabs and the current tab
       const currentTab = this.allTabs.find(tab => tab.path === this.currentPath)
 
-      // 清除非固定标签
+      // Remove unpinned tabs
       this.tabs = []
 
-      // 如果当前标签是固定标签，则已经保留在 pinedTabs 中
-      // 如果当前标签是非固定标签，需要重新添加
+      // If the current tab is pinned, it is already retained in pinedTabs
+      // Re-add the current tab if it is not pinned
       if (currentTab && !currentTab.meta?.pined) {
         this.tabs.push(currentTab)
       }
 
-      // 如果当前标签被关闭了（理论上不会发生），跳转到首页
+      // If the current tab was closed unexpectedly, navigate home
       if (!this.exist(this.currentPath)) {
         router.push('/')
       }

@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 题集题目 API请求
+ * Set Problem API requests
  */
 export function useDataSetProblemFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useDataSetProblemFetch() {
   const table = 'data/set/problem'
 
   /*
-     * 题集题目 默认数据
+     * Set Problem default data
      */
   const dataSetProblemDefaultData = {
     id: '',
@@ -19,12 +19,12 @@ export function useDataSetProblemFetch() {
   }
   return {
     /*
-    * 题集题目 默认数据
+    * Set Problem default data
     */
     dataSetProblemDefaultData,
 
     /*
-     * 题集题目 分页接口
+     * Set Problem pagination endpoint
      */
     dataSetProblemPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -42,28 +42,28 @@ export function useDataSetProblemFetch() {
     },
 
     /*
-     * 题集题目 新增接口
+     * Set Problem create endpoint
      */
     dataSetProblemAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 题集题目 修改接口
+     * Set Problem update endpoint
      */
     dataSetProblemEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 题集题目 删除接口
+     * Set Problem delete endpoint
      */
     dataSetProblemDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 题集题目 详情接口
+     * Set Problem details endpoint
      */
     dataSetProblemDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

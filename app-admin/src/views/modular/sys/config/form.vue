@@ -10,22 +10,22 @@ const { sysConfigDefaultData, sysConfigAdd, sysConfigEdit } = useSysConfigFetch(
 const formData = ref<any>({ ...sysConfigDefaultData })
 const rules = {
   name: [
-    { required: true, message: '请输入名称', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Name', trigger: ['input', 'blur'] },
   ],
   configType: [
-    { required: true, message: '请输入配置类型', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Configuration Type', trigger: ['input', 'blur'] },
   ],
   code: [
-    { required: true, message: '请输入编码', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Code', trigger: ['input', 'blur'] },
   ],
   value: [
-    { required: true, message: '请输入值', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Value', trigger: ['input', 'blur'] },
   ],
   componentType: [
-    { required: true, message: '请输入组件类型', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Component Type', trigger: ['input', 'blur'] },
   ],
   // description: [
-  //   { required: true, message: '请输入描述', trigger: ['input', 'blur'] },
+  //   { required: true, message: 'Enter Description', trigger: ['input', 'blur'] },
   // ],
 }
 function doClose() {
@@ -42,13 +42,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await sysConfigEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await sysConfigAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -83,48 +83,48 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="配置类型" path="configType">
-          <!-- <NInput v-model:value="formData.configType" placeholder="请输入配置类型" /> -->
+        <!-- Text input -->
+        <NFormItem label="Configuration Type" path="configType">
+          <!-- <NInput v-model:value="formData.configType" placeholder="Enter Configuration Type" /> -->
           <NSelect
             v-model:value="formData.configType"
-            placeholder="请选择配置类型"
+            placeholder="Select Configuration Type"
             :options="configTypeRef"
           />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="名称" path="name">
-          <NInput v-model:value="formData.name" placeholder="请输入名称" />
+        <!-- Text input -->
+        <NFormItem label="Name" path="name">
+          <NInput v-model:value="formData.name" placeholder="Enter Name" />
         </NFormItem>
-        <NFormItem label="排序" path="sort">
-          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="请输入排序" />
+        <NFormItem label="Sort Order" path="sort">
+          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="Enter Sort Order" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="编码" path="code">
-          <NInput v-model:value="formData.code" placeholder="请输入编码" :disabled="isEdit" />
+        <!-- Text input -->
+        <NFormItem label="Code" path="code">
+          <NInput v-model:value="formData.code" placeholder="Enter Code" :disabled="isEdit" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="值" path="value">
-          <NInput v-model:value="formData.value" type="textarea" placeholder="请输入值" />
+        <!-- Text input -->
+        <NFormItem label="Value" path="value">
+          <NInput v-model:value="formData.value" type="textarea" placeholder="Enter Value" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="组件类型" path="componentType">
-          <!-- <NInput v-model:value="formData.componentType" placeholder="请输入组件类型" /> -->
+        <!-- Text input -->
+        <NFormItem label="Component Type" path="componentType">
+          <!-- <NInput v-model:value="formData.componentType" placeholder="Enter Component Type" /> -->
           <NSelect
             v-model:value="formData.componentType"
-            placeholder="请选择组件类型"
+            placeholder="Select Component Type"
             :options="componentTypeRef"
           />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="描述" path="description">
-          <NInput v-model:value="formData.description" type="textarea" placeholder="请输入描述" />
+        <!-- Text input -->
+        <NFormItem label="Description" path="description">
+          <NInput v-model:value="formData.description" type="textarea" placeholder="Enter Description" />
         </NFormItem>
       </NForm>
       <template #footer>
@@ -133,13 +133,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

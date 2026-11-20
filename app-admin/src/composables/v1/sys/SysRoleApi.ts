@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 角色 API请求
+ * Role API requests
  */
 export function useSysRoleFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useSysRoleFetch() {
   const table = 'sys/role'
 
   /*
-     * 角色 默认数据
+     * Role default data
      */
   const sysRoleDefaultData = {
     id: '',
@@ -25,12 +25,12 @@ export function useSysRoleFetch() {
   }
   return {
     /*
-    * 角色 默认数据
+    * Role default data
     */
     sysRoleDefaultData,
 
     /*
-     * 角色 分页接口
+     * Role pagination endpoint
      */
     sysRolePage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -41,28 +41,28 @@ export function useSysRoleFetch() {
     },
 
     /*
-     * 角色 新增接口
+     * Role create endpoint
      */
     sysRoleAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 角色 修改接口
+     * Role update endpoint
      */
     sysRoleEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 角色 删除接口
+     * Role delete endpoint
      */
     sysRoleDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 角色 详情接口
+     * Role details endpoint
      */
     sysRoleDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

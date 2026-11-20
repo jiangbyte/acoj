@@ -24,12 +24,12 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="详情">
+    <NDrawerContent title="Details">
       <NDescriptions label-placement="left" bordered :column="1">
-        <NDescriptionsItem label="主键">
+        <NDescriptionsItem label="ID">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="用户">
+        <NDescriptionsItem label="User">
           <!-- {{ formData.userId }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -40,13 +40,13 @@ defineExpose({
             <NText>{{ formData.userIdName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="操作">
+        <NDescriptionsItem label="Actions">
           {{ formData.operation }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="方法">
+        <NDescriptionsItem label="Method">
           {{ formData.method }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="参数">
+        <NDescriptionsItem label="Parameters">
           <!-- {{ formData.params }} -->
           <NCode
             :code="FormatJsonString(formData.params)"
@@ -57,28 +57,28 @@ defineExpose({
         <NDescriptionsItem label="IP">
           {{ formData.ip }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="操作时间">
+        <NDescriptionsItem label="Action Time">
           <NTime :time="Number(formData.operationTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="操作分类">
+        <NDescriptionsItem label="ActionsCategory">
           {{ formData.category }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="模块名称">
+        <NDescriptionsItem label="Module Name">
           {{ formData.module }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="操作描述">
+        <NDescriptionsItem label="ActionsDescription">
           {{ formData.description }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="操作状态">
+        <NDescriptionsItem label="ActionsStatus">
           {{ formData.status }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="操作消息">
+        <NDescriptionsItem label="Action Message">
           {{ formData.message }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建时间">
+        <NDescriptionsItem label="Created At">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建者">
+        <NDescriptionsItem label="Created By">
           <!-- {{ formData.createUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -89,10 +89,10 @@ defineExpose({
             <NText>{{ formData.createUserName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新时间">
+        <NDescriptionsItem label="Updated At">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新人">
+        <NDescriptionsItem label="Updated By">
           <!-- {{ formData.updateUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -110,7 +110,7 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
         </NSpace>
       </template>

@@ -15,22 +15,22 @@ const groupOptions = ref<SelectOption[]>([])
 const formData = ref<any>({ ...sysGroupDefaultData })
 const rules = {
   parentId: [
-    { required: true, message: '请选择父级用户组', trigger: ['input', 'blur'] },
+    { required: true, message: 'Select Parent User Group', trigger: ['input', 'blur'] },
   ],
   name: [
-    { required: true, message: '请输入名称', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Name', trigger: ['input', 'blur'] },
   ],
   code: [
-    // { required: true, message: '请输入编码', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Code', trigger: ['input', 'blur'] },
   ],
   description: [
-    // { required: true, message: '请输入描述', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Description', trigger: ['input', 'blur'] },
   ],
   sort: [
-    // { required: true, message: '请输入排序', type: 'number', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Sort Order', type: 'number', trigger: ['input', 'blur'] },
   ],
   adminId: [
-    // { required: true, message: '请输入负责人', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Owner', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -47,13 +47,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await sysGroupEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await sysGroupAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -82,7 +82,7 @@ async function doOpen(row: any = null, edit: boolean = false) {
     groupOptions.value = data
     groupOptionsLoading.value = false
   })
-  // 如果编辑模式且已有adminId，则初始化显示名称
+  // In edit mode, initialize the display name when adminId exists
   if (edit && row?.adminId && row?.adminIdName) {
     userOptions.value = [{
       value: row.adminId,
@@ -174,19 +174,19 @@ const renderLabel: SelectRenderLabel = (option) => {
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="用户组" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入用户组" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="User Group" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter User Group" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="父级用户组" path="parentId">
-          <!-- <NInput v-model:value="formData.parentId" placeholder="请输入父级用户组" /> -->
+        <!-- Text input -->
+        <NFormItem label="Parent User Group" path="parentId">
+          <!-- <NInput v-model:value="formData.parentId" placeholder="Enter Parent User Group" /> -->
           <!-- <NSelect
             v-model:value="formData.parentId"
             filterable
-            placeholder="搜索用户组"
+            placeholder="SearchUser Group"
             :options="groupOptions"
             :loading="groupOptionsLoading"
             clearable
@@ -201,29 +201,29 @@ const renderLabel: SelectRenderLabel = (option) => {
             :indent="12"
           />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="名称" path="name">
-          <NInput v-model:value="formData.name" placeholder="请输入名称" />
+        <!-- Text input -->
+        <NFormItem label="Name" path="name">
+          <NInput v-model:value="formData.name" placeholder="Enter Name" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="编码" path="code">
-          <NInput v-model:value="formData.code" placeholder="请输入编码" :disabled="isEdit" />
+        <!-- Text input -->
+        <NFormItem label="Code" path="code">
+          <NInput v-model:value="formData.code" placeholder="Enter Code" :disabled="isEdit" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="描述" path="description">
-          <NInput v-model:value="formData.description" placeholder="请输入描述" />
+        <!-- Text input -->
+        <NFormItem label="Description" path="description">
+          <NInput v-model:value="formData.description" placeholder="Enter Description" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="排序" path="sort">
-          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="请输入排序" />
+        <!-- Number input -->
+        <NFormItem label="Sort Order" path="sort">
+          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="Enter Sort Order" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="负责人" path="adminId">
-          <!-- <NInput v-model:value="formData.adminId" placeholder="请输入负责人" /> -->
+        <!-- Text input -->
+        <NFormItem label="Owner" path="adminId">
+          <!-- <NInput v-model:value="formData.adminId" placeholder="Enter Owner" /> -->
           <NSelect
             v-model:value="formData.adminId"
             filterable
-            placeholder="选择负责人"
+            placeholder="Select an owner"
             :options="userOptions"
             :loading="userOptionsLoading"
             :render-label="renderLabel"
@@ -234,14 +234,14 @@ const renderLabel: SelectRenderLabel = (option) => {
             @search="handleUserSearch"
           />
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="系统组" path="groupType">
+        <!-- Boolean selector -->
+        <NFormItem label="System Group" path="groupType">
           <NRadioGroup v-model:value="formData.groupType">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
@@ -252,13 +252,13 @@ const renderLabel: SelectRenderLabel = (option) => {
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

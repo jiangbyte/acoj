@@ -11,70 +11,70 @@ const { dataProblemDefaultData, dataProblemAdd, dataProblemEdit } = useDataProbl
 const formData = ref<any>({ ...dataProblemDefaultData })
 const rules = {
   displayId: [
-    // { required: true, message: '请输入展示ID', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Display ID', trigger: ['input', 'blur'] },
   ],
   categoryId: [
-    { required: true, message: '请输入分类', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Category', trigger: ['input', 'blur'] },
   ],
   title: [
-    { required: true, message: '请输入标题', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Title', trigger: ['input', 'blur'] },
   ],
   source: [
-    // { required: true, message: '请输入来源', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Source', trigger: ['input', 'blur'] },
   ],
   url: [
-    // { required: true, message: '请输入链接', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Link', trigger: ['input', 'blur'] },
   ],
   maxTime: [
-    { required: true, message: '请输入时间限制', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Time Limit', type: 'number', trigger: ['input', 'blur'] },
   ],
   maxMemory: [
-    { required: true, message: '请输入内存限制', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Memory Limit', type: 'number', trigger: ['input', 'blur'] },
   ],
   description: [
-    { required: true, message: '请输入描述', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Description', trigger: ['input', 'blur'] },
   ],
   testCase: [
-    // { required: true, message: '请输入用例', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Test Cases', trigger: ['input', 'blur'] },
   ],
   allowedLanguages: [{
     type: 'array',
     required: true,
     trigger: ['blur', 'change'],
-    message: '请选择语言',
+    message: 'Select Language',
   }],
   tagIds: [{
     type: 'array',
     required: true,
     trigger: ['blur', 'change'],
-    message: '请选择标签',
+    message: 'Select Tag',
   }],
   difficulty: [
-    { required: true, message: '请输入难度', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Difficulty', type: 'number', trigger: ['input', 'blur'] },
   ],
   threshold: [
-    { required: true, message: '请输入阈值', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Threshold', type: 'number', trigger: ['input', 'blur'] },
   ],
   codeTemplate: [
-    // { required: true, message: '请输入模板代码', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Template Code', trigger: ['input', 'blur'] },
   ],
   solved: [
-    // { required: true, message: '请输入解决', type: 'number', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Solved', type: 'number', trigger: ['input', 'blur'] },
   ],
   // useAi: [{
   //   required: true,
   //   trigger: 'change',
-  //   message: '请选择',
+  //   message: 'Select ',
   // }],
   // isPublic: [{
   //   required: true,
   //   trigger: 'change',
-  //   message: '请选择',
+  //   message: 'Select ',
   // }],
   // isVisible: [{
   //   required: true,
   //   trigger: 'change',
-  //   message: '请选择',
+  //   message: 'Select ',
   // }],
 }
 function doClose() {
@@ -91,13 +91,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await dataProblemEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await dataProblemAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -124,10 +124,10 @@ async function doOpen(row: any = null, edit: boolean = false) {
   isEdit.value = edit
   formData.value = Object.assign(formData.value, row)
 
-  // 获取下拉列表数据
+  // Load dropdown options
   const { data: difficultyData } = await sysDictOptions({ dictType: 'PROBLEM_DIFFICULTY' })
   if (difficultyData) {
-    // 将其中的value 转换为 number，其余保留
+    // Convert value to a number and keep the other fields
     difficultyOptions.value = difficultyData.map((item: any) => {
       return {
         value: Number(item.value),
@@ -157,8 +157,8 @@ defineExpose({
 
 function handleTagUpdate(newValue: string[], option: any) {
   if (newValue.length > 2) {
-    window.$message.warning(`最多只能选择 ${2} 个标签`)
-    // 截断
+    window.$message.warning(`You can select up to ${2} tags`)
+    // Truncate
     formData.value.tagIds = formData.value.tagIds.slice(0, 2)
     return
   }
@@ -168,32 +168,32 @@ function handleTagUpdate(newValue: string[], option: any) {
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" :default-width="800" resizable @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <!-- <NFormItem label="展示ID" path="displayId">
-          <NInput v-model:value="formData.displayId" placeholder="请输入展示ID" />
+        <!-- Text input -->
+        <!-- <NFormItem label="Display ID" path="displayId">
+          <NInput v-model:value="formData.displayId" placeholder="Enter Display ID" />
         </NFormItem> -->
-        <!-- 输入框 -->
-        <NFormItem label="分类" path="categoryId">
-          <!-- <NInput v-model:value="formData.categoryId" placeholder="请输入分类" /> -->
+        <!-- Text input -->
+        <NFormItem label="Category" path="categoryId">
+          <!-- <NInput v-model:value="formData.categoryId" placeholder="Enter Category" /> -->
           <NSelect
             v-model:value="formData.categoryId"
-            placeholder="请选择分类"
+            placeholder="Select Category"
             :options="categoryOptions"
             clearable
             remote
           />
         </NFormItem>
-        <NFormItem label="标签" path="tagIds">
-          <!-- <NInputNumber v-model:value="formData.difficulty" :min="0" :max="100" placeholder="请输入难度" /> -->
+        <NFormItem label="Tag" path="tagIds">
+          <!-- <NInputNumber v-model:value="formData.difficulty" :min="0" :max="100" placeholder="Enter Difficulty" /> -->
           <NSelect
             v-model:value="formData.tagIds"
-            placeholder="请选择标签"
+            placeholder="Select Tag"
             :options="tagOptions"
             clearable
             multiple
@@ -201,35 +201,35 @@ function handleTagUpdate(newValue: string[], option: any) {
             @update:value="handleTagUpdate"
           />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="标题" path="title">
-          <NInput v-model:value="formData.title" placeholder="请输入标题" />
+        <!-- Text input -->
+        <NFormItem label="Title" path="title">
+          <NInput v-model:value="formData.title" placeholder="Enter Title" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="来源" path="source">
-          <NInput v-model:value="formData.source" placeholder="请输入来源" />
+        <!-- Text input -->
+        <NFormItem label="Source" path="source">
+          <NInput v-model:value="formData.source" placeholder="Enter Source" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="链接" path="url">
-          <NInput v-model:value="formData.url" placeholder="请输入链接" />
+        <!-- Text input -->
+        <NFormItem label="Link" path="url">
+          <NInput v-model:value="formData.url" placeholder="Enter Link" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="时间限制" path="maxTime">
-          <NInputNumber v-model:value="formData.maxTime" :min="0" :max="1000000" placeholder="请输入时间限制" />
+        <!-- Number input -->
+        <NFormItem label="Time Limit" path="maxTime">
+          <NInputNumber v-model:value="formData.maxTime" :min="0" :max="1000000" placeholder="Enter Time Limit" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="内存限制" path="maxMemory">
-          <NInputNumber v-model:value="formData.maxMemory" :min="0" :max="1000000" placeholder="请输入内存限制" />
+        <!-- Number input -->
+        <NFormItem label="Memory Limit" path="maxMemory">
+          <NInputNumber v-model:value="formData.maxMemory" :min="0" :max="1000000" placeholder="Enter Memory Limit" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="描述" path="description">
-          <!-- <NInput v-model:value="formData.description" placeholder="请输入描述" /> -->
+        <!-- Text input -->
+        <NFormItem label="Description" path="description">
+          <!-- <NInput v-model:value="formData.description" placeholder="Enter Description" /> -->
           <MDEditor v-model="formData.description" />
         </NFormItem>
-        <!-- 输入框 -->
-        <!-- <NFormItem label="测试用例" path="testCase">
+        <!-- Text input -->
+        <!-- <NFormItem label="Test Cases" path="testCase">
           <n-alert type="warning">
-            即将舍弃使用
+            Deprecated and will be removed
           </n-alert>
           <NDynamicInput
             v-model:value="formData.testCase"
@@ -248,13 +248,13 @@ function handleTagUpdate(newValue: string[], option: any) {
                 </div>
                 <div style="display: flex; align-items: center; width: 100%; gap: 12px;">
                   <NInput
-                    v-model:value="value.input" type="textarea" placeholder="请输入用例输入" :autosize="{
+                    v-model:value="value.input" type="textarea" placeholder="Enter Test Case Input" :autosize="{
                       minRows: 3,
                       maxRows: 3,
                     }"
                   />
                   <NInput
-                    v-model:value="value.output" type="textarea" placeholder="请输入用例输出" :autosize="{
+                    v-model:value="value.output" type="textarea" placeholder="Enter Test Case Output" :autosize="{
                       minRows: 3,
                       maxRows: 3,
                     }"
@@ -264,32 +264,32 @@ function handleTagUpdate(newValue: string[], option: any) {
             </template>
           </NDynamicInput>
         </NFormItem> -->
-        <!-- 输入框 -->
-        <NFormItem label="开放语言" path="allowedLanguages">
-          <!-- <NInput v-model:value="formData.allowedLanguages" placeholder="请输入开放语言" /> -->
+        <!-- Text input -->
+        <NFormItem label="Allowed Languages" path="allowedLanguages">
+          <!-- <NInput v-model:value="formData.allowedLanguages" placeholder="Enter Allowed Languages" /> -->
           <NSelect
             v-model:value="formData.allowedLanguages"
-            placeholder="请选择开放语言"
+            placeholder="Select Allowed Languages"
             :options="allowLanguageOptions"
             multiple
             clearable
             remote
           />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="难度" path="difficulty">
-          <!-- <NInputNumber v-model:value="formData.difficulty" :min="0" :max="100" placeholder="请输入难度" /> -->
+        <!-- Number input -->
+        <NFormItem label="Difficulty" path="difficulty">
+          <!-- <NInputNumber v-model:value="formData.difficulty" :min="0" :max="100" placeholder="Enter Difficulty" /> -->
           <NSelect
             v-model:value="formData.difficulty"
-            placeholder="请选择难度"
+            placeholder="Select Difficulty"
             :options="difficultyOptions"
             clearable
             remote
           />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="阈值" path="threshold">
-          <!-- <NInputNumber v-model:value="formData.threshold" :min="0" :max="1.0" placeholder="请输入阈值" :step="0.1" :precision="1" /> -->
+        <!-- Number input -->
+        <NFormItem label="Threshold" path="threshold">
+          <!-- <NInputNumber v-model:value="formData.threshold" :min="0" :max="1.0" placeholder="Enter Threshold" :step="0.1" :precision="1" /> -->
           <NSlider
             v-model:value="formData.threshold"
             :step="0.1"
@@ -298,30 +298,30 @@ function handleTagUpdate(newValue: string[], option: any) {
             :marks="{ 0.5: '0.5', 0.8: '0.8', 1.0: '1.0' }"
           />
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="是否使用AI" path="useAi">
+        <!-- Boolean selector -->
+        <NFormItem label="Use AI" path="useAi">
           <NRadioGroup v-model:value="formData.useAi">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <!-- <NFormItem label="使用模板" path="useTemplate">
+        <!-- Boolean selector -->
+        <!-- <NFormItem label="Use Template" path="useTemplate">
           <NRadioGroup v-model:value="formData.useTemplate">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem> -->
-        <!-- 输入框 -->
-        <!-- <NFormItem label="模板代码" path="codeTemplate">
+        <!-- Text input -->
+        <!-- <NFormItem label="Template Code" path="codeTemplate">
           <NDynamicInput
             v-model:value="formData.codeTemplate"
             show-sort-button
@@ -336,26 +336,26 @@ function handleTagUpdate(newValue: string[], option: any) {
               <div style="display: flex; width: 100%; flex-direction: column; gap: 12px;">
                 <NSelect
                   v-model:value="value.language"
-                  placeholder="请选择语言"
+                  placeholder="Select Language"
                   :options="allowLanguageOptions"
                   clearable
                   remote
                 />
                 <div style="display: flex; align-items: center; width: 100%; gap: 12px;">
                   <NInput
-                    v-model:value="value.prefix" type="textarea" placeholder="请输入模板前缀" :autosize="{
+                    v-model:value="value.prefix" type="textarea" placeholder="Enter Template Prefix" :autosize="{
                       minRows: 3,
                       maxRows: 3,
                     }"
                   />
                   <NInput
-                    v-model:value="value.template" type="textarea" placeholder="请输入模板内容" :autosize="{
+                    v-model:value="value.template" type="textarea" placeholder="Enter Template Content" :autosize="{
                       minRows: 3,
                       maxRows: 3,
                     }"
                   />
                   <NInput
-                    v-model:value="value.suffix" type="textarea" placeholder="请输入模板后缀" :autosize="{
+                    v-model:value="value.suffix" type="textarea" placeholder="Enter Template Suffix" :autosize="{
                       minRows: 3,
                       maxRows: 3,
                     }"
@@ -365,42 +365,42 @@ function handleTagUpdate(newValue: string[], option: any) {
             </template>
           </NDynamicInput>
         </NFormItem> -->
-        <!-- Boolean 选择框 -->
-        <NFormItem label="是否公开" path="isPublic">
+        <!-- Boolean selector -->
+        <NFormItem label="Public" path="isPublic">
           <NRadioGroup v-model:value="formData.isPublic">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="是否上架" path="isVisible">
+        <!-- Boolean selector -->
+        <NFormItem label="Published" path="isVisible">
           <NRadioGroup v-model:value="formData.isVisible">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
         <n-alert type="warning" class="mb-4">
           <n-tag type="primary" size="small">
-            公开
-          </n-tag> 与 <n-tag type="primary" size="small">
-            上架
-          </n-tag> 处理 Web 题库显示，均开启时显示该题。<n-tag type="primary" size="small">
-            公开
-          </n-tag> 标记是否为题集中私有题目。题集组题时受是否<n-tag type="primary" size="small">
-            上架
-          </n-tag> 标记限制。
+            Public
+          </n-tag> and <n-tag type="primary" size="small">
+            Published
+          </n-tag> control display in the web problem library. The problem appears when both are enabled.<n-tag type="primary" size="small">
+            Public
+          </n-tag> marks a problem as private to a set. Set composition is restricted by the<n-tag type="primary" size="small">
+            Published
+          </n-tag> setting.
         </n-alert>
-        <!-- 数字输入 -->
-        <!-- <NFormItem label="解决" path="solved">
-          <NInputNumber v-model:value="formData.solved" :min="0" :max="100" placeholder="请输入解决" />
+        <!-- Number input -->
+        <!-- <NFormItem label="Solved" path="solved">
+          <NInputNumber v-model:value="formData.solved" :min="0" :max="100" placeholder="Enter Solved" />
         </NFormItem> -->
       </NForm>
       <template #footer>
@@ -409,13 +409,13 @@ function handleTagUpdate(newValue: string[], option: any) {
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

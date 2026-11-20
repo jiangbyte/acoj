@@ -36,11 +36,13 @@ const siteStore = useSiteStore()
       >
         <Header />
       </n-layout-header>
-      <div class="h-[calc(100vh-2.5rem-5rem)] mt-20 flex flex-col">
-        <router-view v-slot="{ Component, route }" class="flex-1">
+      <!-- 固定可视高度；min-h-0 让子页 h-full/内部滚动生效，避免内容被裁切却无法滚动 -->
+      <div class="h-[calc(100vh-2.5rem-5rem)] mt-20 flex flex-col min-h-0 overflow-hidden">
+        <router-view v-slot="{ Component, route }">
           <component
             :is="Component"
             :key="route.fullPath"
+            class="flex-1 min-h-0 h-full"
           />
         </router-view>
       </div>

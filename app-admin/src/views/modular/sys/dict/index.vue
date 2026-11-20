@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { actionDeleteBtn, actionIconBtn } from '@/utils'
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NCard, NDataTable, NPopconfirm, NSpace, NSplit } from 'naive-ui'
 import { useSysDictFetch } from '@/composables/v1'
@@ -14,44 +15,35 @@ const columns: DataTableColumns<any> = [
     type: 'selection',
   },
   {
-    title: '类型名称',
+    title: 'Type Name',
     key: 'typeLabel',
   },
   {
-    title: '字典类型',
+    title: 'Dictionary Type',
     key: 'dictType',
   },
   {
-    title: '字典标签',
+    title: 'Dictionary Label',
     key: 'dictLabel',
   },
   {
-    title: '字典值',
+    title: 'Dictionary Value',
     key: 'dictValue',
   },
   {
-    title: '排序',
+    title: 'Sort Order',
     key: 'sortOrder',
   },
   {
-    title: '操作',
+    title: 'Actions',
     key: 'action',
-    width: 200,
+    width: 140,
     fixed: 'right',
     render(row: any) {
-      return h(NSpace, { align: 'center' }, () => [
-        h(NButton, {
-          type: 'primary',
-          size: 'small',
-          onClick: () => formRef.value.doOpen(null, row, true),
-        }, () => '编辑'),
-        h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row, true) }, () => '详情'),
-        h(NPopconfirm, {
-          onPositiveClick: () => deleteHandle(row),
-        }, {
-          default: () => '确认删除',
-          trigger: () => h(NButton, { size: 'small', type: 'error' }, () => '删除'),
-        }),
+      return h(NSpace, { align: 'center', wrap: false }, () => [
+        actionIconBtn({ kind: 'edit', onClick: () => formRef.value.doOpen(null, row, true) }),
+        actionIconBtn({ kind: 'detail', onClick: () => detailRef.value.doOpen(row, true) }),
+        actionDeleteBtn(() => deleteHandle(row)),
       ])
     },
   },
@@ -60,13 +52,13 @@ const columns: DataTableColumns<any> = [
 const columnSortFieldOptions = computed<any[]>(() => {
   return [
     { label: 'ID', value: 'id' },
-    { label: '创建时间', value: 'createTime' },
-    { label: '更新时间', value: 'updateTime' },
+    { label: 'Created At', value: 'createTime' },
+    { label: 'Updated At', value: 'updateTime' },
   ]
 })
 const sortOrderOptions = computed(() => [
-  { label: '升序', value: 'ASCEND' },
-  { label: '降序', value: 'DESCEND' },
+  { label: 'Ascending', value: 'ASCEND' },
+  { label: 'Descending', value: 'DESCEND' },
 ])
 const displayKey = ref<string[]>(
   columns
@@ -133,7 +125,7 @@ async function loadListData(typeKey: string) {
 }
 async function handleTreeSelect(keys: string[]) {
   console.log(keys)
-  // 对于keys的每一个key，如果其中有:符号，截取前面的字符串
+  // For each key, keep the text before the colon when present
   const newKeys = keys.map((key) => {
     if (key.includes(':')) {
       return key.split(':')[0]
@@ -158,7 +150,7 @@ async function deleteHandle(row: any) {
   }]
   const { success } = await sysDictDelete(param)
   if (success) {
-    window.$message.success('删除成功')
+    window.$message.success('Deleted successfully')
     refresh()
   }
 }
@@ -167,7 +159,7 @@ async function deleteBatchHandle() {
   const param = checkedRowKeys.value.map(id => ({ id }))
   const { success } = await sysDictDelete(param)
   if (success) {
-    window.$message.success('删除成功')
+    window.$message.success('Deleted successfully')
     refresh()
     checkedRowKeys.value = []
   }
@@ -184,7 +176,7 @@ async function deleteBatchHandle() {
               <NInputGroup>
                 <NInput
                   v-model:value="treeKeyword"
-                  placeholder="输入关键字"
+                  placeholder="Enter keywords"
                   clearable
                   @clear="resetHandle"
                 />
@@ -192,7 +184,7 @@ async function deleteBatchHandle() {
                   <template #icon>
                     <IconParkOutlineSearch />
                   </template>
-                  搜索
+                  Search
                 </NButton>
               </NInputGroup>
               <NScrollbar class="h-[calc(100vh-2.5rem-11.5rem)]">
@@ -213,7 +205,7 @@ async function deleteBatchHandle() {
                 <template #icon>
                   <IconParkOutlinePlus />
                 </template>
-                新增
+                Add
               </NButton>
             </template>
           </NCard>
@@ -230,15 +222,15 @@ async function deleteBatchHandle() {
                     <template #icon>
                       <IconParkOutlinePlus />
                     </template>
-                    创建
+                    Create
                   </NButton>
                   <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
                     <template #default>
-                      确认删除
+                      Confirm delete
                     </template>
                     <template #trigger>
                       <NButton type="error">
-                        删除
+                        Delete
                       </NButton>
                     </template>
                   </NPopconfirm>
@@ -297,7 +289,7 @@ async function deleteBatchHandle() {
           </NCard>
           <NCard size="small" class="flex-1">
             <n-alert type="warning" class="mb-3">
-              请勿随意修改业务字典，否则可能会导致系统异常！请谨慎修改！
+              Do not change business dictionaries unless necessary; incorrect changes may cause system errors.
             </n-alert>
             <NDataTable
               v-model:checked-row-keys="checkedRowKeys"
@@ -314,10 +306,10 @@ async function deleteBatchHandle() {
               <NSpace align="center" justify="space-between" class="w-full">
                 <NSpace align="center">
                   <NP type="info" show-icon>
-                    当前数据 {{ listData.length }} 条
+                    Current: {{ listData.length }} records
                   </NP>
                   <NP type="info" show-icon>
-                    选中了 {{ checkedRowKeys.length }} 行
+                    Selected: {{ checkedRowKeys.length }} rows
                   </NP>
                 </NSpace>
               </NSpace>

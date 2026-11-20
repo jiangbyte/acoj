@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 题目测试用例 API请求
+ * Problem Test Case API requests
  */
 export function useDataTestCaseFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useDataTestCaseFetch() {
   const table = 'data/test/case'
 
   /*
-     * 题目测试用例 默认数据
+     * Problem Test Case default data
      */
   const dataTestCaseDefaultData = {
     id: '',
@@ -30,12 +30,12 @@ export function useDataTestCaseFetch() {
   }
   return {
     /*
-    * 题目测试用例 默认数据
+    * Problem Test Case default data
     */
     dataTestCaseDefaultData,
 
     /*
-     * 题目测试用例 分页接口
+     * Problem Test Case pagination endpoint
      */
     dataTestCasePage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -46,28 +46,28 @@ export function useDataTestCaseFetch() {
     },
 
     /*
-     * 题目测试用例 新增接口
+     * Problem Test Case create endpoint
      */
     dataTestCaseAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 题目测试用例 修改接口
+     * Problem Test Case update endpoint
      */
     dataTestCaseEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 题目测试用例 删除接口
+     * Problem Test Case delete endpoint
      */
     dataTestCaseDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 题目测试用例 详情接口
+     * Problem Test Case details endpoint
      */
     dataTestCaseDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

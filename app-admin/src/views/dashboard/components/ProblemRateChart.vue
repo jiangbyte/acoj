@@ -74,10 +74,10 @@ const option = ref<ECOption>({
     itemStyle: {
       color: new graphic.LinearGradient(0, 0, 0, 1, [{
         offset: 0,
-        color: '#00BD89', // 0% 处的颜色
+        color: '#00BD89', // Color at 0%
       }, {
         offset: 1,
-        color: '#C9F9E1', // 100% 处的颜色
+        color: '#C9F9E1', // Color at 100%
       }], false),
     },
   }],
@@ -85,7 +85,7 @@ const option = ref<ECOption>({
 
 useEcharts('lineRef', option)
 
-// 更新option的函数
+// Function that updates the chart options
 function updateOption() {
   option.value = {
     ...option.value,

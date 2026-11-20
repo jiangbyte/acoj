@@ -3,11 +3,11 @@ import { NButton, NModal, NSlider, NSpace, NText } from 'naive-ui'
 
 const props = withDefaults(defineProps<{
   show: boolean
-  /** 待裁剪的本地图片 */
+  /** Local image to crop */
   sourceFile: File | null
-  /** 宽高比，默认 1:1 */
+  /** Aspect ratio; default is 1:1 */
   aspectRatio?: number
-  /** 输出边长（正方形），默认 512 */
+  /** Output side length for the square; default is 512 */
   outputSize?: number
 }>(), {
   aspectRatio: 1,
@@ -77,7 +77,7 @@ function waitImage() {
   })
 }
 
-/** 初始缩放：短边铺满正方形视口 */
+/** Initial zoom: fit the short edge to the square viewport */
 function resetTransform() {
   if (!naturalW.value || !naturalH.value)
     return
@@ -91,7 +91,7 @@ function resetTransform() {
 function clampOffset() {
   const w = naturalW.value * scale.value
   const h = naturalH.value * scale.value
-  // 图片必须盖住整个正方形裁剪区
+  // The image must cover the entire square crop area
   if (w >= viewportSize) {
     offsetX.value = Math.min(0, Math.max(viewportSize - w, offsetX.value))
   }
@@ -140,7 +140,7 @@ function close() {
 }
 
 /**
- * 按当前视口导出 1:1 图片文件
+ * Export a 1:1 image from the current viewport
  */
 async function confirmCrop() {
   if (!imgRef.value || !naturalW.value)
@@ -155,7 +155,7 @@ async function confirmCrop() {
     if (!ctx)
       throw new Error('canvas unavailable')
 
-    // 视口坐标 → 原图像素
+    // Viewport coordinates to source-image pixels
     const sx = -offsetX.value / scale.value
     const sy = -offsetY.value / scale.value
     const sw = viewportSize / scale.value
@@ -167,7 +167,7 @@ async function confirmCrop() {
 
     const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92))
     if (!blob)
-      throw new Error('导出失败')
+      throw new Error('Export failed')
 
     const base = (props.sourceFile?.name || 'avatar').replace(/\.[^.]+$/, '')
     const file = new File([blob], `${base}-crop.jpg`, { type: 'image/jpeg' })
@@ -176,7 +176,7 @@ async function confirmCrop() {
   }
   catch (error) {
     console.error(error)
-    window.$message?.error(error instanceof Error ? error.message : '裁剪失败')
+    window.$message?.error(error instanceof Error ? error.message : 'Crop failed')
   }
   finally {
     confirming.value = false
@@ -188,14 +188,14 @@ async function confirmCrop() {
   <NModal
     :show="show"
     preset="card"
-    title="裁剪头像（1:1）"
+    title="Crop avatar (1:1)"
     style="width: 420px"
     :mask-closable="false"
     @update:show="(v) => { if (!v) close() }"
   >
     <NSpace vertical :size="16">
       <NText depth="3">
-        拖动调整位置，滚轮或滑块缩放；确认后按 1:1 裁剪上传
+        Drag to reposition and use the wheel or slider to zoom. Confirm to crop and upload at 1:1
       </NText>
       <div
         ref="viewportRef"
@@ -223,7 +223,7 @@ async function confirmCrop() {
       </div>
       <div class="px-2">
         <NText depth="3" class="mb-1 block">
-          缩放
+          Zoom
         </NText>
         <NSlider
           v-model:value="scale"
@@ -236,10 +236,10 @@ async function confirmCrop() {
     <template #footer>
       <NSpace justify="end">
         <NButton @click="close">
-          取消
+          Cancel
         </NButton>
         <NButton type="primary" :loading="confirming" @click="confirmCrop">
-          确认裁剪
+          Crop
         </NButton>
       </NSpace>
     </template>

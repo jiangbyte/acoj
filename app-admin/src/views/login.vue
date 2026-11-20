@@ -33,7 +33,7 @@ const route = useRoute()
 const tokenStore = useTokenStore()
 
 /**
- * 拉取验证码并同步写入表单 uuid，避免先清空再异步加载的竞态。
+ * Load the verification code and update the form UUID together to avoid an asynchronous reset race.
  */
 async function loadCaptcha() {
   const { data } = await captcha()
@@ -59,7 +59,7 @@ async function handleLogin(e?: Event) {
     await formRef.value?.validate()
   }
   catch {
-    window.$message.error('请填写完整且合法的信息')
+    window.$message.error('Enter complete and valid information')
     return
   }
 
@@ -87,11 +87,11 @@ async function handleLogin(e?: Event) {
 
 <template>
   <AuthShell
-    title="欢迎登录 ACOJ Admin"
-    subtitle="「简洁、高效、安全」的管理控制台"
+    title="Welcome to ACOJ Admin"
+    subtitle="A simple, efficient, and secure admin console"
   >
     <div class="auth-form-title">
-      账号登录
+      Account Sign In
     </div>
     <NForm
       ref="formRef"
@@ -107,7 +107,7 @@ async function handleLogin(e?: Event) {
           v-model:value="formData.username"
           data-testid="username-inp"
           :input-props="{ autocomplete: 'username' }"
-          placeholder="请输入用户名"
+          placeholder="Enter username"
           clearable
         />
       </NFormItem>
@@ -118,7 +118,7 @@ async function handleLogin(e?: Event) {
           show-password-on="click"
           data-testid="password-inp"
           :input-props="{ autocomplete: 'current-password' }"
-          placeholder="请输入密码"
+          placeholder="Enter password"
         />
       </NFormItem>
       <NFormItem path="captchaCode">
@@ -126,21 +126,21 @@ async function handleLogin(e?: Event) {
           <NInput
             v-model:value="formData.captchaCode"
             data-testid="captcha-inp"
-            placeholder="请输入验证码"
+            placeholder="Enter verification code"
             class="captcha-row__input"
           />
           <button
             type="button"
             class="captcha-row__img"
-            title="点击刷新验证码"
+            title="Click to refresh the verification code"
             @click="refreshCaptcha"
           >
             <img
               v-if="captchaRef.captcha"
               :src="captchaRef.captcha"
-              alt="验证码"
+              alt="verification code"
             >
-            <span v-else>点击刷新</span>
+            <span v-else>Click to refresh</span>
           </button>
         </div>
       </NFormItem>
@@ -154,11 +154,11 @@ async function handleLogin(e?: Event) {
       class="auth-submit"
       @click="handleLogin"
     >
-      登录
+      Sign In
     </NButton>
     <div class="auth-hint">
       <NText depth="3">
-        仅限具备管理权限的账号登录
+        Only accounts with admin permissions can sign in
       </NText>
     </div>
   </AuthShell>

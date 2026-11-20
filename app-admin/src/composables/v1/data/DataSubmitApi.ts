@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 提交 API请求
+ * Submission API requests
  */
 export function useDataSubmitFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useDataSubmitFetch() {
   const table = 'data/submit'
 
   /*
-     * 提交 默认数据
+     * Submission default data
      */
   const dataSubmitDefaultData = {
     id: '',
@@ -38,12 +38,12 @@ export function useDataSubmitFetch() {
   }
   return {
     /*
-    * 提交 默认数据
+    * Submission default data
     */
     dataSubmitDefaultData,
 
     /*
-     * 提交 分页接口
+     * Submission pagination endpoint
      */
     dataSubmitPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -54,28 +54,28 @@ export function useDataSubmitFetch() {
     },
 
     /*
-     * 提交 新增接口
+     * Submission create endpoint
      */
     dataSubmitAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 提交 修改接口
+     * Submission update endpoint
      */
     dataSubmitEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 提交 删除接口
+     * Submission delete endpoint
      */
     dataSubmitDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 提交 详情接口
+     * Submission details endpoint
      */
     dataSubmitDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { actionDeleteBtn, actionIconBtn } from '@/utils'
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NCard, NDataTable, NImage, NPagination, NPopconfirm, NSpace } from 'naive-ui'
 import { useSysGroupFetch, useSysUserFetch } from '@/composables/v1'
@@ -14,101 +15,92 @@ const columns: DataTableColumns<any> = [
     type: 'selection',
   },
   {
-    title: '用户组',
+    title: 'User Group',
     key: 'groupIdName',
     ellipsis: {
       tooltip: true,
     },
   },
   // {
-  //   title: '用户名',
+  //   title: 'username',
   //   key: 'username',
   //   ellipsis: {
   //     tooltip: true,
   //   },
   // },
   {
-    title: '昵称',
+    title: 'Nickname',
     key: 'nickname',
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: '头像',
+    title: 'Avatar',
     key: 'avatar',
     render: (row) => {
       return h(NImage, { src: row.avatar, width: 50, height: 50, objectFit: 'cover' })
     },
   },
   // {
-  //   title: '背景图片',
+  //   title: 'Background Image',
   //   key: 'background',
   //   render: (row) => {
   //     return h(NImage, { src: row.background, width: 50, height: 50, objectFit: 'cover' })
   //   },
   // },
   {
-    title: '签名',
+    title: 'Bio',
     key: 'quote',
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: '性别',
+    title: 'Gender',
     key: 'gender',
     render: (value) => {
       if (value.gender === 1) {
-        return '男'
+        return 'Male'
       }
       else if (value.gender === 2) {
-        return '女'
+        return 'Female'
       }
-      return '未知'
+      return 'Unknown'
     },
   },
   // {
-  //   title: '学号',
+  //   title: 'Student ID',
   //   key: 'studentNumber',
   //   ellipsis: {
   //     tooltip: true,
   //   },
   // },
   {
-    title: '邮箱',
+    title: 'Email',
     key: 'email',
     ellipsis: {
       tooltip: true,
     },
   },
   // {
-  //   title: '电话',
+  //   title: 'Phone',
   //   key: 'telephone',
   //   ellipsis: {
   //     tooltip: true,
   //   },
   // },
   {
-    title: '操作',
+    title: 'Actions',
     key: 'action',
-    width: 280,
+    width: 184,
     fixed: 'right',
     render(row: any) {
-      return h(NSpace, { align: 'center' }, () => [
-        h(NButton, {
-          type: 'primary',
-          size: 'small',
-          onClick: () => formRef.value.doOpen(row, true),
-        }, () => '编辑'),
-        h(NButton, { size: 'small', type: 'warning', onClick: () => assignRef.value.doOpen(row) }, () => '角色分配'),
-        h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
-        h(NPopconfirm, {
-          onPositiveClick: () => deleteHandle(row),
-        }, {
-          default: () => '确认删除',
-          trigger: () => h(NButton, { size: 'small', type: 'error' }, () => '删除'),
-        }),
+      return h(NSpace, { align: 'center', wrap: false }, () => [
+        actionIconBtn({ kind: 'edit', onClick: () => formRef.value.doOpen(row, true) }),
+        actionIconBtn({ kind: 'role', onClick: () => assignRef.value.doOpen(row) }),
+        actionIconBtn({ kind: 'detail', onClick: () => detailRef.value.doOpen(row) }),
+        actionDeleteBtn(() => deleteHandle(row)),
       ])
     },
   },
@@ -117,15 +109,15 @@ const columns: DataTableColumns<any> = [
 const columnSortFieldOptions = computed<any[]>(() => {
   return [
     { label: 'ID', value: 'id' },
-    { label: '用户名', value: 'username' },
-    { label: '学号', value: 'studentNumber' },
-    { label: '创建时间', value: 'createTime' },
-    { label: '更新时间', value: 'updateTime' },
+    { label: 'username', value: 'username' },
+    { label: 'Student ID', value: 'studentNumber' },
+    { label: 'Created At', value: 'createTime' },
+    { label: 'Updated At', value: 'updateTime' },
   ]
 })
 const sortOrderOptions = computed(() => [
-  { label: '升序', value: 'ASCEND' },
-  { label: '降序', value: 'DESCEND' },
+  { label: 'Ascending', value: 'ASCEND' },
+  { label: 'Descending', value: 'DESCEND' },
 ])
 const displayKey = ref<string[]>(
   columns
@@ -207,7 +199,7 @@ async function deleteHandle(row: any) {
   }]
   const { success } = await sysUserDelete(param)
   if (success) {
-    window.$message.success('删除成功')
+    window.$message.success('Deleted successfully')
     await loadData()
   }
 }
@@ -216,7 +208,7 @@ async function deleteBatchHandle() {
   const param = checkedRowKeys.value.map(id => ({ id }))
   const { success } = await sysUserDelete(param)
   if (success) {
-    window.$message.success('删除成功')
+    window.$message.success('Deleted successfully')
     await loadData()
     checkedRowKeys.value = []
   }
@@ -233,7 +225,7 @@ async function deleteBatchHandle() {
               <NInputGroup>
                 <NInput
                   v-model:value="groupKeyword"
-                  placeholder="输入关键字"
+                  placeholder="Enter keywords"
                   clearable
                   @clear="resetGroupDataHandle"
                 />
@@ -241,13 +233,13 @@ async function deleteBatchHandle() {
                   <template #icon>
                     <IconParkOutlineSearch />
                   </template>
-                  搜索
+                  Search
                 </NButton>
                 <!-- <NButton type="warning" @click="resetGroupDataHandle">
                   <template #icon>
                     <IconParkOutlineRefresh />
                   </template>
-                  重置
+                  Reset
                 </NButton> -->
               </NInputGroup>
               <NScrollbar class="h-[calc(100vh-2.5rem-9.3rem)]">
@@ -277,7 +269,7 @@ async function deleteBatchHandle() {
                 <template #icon>
                   <IconParkOutlinePlus />
                 </template>
-                新增
+                Add
               </NButton>
             </template> -->
           </NCard>
@@ -289,48 +281,48 @@ async function deleteBatchHandle() {
             <NSpace vertical>
               <NSpace align="center">
                 <NSpace align="center">
-                  <NFormItem :show-feedback="false" label="搜索类型" label-placement="left">
-                    <!-- <NInput v-model:value="pageParam.type" placeholder="请选择" clearable @clear="resetHandle" /> -->
+                  <NFormItem :show-feedback="false" label="Search Type" label-placement="left">
+                    <!-- <NInput v-model:value="pageParam.type" placeholder="Select " clearable @clear="resetHandle" /> -->
                     <n-select
-                      v-model:value="pageParam.type" class="w-30" placeholder="请选择" :options="[
+                      v-model:value="pageParam.type" class="w-30" placeholder="Select " :options="[
                         {
-                          label: '昵称',
+                          label: 'Nickname',
                           value: 'nickname',
                         },
                         {
-                          label: '用户名',
+                          label: 'username',
                           value: 'username',
                         },
                         {
-                          label: '邮箱',
+                          label: 'Email',
                           value: 'email',
                         },
                         {
-                          label: '手机号',
+                          label: 'Phone Number',
                           value: 'telephone',
                         },
                         {
-                          label: '学号',
+                          label: 'Student ID',
                           value: 'studentNumber',
                         },
                       ]"
                     />
                   </NFormItem>
-                  <NFormItem :show-feedback="false" label="关键词" label-placement="left">
-                    <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" clearable @clear="resetHandle" />
+                  <NFormItem :show-feedback="false" label="Keywords" label-placement="left">
+                    <NInput v-model:value="pageParam.keyword" placeholder="Enter keywords" clearable @clear="resetHandle" />
                   </NFormItem>
                   <NSpace align="center">
                     <NButton type="primary" @click="loadData">
                       <template #icon>
                         <IconParkOutlineSearch />
                       </template>
-                      搜索
+                      Search
                     </NButton>
                     <NButton type="warning" @click="resetHandle">
                       <template #icon>
                         <IconParkOutlineRefresh />
                       </template>
-                      重置
+                      Reset
                     </NButton>
                   </NSpace>
                 </NSpace>
@@ -341,15 +333,15 @@ async function deleteBatchHandle() {
                     <template #icon>
                       <IconParkOutlinePlus />
                     </template>
-                    创建
+                    Create
                   </NButton>
                   <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
                     <template #default>
-                      确认删除
+                      Confirm delete
                     </template>
                     <template #trigger>
                       <NButton type="error">
-                        删除
+                        Delete
                       </NButton>
                     </template>
                   </NPopconfirm>
@@ -422,10 +414,10 @@ async function deleteBatchHandle() {
               <NSpace align="center" justify="space-between" class="w-full">
                 <NSpace align="center">
                   <NP type="info" show-icon>
-                    当前数据 {{ pageData?.records.length }} 条
+                    Current: {{ pageData?.records.length }} records
                   </NP>
                   <NP type="info" show-icon>
-                    选中了 {{ checkedRowKeys.length }} 行
+                    Selected: {{ checkedRowKeys.length }} rows
                   </NP>
                 </NSpace>
                 <NPagination
@@ -435,7 +427,7 @@ async function deleteBatchHandle() {
                   :page-count="pageData ? Number(pageData.pages) : 0"
                   show-size-picker
                   :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                    label: `${(i + 1) * 10} 每页`,
+                    label: `${(i + 1) * 10} per page`,
                     value: (i + 1) * 10,
                   }))"
                   :page-slot="5"

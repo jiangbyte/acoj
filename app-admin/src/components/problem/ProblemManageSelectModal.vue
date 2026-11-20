@@ -7,24 +7,24 @@ const show = ref(false)
 const message = useMessage()
 
 const moduleTypeRef = ref()
-const currentId = ref('') // 当前题集或竞赛ID
+const currentId = ref('') // Current set or contest ID
 
-// 题目列表数据
+// Problem data
 const problemRecords = ref()
-// 已选题目数据
+// Selected problem data
 const selectedProblems = ref([])
 
-// 表格列配置
+// Table column configuration
 const problemColumns = [
   {
-    title: '题目名称',
+    title: 'Problem Name',
     key: 'title',
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: '来源',
+    title: 'Source',
     key: 'source',
     width: 120,
     ellipsis: {
@@ -32,15 +32,15 @@ const problemColumns = [
     },
   },
   {
-    title: '难度',
+    title: 'Difficulty',
     key: 'difficultyName',
   },
   {
-    title: '阈值',
+    title: 'Threshold',
     key: 'threshold',
   },
   {
-    title: '公开',
+    title: 'Public',
     key: 'isPublicName',
     render: (row: any) => {
       return h(NTag, {
@@ -49,36 +49,36 @@ const problemColumns = [
     },
   },
   {
-    title: '操作',
+    title: 'Actions',
     key: 'actions',
     render: (row: any) => h(NButton, {
       size: 'small',
       type: 'primary',
       onClick: () => handleAddProblem(row),
-    }, { default: () => '添加' }),
+    }, { default: () => 'Add' }),
   },
 ]
 
 const selectedSetColumns = [
   {
-    title: '题目名称',
+    title: 'Problem Name',
     key: 'problemIdName',
   },
   {
-    title: '操作',
+    title: 'Actions',
     key: 'actions',
     width: 80,
     render: row => h(NButton, {
       size: 'small',
       type: 'error',
       onClick: () => handleRemoveProblem(row.id),
-    }, { default: () => '删除' }),
+    }, { default: () => 'Delete' }),
   },
 ]
 
 const selectedContestColumns = [
   {
-    title: '题目编号',
+    title: 'Problem Number',
     key: 'problemCode',
     width: 100,
     render: row => h(NInput, {
@@ -88,11 +88,11 @@ const selectedContestColumns = [
     }),
   },
   {
-    title: '题目名称',
+    title: 'Problem Name',
     key: 'problemIdName',
   },
   // {
-  //   title: '排序',
+  //   title: 'Sort Order',
   //   key: 'sort',
   //   width: 100,
   //   render: row => h(NInputNumber, {
@@ -102,14 +102,14 @@ const selectedContestColumns = [
   //   }),
   // },
   {
-    title: '操作',
+    title: 'Actions',
     key: 'actions',
     width: 80,
     render: row => h(NButton, {
       size: 'small',
       type: 'error',
       onClick: () => handleRemoveProblem(row.id),
-    }, { default: () => '删除' }),
+    }, { default: () => 'Delete' }),
   },
 ]
 
@@ -153,40 +153,40 @@ async function doOpen(row: any, moduleType: string) {
   currentId.value = row.id
   show.value = true
 
-  // 加载题目列表
+  // Load problems
   loadProblemDatas()
   loadContestProblemDatas()
-  // 根据类型加载已选题目
+  // Load selected problems by type
   if (moduleType === 'SET') {
     loadSetProblemDatas()
   }
 }
 
-// 修改题目编号
+// Change the problem number
 async function handleCodeChange(id, value) {
   const problem = selectedContestProblems.value.find(item => item.id === id)
   if (problem) {
     problem.problemCode = value.toUpperCase()
 
-    // 可以添加保存到后端的逻辑
+    // Backend persistence can be added here
     // await saveProblemCode(problem)
   }
 }
-// // 修改排序
+// // Change the sort order
 // async function handleSortChange(id, value) {
 //   const problem = selectedContestProblems.value.find(item => item.id === id)
 //   if (problem) {
 //     problem.sort = value
-//     // 重新排序数组
+//     // Reorder the array
 //     selectedContestProblems.value.sort((a, b) => Number(a.sort) - Number(b.sort))
 
 //     useDataSetProblemFetch().dataSetProblemEdit(problem).then(() => {
 //       loadContestProblemDatas()
-//       message.success('更改成功')
+//       message.success('Updated successfully')
 //     })
 //   }
 // }
-// 生成下一个题目编号
+// Generate the next problem number
 function generateNextCode() {
   if (selectedContestProblems.value.length === 0)
     return 'A'
@@ -197,11 +197,11 @@ function generateNextCode() {
 
   return String.fromCharCode(lastCode.charCodeAt(0) + 1)
 }
-// 添加题目
+// Add a problem
 async function handleAddProblem(row: any) {
   if (moduleTypeRef.value === 'SET') {
     if (selectedSetProblems.value.some((item: any) => item.problemId === row.id)) {
-      message.warning('该题目已添加')
+      message.warning('Problem already added')
       return
     }
     const newProblem = {
@@ -211,12 +211,12 @@ async function handleAddProblem(row: any) {
     }
     useDataSetProblemFetch().dataSetProblemAdd(newProblem).then(() => {
       loadSetProblemDatas()
-      message.success('添加成功')
+      message.success('Added successfully')
     })
   }
   else if (moduleTypeRef.value === 'CONTEST') {
     if (selectedContestProblems.value.some((item: any) => item.problemId === row.id)) {
-      message.warning('该题目已添加')
+      message.warning('Problem already added')
       return
     }
     const newProblem = {
@@ -229,12 +229,12 @@ async function handleAddProblem(row: any) {
 
     useDataContestProblemFetch().dataContestProblemAdd(newProblem).then(() => {
       loadContestProblemDatas()
-      message.success('添加成功')
+      message.success('Added successfully')
     })
   }
 }
 
-// 删除题目
+// DeleteProblem
 async function handleRemoveProblem(sid: any) {
   if (moduleTypeRef.value === 'SET') {
     const param = [{
@@ -242,7 +242,7 @@ async function handleRemoveProblem(sid: any) {
     }]
     useDataSetProblemFetch().dataSetProblemDelete(param).then(() => {
       loadSetProblemDatas()
-      message.success('删除成功')
+      message.success('Deleted successfully')
     })
   }
   else if (moduleTypeRef.value === 'CONTEST') {
@@ -251,7 +251,7 @@ async function handleRemoveProblem(sid: any) {
     }]
     useDataContestProblemFetch().dataContestProblemDelete(param).then(() => {
       loadContestProblemDatas()
-      message.success('删除成功')
+      message.success('Deleted successfully')
     })
   }
 }
@@ -264,7 +264,7 @@ defineExpose({
 <template>
   <NMessageProvider>
     <NDrawer v-model:show="show" placement="right" width="1200" @after-leave="doClose">
-      <NDrawerContent :title="`题目管理 - ${moduleTypeRef === 'SET' ? '题集' : '竞赛'}`">
+      <NDrawerContent :title="`Problem Management - ${moduleTypeRef === 'SET' ? 'Problem Set' : 'Contest'}`">
         <n-grid
           cols="2"
           :x-gap="24"
@@ -272,7 +272,7 @@ defineExpose({
           responsive="screen"
           class="flex-1 h-full"
         >
-          <!-- 右侧边栏 -->
+          <!-- Right sidebar -->
           <n-gi span="1">
             <n-card class="flex-1 h-full" size="small">
               <NDataTable
@@ -289,7 +289,7 @@ defineExpose({
                   :page-count="problemRecords ? Number(problemRecords.pages) : 0"
                   show-size-picker
                   :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                    label: `${(i + 1) * 10} 每页`,
+                    label: `${(i + 1) * 10} per page`,
                     value: (i + 1) * 10,
                   }))"
                   :page-slot="5"
@@ -324,7 +324,7 @@ defineExpose({
         <template #footer>
           <NSpace align="center" justify="end">
             <NButton @click="doClose">
-              关闭
+              Close
             </NButton>
           </NSpace>
         </template>

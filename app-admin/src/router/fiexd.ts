@@ -7,7 +7,7 @@ export const routes: RouteRecordRaw[] = [
     redirect: '/webroot',
     children: [],
   },
-  // 登录页面
+  // Login page
   {
     path: '/login',
     name: 'login',
@@ -17,8 +17,8 @@ export const routes: RouteRecordRaw[] = [
       withoutTab: true,
     },
   },
-  // 错误页面
-  // 404页面
+  // Error page
+  // 404 page
   {
     path: '/:pathMatch(.*)*',
     component: () => import('@/views/404.vue'),

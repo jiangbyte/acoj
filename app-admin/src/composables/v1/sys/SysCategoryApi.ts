@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 分类 API请求
+ * Category API requests
  */
 export function useSysCategoryFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useSysCategoryFetch() {
   const table = 'sys/category'
 
   /*
-     * 分类 默认数据
+     * Category default data
      */
   const sysCategoryDefaultData = {
     id: '',
@@ -21,12 +21,12 @@ export function useSysCategoryFetch() {
   }
   return {
     /*
-    * 分类 默认数据
+    * Category default data
     */
     sysCategoryDefaultData,
 
     /*
-     * 分类 分页接口
+     * Category pagination endpoint
      */
     sysCategoryPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -37,28 +37,28 @@ export function useSysCategoryFetch() {
     },
 
     /*
-     * 分类 新增接口
+     * Category create endpoint
      */
     sysCategoryAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 分类 修改接口
+     * Category update endpoint
      */
     sysCategoryEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 分类 删除接口
+     * Category delete endpoint
      */
     sysCategoryDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 分类 详情接口
+     * Category details endpoint
      */
     sysCategoryDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {
@@ -69,7 +69,7 @@ export function useSysCategoryFetch() {
     },
 
     /*
-     * 分类 选项接口
+     * Category options endpoint
      */
     sysCategoryOptions(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/options`, {

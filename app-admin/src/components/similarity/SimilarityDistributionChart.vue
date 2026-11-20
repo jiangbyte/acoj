@@ -2,13 +2,13 @@
 import { useEcharts } from '@/hooks'
 import type { ECOption } from '@/hooks'
 
-// 定义 props
+// Define props
 const props = defineProps<{
-  value: number[] // 接收父组件传递的值
+  value: number[] // Value passed by the parent
 }>()
 
-// 横轴: 相似度百分比区间 (0-10%, 10-20%, ..., 90-100%)
-// 纵轴: 该相似度区间内的克隆对数量
+// X-axis: similarity percentage ranges (0-10%, 10-20%, ..., 90-100%)
+// Y-axis: number of clone pairs in each similarity range
 const similarityGroups = [
   '0-10%',
   '10-20%',
@@ -22,13 +22,13 @@ const similarityGroups = [
   '90-100%',
 ]
 
-// 模拟的克隆对数量数据，通常高相似度区间会有更多克隆对
+// Simulated clone-pair data; higher similarity ranges usually contain more pairs
 // const cloneCounts = [5, 12, 28, 45, 78, 120, 185, 230, 310, 275]
 
 const option = ref<ECOption>({
   tooltip: {
     trigger: 'axis',
-    formatter: '{b}: {c} 对克隆代码',
+    formatter: '{b}: {c} clone pairs',
     axisPointer: {
       type: 'shadow',
     },
@@ -43,7 +43,7 @@ const option = ref<ECOption>({
   xAxis: {
     type: 'category',
     data: similarityGroups,
-    // name: '相似度区间',
+    // name: 'Similarity Range',
     nameLocation: 'middle',
     nameGap: 40,
     nameTextStyle: {
@@ -61,12 +61,12 @@ const option = ref<ECOption>({
     axisLabel: {
       color: '#666',
       fontSize: 12,
-      rotate: 30, // 旋转标签避免重叠
+      rotate: 30, // Rotate labels to prevent overlap
     },
   },
   yAxis: {
     type: 'value',
-    // name: '克隆对数量',
+    // name: 'Clone Pairs',
     nameLocation: 'middle',
     nameGap: 40,
     nameTextStyle: {
@@ -90,7 +90,7 @@ const option = ref<ECOption>({
     },
   },
   series: [{
-    name: '克隆对数量',
+    name: 'Clone Pairs',
     type: 'bar',
     barWidth: '60%',
     data: [],
@@ -112,7 +112,7 @@ const option = ref<ECOption>({
       },
       borderRadius: [4, 4, 0, 0],
     },
-    // 显示每个柱子的数值
+    // Show the value of each bar
     label: {
       show: true,
       position: 'top',

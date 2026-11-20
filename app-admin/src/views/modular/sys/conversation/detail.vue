@@ -24,24 +24,24 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="详情">
+    <NDrawerContent title="Details">
       <NDescriptions label-placement="left" bordered :column="1">
-        <NDescriptionsItem label="主键">
+        <NDescriptionsItem label="ID">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="对话ID">
+        <NDescriptionsItem label="Conversation ID">
           {{ formData.conversationId }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题目">
+        <NDescriptionsItem label="Problem">
           {{ formData.problemIdName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题集">
+        <NDescriptionsItem label="Problem Set">
           {{ formData.setIdName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题集内对话">
+        <NDescriptionsItem label="Set Conversation">
           {{ formData.isSetName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="用户">
+        <NDescriptionsItem label="User">
           <!-- {{ formData.userId }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -52,17 +52,17 @@ defineExpose({
             <NText>{{ formData.userIdName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="消息类型">
+        <NDescriptionsItem label="Message Type">
           {{ formData.messageTypeName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="消息角色">
+        <NDescriptionsItem label="Message Role">
           {{ formData.messageRoleName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="消息内容">
+        <NDescriptionsItem label="Message Content">
           <!-- {{ formData.messageContent }} -->
           <MDViewer :model-value="formData.messageContent" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="用户代码">
+        <NDescriptionsItem label="User Code">
           <NCode
             :code="formData.userCode"
             :language="formData.language"
@@ -70,40 +70,40 @@ defineExpose({
             show-line-numbers
           />
         </NDescriptionsItem>
-        <NDescriptionsItem label="代码语言">
+        <NDescriptionsItem label="Code Language">
           {{ formData.languageName }}
         </NDescriptionsItem>
-        <!-- <NDescriptionsItem label="提示Tokens">
+        <!-- <NDescriptionsItem label="NoticeTokens">
           {{ formData.promptTokens }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="完成Tokens">
+        <NDescriptionsItem label="Completion Tokens">
           {{ formData.completionTokens }}
         </NDescriptionsItem> -->
-        <!-- <NDescriptionsItem label="总Tokens">
+        <!-- <NDescriptionsItem label="Total Tokens">
           {{ formData.totalTokens }}
         </NDescriptionsItem> -->
-        <NDescriptionsItem label="响应时间">
+        <NDescriptionsItem label="Response Time">
           <NTime :time="Number(formData.responseTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="流式传输总耗时">
+        <NDescriptionsItem label="Streaming Duration">
           {{ formData.streamingDuration }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="状态">
+        <NDescriptionsItem label="Status">
           {{ formData.status }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="错误信息">
+        <NDescriptionsItem label="Error Message">
           {{ formData.errorMessage }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="用户平台">
+        <NDescriptionsItem label="User Platform">
           {{ formData.userPlatform }}
         </NDescriptionsItem>
-        <!-- <NDescriptionsItem label="IP地址">
+        <!-- <NDescriptionsItem label="IP Address">
           {{ formData.ipAddress }}
         </NDescriptionsItem> -->
-        <NDescriptionsItem label="创建时间">
+        <NDescriptionsItem label="Created At">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建者">
+        <NDescriptionsItem label="Created By">
           <!-- {{ formData.createUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -114,10 +114,10 @@ defineExpose({
             <NText>{{ formData.createUserName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新时间">
+        <NDescriptionsItem label="Updated At">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新人">
+        <NDescriptionsItem label="Updated By">
           <!-- {{ formData.updateUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -135,7 +135,7 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
         </NSpace>
       </template>

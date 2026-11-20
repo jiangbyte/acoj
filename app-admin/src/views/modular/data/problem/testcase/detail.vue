@@ -4,12 +4,12 @@ import { useDataTestCaseFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close'])
 
-// 懒加载重量级组件
+// Lazy-load heavy components
 const CodeEditor = defineAsyncComponent({
   loader: () => import('@/components/common/editor/code/CodeEditor.vue'),
   // loader: () =>
   //   new Promise((resolve) => {
-  //     // 模拟 3 秒延迟
+  //     // Simulate a three-second delay
   //     setTimeout(() => {
   //       resolve(import('@/components/common/editor/code/CodeEditor.vue'))
   //     }, 3000)
@@ -24,7 +24,7 @@ const CodeEditor = defineAsyncComponent({
           justifyContent: 'center',
         },
       }, [
-        h(NSpin, { size: 'small', description: '代码预览器加载中...' }, { }),
+        h(NSpin, { size: 'small', description: 'Loading code preview...' }, { }),
       ])
     },
   },
@@ -52,48 +52,48 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="详情">
+    <NDrawerContent title="Details">
       <NDescriptions label-placement="left" bordered :column="1">
-        <NDescriptionsItem label="主键">
+        <NDescriptionsItem label="ID">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题目">
+        <NDescriptionsItem label="Problem">
           {{ formData.problemIdName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="用例标识">
+        <NDescriptionsItem label="Case ID">
           {{ formData.caseSign }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="输入数据">
+        <NDescriptionsItem label="Input Data">
           <!-- {{ formData.inputData }} -->
           <CodeEditor :model-value="formData.inputData" height="200px" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="期望输出">
+        <NDescriptionsItem label="Expected Output">
           <CodeEditor :model-value="formData.expectedOutput" height="200px" />
           <!-- {{ formData.expectedOutput }} -->
         </NDescriptionsItem>
 
-        <NDescriptionsItem label="是否样例">
+        <NDescriptionsItem label="Sample">
           {{ formData.isSampleName }}
         </NDescriptionsItem>
-        <!-- <NDescriptionsItem label="输入文件路径">
+        <!-- <NDescriptionsItem label="Input File Path">
           {{ formData.inputFilePath }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="输入文件大小">
+        <NDescriptionsItem label="Input File Size">
           {{ formData.inputFileSize }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="输出文件路径">
+        <NDescriptionsItem label="Output File Path">
           {{ formData.outputFilePath }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="输出文件大小">
+        <NDescriptionsItem label="Output File Size">
           {{ formData.outputFileSize }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="分值">
+        <NDescriptionsItem label="Score">
           {{ formData.score }}
         </NDescriptionsItem> -->
-        <NDescriptionsItem label="创建时间">
+        <NDescriptionsItem label="Created At">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建者">
+        <NDescriptionsItem label="Created By">
           <!-- {{ formData.createUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -104,10 +104,10 @@ defineExpose({
             <NText>{{ formData.createUserName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新时间">
+        <NDescriptionsItem label="Updated At">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新人">
+        <NDescriptionsItem label="Updated By">
           <!-- {{ formData.updateUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -125,7 +125,7 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
         </NSpace>
       </template>

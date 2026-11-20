@@ -10,11 +10,11 @@ const props = defineProps<{
   buttontext?: string
   type?: 'primary' | 'default' | 'info' | 'success' | 'warning' | 'error'
   color?: string
-  /** 图片大小上限（MB），默认 5 */
+  /** Maximum image size in MB; default is 5 */
   maxSizeMb?: number
-  /** 开启裁剪（头像建议开启） */
+  /** Enable cropping (recommended for avatars) */
   enableCrop?: boolean
-  /** 裁剪宽高比，默认 1 */
+  /** Crop aspect ratio; default is 1 */
   cropAspect?: number
 }>()
 
@@ -41,7 +41,7 @@ function openFileDialog() {
 }
 
 /**
- * 选文件：校验 →（可选）1:1 裁剪 → 上传
+ * Select a file, validate it, optionally crop to 1:1, then upload
  */
 async function onFileChange(event: Event) {
   const input = event.target as HTMLInputElement
@@ -53,12 +53,12 @@ async function onFileChange(event: Event) {
   input.value = ''
 
   if (props.isImage !== false && !raw.type.startsWith('image/')) {
-    window.$message?.error('请上传图片文件')
+    window.$message?.error('Please upload an image')
     emit('error', new Error('invalid type'))
     return
   }
   if (raw.size > maxBytes.value) {
-    window.$message?.error(`图片大小不能超过 ${props.maxSizeMb ?? 5}MB`)
+    window.$message?.error(`Image size cannot exceed ${props.maxSizeMb ?? 5}MB`)
     emit('error', new Error('file too large'))
     return
   }
@@ -82,7 +82,7 @@ function onCropCancel() {
 }
 
 /**
- * 实际上传并回传对象名 / 访问 URL
+ * Upload and return the object name or access URL
  */
 async function doUpload(raw: File) {
   isUploading.value = true
@@ -94,18 +94,18 @@ async function doUpload(raw: File) {
     uploadProgress.value = 100
 
     if (!success || (!data?.filename && !data?.url)) {
-      throw new Error(errMsg || '上传失败：未返回文件信息')
+      throw new Error(errMsg || 'Upload failed: no file information returned')
     }
 
     const objectName = data.filename || data.url
     const displayUrl = data.url || objectName
     emit('update:modelValue', objectName)
     emit('success', objectName, displayUrl)
-    window.$message?.success('上传成功')
+    window.$message?.success('Uploaded successfully')
   }
   catch (error) {
     console.error('Upload failed:', error)
-    window.$message?.error(error instanceof Error ? error.message : '上传失败')
+    window.$message?.error(error instanceof Error ? error.message : 'Upload failed')
     emit('error', error instanceof Error ? error : new Error('Upload failed'))
   }
   finally {
@@ -133,7 +133,7 @@ async function doUpload(raw: File) {
       :disabled="isUploading"
       @click="openFileDialog"
     >
-      {{ buttontext || '上传文件' }}
+      {{ buttontext || 'Upload File' }}
     </NButton>
     <NProgress
       v-if="isUploading"

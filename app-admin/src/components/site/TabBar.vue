@@ -39,24 +39,24 @@ const tabStore = useTabStore()
 //   tabStore.closeTab(path)
 // }
 
-// 切换标签页
+// Switch tabs
 function handleTabChange(path: string) {
   router.push(path)
   tabStore.setCurrent(path)
 }
 
-// 关闭标签页
+// Close a tab
 function handleClose(name: string) {
   tabStore.closeTab(name)
 }
 
 const suffixOptions = [
   {
-    label: '关闭所有标签',
+    label: 'Close All Tabs',
     key: 'closeAll',
   },
   {
-    label: '关闭其他标签',
+    label: 'Close Other Tabs',
     key: 'closeOther',
   },
 ]
@@ -108,7 +108,7 @@ function handleSelect(key: string | number) {
     @update:value="handleTabChange"
     @close="handleClose"
   >
-    <!-- 固定的标签页 -->
+    <!-- Pinned tabs -->
     <n-tab
       v-for="item in tabStore.pinedTabs"
       :key="item.path"
@@ -123,7 +123,7 @@ function handleSelect(key: string | number) {
       </template>
     </n-tab>
 
-    <!-- 普通标签页 -->
+    <!-- Regular tabs -->
     <n-tab
       v-for="item in tabStore.tabs"
       :key="item.path"

@@ -10,37 +10,37 @@ const { sysArticleDefaultData, sysArticleAdd, sysArticleEdit } = useSysArticleFe
 const formData = ref<any>({ ...sysArticleDefaultData })
 const rules = {
   title: [
-    { required: true, message: '请输入标题', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Title', trigger: ['input', 'blur'] },
   ],
   subtitle: [
-    { required: true, message: '请输入子标题', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Subtitle', trigger: ['input', 'blur'] },
   ],
   cover: [
-    { required: true, message: '请输入封面', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Cover', trigger: ['input', 'blur'] },
   ],
   author: [
-    { required: true, message: '请输入作者', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Author', trigger: ['input', 'blur'] },
   ],
   summary: [
-    { required: true, message: '请输入摘要', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Summary', trigger: ['input', 'blur'] },
   ],
   sort: [
-    { required: true, message: '请输入排序', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Sort Order', type: 'number', trigger: ['input', 'blur'] },
   ],
   toUrl: [
-    { required: true, message: '请输入链接', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Link', trigger: ['input', 'blur'] },
   ],
   parentId: [
-    { required: true, message: '请输入父级', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Parent', trigger: ['input', 'blur'] },
   ],
   type: [
-    { required: true, message: '请输入类型', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Type', trigger: ['input', 'blur'] },
   ],
   category: [
-    { required: true, message: '请输入分类', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Category', trigger: ['input', 'blur'] },
   ],
   content: [
-    { required: true, message: '请输入内容', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Content', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -57,13 +57,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await sysArticleEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await sysArticleAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -89,55 +89,55 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="标题" path="title">
-          <NInput v-model:value="formData.title" placeholder="请输入标题" />
+        <!-- Text input -->
+        <NFormItem label="Title" path="title">
+          <NInput v-model:value="formData.title" placeholder="Enter Title" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="子标题" path="subtitle">
-          <NInput v-model:value="formData.subtitle" placeholder="请输入子标题" />
+        <!-- Text input -->
+        <NFormItem label="Subtitle" path="subtitle">
+          <NInput v-model:value="formData.subtitle" placeholder="Enter Subtitle" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="封面" path="cover">
-          <NInput v-model:value="formData.cover" placeholder="请输入封面" />
+        <!-- Text input -->
+        <NFormItem label="Cover" path="cover">
+          <NInput v-model:value="formData.cover" placeholder="Enter Cover" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="作者" path="author">
-          <NInput v-model:value="formData.author" placeholder="请输入作者" />
+        <!-- Text input -->
+        <NFormItem label="Author" path="author">
+          <NInput v-model:value="formData.author" placeholder="Enter Author" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="摘要" path="summary">
-          <NInput v-model:value="formData.summary" placeholder="请输入摘要" />
+        <!-- Text input -->
+        <NFormItem label="Summary" path="summary">
+          <NInput v-model:value="formData.summary" placeholder="Enter Summary" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="排序" path="sort">
-          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="请输入排序" />
+        <!-- Number input -->
+        <NFormItem label="Sort Order" path="sort">
+          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="Enter Sort Order" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="链接" path="toUrl">
-          <NInput v-model:value="formData.toUrl" placeholder="请输入链接" />
+        <!-- Text input -->
+        <NFormItem label="Link" path="toUrl">
+          <NInput v-model:value="formData.toUrl" placeholder="Enter Link" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="父级" path="parentId">
-          <NInput v-model:value="formData.parentId" placeholder="请输入父级" />
+        <!-- Text input -->
+        <NFormItem label="Parent" path="parentId">
+          <NInput v-model:value="formData.parentId" placeholder="Enter Parent" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="类型" path="type">
-          <NInput v-model:value="formData.type" placeholder="请输入类型" />
+        <!-- Text input -->
+        <NFormItem label="Type" path="type">
+          <NInput v-model:value="formData.type" placeholder="Enter Type" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="分类" path="category">
-          <NInput v-model:value="formData.category" placeholder="请输入分类" />
+        <!-- Text input -->
+        <NFormItem label="Category" path="category">
+          <NInput v-model:value="formData.category" placeholder="Enter Category" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="内容" path="content">
-          <NInput v-model:value="formData.content" placeholder="请输入内容" />
+        <!-- Text input -->
+        <NFormItem label="Content" path="content">
+          <NInput v-model:value="formData.content" placeholder="Enter Content" />
         </NFormItem>
       </NForm>
       <template #footer>
@@ -146,13 +146,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

@@ -16,7 +16,7 @@ watch(
 )
 
 /**
- * 仅叶子菜单可被选中；点目录只展开，不改路由、不改选中项。
+ * Only leaf menus can be selected; selecting a directory only expands it without changing the route or selection.
  */
 function hasMenuChildren(option: MenuOption | null | undefined) {
   return !!(option?.children && option.children.length)
@@ -47,7 +47,7 @@ function handleMenuUpdate(key: string | number) {
 }
 
 /**
- * Ant Design / SmartAdmin dark Menu 色板。
+ * Ant Design / SmartAdmin dark Menu palette。
  * @see https://github.com/ant-design/ant-design/blob/master/components/menu/style/theme.ts
  */
 const menuThemeOverrides = {
@@ -102,14 +102,14 @@ const menuThemeOverrides = {
   border-right: 0;
 }
 
-/* 保留 NMenu 默认垂直间距 */
+/* Keep the default NMenu vertical spacing */
 
 .admin-sider-menu :deep(.n-menu-item-content:not(.n-menu-item-content--disabled):hover) {
   color: #fff !important;
   background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-/* 展开区整块更深底；子项透明，缝隙同色 */
+/* Use a darker expanded area with transparent child items and matching gaps */
 .admin-sider-menu :deep(.n-submenu-children) {
   background-color: #000c17 !important;
 }
@@ -119,8 +119,8 @@ const menuThemeOverrides = {
 }
 
 /*
- * 层级缩进（对齐 Ant Design / SmartAdmin）：
- * 一级 24px，二级 48px，三级 72px
+ * Hierarchy indentation (aligned with Ant Design and SmartAdmin):
+ * level 1: 24px, level 2: 48px, level 3: 72px
  */
 .admin-sider-menu :deep(.n-menu-item-content) {
   padding-left: 24px !important;

@@ -6,16 +6,16 @@ import { setupPinia } from '@/stores'
 import { setupRouter } from '@/router'
 
 async function setupApp() {
-  // Vue实例
+  // Vue instance
   const app = createApp(App)
 
-  // 引入Pinia
+  // Install Pinia
   await setupPinia(app)
 
-  // 引入路由
+  // Install the router
   await setupRouter(app)
 
-  // 挂载Vue
+  // Mount Vue
   app.mount('#app')
 }
 

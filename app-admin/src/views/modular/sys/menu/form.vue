@@ -12,31 +12,31 @@ const { sysMenuDefaultData, sysMenuAdd, sysMenuEdit } = useSysMenuFetch()
 const formData = ref<any>({ ...sysMenuDefaultData })
 const rules = {
   pid: [
-    // { required: true, message: '请输入父菜单ID', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Parent Menu ID', trigger: ['input', 'blur'] },
   ],
   name: [
-    { required: true, message: '请输入菜单名称', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Menu Name', trigger: ['input', 'blur'] },
   ],
   path: [
-    { required: true, message: '请输入路由路径', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Route Path', trigger: ['input', 'blur'] },
   ],
   // componentPath: [
-  //   { required: true, message: '请输入组件路径', trigger: ['input', 'blur'] },
+  //   { required: true, message: 'Enter Component Path', trigger: ['input', 'blur'] },
   // ],
   title: [
-    { required: true, message: '请输入菜单标题', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Menu Title', trigger: ['input', 'blur'] },
   ],
   icon: [
-    { required: true, message: '请输入图标', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Icon', trigger: ['input', 'blur'] },
   ],
   sort: [
-    // { required: true, message: '请输入排序', type: 'number', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Sort Order', type: 'number', trigger: ['input', 'blur'] },
   ],
   menuType: [
-    { required: true, message: '请输入菜单类型', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Menu Type', type: 'number', trigger: ['input', 'blur'] },
   ],
   // exJson: [
-  //   { required: true, message: '请输入额外信息', trigger: ['input', 'blur'] },
+  //   { required: true, message: 'Enter Extra Information', trigger: ['input', 'blur'] },
   // ],
 }
 function doClose() {
@@ -53,13 +53,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await sysMenuEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await sysMenuAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -93,30 +93,30 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="菜单ID" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入菜单ID" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="Menu ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter Menu ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="图标" path="icon">
+        <!-- Text input -->
+        <NFormItem label="Icon" path="icon">
           <NIcon size="20" class="mr-2">
             <Icon :icon="formData.icon" />
           </NIcon>
-          <NInput v-model:value="formData.icon" placeholder="请输入图标" />
+          <NInput v-model:value="formData.icon" placeholder="Enter Icon" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="菜单标题" path="title">
-          <NInput v-model:value="formData.title" placeholder="请输入菜单标题" />
+        <!-- Text input -->
+        <NFormItem label="Menu Title" path="title">
+          <NInput v-model:value="formData.title" placeholder="Enter Menu Title" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="菜单名称" path="name">
-          <NInput v-model:value="formData.name" placeholder="请输入菜单名称" />
+        <!-- Text input -->
+        <NFormItem label="Menu Name" path="name">
+          <NInput v-model:value="formData.name" placeholder="Enter Menu Name" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="父菜单" path="pid">
-          <!-- <NInput v-model:value="formData.pid" placeholder="请输入父菜单ID" /> -->
+        <!-- Text input -->
+        <NFormItem label="Parent Menu" path="pid">
+          <!-- <NInput v-model:value="formData.pid" placeholder="Enter Parent Menu ID" /> -->
           <n-tree-select
             v-model:value="formData.pid"
             :options="menuOptions"
@@ -126,13 +126,13 @@ defineExpose({
             clearable
           />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="路由路径" path="path">
-          <NInput v-model:value="formData.path" placeholder="请输入路由路径" />
+        <!-- Text input -->
+        <NFormItem label="Route Path" path="path">
+          <NInput v-model:value="formData.path" placeholder="Enter Route Path" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="组件路径" path="componentPath">
-          <NInput v-model:value="formData.componentPath" placeholder="请输入组件路径">
+        <!-- Text input -->
+        <NFormItem label="Component Path" path="componentPath">
+          <NInput v-model:value="formData.componentPath" placeholder="Enter Component Path">
             <template #prefix>
               <n-text depth="3">
                 @/src/view
@@ -140,57 +140,57 @@ defineExpose({
             </template>
           </NInput>
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="排序" path="sort">
-          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="请输入排序" />
+        <!-- Number input -->
+        <NFormItem label="Sort Order" path="sort">
+          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="Enter Sort Order" />
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="缓存" path="keepAlive">
+        <!-- Boolean selector -->
+        <NFormItem label="Cache" path="keepAlive">
           <NRadioGroup v-model:value="formData.keepAlive">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="可见" path="visible">
+        <!-- Boolean selector -->
+        <NFormItem label="Visible" path="visible">
           <NRadioGroup v-model:value="formData.visible">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="固定" path="pined">
+        <!-- Boolean selector -->
+        <NFormItem label="Pinned" path="pined">
           <NRadioGroup v-model:value="formData.pined">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="菜单类型" path="menuType">
-          <!-- <NInputNumber v-model:value="formData.menuType" :min="0" :max="100" placeholder="请输入菜单类型" /> -->
+        <!-- Number input -->
+        <NFormItem label="Menu Type" path="menuType">
+          <!-- <NInputNumber v-model:value="formData.menuType" :min="0" :max="100" placeholder="Enter Menu Type" /> -->
           <NRadioGroup v-model:value="formData.menuType">
             <NRadio :value="0">
-              目录
+              Directory
             </NRadio>
             <NRadio :value="1">
-              菜单
+              Menu
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <NFormItem label="头部参数" path="parameters">
-          <!-- <NInput v-model:value="formData.parameters" type="textarea" placeholder="请输入头部参数" /> -->
+        <NFormItem label="Header Parameters" path="parameters">
+          <!-- <NInput v-model:value="formData.parameters" type="textarea" placeholder="Enter Header Parameters" /> -->
           <n-flex vertical class="w-full">
             <CodeEditor
               v-model="formData.parameters"
@@ -198,15 +198,15 @@ defineExpose({
               style="height: 300px;"
             />
             <n-alert type="info" show-icon>
-              请使用JSON格式，可用参数：<br>
-              href_inner: 外部链接（当前页面内嵌）<br>
-              href_outter: 外部链接（新窗口打开）
+              Use JSON format. Available parameters:<br>
+              href_inner: External link (embedded in current page)<br>
+              href_outter: External link (open in new window)
             </n-alert>
           </n-flex>
         </NFormItem>
-        <!-- 输入框 -->
-        <!-- <NFormItem label="额外信息" path="exJson">
-          <NInput v-model:value="formData.exJson" placeholder="请输入额外信息" />
+        <!-- Text input -->
+        <!-- <NFormItem label="Extra Information" path="exJson">
+          <NInput v-model:value="formData.exJson" placeholder="Enter Extra Information" />
         </NFormItem> -->
       </NForm>
       <template #footer>
@@ -215,13 +215,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

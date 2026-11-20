@@ -51,9 +51,9 @@ public interface DataProblemMapper extends BaseMapper<DataProblem> {
             "difficulty, " +
             "COUNT(*) as count, " +
             "CASE difficulty " +
-            "    WHEN 1 THEN '简单' " +
-            "    WHEN 2 THEN '中等' " +
-            "    WHEN 3 THEN '困难' " +
+            "    WHEN 1 THEN 'Easy' " +
+            "    WHEN 2 THEN 'Medium' " +
+            "    WHEN 3 THEN 'Hard' " +
             "END as difficulty_name, " +
             "ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM data_problem WHERE is_visible = true AND is_public = true), 2) as percentage " +
             "FROM data_problem " +

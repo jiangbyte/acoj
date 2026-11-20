@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 系统活动/日志记录 API请求
+ * System Activity and Log API requests
  */
 export function useSysLogFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useSysLogFetch() {
   const table = 'sys/log'
 
   /*
-     * 系统活动/日志记录 默认数据
+     * System Activity and Log default data
      */
   const sysLogDefaultData = {
     id: '',
@@ -31,12 +31,12 @@ export function useSysLogFetch() {
   }
   return {
     /*
-    * 系统活动/日志记录 默认数据
+    * System Activity and Log default data
     */
     sysLogDefaultData,
 
     /*
-     * 系统活动/日志记录 分页接口
+     * System Activity and Log pagination endpoint
      */
     sysLogPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -47,28 +47,28 @@ export function useSysLogFetch() {
     },
 
     /*
-     * 系统活动/日志记录 新增接口
+     * System Activity and Log create endpoint
      */
     sysLogAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 系统活动/日志记录 修改接口
+     * System Activity and Log update endpoint
      */
     sysLogEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 系统活动/日志记录 删除接口
+     * System Activity and Log delete endpoint
      */
     sysLogDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 系统活动/日志记录 详情接口
+     * System Activity and Log details endpoint
      */
     sysLogDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

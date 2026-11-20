@@ -11,43 +11,43 @@ const { dataContestDefaultData, dataContestAdd, dataContestEdit } = useDataConte
 const formData = ref<any>({ ...dataContestDefaultData })
 const rules = {
   title: [
-    { required: true, message: '请输入竞赛标题', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Contest Title', trigger: ['input', 'blur'] },
   ],
   description: [
-    { required: true, message: '请输入竞赛描述', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Contest Description', trigger: ['input', 'blur'] },
   ],
   ruleType: [
-    { required: true, message: '请输入规则类型', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Rule Type', trigger: ['input', 'blur'] },
   ],
   category: [
-    { required: true, message: '请输入分类', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Category', trigger: ['input', 'blur'] },
   ],
   cover: [
-    { required: true, message: '请输入封面', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Cover', trigger: ['input', 'blur'] },
   ],
   maxTeamMembers: [
-    { required: true, message: '请输入最大团队成员数', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Maximum Team Size', type: 'number', trigger: ['input', 'blur'] },
   ],
   password: [
-    { required: true, message: '请输入访问密码', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Access Password', trigger: ['input', 'blur'] },
   ],
   frozenTime: [
-    { required: true, message: '请输入封榜时间(分钟)', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Scoreboard Freeze (minutes)', type: 'number', trigger: ['input', 'blur'] },
   ],
   penaltyTime: [
-    { required: true, message: '请输入罚时(分钟)', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Penalty (minutes)', type: 'number', trigger: ['input', 'blur'] },
   ],
   allowedLanguages: [{
     type: 'array',
     required: true,
     trigger: ['blur', 'change'],
-    message: '请选择语言',
+    message: 'Select Language',
   }],
   status: [
-    { required: true, message: '请输入状态', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Status', trigger: ['input', 'blur'] },
   ],
   sort: [
-    { required: true, message: '请输入排序', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Sort Order', type: 'number', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -68,13 +68,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await dataContestEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await dataContestAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -109,118 +109,118 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" :default-width="800" resizable @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="竞赛标题" path="title">
-          <NInput v-model:value="formData.title" placeholder="请输入竞赛标题" />
+        <!-- Text input -->
+        <NFormItem label="Contest Title" path="title">
+          <NInput v-model:value="formData.title" placeholder="Enter Contest Title" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="竞赛描述" path="description">
-          <!-- <NInput v-model:value="formData.description" placeholder="请输入竞赛描述" /> -->
+        <!-- Text input -->
+        <NFormItem label="Contest Description" path="description">
+          <!-- <NInput v-model:value="formData.description" placeholder="Enter Contest Description" /> -->
           <MDEditor v-model="formData.description" />
         </NFormItem>
-        <!-- 输入框 -->
-        <!-- <NFormItem label="规则类型" path="ruleType">
-          <NInput v-model:value="formData.ruleType" placeholder="请输入规则类型" />
+        <!-- Text input -->
+        <!-- <NFormItem label="Rule Type" path="ruleType">
+          <NInput v-model:value="formData.ruleType" placeholder="Enter Rule Type" />
         </NFormItem> -->
-        <!-- 输入框 -->
-        <NFormItem label="分类" path="category">
-          <NInput v-model:value="formData.category" placeholder="请输入分类" />
+        <!-- Text input -->
+        <NFormItem label="Category" path="category">
+          <NInput v-model:value="formData.category" placeholder="Enter Category" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="封面" path="cover">
+        <!-- Text input -->
+        <NFormItem label="Cover" path="cover">
           <FileUpload v-model="formData.cover" :is-image="true" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <!-- <NFormItem label="最大团队成员数" path="maxTeamMembers">
-          <NInputNumber v-model:value="formData.maxTeamMembers" :min="0" :max="100" placeholder="请输入最大团队成员数" />
+        <!-- Number input -->
+        <!-- <NFormItem label="Maximum Team Size" path="maxTeamMembers">
+          <NInputNumber v-model:value="formData.maxTeamMembers" :min="0" :max="100" placeholder="Enter Maximum Team Size" />
         </NFormItem> -->
-        <!-- Boolean 选择框 -->
-        <!-- <NFormItem label="是否团队赛" path="isTeamContest">
+        <!-- Boolean selector -->
+        <!-- <NFormItem label="Team Contest" path="isTeamContest">
           <NRadioGroup v-model:value="formData.isTeamContest">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem> -->
-        <!-- Boolean 选择框 -->
-        <NFormItem label="是否公开" path="isPublic">
+        <!-- Boolean selector -->
+        <NFormItem label="Public" path="isPublic">
           <NRadioGroup v-model:value="formData.isPublic">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem v-if="!formData.isPublic" label="访问密码" path="password">
-          <NInput v-model:value="formData.password" placeholder="请输入访问密码" />
+        <!-- Text input -->
+        <NFormItem v-if="!formData.isPublic" label="Access Password" path="password">
+          <NInput v-model:value="formData.password" placeholder="Enter Access Password" />
         </NFormItem>
-        <NFormItem label="上架" path="isVisible">
+        <NFormItem label="Published" path="isVisible">
           <NRadioGroup v-model:value="formData.isVisible">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- 日期选择 -->
-        <NFormItem label="报名时间" path="registerTime">
+        <!-- Date selector -->
+        <NFormItem label="Registration Period" path="registerTime">
           <NDatePicker v-model:value="formData.registerTime" type="datetimerange" />
         </NFormItem>
-        <NFormItem label="竞赛时间" path="contestTime">
+        <NFormItem label="Contest Period" path="contestTime">
           <NDatePicker v-model:value="formData.contestTime" type="datetimerange" />
         </NFormItem>
-        <!-- <NFormItem label="报名开始时间" path="registerStartTime">
+        <!-- <NFormItem label="Registration Starts" path="registerStartTime">
           <NDatePicker v-model:value="formData.registerStartTime" type="datetime" />
         </NFormItem>
-        <NFormItem label="报名结束时间" path="registerEndTime">
+        <NFormItem label="Registration Ends" path="registerEndTime">
           <NDatePicker v-model:value="formData.registerEndTime" type="datetime" />
         </NFormItem>
-        <NFormItem label="竞赛开始时间" path="contestStartTime">
+        <NFormItem label="Contest Starts" path="contestStartTime">
           <NDatePicker v-model:value="formData.contestStartTime" type="datetime" />
         </NFormItem>
-        <NFormItem label="竞赛结束时间" path="contestEndTime">
+        <NFormItem label="Contest Ends" path="contestEndTime">
           <NDatePicker v-model:value="formData.contestEndTime" type="datetime" />
         </NFormItem> -->
-        <!-- 数字输入 -->
-        <!-- <NFormItem label="封榜时间(分钟)" path="frozenTime">
-          <NInputNumber v-model:value="formData.frozenTime" :min="0" :max="100" placeholder="请输入封榜时间(分钟)" />
+        <!-- Number input -->
+        <!-- <NFormItem label="Scoreboard Freeze (minutes)" path="frozenTime">
+          <NInputNumber v-model:value="formData.frozenTime" :min="0" :max="100" placeholder="Enter Scoreboard Freeze (minutes)" />
         </NFormItem> -->
-        <!-- 数字输入 -->
-        <!-- <NFormItem label="罚时(分钟)" path="penaltyTime">
-          <NInputNumber v-model:value="formData.penaltyTime" :min="0" :max="100" placeholder="请输入罚时(分钟)" />
+        <!-- Number input -->
+        <!-- <NFormItem label="Penalty (minutes)" path="penaltyTime">
+          <NInputNumber v-model:value="formData.penaltyTime" :min="0" :max="100" placeholder="Enter Penalty (minutes)" />
         </NFormItem> -->
-        <!-- 输入框 -->
-        <!-- <NFormItem label="允许语言" path="allowedLanguages">
+        <!-- Text input -->
+        <!-- <NFormItem label="Allowed Languages" path="allowedLanguages">
           <NSelect
             v-model:value="formData.allowedLanguages"
-            placeholder="请选择允许语言"
+            placeholder="Select Allowed Languages"
             :options="allowLanguageOptions"
             multiple
             clearable
             remote
           />
         </NFormItem> -->
-        <!-- 输入框 -->
-        <!--        <NFormItem label="状态" path="status"> -->
-        <!--          <NInput v-model:value="formData.status" placeholder="请输入状态" /> -->
+        <!-- Text input -->
+        <!--        <NFormItem label="Status" path="status"> -->
+        <!--          <NInput v-model:value="formData.status" placeholder="Enter Status" /> -->
         <!--        </NFormItem> -->
-        <!-- 数字输入 -->
-        <!--        <NFormItem label="排序" path="sort"> -->
-        <!--          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="请输入排序" /> -->
+        <!-- Number input -->
+        <!--        <NFormItem label="Sort Order" path="sort"> -->
+        <!--          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="Enter Sort Order" /> -->
         <!--        </NFormItem> -->
       </NForm>
       <template #footer>
@@ -229,13 +229,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

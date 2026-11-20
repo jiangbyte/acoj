@@ -23,7 +23,7 @@ async function doSubmit() {
     menuIds: assignResource.value,
   }).then(({ success }) => {
     if (success) {
-      window.$message.success('分配成功')
+      window.$message.success('Assigned successfully')
       emit('submit', true)
       doClose()
       show.value = false
@@ -53,26 +53,26 @@ function doOpen(row: any) {
 
   isLoading.value = true
   useSysMenuFetch().sysMenuAuthList().then(({ data }) => {
-    // 构建树形结构
+    // Build the tree
     const menuTree = buildMenuTree(data)
 
-    // 递归过滤：如果父级不可见，子级也要隐藏
+    // Recursively filter children when their parent is hidden
     authResource.value = filterInvisibleMenus(menuTree)
     isLoading.value = false
   })
 }
 
-// 构建树形结构
+// Build the tree
 function buildMenuTree(flatMenus: any[]) {
   const menuMap = new Map()
   const tree: any[] = []
 
-  // 第一遍：将所有菜单项存入map，并初始化children数组
+  // First pass: store menu items in a map and initialize children arrays
   flatMenus.forEach((menu) => {
     menuMap.set(menu.id, { ...menu, children: [] })
   })
 
-  // 第二遍：构建父子关系
+  // Second pass: build parent-child relationships
   flatMenus.forEach((menu) => {
     const menuItem = menuMap.get(menu.id)
 
@@ -90,15 +90,15 @@ function buildMenuTree(flatMenus: any[]) {
   return tree
 }
 
-// 递归过滤不可见菜单
+// Recursively filter hidden menus
 function filterInvisibleMenus(menus: any[]): any[] {
   return menus
-    .filter(menu => menu.visible) // 只保留可见的菜单
+    .filter(menu => menu.visible) // Keep only visible menus
     .map((menu) => {
-      // 深拷贝菜单项，避免修改原始数据
+      // Clone menu items to avoid modifying source data
       const filteredMenu = { ...menu }
 
-      // 递归过滤子菜单
+      // Recursively filter child menus
       if (filteredMenu.children && filteredMenu.children.length > 0) {
         filteredMenu.children = filterInvisibleMenus(filteredMenu.children)
       }
@@ -117,11 +117,11 @@ const columns: DataTableColumns<any> = [
     type: 'selection',
   },
   // {
-  //   title: '父菜单ID',
+  //   title: 'Parent Menu ID',
   //   key: 'pid',
   // },
   {
-    title: '菜单',
+    title: 'Menu',
     key: 'icon',
     // render: (row: any) => {
     //   return h(NIcon, { size: '18' }, { default: () => h(Icon, { icon: row.icon }) })
@@ -134,7 +134,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '菜单类型',
+    title: 'Menu Type',
     key: 'menuTypeName',
     render: (row) => {
       return h(NTag, {
@@ -143,7 +143,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   // {
-  //   title: '菜单标题',
+  //   title: 'Menu Title',
   //   key: 'title',
   //   // width: 120,
   //   ellipsis: {
@@ -151,33 +151,33 @@ const columns: DataTableColumns<any> = [
   //   },
   // },
   {
-    title: '名称',
+    title: 'Name',
     key: 'name',
     ellipsis: {
       tooltip: true,
     },
   },
   // {
-  //   title: '路由路径',
+  //   title: 'Route Path',
   //   key: 'path',
   //   ellipsis: {
   //     tooltip: true,
   //   },
   // },
   // {
-  //   title: '组件路径',
+  //   title: 'Component Path',
   //   key: 'componentPath',
   //   ellipsis: {
   //     tooltip: true,
   //   },
   // },
   {
-    title: '排序',
+    title: 'Sort Order',
     key: 'sort',
     width: 80,
   },
   // {
-  //   title: '可见',
+  //   title: 'Visible',
   //   key: 'visibleName',
   //   width: 80,
   //   render: (row) => {
@@ -187,7 +187,7 @@ const columns: DataTableColumns<any> = [
   //   },
   // },
   // {
-  //   title: '缓存',
+  //   title: 'Cache',
   //   key: 'keepAliveName',
   //   width: 80,
   //   render: (row) => {
@@ -197,7 +197,7 @@ const columns: DataTableColumns<any> = [
   //   },
   // },
   // {
-  //   title: '固定',
+  //   title: 'Pinned',
   //   key: 'pinedName',
   //   width: 80,
   //   render: (row) => {
@@ -207,7 +207,7 @@ const columns: DataTableColumns<any> = [
   //   },
   // },
   // {
-  //   title: '额外信息',
+  //   title: 'Extra Information',
   //   key: 'exJson',
   // },
 ]
@@ -215,7 +215,7 @@ const columns: DataTableColumns<any> = [
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="资源分配">
+    <NDrawerContent title="Resource Assignment">
       <NDataTable
         v-model:checked-row-keys="assignResource"
         :columns="columns"
@@ -233,13 +233,13 @@ const columns: DataTableColumns<any> = [
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

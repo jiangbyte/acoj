@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 竞赛题目 API请求
+ * Contest Problem API requests
  */
 export function useDataContestProblemFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useDataContestProblemFetch() {
   const table = 'data/contest/problem'
 
   /*
-     * 竞赛题目 默认数据
+     * Contest Problem default data
      */
   const dataContestProblemDefaultData = {
     id: '',
@@ -28,12 +28,12 @@ export function useDataContestProblemFetch() {
   }
   return {
     /*
-    * 竞赛题目 默认数据
+    * Contest Problem default data
     */
     dataContestProblemDefaultData,
 
     /*
-     * 竞赛题目 分页接口
+     * Contest Problem pagination endpoint
      */
     dataContestProblemPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -44,21 +44,21 @@ export function useDataContestProblemFetch() {
     },
 
     /*
-     * 竞赛题目 新增接口
+     * Contest Problem create endpoint
      */
     dataContestProblemAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 竞赛题目 修改接口
+     * Contest Problem update endpoint
      */
     dataContestProblemEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 竞赛题目 删除接口
+     * Contest Problem delete endpoint
      */
     dataContestProblemDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
@@ -72,7 +72,7 @@ export function useDataContestProblemFetch() {
     },
 
     /*
-     * 竞赛题目 详情接口
+     * Contest Problem details endpoint
      */
     dataContestProblemDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

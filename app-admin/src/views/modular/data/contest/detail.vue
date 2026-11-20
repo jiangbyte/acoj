@@ -24,76 +24,76 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="详情">
+    <NDrawerContent title="Details">
       <NDescriptions label-placement="left" bordered :column="1">
-        <NDescriptionsItem label="主键">
+        <NDescriptionsItem label="ID">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="竞赛标题">
+        <NDescriptionsItem label="Contest Title">
           {{ formData.title }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="竞赛描述">
+        <NDescriptionsItem label="Contest Description">
           <MDViewer :model-value="formData.description" />
         </NDescriptionsItem>
-        <!-- <NDescriptionsItem label="规则类型">
+        <!-- <NDescriptionsItem label="Rule Type">
           {{ formData.ruleType }}
         </NDescriptionsItem> -->
-        <NDescriptionsItem label="分类">
+        <NDescriptionsItem label="Category">
           {{ formData.category }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="封面">
+        <NDescriptionsItem label="Cover">
           <NImage :src="formData.cover" width="100" height="100" object-fit="cover" />
         </NDescriptionsItem>
-        <!-- <NDescriptionsItem label="最大团队成员数">
+        <!-- <NDescriptionsItem label="Maximum Team Size">
           {{ formData.maxTeamMembers }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="是否团队赛">
+        <NDescriptionsItem label="Team Contest">
           {{ formData.isTeamContestName }}
         </NDescriptionsItem> -->
-        <NDescriptionsItem label="是否公开">
+        <NDescriptionsItem label="Public">
           {{ formData.isPublicName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="上架">
+        <NDescriptionsItem label="Published">
           {{ formData.isVisibleName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="访问密码">
+        <NDescriptionsItem label="Access Password">
           {{ formData.password }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="报名开始时间">
+        <NDescriptionsItem label="Registration Starts">
           <NTime :time="Number(formData.registerStartTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="报名结束时间">
+        <NDescriptionsItem label="Registration Ends">
           <NTime :time="Number(formData.registerEndTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="竞赛开始时间">
+        <NDescriptionsItem label="Contest Starts">
           <NTime :time="Number(formData.contestStartTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="竞赛结束时间">
+        <NDescriptionsItem label="Contest Ends">
           <NTime :time="Number(formData.contestEndTime)" />
         </NDescriptionsItem>
-        <!-- <NDescriptionsItem label="封榜时间(分钟)">
+        <!-- <NDescriptionsItem label="Scoreboard Freeze (minutes)">
           {{ formData.frozenTime }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="罚时(分钟)">
+        <NDescriptionsItem label="Penalty (minutes)">
           {{ formData.penaltyTime }}
         </NDescriptionsItem> -->
-        <!-- <NDescriptionsItem label="允许语言">
+        <!-- <NDescriptionsItem label="Allowed Languages">
           <n-space align="center">
             <n-tag v-for="(item, index) in FormatLanguages(formData.allowedLanguages)" :key="index">
               {{ item }}
             </n-tag>
           </n-space>
         </NDescriptionsItem> -->
-        <!-- <NDescriptionsItem label="状态">
+        <!-- <NDescriptionsItem label="Status">
           {{ formData.status }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="排序">
+        <NDescriptionsItem label="Sort Order">
           {{ formData.sort }}
         </NDescriptionsItem> -->
-        <NDescriptionsItem label="创建时间">
+        <NDescriptionsItem label="Created At">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建者">
+        <NDescriptionsItem label="Created By">
           <!-- {{ formData.createUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -104,10 +104,10 @@ defineExpose({
             <NText>{{ formData.createUserName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新时间">
+        <NDescriptionsItem label="Updated At">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新人">
+        <NDescriptionsItem label="Updated By">
           <!-- {{ formData.updateUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -125,7 +125,7 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
         </NSpace>
       </template>

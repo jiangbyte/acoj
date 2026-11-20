@@ -23,7 +23,7 @@ function loadData() {
   })
   useSysDictFetch().sysDictOptions({ dictType: 'SYS_GENDER' }).then(({ data }) => {
     // genderRef.value = data
-    // 对value进行num转换
+    // Convert value to a number
     genderRef.value = data.map((item: { label: string, value: number }) => {
       item.value = Number(item.value)
       return item
@@ -46,17 +46,17 @@ function updateProfileReset() {
   showProfileModal.value = false
 }
 function updateAvatar(objectName: string, displayUrl?: string) {
-  // 1. 先本地回显，避免等接口时头像空白
+  // 1. Update the local avatar first to avoid a blank state while waiting for the API
   if (displayUrl) {
     userInfo.value.avatar = displayUrl
   }
-  // 2. 落库（后端按登录用户更新）
+  // 2. Persist the change (the backend updates the signed-in user)
   useSysUserFetch().sysUserUpdateAvatar({
     id: userInfo.value.id,
     img: objectName,
   }).then(({ success }) => {
     if (success) {
-      window.$message.success('头像更新成功')
+      window.$message.success('Avatar updated')
       loadData()
       window.dispatchEvent(new CustomEvent('acoj:profile-updated'))
     }
@@ -71,7 +71,7 @@ function updateBackground(objectName: string, displayUrl?: string) {
     img: objectName,
   }).then(({ success }) => {
     if (success) {
-      window.$message.success('背景更新成功')
+      window.$message.success('Background updated')
       loadData()
       window.dispatchEvent(new CustomEvent('acoj:profile-updated'))
     }
@@ -92,9 +92,9 @@ function updatePassword() {
       if (valid) {
         passwordData.value.id = userInfo.value.id
         useSysUserFetch().sysUserUpdatePassword(passwordData.value).then(({ success }) => {
-          // window.$message.success('密码更新成功')
+          // window.$message.success('Password updated')
           if (success) {
-            window.$message.success('密码更新成功')
+            window.$message.success('Password updated')
             updatePasswordReset()
           }
         })
@@ -128,7 +128,7 @@ const passwordRules = {
   oldPassword: [
     {
       required: true,
-      message: '请输入旧密码',
+      message: 'Enter current password',
       trigger: ['input', 'blur'],
     },
   ],
@@ -136,7 +136,7 @@ const passwordRules = {
     {
       required: true,
       validator: validatePasswordStartWith,
-      message: '两次密码输入不一致',
+      message: 'Passwords do not match',
       trigger: ['input', 'blur'],
     },
   ],
@@ -144,7 +144,7 @@ const passwordRules = {
     {
       required: true,
       validator: validatePasswordSame,
-      message: '两次密码输入不一致',
+      message: 'Passwords do not match',
       trigger: ['blur', 'password-input'],
     },
   ],
@@ -154,35 +154,35 @@ const profileRules = {
   username: [
     {
       required: true,
-      message: '请输入用户名',
+      message: 'Enter username',
       trigger: ['input', 'blur'],
     },
   ],
   nickname: [
     {
       required: true,
-      message: '请输入昵称',
+      message: 'Enter Nickname',
       trigger: ['input', 'blur'],
     },
   ],
   email: [
     {
       required: true,
-      message: '请输入邮箱',
+      message: 'Enter Email',
       trigger: ['input', 'blur'],
     },
   ],
   quote: [
     {
       required: true,
-      message: '请输入个性签名',
+      message: 'Enter your bio',
       trigger: ['input', 'blur'],
     },
   ],
   gender: [
     {
       required: true,
-      message: '请选择性别',
+      message: 'Select Gender',
       // trigger: ['input', 'blur'],
     },
   ],
@@ -197,7 +197,7 @@ function updateProfile() {
         })
         isEdit.value = false
         showProfileModal.value = false
-        window.$message.success('个人资料更新成功')
+        window.$message.success('Profile updated')
       }
     })
   }
@@ -208,9 +208,9 @@ function updateProfile() {
   <div class="flex flex-col h-full w-full">
     <n-card size="small" class="flex-1 pb-11">
       <NSpace vertical size="large">
-        <!-- 基本信息卡片 -->
+        <!-- Basic information card -->
         <NCard
-          title="基本信息"
+          title="Basic Information"
           class="relative"
           size="small"
           :style="{
@@ -220,9 +220,9 @@ function updateProfile() {
             backgroundRepeat: 'no-repeat',
           }"
         >
-          <!-- 更换背景按钮 - 使用 absolute 定位 -->
+          <!-- Change-background button positioned absolutely -->
           <div class="absolute top-4 right-4">
-            <FileUploadTextButton v-model="userInfo.background" color="white" :is-image="true" buttontext="更换背景" @success="updateBackground" />
+            <FileUploadTextButton v-model="userInfo.background" color="white" :is-image="true" buttontext="Change Background" @success="updateBackground" />
           </div>
           <NSpace vertical size="large">
             <NSpace align="center" :wrap="false">
@@ -239,7 +239,7 @@ function updateProfile() {
                   :is-image="true"
                   :enable-crop="true"
                   :crop-aspect="1"
-                  buttontext="更换头像"
+                  buttontext="Change Avatar"
                   @success="updateAvatar"
                 />
               </NSpace>
@@ -265,10 +265,10 @@ function updateProfile() {
                 </NSpace>
                 <n-space align="center">
                   <NText depth="3">
-                    注册时间: <n-time :time="Number(userInfo.createTime)" />
+                    Registered At: <n-time :time="Number(userInfo.createTime)" />
                   </NText>
                   <NText depth="3">
-                    上次登录时间: <n-time :time="Number(userInfo.loginTime)" />
+                    Last Sign In: <n-time :time="Number(userInfo.loginTime)" />
                   </NText>
                 </n-space>
               </NSpace>
@@ -276,7 +276,7 @@ function updateProfile() {
 
             <NSpace size="small">
               <NText strong>
-                手机号码
+                Phone Number
               </NText>
               <NText depth="3">
                 {{ userInfo?.telephone }}
@@ -284,7 +284,7 @@ function updateProfile() {
             </NSpace>
             <NSpace size="small">
               <NText strong>
-                邮箱地址
+                Email Address
               </NText>
               <NText depth="3">
                 {{ userInfo?.email }}
@@ -292,7 +292,7 @@ function updateProfile() {
             </NSpace>
             <NSpace size="small">
               <NText strong>
-                性别
+                Gender
               </NText>
               <NText depth="3">
                 {{ userInfo?.genderName }}
@@ -300,7 +300,7 @@ function updateProfile() {
             </NSpace>
             <NSpace size="small">
               <NText strong>
-                个性签名
+                Bio
               </NText>
               <NText depth="3">
                 {{ userInfo?.quote }}
@@ -311,7 +311,7 @@ function updateProfile() {
           <template #footer>
             <NSpace justify="end">
               <NButton type="primary" @click="() => { showProfileModal = true, isEdit = true }">
-                编辑信息
+                Edit Profile
               </NButton>
             </NSpace>
           </template>
@@ -320,15 +320,15 @@ function updateProfile() {
         <n-card size="small">
           <template #header>
             <n-h3 class="pb-0 mb-0">
-              安全设置
+              Security
             </n-h3>
           </template>
           <n-space align="center" justify="space-between">
             <n-text depth="3" class="w-full">
-              建议定期更换密码以保证账户安全
+              Change your password regularly to keep your account secure
             </n-text>
             <n-button type="warning" @click="showPasswordModal = true">
-              修改密码
+              Change Password
             </n-button>
           </n-space>
         </n-card>
@@ -340,7 +340,7 @@ function updateProfile() {
       :mask-closable="false"
       preset="card"
       style="width: 600px;"
-      title="信息修改"
+      title="Edit Profile"
       @negative-click="() => { showProfileModal = false }"
       @update:show="updateProfileReset"
     >
@@ -353,58 +353,58 @@ function updateProfile() {
           :rules="profileRules"
         >
           <n-grid cols="12 m:24" :x-gap="24" responsive="screen">
-            <n-form-item-gi :span="12" label="用户名" path="username">
-              <n-input v-model:value="userInfo.username" placeholder="请输入用户名" :disabled="!isEdit" />
+            <n-form-item-gi :span="12" label="username" path="username">
+              <n-input v-model:value="userInfo.username" placeholder="Enter username" :disabled="!isEdit" />
             </n-form-item-gi>
-            <n-form-item-gi :span="12" label="昵称" path="nickname">
-              <n-input v-model:value="userInfo.nickname" placeholder="请输入昵称" :disabled="!isEdit" />
+            <n-form-item-gi :span="12" label="Nickname" path="nickname">
+              <n-input v-model:value="userInfo.nickname" placeholder="Enter Nickname" :disabled="!isEdit" />
             </n-form-item-gi>
-            <n-form-item-gi :span="12" label="电子邮箱" path="email">
-              <n-input v-model:value="userInfo.email" placeholder="请输入电子邮箱" :disabled="!isEdit" />
+            <n-form-item-gi :span="12" label="Email" path="email">
+              <n-input v-model:value="userInfo.email" placeholder="Enter Email" :disabled="!isEdit" />
             </n-form-item-gi>
-            <n-form-item-gi :span="12" label="学号" path="studentNumber">
-              <n-input v-model:value="userInfo.studentNumber" placeholder="请输入学号" :disabled="!isEdit" />
+            <n-form-item-gi :span="12" label="Student ID" path="studentNumber">
+              <n-input v-model:value="userInfo.studentNumber" placeholder="Enter Student ID" :disabled="!isEdit" />
             </n-form-item-gi>
-            <n-form-item-gi :span="12" label="手机号" path="telephone">
-              <n-input v-model:value="userInfo.telephone" placeholder="请输入手机号" :disabled="!isEdit" />
+            <n-form-item-gi :span="12" label="Phone Number" path="telephone">
+              <n-input v-model:value="userInfo.telephone" placeholder="Enter Phone Number" :disabled="!isEdit" />
             </n-form-item-gi>
-            <n-form-item-gi :span="12" label="性别" path="gender">
-              <!-- <n-select v-model:value="userInfo.gender" placeholder="请选择性别" /> -->
+            <n-form-item-gi :span="12" label="Gender" path="gender">
+              <!-- <n-select v-model:value="userInfo.gender" placeholder="Select Gender" /> -->
               <!-- <n-radio-group v-model:value="userInfo.gender" :disabled="!isEdit">
                 <n-space>
                   <n-radio :key="0" :value="0">
-                    未知
+                    Unknown
                   </n-radio>
                   <n-radio :key="1" :value="1">
-                    男
+                    Male
                   </n-radio>
                   <n-radio :key="2" :value="2">
-                    女
+                    Female
                   </n-radio>
                 </n-space>
               </n-radio-group> -->
 
               <NSelect
                 v-model:value="userInfo.gender"
-                placeholder="请选择性别"
+                placeholder="Select Gender"
                 :options="genderRef"
                 :disabled="!isEdit"
               />
             </n-form-item-gi>
-            <n-form-item-gi span="12 m:24" label="个人签名" path="quote">
-              <n-input v-model:value="userInfo.quote" type="textarea" placeholder="请输入个人签名" :disabled="!isEdit" />
+            <n-form-item-gi span="12 m:24" label="Bio" path="quote">
+              <n-input v-model:value="userInfo.quote" type="textarea" placeholder="Enter Bio" :disabled="!isEdit" />
             </n-form-item-gi>
           </n-grid>
         </n-form>
         <n-flex justify="end" align="center">
           <n-button @click="updateProfileReset">
-            取消
+            Cancel
           </n-button>
           <!-- <n-button v-if="!isEdit" type="primary" @click="isEdit = true">
-            编辑
+            Edit
           </n-button> -->
           <n-button type="primary" @click="updateProfile">
-            保存更改
+            Save Changes
           </n-button>
         </n-flex>
       </n-flex>
@@ -415,7 +415,7 @@ function updateProfile() {
       :mask-closable="false"
       preset="card"
       style="width: 400px;"
-      title="密码修改"
+      title="Change Password"
       @negative-click="() => { showPasswordModal = false }"
       @update:show="updatePasswordReset"
     >
@@ -428,23 +428,23 @@ function updateProfile() {
           :rules="passwordRules"
         >
           <n-grid :cols="12" :x-gap="24">
-            <n-form-item-gi :span="12" label="旧密码" path="oldPassword">
-              <n-input v-model:value="passwordData.oldPassword" placeholder="请输入旧密码" show-password-on="click" type="password" />
+            <n-form-item-gi :span="12" label="Current Password" path="oldPassword">
+              <n-input v-model:value="passwordData.oldPassword" placeholder="Enter current password" show-password-on="click" type="password" />
             </n-form-item-gi>
-            <n-form-item-gi :span="12" label="新密码" path="newPassword">
-              <n-input v-model:value="passwordData.newPassword" placeholder="请输入新密码" show-password-on="click" type="password" />
+            <n-form-item-gi :span="12" label="New Password" path="newPassword">
+              <n-input v-model:value="passwordData.newPassword" placeholder="Enter New Password" show-password-on="click" type="password" />
             </n-form-item-gi>
-            <n-form-item-gi :span="12" label="确认密码" path="confirmPassword">
-              <n-input v-model:value="passwordData.confirmPassword" placeholder="请确认新密码" show-password-on="click" type="password" />
+            <n-form-item-gi :span="12" label="Confirmpassword" path="confirmPassword">
+              <n-input v-model:value="passwordData.confirmPassword" placeholder="Confirm new password" show-password-on="click" type="password" />
             </n-form-item-gi>
           </n-grid>
         </n-form>
         <n-flex justify="end" align="center">
           <n-button @click="updatePasswordReset">
-            取消
+            Cancel
           </n-button>
           <n-button type="primary" @click="updatePassword">
-            确认修改
+            Confirm Change
           </n-button>
         </n-flex>
       </n-flex>

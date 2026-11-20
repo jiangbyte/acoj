@@ -23,51 +23,51 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="详情">
+    <NDrawerContent title="Details">
       <NDescriptions label-placement="left" bordered :column="1">
-        <NDescriptionsItem label="主键">
+        <NDescriptionsItem label="ID">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="横幅">
+        <NDescriptionsItem label="Banner">
           <NImage :src="formData.banner" width="100" height="100" object-fit="cover" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="标题">
+        <NDescriptionsItem label="Title">
           {{ formData.title }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="子标题">
+        <NDescriptionsItem label="Subtitle">
           {{ formData.subtitle }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="子标题是否可见">
+        <NDescriptionsItem label="SubtitleVisible">
           {{ formData.isVisibleSubtitleName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="按钮文字">
+        <NDescriptionsItem label="Button Text">
           {{ formData.buttonText }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="按钮是否可见">
+        <NDescriptionsItem label="Show Button">
           {{ formData.isVisibleButtonName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="跳转模块">
+        <NDescriptionsItem label="Navigation Module">
           {{ formData.jumpModuleName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="新窗口打开">
+        <NDescriptionsItem label="Open in New Window">
           {{ formData.targetBlankName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="跳转类别">
+        <NDescriptionsItem label="Navigation Type">
           {{ formData.jumpTypeName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="跳转目标">
+        <NDescriptionsItem label="Navigation Target">
           {{ formData.jumpTarget }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="排序">
+        <NDescriptionsItem label="Sort Order">
           {{ formData.sort }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="上架">
+        <NDescriptionsItem label="Published">
           {{ formData.isVisibleName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建时间">
+        <NDescriptionsItem label="Created At">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建者">
+        <NDescriptionsItem label="Created By">
           <!-- {{ formData.createUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -78,10 +78,10 @@ defineExpose({
             <NText>{{ formData.createUserName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新时间">
+        <NDescriptionsItem label="Updated At">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新人">
+        <NDescriptionsItem label="Updated By">
           <!-- {{ formData.updateUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -99,7 +99,7 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
         </NSpace>
       </template>

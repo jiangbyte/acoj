@@ -1,34 +1,34 @@
 export function FormatJsonString(jsonString: string) {
   if (!jsonString)
-    return '无参数'
+    return 'No parameters'
 
   try {
     const parsed = JSON.parse(jsonString)
     return JSON.stringify(parsed, null, 2)
   }
   catch (error) {
-    return jsonString // 如果解析失败，返回原字符串
+    return jsonString // Return the original string if parsing fails
   }
 }
 
-// 在 setup 中定义格式化函数
+// Define the formatter in setup
 export function FormatLanguages(languages: string[] | undefined): string[] {
   if (!languages || !Array.isArray(languages))
     return []
 
   return languages.map((lang) => {
-    // 首字母大写，其余小写
+    // Capitalize the first letter and lowercase the rest
     return lang.charAt(0).toUpperCase() + lang.slice(1).toLowerCase()
   })
 }
 
 const MODULE_TYPE_LABEL: Record<string, string> = {
-  PROBLEM: '题库',
-  SET: '题集',
-  CONTEST: '竞赛',
+  PROBLEM: 'Problem Library',
+  SET: 'Problem Set',
+  CONTEST: 'Contest',
 }
 
-/** 提交模块类型展示（后端未返回 moduleTypeName） */
+/** Submission module label when the backend omits moduleTypeName */
 export function FormatModuleType(moduleType: string | null | undefined): string {
   if (!moduleType)
     return '-'

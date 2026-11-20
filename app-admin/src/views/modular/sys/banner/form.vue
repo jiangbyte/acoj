@@ -10,28 +10,28 @@ const { sysBannerDefaultData, sysBannerAdd, sysBannerEdit } = useSysBannerFetch(
 const formData = ref<any>({ ...sysBannerDefaultData })
 const rules = {
   title: [
-    // { required: true, message: '请输入标题', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Title', trigger: ['input', 'blur'] },
   ],
   banner: [
-    { required: true, message: '请输入横幅', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Banner', trigger: ['input', 'blur'] },
   ],
   buttonText: [
-    // { required: true, message: '请输入按钮文字', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Button Text', trigger: ['input', 'blur'] },
   ],
   jumpModule: [
-    { required: true, message: '请输入跳转模块', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Navigation Module', trigger: ['input', 'blur'] },
   ],
   jumpType: [
-    // { required: true, message: '请输入跳转类别', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Navigation Type', trigger: ['input', 'blur'] },
   ],
   jumpTarget: [
-    { required: true, message: '请输入跳转目标', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Navigation Target', trigger: ['input', 'blur'] },
   ],
   sort: [
-    { required: true, message: '请输入排序', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Sort Order', type: 'number', trigger: ['input', 'blur'] },
   ],
   subtitle: [
-    // { required: true, message: '请输入子标题', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Subtitle', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -48,13 +48,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await sysBannerEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await sysBannerAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -89,9 +89,9 @@ defineExpose({
 const isDisableTargetBlank = ref(false)
 const jumpTargetListOptions = ref()
 
-// 如果formDataJUMP_MODULE选择外链，JUMP_TYPE才显示URL
+// Show URL in JUMP_TYPE only when formData JUMP_MODULE selects an external link
 watch(() => formData.value.jumpModule, (val) => {
-  // 当状态为三种之一时，统一处理
+  // Handle all three statuses consistently
   const isSpecialState = ['NOTDO', 'PAGE_PROBLEM', 'PAGE_SET'].includes(val)
 
   if (val === 'HREF') {
@@ -133,75 +133,75 @@ function loadJumpTarget(value: string, jm: string = formData.value.jumpModule) {
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="横幅" path="banner">
+        <!-- Text input -->
+        <NFormItem label="Banner" path="banner">
           <FileUpload v-model="formData.banner" :is-image="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="标题" path="title">
-          <NInput v-model:value="formData.title" placeholder="请输入标题" />
+        <!-- Text input -->
+        <NFormItem label="Title" path="title">
+          <NInput v-model:value="formData.title" placeholder="Enter Title" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="子标题" path="subtitle">
-          <NInput v-model:value="formData.subtitle" placeholder="请输入子标题" />
+        <!-- Text input -->
+        <NFormItem label="Subtitle" path="subtitle">
+          <NInput v-model:value="formData.subtitle" placeholder="Enter Subtitle" />
         </NFormItem>
-        <NFormItem label="子标题是否可见" path="isVisibleSubtitle">
+        <NFormItem label="SubtitleVisible" path="isVisibleSubtitle">
           <NRadioGroup v-model:value="formData.isVisibleSubtitle">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="按钮文字" path="buttonText">
-          <NInput v-model:value="formData.buttonText" placeholder="请输入按钮文字" />
+        <!-- Text input -->
+        <NFormItem label="Button Text" path="buttonText">
+          <NInput v-model:value="formData.buttonText" placeholder="Enter Button Text" />
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="按钮是否可见" path="isVisibleButton">
+        <!-- Boolean selector -->
+        <NFormItem label="Show Button" path="isVisibleButton">
           <NRadioGroup v-model:value="formData.isVisibleButton">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="跳转模块" path="jumpModule">
-          <!-- <NInput v-model:value="formData.jumpModule" placeholder="请输入跳转模块" /> -->
+        <!-- Text input -->
+        <NFormItem label="Navigation Module" path="jumpModule">
+          <!-- <NInput v-model:value="formData.jumpModule" placeholder="Enter Navigation Module" /> -->
           <NSelect
             v-model:value="formData.jumpModule"
-            placeholder="请选择跳转模块"
+            placeholder="Select Navigation Module"
             :options="jumpModuleRef"
           />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem v-if="!['NOTDO', 'PAGE_PROBLEM', 'PAGE_SET'].includes(formData.jumpModule)" label="跳转类别" path="jumpType">
-          <NInput v-model:value="formData.jumpType" placeholder="跳转类别" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="!['NOTDO', 'PAGE_PROBLEM', 'PAGE_SET'].includes(formData.jumpModule)" label="Navigation Type" path="jumpType">
+          <NInput v-model:value="formData.jumpType" placeholder="Navigation Type" :disabled="true" />
           <!-- <NSelect
             v-model:value="formData.jumpType"
-            placeholder="请选择跳转类别"
+            placeholder="Select Navigation Type"
             :options="jumpTypeRef"
             :disabled="!formData.jumpModule"
           /> -->
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem v-if="!['NOTDO', 'PAGE_PROBLEM', 'PAGE_SET'].includes(formData.jumpModule)" label="跳转目标" path="jumpTarget">
-          <NInput v-if="formData.jumpModule === 'HREF' " v-model:value="formData.jumpTarget" placeholder="请输入跳转目标URL" :disabled="!formData.jumpModule" />
+        <!-- Text input -->
+        <NFormItem v-if="!['NOTDO', 'PAGE_PROBLEM', 'PAGE_SET'].includes(formData.jumpModule)" label="Navigation Target" path="jumpTarget">
+          <NInput v-if="formData.jumpModule === 'HREF' " v-model:value="formData.jumpTarget" placeholder="Enter Navigation TargetURL" :disabled="!formData.jumpModule" />
           <NSelect
             v-else
             v-model:value="formData.jumpTarget"
-            placeholder="请选择跳转目标"
+            placeholder="Select Navigation Target"
             label-field="name"
             value-field="id"
             filterable
@@ -210,34 +210,34 @@ function loadJumpTarget(value: string, jm: string = formData.value.jumpModule) {
             @search="(val) => loadJumpTarget(val)"
           />
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem v-if="formData.jumpModule !== 'NOTDO'" label="新窗口打开" path="targetBlank">
+        <!-- Boolean selector -->
+        <NFormItem v-if="formData.jumpModule !== 'NOTDO'" label="Open in New Window" path="targetBlank">
           <NRadioGroup v-model:value="formData.targetBlank" :disabled="isDisableTargetBlank">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- 输入框 -->
-        <!-- <NFormItem label="链接" path="toUrl">
-          <NInput v-model:value="formData.toUrl" placeholder="请输入链接" />
+        <!-- Text input -->
+        <!-- <NFormItem label="Link" path="toUrl">
+          <NInput v-model:value="formData.toUrl" placeholder="Enter Link" />
         </NFormItem> -->
-        <!-- Boolean 选择框 -->
-        <!-- 数字输入 -->
-        <NFormItem label="排序" path="sort">
-          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="请输入排序" />
+        <!-- Boolean selector -->
+        <!-- Number input -->
+        <NFormItem label="Sort Order" path="sort">
+          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="Enter Sort Order" />
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="上架" path="isVisible">
+        <!-- Boolean selector -->
+        <NFormItem label="Published" path="isVisible">
           <NRadioGroup v-model:value="formData.isVisible">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
@@ -248,13 +248,13 @@ function loadJumpTarget(value: string, jm: string = formData.value.jumpModule) {
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

@@ -10,28 +10,28 @@ const { dataLibraryDefaultData, dataLibraryAdd, dataLibraryEdit } = useDataLibra
 const formData = ref<any>({ ...dataLibraryDefaultData })
 const rules = {
   userId: [
-    { required: true, message: '请输入用户ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter User ID', trigger: ['input', 'blur'] },
   ],
   setId: [
-    { required: true, message: '请输入题集ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Set ID', trigger: ['input', 'blur'] },
   ],
   problemId: [
-    { required: true, message: '请输入题目ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Problem ID', trigger: ['input', 'blur'] },
   ],
   submitId: [
-    { required: true, message: '请输入提交ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Submission ID', trigger: ['input', 'blur'] },
   ],
   language: [
-    { required: true, message: '请输入编程语言', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Language', trigger: ['input', 'blur'] },
   ],
   code: [
-    { required: true, message: '请输入源代码', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Source Code', trigger: ['input', 'blur'] },
   ],
   codeLength: [
-    { required: true, message: '请输入源代码长度', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Source Length', type: 'number', trigger: ['input', 'blur'] },
   ],
   accessCount: [
-    { required: true, message: '请输入访问次数', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Access Count', type: 'number', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -48,13 +48,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await dataLibraryEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await dataLibraryAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -73,9 +73,9 @@ function doOpen(row: any = null, edit: boolean = false) {
   // isEdit.value = edit
   // formData.value = Object.assign(formData.value, row)
   window.$dialog.warning({
-    title: '提示',
-    content: '功能维护中...',
-    positiveText: '确定',
+    title: 'Notice',
+    content: 'This feature is under maintenance',
+    positiveText: 'OK',
 
   })
 }
@@ -86,58 +86,58 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="用户ID" path="userId">
-          <NInput v-model:value="formData.userId" placeholder="请输入用户ID" />
+        <!-- Text input -->
+        <NFormItem label="User ID" path="userId">
+          <NInput v-model:value="formData.userId" placeholder="Enter User ID" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="题集ID" path="setId">
-          <NInput v-model:value="formData.setId" placeholder="请输入题集ID" />
+        <!-- Text input -->
+        <NFormItem label="Set ID" path="setId">
+          <NInput v-model:value="formData.setId" placeholder="Enter Set ID" />
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="是否是题集提交" path="isSet">
+        <!-- Boolean selector -->
+        <NFormItem label="Set Submission" path="isSet">
           <NRadioGroup v-model:value="formData.isSet">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="题目ID" path="problemId">
-          <NInput v-model:value="formData.problemId" placeholder="请输入题目ID" />
+        <!-- Text input -->
+        <NFormItem label="Problem ID" path="problemId">
+          <NInput v-model:value="formData.problemId" placeholder="Enter Problem ID" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="提交ID" path="submitId">
-          <NInput v-model:value="formData.submitId" placeholder="请输入提交ID" />
+        <!-- Text input -->
+        <NFormItem label="Submission ID" path="submitId">
+          <NInput v-model:value="formData.submitId" placeholder="Enter Submission ID" />
         </NFormItem>
-        <!-- 日期选择 -->
-        <NFormItem label="提交时间" path="submitTime">
+        <!-- Date selector -->
+        <NFormItem label="Submitted At" path="submitTime">
           <NDatePicker v-model:value="formData.submitTime" type="datetime" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="编程语言" path="language">
-          <NInput v-model:value="formData.language" placeholder="请输入编程语言" />
+        <!-- Text input -->
+        <NFormItem label="Language" path="language">
+          <NInput v-model:value="formData.language" placeholder="Enter Language" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="源代码" path="code">
-          <NInput v-model:value="formData.code" placeholder="请输入源代码" />
+        <!-- Text input -->
+        <NFormItem label="Source Code" path="code">
+          <NInput v-model:value="formData.code" placeholder="Enter Source Code" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="源代码长度" path="codeLength">
-          <NInputNumber v-model:value="formData.codeLength" :min="0" :max="100" placeholder="请输入源代码长度" />
+        <!-- Number input -->
+        <NFormItem label="Source Length" path="codeLength">
+          <NInputNumber v-model:value="formData.codeLength" :min="0" :max="100" placeholder="Enter Source Length" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="访问次数" path="accessCount">
-          <NInputNumber v-model:value="formData.accessCount" :min="0" :max="100" placeholder="请输入访问次数" />
+        <!-- Number input -->
+        <NFormItem label="Access Count" path="accessCount">
+          <NInputNumber v-model:value="formData.accessCount" :min="0" :max="100" placeholder="Enter Access Count" />
         </NFormItem>
       </NForm>
       <template #footer>
@@ -146,13 +146,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

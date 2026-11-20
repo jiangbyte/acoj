@@ -24,15 +24,15 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="详情">
+    <NDrawerContent title="Details">
       <NDescriptions label-placement="left" bordered :column="1">
-        <NDescriptionsItem label="主键">
+        <NDescriptionsItem label="ID">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="提交模块">
+        <NDescriptionsItem label="Submission Module">
           {{ FormatModuleType(formData.moduleType) }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="用户">
+        <NDescriptionsItem label="User">
           <!-- {{ formData.userId }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -43,19 +43,19 @@ defineExpose({
             <NText>{{ formData.userIdName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="题目">
+        <NDescriptionsItem label="Problem">
           {{ formData.problemIdName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="提交ID">
+        <NDescriptionsItem label="Submission ID">
           {{ formData.submitId }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="解决">
+        <NDescriptionsItem label="Solved">
           {{ formData.solvedName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建时间">
+        <NDescriptionsItem label="Created At">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建者">
+        <NDescriptionsItem label="Created By">
           <!-- {{ formData.createUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -66,10 +66,10 @@ defineExpose({
             <NText>{{ formData.createUserName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新时间">
+        <NDescriptionsItem label="Updated At">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新人">
+        <NDescriptionsItem label="Updated By">
           <!-- {{ formData.updateUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -87,7 +87,7 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
         </NSpace>
       </template>

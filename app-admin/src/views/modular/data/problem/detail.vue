@@ -25,36 +25,36 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="详情">
+    <NDrawerContent title="Details">
       <NDescriptions label-placement="left" bordered :column="1">
-        <NDescriptionsItem label="主键">
+        <NDescriptionsItem label="ID">
           {{ formData.id }}
         </NDescriptionsItem>
-        <!-- <NDescriptionsItem label="展示ID">
+        <!-- <NDescriptionsItem label="Display ID">
           {{ formData.displayId }}
         </NDescriptionsItem> -->
-        <NDescriptionsItem label="分类">
+        <NDescriptionsItem label="Category">
           {{ formData.categoryId }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="标题">
+        <NDescriptionsItem label="Title">
           {{ formData.title }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="来源">
+        <NDescriptionsItem label="Source">
           {{ formData.source }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="链接">
+        <NDescriptionsItem label="Link">
           {{ formData.url }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="时间限制">
+        <NDescriptionsItem label="Time Limit">
           {{ formData.maxTime }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="内存限制">
+        <NDescriptionsItem label="Memory Limit">
           {{ formData.maxMemory }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="描述">
+        <NDescriptionsItem label="Description">
           <MDViewer :model-value="formData.description" />
         </NDescriptionsItem>
-        <!-- <NDescriptionsItem label="用例">
+        <!-- <NDescriptionsItem label="Test Cases">
           <NCode
             :code="JSON.stringify(formData.testCase, null, 2)"
             language="json"
@@ -62,7 +62,7 @@ defineExpose({
             show-line-numbers
           />
         </NDescriptionsItem> -->
-        <NDescriptionsItem label="开放语言">
+        <NDescriptionsItem label="Allowed Languages">
           <!-- {{ formData.allowedLanguages }} -->
           <n-space align="center">
             <n-tag v-for="(item, index) in FormatLanguages(formData.allowedLanguages)" :key="index">
@@ -70,24 +70,24 @@ defineExpose({
             </n-tag>
           </n-space>
         </NDescriptionsItem>
-        <NDescriptionsItem label="难度">
+        <NDescriptionsItem label="Difficulty">
           {{ formData.difficultyName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="阈值">
+        <NDescriptionsItem label="Threshold">
           {{ formData.threshold }}
         </NDescriptionsItem>
-        <!-- <NDescriptionsItem label="使用模板">
+        <!-- <NDescriptionsItem label="Use Template">
           {{ formData.useTemplateName }}
         </NDescriptionsItem> -->
-        <!-- <NDescriptionsItem label="模板代码">
+        <!-- <NDescriptionsItem label="Template Code">
           <n-space vertical>
             <n-card v-for="(item, index) in formData.codeTemplate" :key="index" size="small">
               <template #header>
-                {{ item.language.charAt(0).toUpperCase() + item.language.slice(1).toLowerCase() }} 语言
+                {{ item.language.charAt(0).toUpperCase() + item.language.slice(1).toLowerCase() }} Language
               </template>
 
               <NSpace vertical size="large">
-                <n-card v-if="item.prefix" size="small" title="前置代码">
+                <n-card v-if="item.prefix" size="small" title="Prefix Code">
                   <NCode
                     :code="item.prefix"
                     :language="item.language"
@@ -95,7 +95,7 @@ defineExpose({
                     show-line-numbers
                   />
                 </n-card>
-                <n-card v-if="item.template" size="small" title="模板代码">
+                <n-card v-if="item.template" size="small" title="Template Code">
                   <NCode
                     :code="item.template"
                     :language="item.language"
@@ -103,7 +103,7 @@ defineExpose({
                     show-line-numbers
                   />
                 </n-card>
-                <n-card v-if="item.suffix" size="small" title="后置代码">
+                <n-card v-if="item.suffix" size="small" title="Suffix Code">
                   <NCode
                     :code="item.suffix"
                     :language="item.language"
@@ -114,28 +114,28 @@ defineExpose({
                 <n-empty
                   v-if="!item.prefix && !item.template && !item.suffix"
                   size="small"
-                  description="暂无代码模板"
+                  description="No code template"
                 />
               </NSpace>
             </n-card>
           </n-space>
         </NDescriptionsItem> -->
-        <NDescriptionsItem label="是否公开">
+        <NDescriptionsItem label="Public">
           {{ formData.isPublicName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="上架">
+        <NDescriptionsItem label="Published">
           {{ formData.isVisibleName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="使用AI">
+        <NDescriptionsItem label="Use AI">
           {{ formData.useAiName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="解决">
+        <NDescriptionsItem label="Solved">
           {{ formData.solved }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建时间">
+        <NDescriptionsItem label="Created At">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建者">
+        <NDescriptionsItem label="Created By">
           <!-- {{ formData.createUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -146,10 +146,10 @@ defineExpose({
             <NText>{{ formData.createUserName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新时间">
+        <NDescriptionsItem label="Updated At">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新人">
+        <NDescriptionsItem label="Updated By">
           <!-- {{ formData.updateUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -167,7 +167,7 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
         </NSpace>
       </template>

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { actionDeleteBtn, actionIconBtn } from '@/utils'
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NCard, NDataTable, NEllipsis, NIcon, NPopconfirm, NSpace, NTag } from 'naive-ui'
 import { useSysMenuFetch } from '@/composables/v1'
@@ -15,11 +16,11 @@ const columns: DataTableColumns<any> = [
     type: 'selection',
   },
   // {
-  //   title: '父菜单ID',
+  //   title: 'Parent Menu ID',
   //   key: 'pid',
   // },
   {
-    title: '菜单',
+    title: 'Menu',
     key: 'icon',
     // render: (row: any) => {
     //   return h(NIcon, { size: '18' }, { default: () => h(Icon, { icon: row.icon }) })
@@ -32,7 +33,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '菜单类型',
+    title: 'Menu Type',
     key: 'menuTypeName',
     width: 80,
     render: (row) => {
@@ -42,7 +43,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   // {
-  //   title: '菜单标题',
+  //   title: 'Menu Title',
   //   key: 'title',
   //   // width: 120,
   //   ellipsis: {
@@ -50,7 +51,7 @@ const columns: DataTableColumns<any> = [
   //   },
   // },
   {
-    title: '名称',
+    title: 'Name',
     key: 'name',
     width: 100,
     ellipsis: {
@@ -58,26 +59,26 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '路由路径',
+    title: 'Route Path',
     key: 'path',
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: '组件路径',
+    title: 'Component Path',
     key: 'componentPath',
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: '排序',
+    title: 'Sort Order',
     key: 'sort',
     width: 60,
   },
   {
-    title: '可见',
+    title: 'Visible',
     key: 'visibleName',
     width: 60,
     render: (row) => {
@@ -87,7 +88,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '缓存',
+    title: 'Cache',
     key: 'keepAliveName',
     width: 60,
     render: (row) => {
@@ -97,7 +98,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '固定',
+    title: 'Pinned',
     key: 'pinedName',
     width: 60,
     render: (row) => {
@@ -107,29 +108,20 @@ const columns: DataTableColumns<any> = [
     },
   },
   // {
-  //   title: '额外信息',
+  //   title: 'Extra Information',
   //   key: 'exJson',
   // },
   {
-    title: '操作',
+    title: 'Actions',
     key: 'action',
-    width: 280,
+    width: 184,
     fixed: 'right',
     render(row: any) {
-      return h(NSpace, { align: 'center' }, () => [
-        h(NButton, {
-          type: 'primary',
-          size: 'small',
-          onClick: () => formRef.value.doOpen(row, true),
-        }, () => '编辑'),
-        h(NButton, { size: 'small', type: 'warning', disabled: row.menuType === 0, onClick: () => permissionRef.value.doOpen(row) }, () => '权限绑定'),
-        h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
-        h(NPopconfirm, {
-          onPositiveClick: () => deleteHandle(row),
-        }, {
-          default: () => '确认删除',
-          trigger: () => h(NButton, { size: 'small', type: 'error' }, () => '删除'),
-        }),
+      return h(NSpace, { align: 'center', wrap: false }, () => [
+        actionIconBtn({ kind: 'edit', onClick: () => formRef.value.doOpen(row, true) }),
+        actionIconBtn({ kind: 'permission', disabled: row.menuType === 0, onClick: () => permissionRef.value.doOpen(row) }),
+        actionIconBtn({ kind: 'detail', onClick: () => detailRef.value.doOpen(row) }),
+        actionDeleteBtn(() => deleteHandle(row)),
       ])
     },
   },
@@ -138,13 +130,13 @@ const columns: DataTableColumns<any> = [
 const columnSortFieldOptions = computed<any[]>(() => {
   return [
     { label: 'ID', value: 'id' },
-    { label: '创建时间', value: 'createTime' },
-    { label: '更新时间', value: 'updateTime' },
+    { label: 'Created At', value: 'createTime' },
+    { label: 'Updated At', value: 'updateTime' },
   ]
 })
 const sortOrderOptions = computed(() => [
-  { label: '升序', value: 'ASCEND' },
-  { label: '降序', value: 'DESCEND' },
+  { label: 'Ascending', value: 'ASCEND' },
+  { label: 'Descending', value: 'DESCEND' },
 ])
 const displayKey = ref<string[]>(
   columns
@@ -206,7 +198,7 @@ async function deleteHandle(row: any) {
   }]
   const { success } = await sysMenuDelete(param)
   if (success) {
-    window.$message.success('删除成功')
+    window.$message.success('Deleted successfully')
     await loadData()
   }
 }
@@ -215,7 +207,7 @@ async function deleteBatchHandle() {
   const param = checkedRowKeys.value.map(id => ({ id }))
   const { success } = await sysMenuDelete(param)
   if (success) {
-    window.$message.success('删除成功')
+    window.$message.success('Deleted successfully')
     await loadData()
     checkedRowKeys.value = []
   }
@@ -228,21 +220,21 @@ async function deleteBatchHandle() {
       <NSpace vertical>
         <NSpace align="center">
           <NSpace align="center">
-            <NFormItem :show-feedback="false" label="关键词" label-placement="left">
-              <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" clearable @clear="resetHandle" />
+            <NFormItem :show-feedback="false" label="Keywords" label-placement="left">
+              <NInput v-model:value="pageParam.keyword" placeholder="Enter keywords" clearable @clear="resetHandle" />
             </NFormItem>
             <NSpace align="center">
               <NButton type="primary" @click="loadData">
                 <template #icon>
                   <IconParkOutlineSearch />
                 </template>
-                搜索
+                Search
               </NButton>
               <NButton type="warning" @click="resetHandle">
                 <template #icon>
                   <IconParkOutlineRefresh />
                 </template>
-                重置
+                Reset
               </NButton>
             </NSpace>
           </NSpace>
@@ -253,15 +245,15 @@ async function deleteBatchHandle() {
               <template #icon>
                 <IconParkOutlinePlus />
               </template>
-              创建
+              Create
             </NButton>
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
-                确认删除
+                Confirm delete
               </template>
               <template #trigger>
                 <NButton type="error">
-                  删除
+                  Delete
                 </NButton>
               </template>
             </NPopconfirm>
@@ -334,10 +326,10 @@ async function deleteBatchHandle() {
         <NSpace align="center" justify="space-between" class="w-full">
           <NSpace align="center">
             <NP type="info" show-icon>
-              当前数据 {{ pageData?.length }} 条
+              Current: {{ pageData?.length }} records
             </NP>
             <NP type="info" show-icon>
-              选中了 {{ checkedRowKeys.length }} 行
+              Selected: {{ checkedRowKeys.length }} rows
             </NP>
           </NSpace>
           <NPagination

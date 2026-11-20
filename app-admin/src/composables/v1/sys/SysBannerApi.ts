@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 横幅 API请求
+ * Banner API requests
  */
 export function useSysBannerFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useSysBannerFetch() {
   const table = 'sys/banner'
 
   /*
-     * 横幅 默认数据
+     * Banner default data
      */
   const sysBannerDefaultData = {
     id: '',
@@ -32,12 +32,12 @@ export function useSysBannerFetch() {
   }
   return {
     /*
-    * 横幅 默认数据
+    * Banner default data
     */
     sysBannerDefaultData,
 
     /*
-     * 横幅 分页接口
+     * Banner pagination endpoint
      */
     sysBannerPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -48,28 +48,28 @@ export function useSysBannerFetch() {
     },
 
     /*
-     * 横幅 新增接口
+     * Banner create endpoint
      */
     sysBannerAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 横幅 修改接口
+     * Banner update endpoint
      */
     sysBannerEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 横幅 删除接口
+     * Banner delete endpoint
      */
     sysBannerDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 横幅 详情接口
+     * Banner details endpoint
      */
     sysBannerDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {
@@ -80,7 +80,7 @@ export function useSysBannerFetch() {
     },
 
     /*
-     * 横幅 最新接口
+     * Banner latest endpoint
      */
     sysBannerLatest() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/latest`)

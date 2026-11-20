@@ -10,34 +10,34 @@ const { sysLogDefaultData, sysLogAdd, sysLogEdit } = useSysLogFetch()
 const formData = ref<any>({ ...sysLogDefaultData })
 const rules = {
   userId: [
-    { required: true, message: '请输入用户ID', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter User ID', trigger: ['input', 'blur'] },
   ],
   operation: [
-    { required: true, message: '请输入操作', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Actions', trigger: ['input', 'blur'] },
   ],
   method: [
-    { required: true, message: '请输入方法', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Method', trigger: ['input', 'blur'] },
   ],
   params: [
-    { required: true, message: '请输入参数', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Parameters', trigger: ['input', 'blur'] },
   ],
   ip: [
-    { required: true, message: '请输入IP', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter IP', trigger: ['input', 'blur'] },
   ],
   category: [
-    { required: true, message: '请输入操作分类', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter ActionsCategory', trigger: ['input', 'blur'] },
   ],
   module: [
-    { required: true, message: '请输入模块名称', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Module Name', trigger: ['input', 'blur'] },
   ],
   description: [
-    { required: true, message: '请输入操作描述', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter ActionsDescription', trigger: ['input', 'blur'] },
   ],
   status: [
-    { required: true, message: '请输入操作状态', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter ActionsStatus', trigger: ['input', 'blur'] },
   ],
   message: [
-    { required: true, message: '请输入操作消息', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Action Message', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -54,13 +54,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await sysLogEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await sysLogAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -86,55 +86,55 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="用户ID" path="userId">
-          <NInput v-model:value="formData.userId" placeholder="请输入用户ID" />
+        <!-- Text input -->
+        <NFormItem label="User ID" path="userId">
+          <NInput v-model:value="formData.userId" placeholder="Enter User ID" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="操作" path="operation">
-          <NInput v-model:value="formData.operation" placeholder="请输入操作" />
+        <!-- Text input -->
+        <NFormItem label="Actions" path="operation">
+          <NInput v-model:value="formData.operation" placeholder="Enter Actions" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="方法" path="method">
-          <NInput v-model:value="formData.method" placeholder="请输入方法" />
+        <!-- Text input -->
+        <NFormItem label="Method" path="method">
+          <NInput v-model:value="formData.method" placeholder="Enter Method" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="参数" path="params">
-          <NInput v-model:value="formData.params" placeholder="请输入参数" />
+        <!-- Text input -->
+        <NFormItem label="Parameters" path="params">
+          <NInput v-model:value="formData.params" placeholder="Enter Parameters" />
         </NFormItem>
-        <!-- 输入框 -->
+        <!-- Text input -->
         <NFormItem label="IP" path="ip">
-          <NInput v-model:value="formData.ip" placeholder="请输入IP" />
+          <NInput v-model:value="formData.ip" placeholder="Enter IP" />
         </NFormItem>
-        <!-- 日期选择 -->
-        <NFormItem label="操作时间" path="operationTime">
+        <!-- Date selector -->
+        <NFormItem label="Action Time" path="operationTime">
           <!-- <NDatePicker type="datetime" v-model:value="formData.operationTime" /> -->
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="操作分类" path="category">
-          <NInput v-model:value="formData.category" placeholder="请输入操作分类" />
+        <!-- Text input -->
+        <NFormItem label="ActionsCategory" path="category">
+          <NInput v-model:value="formData.category" placeholder="Enter ActionsCategory" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="模块名称" path="module">
-          <NInput v-model:value="formData.module" placeholder="请输入模块名称" />
+        <!-- Text input -->
+        <NFormItem label="Module Name" path="module">
+          <NInput v-model:value="formData.module" placeholder="Enter Module Name" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="操作描述" path="description">
-          <NInput v-model:value="formData.description" placeholder="请输入操作描述" />
+        <!-- Text input -->
+        <NFormItem label="ActionsDescription" path="description">
+          <NInput v-model:value="formData.description" placeholder="Enter ActionsDescription" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="操作状态" path="status">
-          <NInput v-model:value="formData.status" placeholder="请输入操作状态" />
+        <!-- Text input -->
+        <NFormItem label="ActionsStatus" path="status">
+          <NInput v-model:value="formData.status" placeholder="Enter ActionsStatus" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="操作消息" path="message">
-          <NInput v-model:value="formData.message" placeholder="请输入操作消息" />
+        <!-- Text input -->
+        <NFormItem label="Action Message" path="message">
+          <NInput v-model:value="formData.message" placeholder="Enter Action Message" />
         </NFormItem>
       </NForm>
       <template #footer>
@@ -143,13 +143,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

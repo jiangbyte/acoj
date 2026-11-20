@@ -1,4 +1,4 @@
-// 通用返回接口
+// Common response interface
 interface IResult<T> {
   code: string
   data?: T
@@ -6,7 +6,7 @@ interface IResult<T> {
   success: boolean
 }
 
-// 分页列表返回结果
+// Paginated list response
 interface IListResult<T> {
   current: number
   pages: number
@@ -15,7 +15,7 @@ interface IListResult<T> {
   total: number
 }
 
-// 分页返回结果
+// Paginated response
 interface IPageResult<T> {
   code: string
   data?: IListResult<T>
@@ -23,14 +23,14 @@ interface IPageResult<T> {
   success: boolean
 }
 
-// 选项类型定义
+// Option type definition
 interface IOption<T> {
   value: T
   label: string
   children?: IOption<T>[]
 }
 
-// 选项结果返回
+// Option response
 interface IOptionResult<T> {
   code: string
   data?: IOption<T>[]

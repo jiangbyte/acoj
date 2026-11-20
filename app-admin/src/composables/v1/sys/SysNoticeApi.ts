@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 公告 API请求
+ * Notice API requests
  */
 export function useSysNoticeFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useSysNoticeFetch() {
   const table = 'sys/notice'
 
   /*
-     * 公告 默认数据
+     * Notice default data
      */
   const sysNoticeDefaultData = {
     id: '',
@@ -26,12 +26,12 @@ export function useSysNoticeFetch() {
   }
   return {
     /*
-    * 公告 默认数据
+    * Notice default data
     */
     sysNoticeDefaultData,
 
     /*
-     * 公告 分页接口
+     * Notice pagination endpoint
      */
     sysNoticePage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -42,28 +42,28 @@ export function useSysNoticeFetch() {
     },
 
     /*
-     * 公告 新增接口
+     * Notice create endpoint
      */
     sysNoticeAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 公告 修改接口
+     * Notice update endpoint
      */
     sysNoticeEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 公告 删除接口
+     * Notice delete endpoint
      */
     sysNoticeDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 公告 详情接口
+     * Notice details endpoint
      */
     sysNoticeDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

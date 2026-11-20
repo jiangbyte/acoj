@@ -23,30 +23,30 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="详情">
+    <NDrawerContent title="Details">
       <NDescriptions label-placement="left" bordered :column="1">
-        <NDescriptionsItem label="主键ID">
+        <NDescriptionsItem label="IDID">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="字典类型">
+        <NDescriptionsItem label="Dictionary Type">
           {{ formData.dictType }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="类型名称">
+        <NDescriptionsItem label="Type Name">
           {{ formData.typeLabel }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="字典值">
+        <NDescriptionsItem label="Dictionary Value">
           {{ formData.dictValue }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="字典标签">
+        <NDescriptionsItem label="Dictionary Label">
           {{ formData.dictLabel }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="排序">
+        <NDescriptionsItem label="Sort Order">
           {{ formData.sortOrder }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建时间">
+        <NDescriptionsItem label="Created At">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建者">
+        <NDescriptionsItem label="Created By">
           <!-- {{ formData.createUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -57,10 +57,10 @@ defineExpose({
             <NText>{{ formData.createUserName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新时间">
+        <NDescriptionsItem label="Updated At">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新人">
+        <NDescriptionsItem label="Updated By">
           <!-- {{ formData.updateUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -78,7 +78,7 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
         </NSpace>
       </template>

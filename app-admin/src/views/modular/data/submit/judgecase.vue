@@ -12,14 +12,14 @@ const submitId = ref()
 function doClose() {
   emit('close')
   show.value = false
-  submitId.value = '' // 重置
+  submitId.value = '' // Reset
 }
 
 function doOpen(row: any) {
-  // 先设置 problemId
+  // Set problemId first
   submitId.value = row.id
-  console.log('提交ID-->', submitId.value)
-  // 再设置显示状态
+  console.log('Submission ID-->', submitId.value)
+  // Then show the drawer
   show.value = true
   formData.value = row
 }
@@ -30,7 +30,7 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="用例数据">
+    <NDrawerContent title="Test CasesData">
       <JudgeCaseIndex :submit-id="submitId" />
       <template #footer>
         <NSpace align="center" justify="end">
@@ -38,7 +38,7 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
         </NSpace>
       </template>

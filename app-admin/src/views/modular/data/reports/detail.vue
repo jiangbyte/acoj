@@ -24,39 +24,39 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="详情">
+    <NDrawerContent title="Details">
       <NDescriptions label-placement="left" bordered :column="1">
-        <NDescriptionsItem label="主键">
+        <NDescriptionsItem label="ID">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="报告类型">
+        <NDescriptionsItem label="Report Type">
           {{ formData.reportTypeName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="任务ID">
+        <NDescriptionsItem label="Task ID">
           {{ formData.taskId }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="提交模块">
+        <NDescriptionsItem label="Submission Module">
           {{ FormatModuleType(formData.moduleType) }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题目">
+        <NDescriptionsItem label="Problem">
           {{ formData.problemIdName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="样例数量">
+        <NDescriptionsItem label="Sample Count">
           {{ formData.sampleCount }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="相似组数量">
+        <NDescriptionsItem label="Similar Group Count">
           {{ formData.similarityGroupCount }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="平均相似度">
+        <NDescriptionsItem label="Average Similarity">
           {{ formData.avgSimilarity * 100 }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="最大相似度">
+        <NDescriptionsItem label="Maximum Similarity">
           {{ formData.maxSimilarity * 100 }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="检测阈值">
+        <NDescriptionsItem label="Check Threshold">
           {{ formData.threshold }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="相似度分布">
+        <NDescriptionsItem label="Similarity Distribution">
           <!-- {{ formData.similarityDistribution }} -->
           <NCode
             :code="JSON.stringify(formData.similarityDistribution, null)"
@@ -65,7 +65,7 @@ defineExpose({
             show-line-numbers
           />
         </NDescriptionsItem>
-        <NDescriptionsItem label="程度统计">
+        <NDescriptionsItem label="Level Statistics">
           <!-- {{ formData.degreeStatistics }} -->
           <NCode
             :code="JSON.stringify(formData.degreeStatistics, null, 2)"
@@ -74,13 +74,13 @@ defineExpose({
             show-line-numbers
           />
         </NDescriptionsItem>
-        <NDescriptionsItem label="检测模式">
+        <NDescriptionsItem label="Check Mode">
           {{ formData.checkModeName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建时间">
+        <NDescriptionsItem label="Created At">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建者">
+        <NDescriptionsItem label="Created By">
           <!-- {{ formData.createUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -91,10 +91,10 @@ defineExpose({
             <NText>{{ formData.createUserName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新时间">
+        <NDescriptionsItem label="Updated At">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新人">
+        <NDescriptionsItem label="Updated By">
           <!-- {{ formData.updateUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -112,7 +112,7 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
         </NSpace>
       </template>

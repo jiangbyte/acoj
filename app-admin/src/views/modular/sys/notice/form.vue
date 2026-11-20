@@ -11,19 +11,19 @@ const { sysNoticeDefaultData, sysNoticeAdd, sysNoticeEdit } = useSysNoticeFetch(
 const formData = ref<any>({ ...sysNoticeDefaultData })
 const rules = {
   title: [
-    { required: true, message: '请输入标题', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Title', trigger: ['input', 'blur'] },
   ],
   cover: [
-    { required: true, message: '请输入封面', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Cover', trigger: ['input', 'blur'] },
   ],
   url: [
-    // { required: true, message: '请输入链接', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Link', trigger: ['input', 'blur'] },
   ],
   sort: [
-    { required: true, message: '请输入排序', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Sort Order', type: 'number', trigger: ['input', 'blur'] },
   ],
   content: [
-    { required: true, message: '请输入内容', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Content', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -40,13 +40,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await sysNoticeEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await sysNoticeAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -72,40 +72,40 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" :default-width="800" resizable @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="标题" path="title">
-          <NInput v-model:value="formData.title" placeholder="请输入标题" />
+        <!-- Text input -->
+        <NFormItem label="Title" path="title">
+          <NInput v-model:value="formData.title" placeholder="Enter Title" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="封面" path="cover">
+        <!-- Text input -->
+        <NFormItem label="Cover" path="cover">
           <FileUpload v-model="formData.cover" :is-image="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <!-- <NFormItem label="链接" path="url">
-          <NInput v-model:value="formData.url" placeholder="请输入链接" />
+        <!-- Text input -->
+        <!-- <NFormItem label="Link" path="url">
+          <NInput v-model:value="formData.url" placeholder="Enter Link" />
         </NFormItem> -->
-        <!-- 数字输入 -->
-        <NFormItem label="排序" path="sort">
-          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="请输入排序" />
+        <!-- Number input -->
+        <NFormItem label="Sort Order" path="sort">
+          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="Enter Sort Order" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="内容" path="content">
+        <!-- Text input -->
+        <NFormItem label="Content" path="content">
           <MDEditor v-model="formData.content" />
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="上架" path="isVisible">
+        <!-- Boolean selector -->
+        <NFormItem label="Published" path="isVisible">
           <NRadioGroup v-model:value="formData.isVisible">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
@@ -116,13 +116,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

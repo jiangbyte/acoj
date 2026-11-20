@@ -24,47 +24,47 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="详情">
+    <NDrawerContent title="Details">
       <NDescriptions label-placement="left" bordered :column="1">
-        <NDescriptionsItem label="菜单ID">
+        <NDescriptionsItem label="Menu ID">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="图标">
+        <NDescriptionsItem label="Icon">
           <NIcon size="20" class="mr-2">
             <Icon :icon="formData.icon" />
           </NIcon>{{ formData.icon }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="菜单标题">
+        <NDescriptionsItem label="Menu Title">
           {{ formData.title }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="菜单名称">
+        <NDescriptionsItem label="Menu Name">
           {{ formData.name }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="父菜单">
+        <NDescriptionsItem label="Parent Menu">
           {{ formData.pidName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="路由路径">
+        <NDescriptionsItem label="Route Path">
           {{ formData.path }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="组件路径">
+        <NDescriptionsItem label="Component Path">
           {{ formData.componentPath }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="是否缓存">
+        <NDescriptionsItem label="Cached">
           {{ formData.keepAliveName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="是否可见">
+        <NDescriptionsItem label="Visible">
           {{ formData.visibleName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="排序">
+        <NDescriptionsItem label="Sort Order">
           {{ formData.sort }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="是否固定">
+        <NDescriptionsItem label="Pinned">
           {{ formData.pinedName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="菜单类型">
+        <NDescriptionsItem label="Menu Type">
           {{ formData.menuTypeName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="头部参数">
+        <NDescriptionsItem label="Header Parameters">
           <!-- {{ formData.submitTokenName }} -->
           <NCode
             :code="String(formData.parameters || '')"
@@ -73,13 +73,13 @@ defineExpose({
             show-line-numbers
           />
         </NDescriptionsItem>
-        <!-- <NDescriptionsItem label="额外信息">
+        <!-- <NDescriptionsItem label="Extra Information">
           {{ formData.exJson }}
         </NDescriptionsItem> -->
-        <NDescriptionsItem label="创建时间">
+        <NDescriptionsItem label="Created At">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建者">
+        <NDescriptionsItem label="Created By">
           <!-- {{ formData.createUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -90,10 +90,10 @@ defineExpose({
             <NText>{{ formData.createUserName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新时间">
+        <NDescriptionsItem label="Updated At">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="更新人">
+        <NDescriptionsItem label="Updated By">
           <!-- {{ formData.updateUserName }} -->
           <NSpace align="center" size="small">
             <NAvatar
@@ -111,7 +111,7 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
         </NSpace>
       </template>

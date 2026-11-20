@@ -1,5 +1,5 @@
 /**
- * 解析登录后的安全跳转路径（仅允许站内相对路径）。
+ * Resolve the post-login safe redirect path (only relative internal paths are allowed)。
  */
 export function resolveAuthRedirect(raw: unknown, fallback = '/'): string {
   if (typeof raw !== 'string' || !raw) {

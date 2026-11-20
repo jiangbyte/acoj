@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 题目 API请求
+ * Problem API requests
  */
 export function useDataProblemFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useDataProblemFetch() {
   const table = 'data/problem'
 
   /*
-     * 题目 默认数据
+     * Problem default data
      */
   const dataProblemDefaultData = {
     id: '',
@@ -38,12 +38,12 @@ export function useDataProblemFetch() {
   }
   return {
     /*
-    * 题目 默认数据
+    * Problem default data
     */
     dataProblemDefaultData,
 
     /*
-     * 题目 分页接口
+     * Problem pagination endpoint
      */
     dataProblemPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -64,28 +64,28 @@ export function useDataProblemFetch() {
     },
 
     /*
-     * 题目 新增接口
+     * Problem create endpoint
      */
     dataProblemAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 题目 修改接口
+     * Problem update endpoint
      */
     dataProblemEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 题目 删除接口
+     * Problem delete endpoint
      */
     dataProblemDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 题目 详情接口
+     * Problem details endpoint
      */
     dataProblemDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

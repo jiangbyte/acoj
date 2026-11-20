@@ -12,22 +12,22 @@ const { dataSetDefaultData, dataSetAdd, dataSetEdit } = useDataSetFetch()
 const formData = ref<any>({ ...dataSetDefaultData })
 const rules = {
   setType: [
-    { required: true, message: '请输入题集类型', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Set Type', type: 'number', trigger: ['input', 'blur'] },
   ],
   title: [
-    { required: true, message: '请输入标题', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Title', trigger: ['input', 'blur'] },
   ],
   cover: [
-    { required: true, message: '请输入封面', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Cover', trigger: ['input', 'blur'] },
   ],
   description: [
-    { required: true, message: '请输入描述', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Description', trigger: ['input', 'blur'] },
   ],
   categoryId: [
-    { required: true, message: '请输入分类', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Category', trigger: ['input', 'blur'] },
   ],
   difficulty: [
-    { required: true, message: '请输入难度', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Difficulty', type: 'number', trigger: ['input', 'blur'] },
   ],
 }
 
@@ -40,13 +40,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await dataSetEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await dataSetAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -101,10 +101,10 @@ async function doOpen(row: any = null, edit: boolean = false) {
   else {
     problemKeyValue.value = []
   }
-  // 获取下拉列表数据
+  // Load dropdown options
   const { data: difficultyData } = await sysDictOptions({ dictType: 'PROBLEM_DIFFICULTY' })
   if (difficultyData) {
-    // 将其中的value 转换为 number，其余保留
+    // Convert value to a number and keep the other fields
     difficultyOptions.value = difficultyData.map((item: any) => {
       return {
         value: Number(item.value),
@@ -135,36 +135,36 @@ const problemColumns: DataTableColumns<any> = [
     type: 'selection',
   },
   {
-    title: '来源',
+    title: 'Source',
     key: 'source',
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: '标题',
+    title: 'Title',
     key: 'title',
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: '分类',
+    title: 'Category',
     key: 'categoryName',
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: '难度',
+    title: 'Difficulty',
     key: 'difficultyName',
   },
   {
-    title: '阈值',
+    title: 'Threshold',
     key: 'threshold',
   },
   {
-    title: '公开',
+    title: 'Public',
     key: 'isPublicName',
     render: (row) => {
       return h(NTag, {
@@ -209,107 +209,107 @@ function doClose() {
 }
 function removeProblem(index: string | number) {
   console.log(index)
-  // 先找到problemKeyValue对应index的key
+  // Find the key for the index in problemKeyValue
   const removedItem = problemKeyValue.value.find((_, i) => i === index)
   if (!removedItem)
     return
 
   const removedKey = removedItem.key
 
-  // 从problemKeyValue中移除指定index的项
+  // Remove the indexed item from problemKeyValue
   problemKeyValue.value = problemKeyValue.value.filter((_, i) => i !== index)
 
-  // 从formData.problemIds中移除对应的key
+  // Remove the corresponding key from formData.problemIds
   const problemIds = formData.value.problemIds.filter((id: string | number) => id !== removedKey)
 
-  // 重新调用selectedProblems更新数据（如果需要的话）
-  // 如果不需要重新调用API，可以注释掉下面这行
+  // Call selectedProblems again to refresh data if needed
+  // Comment out the following line if no API reload is needed
   selectedProblems(problemIds)
 }
 </script>
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" :default-width="800" resizable @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="题集类型" path="setType">
-          <!-- <NInputNumber v-model:value="formData.setType" :min="0" :max="100" placeholder="请输入题集类型" /> -->
+        <!-- Number input -->
+        <NFormItem label="Set Type" path="setType">
+          <!-- <NInputNumber v-model:value="formData.setType" :min="0" :max="100" placeholder="Enter Set Type" /> -->
           <NSelect
             v-model:value="formData.setType"
-            placeholder="请选择分类"
+            placeholder="Select Category"
             :options="setTypeOptions"
             clearable
             remote
           />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="标题" path="title">
-          <NInput v-model:value="formData.title" placeholder="请输入标题" />
+        <!-- Text input -->
+        <NFormItem label="Title" path="title">
+          <NInput v-model:value="formData.title" placeholder="Enter Title" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="封面" path="cover">
-          <!-- <NInput v-model:value="formData.cover" placeholder="请输入封面" /> -->
+        <!-- Text input -->
+        <NFormItem label="Cover" path="cover">
+          <!-- <NInput v-model:value="formData.cover" placeholder="Enter Cover" /> -->
           <FileUpload v-model="formData.cover" :is-image="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="描述" path="description">
-          <!-- <NInput v-model:value="formData.description" placeholder="请输入描述" /> -->
+        <!-- Text input -->
+        <NFormItem label="Description" path="description">
+          <!-- <NInput v-model:value="formData.description" placeholder="Enter Description" /> -->
           <MDEditor v-model="formData.description" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="分类" path="categoryId">
-          <!-- <NInput v-model:value="formData.categoryId" placeholder="请输入分类" /> -->
+        <!-- Text input -->
+        <NFormItem label="Category" path="categoryId">
+          <!-- <NInput v-model:value="formData.categoryId" placeholder="Enter Category" /> -->
           <NSelect
             v-model:value="formData.categoryId"
-            placeholder="请选择分类"
+            placeholder="Select Category"
             :options="categoryOptions"
             clearable
             remote
           />
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="难度" path="difficulty">
-          <!-- <NInputNumber v-model:value="formData.difficulty" :min="0" :max="100" placeholder="请输入难度" /> -->
+        <!-- Number input -->
+        <NFormItem label="Difficulty" path="difficulty">
+          <!-- <NInputNumber v-model:value="formData.difficulty" :min="0" :max="100" placeholder="Enter Difficulty" /> -->
           <NSelect
             v-model:value="formData.difficulty"
-            placeholder="请选择难度"
+            placeholder="Select Difficulty"
             :options="difficultyOptions"
             clearable
             remote
           />
         </NFormItem>
-        <!-- <NFormItem v-if="formData.setType === 2" label="开始时间" path="startTime">
+        <!-- <NFormItem v-if="formData.setType === 2" label="Starts At" path="startTime">
           <NDatePicker v-model:value="formData.startTime" type="datetime" />
         </NFormItem>
-        <NFormItem v-if="formData.setType === 2" label="结束时间" path="endTime">
+        <NFormItem v-if="formData.setType === 2" label="Ends At" path="endTime">
           <NDatePicker v-model:value="formData.endTime" type="datetime" />
         </NFormItem> -->
-        <NFormItem v-if="formData.setType === 2" label="限制时间" path="time">
+        <NFormItem v-if="formData.setType === 2" label="Time Limit" path="time">
           <NDatePicker v-model:value="formData.time" type="datetimerange" />
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="上架" path="isVisible">
+        <!-- Boolean selector -->
+        <NFormItem label="Published" path="isVisible">
           <NRadioGroup v-model:value="formData.isVisible">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- Boolean 选择框 -->
-        <!-- <NFormItem label="题目选择" path="problems">
+        <!-- Boolean selector -->
+        <!-- <NFormItem label="Problem" path="problems">
           <NSpace vertical class="w-full">
             <NSpace class="w-full">
-              <NInput v-model:value="problemsPageParam.keyword" placeholder="请输入关键词" clearable @clear="clearProblemsPageParamHandle" />
+              <NInput v-model:value="problemsPageParam.keyword" placeholder="Enter keywords" clearable @clear="clearProblemsPageParamHandle" />
               <NButton @click="loadData">
-                搜索
+                Search
               </NButton>
             </NSpace>
             <NDataTable
@@ -324,10 +324,10 @@ function removeProblem(index: string | number) {
             <NSpace align="center" justify="space-between" class="w-full">
               <NSpace align="center">
                 <NP type="info" show-icon>
-                  当前数据 {{ problemsPageData?.records.length }} 条
+                  Current: {{ problemsPageData?.records.length }} records
                 </NP>
                 <NP type="info" show-icon>
-                  选中了 {{ formData.problemIds.length }} 行
+                  Selected: {{ formData.problemIds.length }} rows
                 </NP>
               </NSpace>
               <NPagination
@@ -337,7 +337,7 @@ function removeProblem(index: string | number) {
                 :page-count="problemsPageData ? Number(problemsPageData.pages) : 0"
                 show-size-picker
                 :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                  label: `${(i + 1) * 10} 每页`,
+                  label: `${(i + 1) * 10} per page`,
                   value: (i + 1) * 10,
                 }))"
                 :page-slot="5"
@@ -350,7 +350,7 @@ function removeProblem(index: string | number) {
               @remove="removeProblem"
             >
               <template #create-button-default>
-                请选择题目
+                Select Problem
               </template>
               <template #default="{ value, index }">
                 <div style="display: flex; align-items: center; width: 100%; gap: 10px;">
@@ -363,14 +363,14 @@ function removeProblem(index: string | number) {
             </n-dynamic-input>
           </NSpace>
         </NFormItem> -->
-        <!-- Boolean 选择框 -->
-        <NFormItem label="是否使用AI" path="useAi">
+        <!-- Boolean selector -->
+        <NFormItem label="Use AI" path="useAi">
           <NRadioGroup v-model:value="formData.useAi">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
@@ -381,13 +381,13 @@ function removeProblem(index: string | number) {
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

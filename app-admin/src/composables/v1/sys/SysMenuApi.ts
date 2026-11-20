@@ -1,7 +1,7 @@
 import { request as $alova } from '@/utils'
 
 /**
- * 菜单 API请求
+ * Menu API requests
  */
 export function useSysMenuFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
@@ -9,7 +9,7 @@ export function useSysMenuFetch() {
   const table = 'sys/menu'
 
   /*
-     * 菜单 默认数据
+     * Menu default data
      */
   const sysMenuDefaultData = {
     id: '',
@@ -33,12 +33,12 @@ export function useSysMenuFetch() {
   }
   return {
     /*
-    * 菜单 默认数据
+    * Menu default data
     */
     sysMenuDefaultData,
 
     /*
-     * 菜单 分页接口
+     * Menu pagination endpoint
      */
     sysMenuPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
@@ -49,28 +49,28 @@ export function useSysMenuFetch() {
     },
 
     /*
-     * 菜单 新增接口
+     * Menu create endpoint
      */
     sysMenuAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
 
     /*
-     * 菜单 修改接口
+     * Menu update endpoint
      */
     sysMenuEdit(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/edit`, data)
     },
 
     /*
-     * 菜单 删除接口
+     * Menu delete endpoint
      */
     sysMenuDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
 
     /*
-     * 菜单 详情接口
+     * Menu details endpoint
      */
     sysMenuDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {

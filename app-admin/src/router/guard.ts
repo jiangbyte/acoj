@@ -22,17 +22,17 @@ export function setupRouterGuard(router: Router) {
   router.beforeEach(async (to, _from, next) => {
     const parameters = parseJson(String(to.meta.parameters))
 
-    // 1. 外链：打开新窗口并取消本次导航
+    // 1. For external links, open a new window and cancel this navigation
     if (parameters?.href_outter) {
       window.open(parameters.href_outter as string)
       next(false)
       return
     }
 
-    // 2. 顶部加载条
+    // 2. Top loading bar
     window.$loadingBar?.start()
 
-    // 3. 未登录：仅放行登录页，其余跳转登录并带回跳地址
+    // 3. When signed out, allow only login and preserve the return URL
     if (!tokenStore.isLogined) {
       if (to.name === 'login') {
         next()
@@ -43,7 +43,7 @@ export function setupRouterGuard(router: Router) {
       return
     }
 
-    // 4. 首次进入：拉取动态路由/菜单，失败则登出
+    // 4. On first entry, load dynamic routes and menus; sign out on failure
     if (!routerStore.isInit) {
       try {
         await routerStore.initRouter()
@@ -64,19 +64,19 @@ export function setupRouterGuard(router: Router) {
           return
         }
 
-        // 动态路由刚注册完，需重新匹配当前地址
+        // Rematch the current URL after registering dynamic routes
         next({ ...to, replace: true })
         return
       }
       catch (error) {
-        console.error('路由初始化失败:', error)
+        console.error('Route initialization failed:', error)
         tokenStore.$reset()
         next({ path: '/login' })
         return
       }
     }
 
-    // 5. 已登录访问登录页 → 回首页
+    // 5. Redirect authenticated users from login to the home page
     if (to.name === 'login') {
       next({ path: '/' })
       return

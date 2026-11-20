@@ -4,12 +4,12 @@ import { useDataTestCaseFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close', 'submit'])
 
-// 懒加载重量级组件
+// Lazy-load heavy components
 const CodeEditor = defineAsyncComponent({
   loader: () => import('@/components/common/editor/code/CodeEditor.vue'),
   // loader: () =>
   //   new Promise((resolve) => {
-  //     // 模拟 3 秒延迟
+  //     // Simulate a three-second delay
   //     setTimeout(() => {
   //       resolve(import('@/components/common/editor/code/CodeEditor.vue'))
   //     }, 3000)
@@ -24,7 +24,7 @@ const CodeEditor = defineAsyncComponent({
           justifyContent: 'center',
         },
       }, [
-        h(NSpin, { size: 'small', description: '编辑器加载中...' }, { }),
+        h(NSpin, { size: 'small', description: 'Loading editor...' }, { }),
       ])
     },
   },
@@ -39,31 +39,31 @@ const { dataTestCaseDefaultData, dataTestCaseAdd, dataTestCaseEdit } = useDataTe
 const formData = ref<any>({ ...dataTestCaseDefaultData })
 const rules = {
   problemId: [
-    // { required: true, message: '请输入题目ID', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Problem ID', trigger: ['input', 'blur'] },
   ],
   caseSign: [
-    // { required: true, message: '请输入用例标识', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Case ID', trigger: ['input', 'blur'] },
   ],
   inputData: [
-    { required: true, message: '请输入输入数据', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Input Data', trigger: ['input', 'blur'] },
   ],
   expectedOutput: [
-    { required: true, message: '请输入期望输出', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Expected Output', trigger: ['input', 'blur'] },
   ],
   inputFilePath: [
-    // { required: true, message: '请输入输入文件路径', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Input File Path', trigger: ['input', 'blur'] },
   ],
   inputFileSize: [
-    // { required: true, message: '请输入输入文件大小', type: 'number', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Input File Size', type: 'number', trigger: ['input', 'blur'] },
   ],
   outputFilePath: [
-    // { required: true, message: '请输入输出文件路径', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Output File Path', trigger: ['input', 'blur'] },
   ],
   outputFileSize: [
-    // { required: true, message: '请输入输出文件大小', type: 'number', trigger: ['input', 'blur'] },
+    // { required: true, message: 'Enter Output File Size', type: 'number', trigger: ['input', 'blur'] },
   ],
   score: [
-    { required: true, message: '请输入分值', type: 'number', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Score', type: 'number', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -80,13 +80,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await dataTestCaseEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await dataTestCaseAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -105,7 +105,7 @@ function doOpen(row: any = null, edit: boolean = false, problemIdStr: string) {
   isEdit.value = edit
   formData.value = Object.assign(formData.value, row)
   formData.value.problemId = problemIdStr
-  console.log('Form 题目ID-->', formData.value.problemId, problemIdStr)
+  console.log('Form Problem ID-->', formData.value.problemId, problemIdStr)
 }
 defineExpose({
   doOpen,
@@ -114,52 +114,52 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <!-- <NFormItem label="题目ID" path="problemId">
-                <NInput v-model:value="formData.problemId" placeholder="请输入题目ID" />
+        <!-- Text input -->
+        <!-- <NFormItem label="Problem ID" path="problemId">
+                <NInput v-model:value="formData.problemId" placeholder="Enter Problem ID" />
               </NFormItem> -->
-        <!-- 输入框 -->
-        <!-- <NFormItem label="用例标识" path="caseSign">
-          <NInput v-model:value="formData.caseSign" placeholder="请输入用例标识" />
+        <!-- Text input -->
+        <!-- <NFormItem label="Case ID" path="caseSign">
+          <NInput v-model:value="formData.caseSign" placeholder="Enter Case ID" />
         </NFormItem> -->
-        <!-- 输入框 -->
-        <NFormItem label="输入数据" path="inputData">
-          <!-- <NInput type="textarea" v-model:value="formData.inputData" placeholder="请输入输入数据" /> -->
+        <!-- Text input -->
+        <NFormItem label="Input Data" path="inputData">
+          <!-- <NInput type="textarea" v-model:value="formData.inputData" placeholder="Enter Input Data" /> -->
           <CodeEditor v-model="formData.inputData" height="200px" />
         </NFormItem>
-        <NFormItem label="期望输出" path="expectedOutput">
+        <NFormItem label="Expected Output" path="expectedOutput">
           <CodeEditor v-model="formData.expectedOutput" height="200px" />
         </NFormItem>
-<!--        <NFormItem label="输入文件路径" path="inputFilePath">-->
-<!--          <NInput v-model:value="formData.inputFilePath" placeholder="请输入输入文件路径" />-->
+<!--        <NFormItem label="Input File Path" path="inputFilePath">-->
+<!--          <NInput v-model:value="formData.inputFilePath" placeholder="Enter Input File Path" />-->
 <!--        </NFormItem>-->
-<!--        <NFormItem label="输入文件大小" path="inputFileSize">-->
-<!--          <NInputNumber v-model:value="formData.inputFileSize" :min="0" :max="100" placeholder="请输入输入文件大小" />-->
+<!--        <NFormItem label="Input File Size" path="inputFileSize">-->
+<!--          <NInputNumber v-model:value="formData.inputFileSize" :min="0" :max="100" placeholder="Enter Input File Size" />-->
 <!--        </NFormItem>-->
-<!--        <NFormItem label="输出文件路径" path="outputFilePath">-->
-<!--          <NInput v-model:value="formData.outputFilePath" placeholder="请输入输出文件路径" />-->
+<!--        <NFormItem label="Output File Path" path="outputFilePath">-->
+<!--          <NInput v-model:value="formData.outputFilePath" placeholder="Enter Output File Path" />-->
 <!--        </NFormItem>-->
-<!--        <NFormItem label="输出文件大小" path="outputFileSize">-->
-<!--          <NInputNumber v-model:value="formData.outputFileSize" :min="0" :max="100" placeholder="请输入输出文件大小" />-->
+<!--        <NFormItem label="Output File Size" path="outputFileSize">-->
+<!--          <NInputNumber v-model:value="formData.outputFileSize" :min="0" :max="100" placeholder="Enter Output File Size" />-->
 <!--        </NFormItem>-->
-        <NFormItem label="是否样例" path="isSample">
+        <NFormItem label="Sample" path="isSample">
           <NRadioGroup v-model:value="formData.isSample">
             <NRadio :value="true">
-              是
+              Yes
             </NRadio>
             <NRadio :value="false">
-              否
+              No
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-<!--        <NFormItem label="分值" path="score">-->
-<!--          <NInputNumber v-model:value="formData.score" :min="0" :max="100" placeholder="请输入分值" />-->
+<!--        <NFormItem label="Score" path="score">-->
+<!--          <NInputNumber v-model:value="formData.score" :min="0" :max="100" placeholder="Enter Score" />-->
 <!--        </NFormItem> -->
       </NForm>
       <template #footer>
@@ -168,13 +168,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

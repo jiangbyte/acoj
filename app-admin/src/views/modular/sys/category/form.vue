@@ -10,7 +10,7 @@ const { sysCategoryDefaultData, sysCategoryAdd, sysCategoryEdit } = useSysCatego
 const formData = ref<any>({ ...sysCategoryDefaultData })
 const rules = {
   name: [
-    { required: true, message: '请输入名称', trigger: ['input', 'blur'] },
+    { required: true, message: 'Enter Name', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -27,13 +27,13 @@ async function doSubmit() {
       if (isEdit.value) {
         const { success } = await sysCategoryEdit(formData.value)
         if (success) {
-          window.$message.success('修改成功')
+          window.$message.success('Updated successfully')
         }
       }
       else {
         const { success } = await sysCategoryAdd(formData.value)
         if (success) {
-          window.$message.success('新增成功')
+          window.$message.success('Created successfully')
         }
       }
       emit('submit', true)
@@ -59,15 +59,15 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent :title="isEdit ? '编辑' : '新增'">
+    <NDrawerContent :title="isEdit ? 'Edit' : 'Add'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
-        <!-- 输入框 -->
-        <NFormItem v-if="isEdit" label="主键" path="id">
-          <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        <!-- Text input -->
+        <NFormItem v-if="isEdit" label="ID" path="id">
+          <NInput v-model:value="formData.id" placeholder="Enter ID" :disabled="true" />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="名称" path="name">
-          <NInput v-model:value="formData.name" placeholder="请输入名称" />
+        <!-- Text input -->
+        <NFormItem label="Name" path="name">
+          <NInput v-model:value="formData.name" placeholder="Enter Name" />
         </NFormItem>
       </NForm>
       <template #footer>
@@ -76,13 +76,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>

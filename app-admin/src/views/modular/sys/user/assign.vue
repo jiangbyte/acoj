@@ -20,7 +20,7 @@ async function doSubmit() {
     roleIds: assignRoles.value,
   }).then(({ success }) => {
     if (success) {
-      window.$message.success('分配成功')
+      window.$message.success('Assigned successfully')
       emit('submit', true)
       doClose()
       show.value = false
@@ -48,7 +48,7 @@ defineExpose({
 
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
-    <NDrawerContent title="角色分配">
+    <NDrawerContent title="RoleAssignment">
       <n-spin :show="isLoading">
         <n-checkbox-group v-model:value="assignRoles">
           <n-space vertical>
@@ -68,13 +68,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            Close
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            Save
           </NButton>
         </NSpace>
       </template>
