@@ -17,7 +17,7 @@ Core business service for ACOJ: auth, problems / problem sets / contests, submis
 
 ## Configuration
 
-Local bootstrap: `src/main/resources/application.yaml`.
+Bootstrap: `application.yaml` + profile overlay (`application-local.yaml` committed; `application-dev.yaml` gitignored — copy from `application-dev.yaml.example`).
 
 | Item | Description |
 | --- | --- |
@@ -26,14 +26,15 @@ Local bootstrap: `src/main/resources/application.yaml`.
 | Nacos | Address, namespace, credentials injected via Maven profiles |
 | Remote config | `optional:nacos:common.yaml`, `optional:nacos:service-system.yaml` |
 
-Maven profiles (root `pom.xml`):
+Maven profiles (root `pom.xml`) only set `spring.profiles.active`；Nacos 地址写在 `application-{profile}.yaml`：
 
 | Profile | Description |
 | --- | --- |
-| `dev` (default) | Nacos `localhost:8848`, dev namespace |
-| `prod` | Production Nacos address and namespace |
+| `local`（默认） | `application-local.yaml`（可提交） |
+| `dev` | `application-dev.yaml`（gitignore，从 example 复制） |
+| `prod` / `docker` | 对应 overlay |
 
-Before starting, ensure Nacos datasource, Redis, RabbitMQ, MinIO, and Sa-Token settings match your environment.
+启动命令见 [docs/dev-start.md](../docs/dev-start.md)。`local` 连本机；`dev` 连共同远程（Nacos 下发的库/缓存也须是远程地址）。
 
 ## Database
 
@@ -54,8 +55,11 @@ From the **repository root**:
 # Build
 mvn -pl service-system -am clean package -DskipTests
 
-# Dev run (default -Pdev)
+# Local run (default -Plocal, committed config)
 mvn -pl service-system spring-boot:run
+
+# Personal machine (needs application-dev.yaml; not in git)
+mvn -pl service-system spring-boot:run -Pdev
 
 # Production profile
 mvn -pl service-system spring-boot:run -Pprod

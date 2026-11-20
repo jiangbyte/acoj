@@ -1,0 +1,14 @@
+Name: service-judge
+Host: 0.0.0.0
+Port: 8888
+
+# 复制为 judge-dev.yaml 后填写共享开发机；judge-dev.yaml 不会被 git 提交
+#   cp etc/judge-dev.yaml.example etc/judge-dev.yaml
+# 将 <DEV_HOST> 换成团队远程开发机；Nacos 内数据源也须指向同一远程机
+Nacos:
+  ServerAddr: "<DEV_HOST>:8848"
+  Username: "nacos"
+  Password: "change-me"
+  Namespace: "8fee08f3-44ea-4e26-a9b5-530c582330a3"
+  Group: "DEFAULT_GROUP"
+  DataId: "service-judge.yaml"

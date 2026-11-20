@@ -1,0 +1,17 @@
+# 可提交：Compose 容器内 Nacos 引导（可用环境变量覆盖）
+spring:
+  cloud:
+    nacos:
+      server-addr: nacos:8848
+      username: nacos
+      password: nacos
+      discovery:
+        group: DEFAULT_GROUP
+        namespace: 8fee08f3-44ea-4e26-a9b5-530c582330a3
+      config:
+        group: DEFAULT_GROUP
+        namespace: 8fee08f3-44ea-4e26-a9b5-530c582330a3
+  config:
+    import:
+      - optional:nacos:common.yaml
+      - optional:nacos:${spring.application.name}.yaml

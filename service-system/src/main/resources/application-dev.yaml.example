@@ -1,0 +1,20 @@
+# 复制为 application-dev.yaml 后填写共享开发机；application-dev.yaml 不会被 git 提交
+#   cp application-dev.yaml.example application-dev.yaml
+# 将 <DEV_HOST> 换成团队远程开发机（勿把真实地址写进可提交文件）
+# Nacos 连接与 spring.config.import 必须在同一文件
+spring:
+  cloud:
+    nacos:
+      server-addr: <DEV_HOST>:8848
+      username: nacos
+      password: change-me
+      discovery:
+        group: DEFAULT_GROUP
+        namespace: 8fee08f3-44ea-4e26-a9b5-530c582330a3
+      config:
+        group: DEFAULT_GROUP
+        namespace: 8fee08f3-44ea-4e26-a9b5-530c582330a3
+  config:
+    import:
+      - optional:nacos:common.yaml
+      - optional:nacos:${spring.application.name}.yaml

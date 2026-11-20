@@ -16,7 +16,7 @@ Go (go-zero) similarity worker: consumes plagiarism / similarity tasks, compares
 
 ## Configuration
 
-Local bootstrap: `etc/similar.yaml`.
+Bootstrap: `etc/similar-local.yaml` (committed) or `etc/similar-dev.yaml` (gitignored; copy from `similar-dev.yaml.example`).
 
 | Item | Default / notes |
 | --- | --- |
@@ -30,21 +30,21 @@ With `-nacos`, full runtime config (database, MQ, etc.) is loaded from Nacos. Ke
 ```bash
 cd service-similarity
 
-# Recommended
-go run main.go -f etc/similar.yaml -nacos
+# Default: committed local bootstrap + Nacos runtime
+go run main.go -f etc/similar-local.yaml -nacos
 
-# Local yaml only (must include full runtime settings)
-go run main.go -f etc/similar.yaml
+# Personal machine (etc/similar-dev.yaml is gitignored)
+go run main.go -f etc/similar-dev.yaml -nacos
 ```
 
 Build a binary:
 
 ```bash
 go build -o service-similarity main.go
-./service-similarity -f etc/similar.yaml -nacos
+./service-similarity -f etc/similar-local.yaml -nacos
 ```
 
-> Always use `-f etc/similar.yaml`. Do not point at the judge service config path by mistake.
+> Always use `-f etc/similar-local.yaml` or `etc/similar-dev.yaml`. Do not point at the judge service config path by mistake.
 
 ## Docker
 
@@ -75,7 +75,7 @@ If the image entrypoint config path differs from local usage, follow the start c
 ## Troubleshooting
 
 1. **Fails immediately on config load**  
-   Confirm `-f` points to `etc/similar.yaml` and the Nacos DataId exists.
+   Confirm `-f` points to `etc/similar-local.yaml` (or `similar-dev.yaml`) and the Nacos DataId exists.
 
 2. **Backlog / no consumption**  
    Check RabbitMQ queue names and routing keys against the `service-system` similarity publish config.

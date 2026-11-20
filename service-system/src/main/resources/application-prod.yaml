@@ -1,0 +1,17 @@
+# 可提交：生产 Nacos 引导
+spring:
+  cloud:
+    nacos:
+      server-addr: 120.26.180.149:8848
+      username: nacos
+      password: 123456
+      discovery:
+        group: DEFAULT_GROUP
+        namespace: 11a37e04-ac1b-4666-9e4c-5e4f88fa78f0
+      config:
+        group: DEFAULT_GROUP
+        namespace: 11a37e04-ac1b-4666-9e4c-5e4f88fa78f0
+  config:
+    import:
+      - optional:nacos:common.yaml
+      - optional:nacos:${spring.application.name}.yaml

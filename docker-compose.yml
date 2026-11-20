@@ -260,8 +260,8 @@ services:
       SNOWFLAKE_WORKER_ID: "1"
       SNOWFLAKE_DATACENTER_ID: "1"
     volumes:
-      # Soft sandbox (no cgroup): ./deploy/docker/judge/judge-soft.yaml
-      - ./deploy/docker/judge/judge.yaml:/app/etc/judge.yaml:ro
+      # Soft sandbox (no cgroup): mount judge-soft.yaml → /app/etc/judge-local.yaml
+      - ./deploy/docker/judge/judge.yaml:/app/etc/judge-local.yaml:ro
       - acoj_service_judge_tmp:/tmp/judgespace
     ports:
       - "${JUDGE_PORT:-8888}:8888"
@@ -293,7 +293,7 @@ services:
       GOMAXPROCS: ${SIMILARITY_GOMAXPROCS:-1}
       GOMEMLIMIT: ${SIMILARITY_GOMEMLIMIT:-384MiB}
     volumes:
-      - ./deploy/docker/similarity/similar.yaml:/app/etc/similar.yaml:ro
+      - ./deploy/docker/similarity/similar.yaml:/app/etc/similar-local.yaml:ro
     ports:
       - "${SIMILARITY_PORT:-8882}:8882"
     deploy:

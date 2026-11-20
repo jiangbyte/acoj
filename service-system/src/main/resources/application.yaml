@@ -9,22 +9,8 @@ spring:
     locale: en_US
   profiles:
     active: @profiles.active@
-  cloud:
-    nacos:
-      server-addr: @nacos.server-addr@
-      username: @nacos.username@
-      password: @nacos.password@
-      discovery:
-        group: @nacos.discovery.group@
-        namespace: @nacos.discovery.namespace@
-#        ephemeral: false # false 永久实例，true 临时实例
-      config:
-        group: @nacos.config.group@
-        namespace: @nacos.config.namespace@
-  config:
-    import:
-      - optional:nacos:common.yaml
-      - optional:nacos:${spring.application.name}.yaml
+  # Nacos 连接与 spring.config.import 必须写在同一 profile 文件中（application-{profile}.yaml），
+  # 否则 import 早于 profile 覆盖，会出现 serverAddr/namespace 为空、连到错误租户。
 
 logging:
   level:

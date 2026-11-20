@@ -87,6 +87,11 @@ build/
 ### Local Configuration ###
 **/TODO.md
 
+# 本机私有环境（dev）：不提交；用对应 *.example 复制后改
+**/application-dev.yaml
+**/etc/*-dev.yaml
+!**/*-dev.yaml.example
+
 /service-judge/service-judge
 /service-similarity/service-similarity
 

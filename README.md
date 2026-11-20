@@ -94,7 +94,7 @@ Publish configs in the matching Nacos namespace (local default profile: `dev`):
 | `service-judge.yaml` | Judge runtime config (optional; local yaml alone is possible) |
 | `service-similarity.yaml` | Similarity runtime config (optional) |
 
-Local `dev` default Nacos namespace ID: `8fee08f3-44ea-4e26-a9b5-530c582330a3` (credentials are in the root `pom.xml` `dev` profile; default `nacos` / `123456`). Adjust for your environment.
+**local** = 本机基础设施；**dev** = 本机代码 + 共同远程基础设施。启动说明见 **[docs/dev-start.md](docs/dev-start.md)**（真实主机地址只写在 gitignore 的 `*-dev` 与远程 Nacos，勿写进仓库）。
 
 ### 2. Initialize the database
 
@@ -108,7 +108,8 @@ mysql -u root -p acoj < sql/acoj.sql
 ```bash
 # From the repository root
 mvn -pl service-system -am clean package -DskipTests
-mvn -pl service-system spring-boot:run
+mvn -pl service-system spring-boot:run          # local（默认）
+mvn -pl service-system spring-boot:run -Pdev    # 个人 dev
 ```
 
 Or:
@@ -120,21 +121,23 @@ java -jar service-system/target/service-system-1.0.0.jar
 | Item | Default |
 | --- | --- |
 | URL | http://127.0.0.1:89 |
-| Maven profile | `dev` (use `prod`: `mvn -Pprod ...`) |
+| Maven profile | `local`（默认；个人机用 `-Pdev`） |
 | Nacos configs | `common.yaml` + `service-system.yaml` |
 
-More detail: [service-system/README.md](service-system/README.md).
+More detail: [docs/dev-start.md](docs/dev-start.md)、[service-system/README.md](service-system/README.md).
 
 ### 4. Start judge / similarity services
 
 ```bash
 # Judge (separate terminal)
 cd service-judge
-go run main.go -f etc/judge.yaml -nacos
+go run main.go -f etc/judge-local.yaml -nacos
+# go run main.go -f etc/judge-dev.yaml -nacos
 
 # Similarity (separate terminal, optional)
 cd service-similarity
-go run main.go -f etc/similar.yaml -nacos
+go run main.go -f etc/similar-local.yaml -nacos
+# go run main.go -f etc/similar-dev.yaml -nacos
 ```
 
 | Service | Default port | Docs |
@@ -142,7 +145,7 @@ go run main.go -f etc/similar.yaml -nacos
 | service-judge | 8888 | [service-judge/readme.md](service-judge/readme.md) |
 | service-similarity | 8882 | [service-similarity/readme.md](service-similarity/readme.md) |
 
-On local WSL or without full cgroup permissions, set `Sandbox.Mode` to `soft` in `service-judge/etc/judge.yaml`.
+On local WSL or without full cgroup permissions, set `Sandbox.Mode` to `soft` in the judge bootstrap yaml (or Nacos `service-judge.yaml`).
 
 ### 5. Start the frontends
 

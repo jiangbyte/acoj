@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	configFile = flag.String("f", "etc/judge.yaml", "本地配置文件路径")
+	configFile = flag.String("f", "etc/judge-local.yaml", "本地配置文件路径（local 可提交；dev 用 etc/judge-dev.yaml）")
 	useNacos   = flag.Bool("nacos", false, "是否使用 Nacos 配置中心")
 )
 

@@ -2,6 +2,7 @@ package nacos
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
@@ -74,9 +75,9 @@ func parseServerConfigs(serverAddr string) ([]constant.ServerConfig, error) {
 			continue
 		}
 
-		// 解析主机和端口
+		// 解析主机和端口（支持 host:port，默认 8848）
 		var host string
-		var port uint64 = 8848 // 默认端口
+		var port uint64 = 8848
 
 		if strings.Contains(addr, ":") {
 			parts := strings.Split(addr, ":")
@@ -84,9 +85,11 @@ func parseServerConfigs(serverAddr string) ([]constant.ServerConfig, error) {
 				return nil, fmt.Errorf("服务器地址格式无效: %s", addr)
 			}
 			host = parts[0]
-			// 这里可以解析端口，但 Nacos SDK 通常使用默认端口
-			// portStr := parts[1]
-			// 如果需要自定义端口，可以在这里解析
+			parsedPort, err := strconv.ParseUint(parts[1], 10, 64)
+			if err != nil || parsedPort == 0 {
+				return nil, fmt.Errorf("服务器端口无效: %s", addr)
+			}
+			port = parsedPort
 		} else {
 			host = addr
 		}

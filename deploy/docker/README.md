@@ -134,7 +134,7 @@ curl -sS -X POST http://localhost:89/api/v1/task/similarity/batch \
 If the host cannot run `--privileged` / cgroup, edit `docker-compose.yml` judge volume:
 
 ```yaml
-- ./deploy/docker/judge/judge-soft.yaml:/app/etc/judge.yaml:ro
+- ./deploy/docker/judge/judge-soft.yaml:/app/etc/judge-local.yaml:ro
 ```
 
 and remove `privileged: true`.

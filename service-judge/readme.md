@@ -23,7 +23,7 @@ For full judging on Linux / containers, prefer **privileged** mode or writable c
 
 ## Configuration
 
-Local bootstrap: `etc/judge.yaml`.
+Bootstrap: `etc/judge-local.yaml` (committed) or `etc/judge-dev.yaml` (gitignored; copy from `judge-dev.yaml.example`).
 
 | Item | Default / notes |
 | --- | --- |
@@ -45,18 +45,18 @@ Sandbox:
 ```bash
 cd service-judge
 
-# Recommended: local yaml + Nacos runtime config
-go run main.go -f etc/judge.yaml -nacos
+# Default: committed local bootstrap + Nacos runtime
+go run main.go -f etc/judge-local.yaml -nacos
 
-# Local yaml only (must contain full runtime settings)
-go run main.go -f etc/judge.yaml
+# Personal machine (etc/judge-dev.yaml is gitignored)
+go run main.go -f etc/judge-dev.yaml -nacos
 ```
 
 Build a binary:
 
 ```bash
 go build -o service-judge main.go
-./service-judge -f etc/judge.yaml -nacos
+./service-judge -f etc/judge-local.yaml -nacos
 ```
 
 ## Docker
@@ -77,7 +77,7 @@ docker run -d --privileged --name service-judge \
 The container must reach Nacos / MySQL / Redis / RabbitMQ. The entrypoint runs:
 
 ```text
-./service-judge -f etc/judge.yaml -nacos
+./service-judge -f etc/judge-local.yaml -nacos
 ```
 
 Optional Go runtime limits (defaults in entrypoint):

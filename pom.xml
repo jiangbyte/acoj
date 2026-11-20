@@ -277,25 +277,24 @@
         </dependencies>
     </dependencyManagement>
 
-    <!-- 多环境配置 Cloud -->
+    <!-- 多环境：仅注入 spring.profiles.active；Nacos 等见 application-{profile}.yaml -->
     <profiles>
+        <!-- 默认可提交：application-local.yaml -->
         <profile>
-            <id>dev</id>
+            <id>local</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
+                <profiles.active>local</profiles.active>
+            </properties>
+        </profile>
+
+        <!-- 本机私有：需存在 application-dev.yaml（已 gitignore） -->
+        <profile>
+            <id>dev</id>
+            <properties>
                 <profiles.active>dev</profiles.active>
-<!--                <nacos.server-addr>120.26.180.149:8848</nacos.server-addr>-->
-                <nacos.server-addr>localhost:8848</nacos.server-addr>
-                <nacos.username>nacos</nacos.username>
-                <nacos.password>123456</nacos.password>
-                <nacos.discovery.group>DEFAULT_GROUP</nacos.discovery.group>
-                <nacos.discovery.namespace>8fee08f3-44ea-4e26-a9b5-530c582330a3</nacos.discovery.namespace>
-<!--                <nacos.discovery.namespace>public</nacos.discovery.namespace>-->
-                <nacos.config.group>DEFAULT_GROUP</nacos.config.group>
-                <nacos.config.namespace>8fee08f3-44ea-4e26-a9b5-530c582330a3</nacos.config.namespace>
-<!--                <nacos.config.namespace>public</nacos.config.namespace>-->
             </properties>
         </profile>
 
@@ -303,28 +302,14 @@
             <id>prod</id>
             <properties>
                 <profiles.active>prod</profiles.active>
-                <nacos.server-addr>120.26.180.149:8848</nacos.server-addr>
-                <nacos.username>nacos</nacos.username>
-                <nacos.password>123456</nacos.password>
-                <nacos.discovery.group>DEFAULT_GROUP</nacos.discovery.group>
-                <nacos.discovery.namespace>11a37e04-ac1b-4666-9e4c-5e4f88fa78f0</nacos.discovery.namespace>
-                <nacos.config.group>DEFAULT_GROUP</nacos.config.group>
-                <nacos.config.namespace>11a37e04-ac1b-4666-9e4c-5e4f88fa78f0</nacos.config.namespace>
             </properties>
         </profile>
 
-        <!-- Compose / local Docker: namespace ID required for SCA 2025 + Nacos 2.5 -->
+        <!-- Compose 镜像构建 -->
         <profile>
             <id>docker</id>
             <properties>
-                <profiles.active>dev</profiles.active>
-                <nacos.server-addr>nacos:8848</nacos.server-addr>
-                <nacos.username>nacos</nacos.username>
-                <nacos.password>nacos</nacos.password>
-                <nacos.discovery.group>DEFAULT_GROUP</nacos.discovery.group>
-                <nacos.discovery.namespace>8fee08f3-44ea-4e26-a9b5-530c582330a3</nacos.discovery.namespace>
-                <nacos.config.group>DEFAULT_GROUP</nacos.config.group>
-                <nacos.config.namespace>8fee08f3-44ea-4e26-a9b5-530c582330a3</nacos.config.namespace>
+                <profiles.active>docker</profiles.active>
             </properties>
         </profile>
     </profiles>
