@@ -16,13 +16,13 @@
 | Feature | Description |
 | --- | --- |
 | Problems & problem sets | Problems, tags, samples / test cases, difficulty levels |
-| Multi-language judging | C / C++, Java, Python, Go, and more; sandboxed by `judge-service` |
+| Multi-language judging | C / C++, Java, Python, Go, and more; sandboxed by `service-judge` |
 | Users & permissions | Sign-up / login, roles, leaderboards, submission stats |
 | Problem sets / contests | Custom sets, progress tracking, contest-related features |
 | Async judging | Judge tasks via RabbitMQ for high-concurrency submissions |
-| Plagiarism detection | Standalone `similarity-service` for similarity analysis |
+| Plagiarism detection | Standalone `service-similarity` for similarity analysis |
 | AI assistance | Optional LLM integration (explanations, suggestions; depends on deployment) |
-| Dual frontends | `admin` console + `pc` user app |
+| Dual frontends | `app-admin` console + `app-pc` user app |
 
 ## Tech Stack
 
@@ -40,11 +40,11 @@
 ```text
 acoj/
 ├── pom.xml                 # Maven aggregator root (revision 1.0.0)
-├── oj/                     # Business backend (default port 89)
-├── judge-service/          # Go judge service (default port 8888)
-├── similarity-service/     # Go similarity service (default port 8882)
-├── admin/                  # Admin frontend (dev port 81)
-├── pc/                     # User frontend (dev port 80)
+├── service-system/         # Business backend (default port 89)
+├── service-judge/          # Go judge service (default port 8888)
+├── service-similarity/     # Go similarity service (default port 8882)
+├── app-admin/              # Admin frontend (dev port 81)
+├── app-pc/                 # User frontend (dev port 80)
 ├── sql/                    # Database scripts
 ├── antlrv4/                # Multi-language ANTLR-related resources
 ├── test/                   # Load tests and test-user generation
@@ -67,7 +67,7 @@ See each module’s README for startup details.
 | Nacos | 2.x (config + discovery) |
 | MinIO | Enable as required by your config |
 
-The judge host also needs language runtimes (e.g. `g++`, JDK, Python3, Go). See `judge-service/Dockerfile` for a full judge image.
+The judge host also needs language runtimes (e.g. `g++`, JDK, Python3, Go). See `service-judge/Dockerfile` for a full judge image.
 
 Exact image tags for Docker Compose are listed in `deploy/docker/README.md`.
 
@@ -90,9 +90,9 @@ Publish configs in the matching Nacos namespace (local default profile: `dev`):
 | DataId | Purpose |
 | --- | --- |
 | `common.yaml` | Shared config (datasource, Redis, MQ, MinIO, etc.) |
-| `oj.yaml` | Business service config |
-| `judge-service.yaml` | Judge runtime config (optional; local yaml alone is possible) |
-| `similarity-service.yaml` | Similarity runtime config (optional) |
+| `service-system.yaml` | Business service config |
+| `service-judge.yaml` | Judge runtime config (optional; local yaml alone is possible) |
+| `service-similarity.yaml` | Similarity runtime config (optional) |
 
 Local `dev` default Nacos namespace ID: `8fee08f3-44ea-4e26-a9b5-530c582330a3` (credentials are in the root `pom.xml` `dev` profile; default `nacos` / `123456`). Adjust for your environment.
 
@@ -103,74 +103,74 @@ mysql -u root -p -e "CREATE DATABASE acoj DEFAULT CHARACTER SET utf8mb4 COLLATE 
 mysql -u root -p acoj < sql/acoj.sql
 ```
 
-### 3. Start the business backend `oj`
+### 3. Start the business backend `service-system`
 
 ```bash
 # From the repository root
-mvn -pl oj -am clean package -DskipTests
-mvn -pl oj spring-boot:run
+mvn -pl service-system -am clean package -DskipTests
+mvn -pl service-system spring-boot:run
 ```
 
 Or:
 
 ```bash
-java -jar oj/target/oj-1.0.0.jar
+java -jar service-system/target/service-system-1.0.0.jar
 ```
 
 | Item | Default |
 | --- | --- |
 | URL | http://127.0.0.1:89 |
 | Maven profile | `dev` (use `prod`: `mvn -Pprod ...`) |
-| Nacos configs | `common.yaml` + `oj.yaml` |
+| Nacos configs | `common.yaml` + `service-system.yaml` |
 
-More detail: [oj/README.md](oj/README.md).
+More detail: [service-system/README.md](service-system/README.md).
 
 ### 4. Start judge / similarity services
 
 ```bash
 # Judge (separate terminal)
-cd judge-service
+cd service-judge
 go run main.go -f etc/judge.yaml -nacos
 
 # Similarity (separate terminal, optional)
-cd similarity-service
+cd service-similarity
 go run main.go -f etc/similar.yaml -nacos
 ```
 
 | Service | Default port | Docs |
 | --- | --- | --- |
-| judge-service | 8888 | [judge-service/Readme.md](judge-service/Readme.md) |
-| similarity-service | 8882 | [similarity-service/Readme.md](similarity-service/Readme.md) |
+| service-judge | 8888 | [service-judge/readme.md](service-judge/readme.md) |
+| service-similarity | 8882 | [service-similarity/readme.md](service-similarity/readme.md) |
 
-On local WSL or without full cgroup permissions, set `Sandbox.Mode` to `soft` in `judge-service/etc/judge.yaml`.
+On local WSL or without full cgroup permissions, set `Sandbox.Mode` to `soft` in `service-judge/etc/judge.yaml`.
 
 ### 5. Start the frontends
 
 ```bash
 # Admin → http://localhost:81
-cd admin
+cd app-admin
 pnpm install
 pnpm dev
 
 # User app → http://localhost:80
-cd pc
+cd app-pc
 pnpm install
 pnpm dev
 ```
 
-Point `VITE_GATEWAY` in `admin/.env.dev` and `pc/.env.dev` at the business API (locally usually `http://localhost:89`).
+Point `VITE_GATEWAY` in `app-admin/.env.dev` and `app-pc/.env.dev` at the business API (locally usually `http://localhost:89`).
 
-See: [admin/README.md](admin/README.md), [pc/README.md](pc/README.md).
+See: [app-admin/README.md](app-admin/README.md), [app-pc/README.md](app-pc/README.md).
 
 ## Default Ports
 
 | Service | Port |
 | --- | --- |
-| oj (business API) | 89 |
+| service-system (business API) | 89 |
 | admin (dev) | 81 |
 | pc (dev) | 80 |
-| judge-service | 8888 |
-| similarity-service | 8882 |
+| service-judge | 8888 |
+| service-similarity | 8882 |
 | Nacos | 8848 |
 
 ## Load Testing & Test Data

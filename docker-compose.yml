@@ -1,8 +1,8 @@
 # ACOJ Docker Compose — tuned for 4 vCPU / 8 GiB
 #
 # Default stack (~6–7 GiB peak):
-#   mysql + redis + rabbitmq + nacos + minio + oj + judge-service + similarity-service
-#   + pc + admin
+#   mysql + redis + rabbitmq + nacos + minio + service-system + service-judge + service-similarity
+#   + app-pc + app-admin
 #
 # Soft sandbox: change judge volume to deploy/docker/judge/judge-soft.yaml
 
@@ -190,12 +190,12 @@ services:
     networks: [acoj]
 
   # ───────────────────────── Application ─────────────────────────
-  oj:
+  service-system:
     build:
-      context: ./oj
+      context: ./service-system
       dockerfile: Dockerfile
-    image: ${OJ_IMAGE:-acoj/oj:local}
-    container_name: acoj-oj
+    image: ${SYSTEM_IMAGE:-acoj/service-system:local}
+    container_name: acoj-service-system
     restart: unless-stopped
     depends_on:
       mysql:
@@ -218,9 +218,9 @@ services:
       SPRING_CLOUD_NACOS_DISCOVERY_GROUP: DEFAULT_GROUP
       SPRING_CLOUD_NACOS_CONFIG_GROUP: DEFAULT_GROUP
     ports:
-      - "${OJ_PORT:-89}:89"
+      - "${SYSTEM_PORT:-89}:89"
     volumes:
-      - acoj_oj_logs:/app/logs
+      - acoj_service_system_logs:/app/logs
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/89 && exit 0' || exit 1"]
       interval: 15s
@@ -236,12 +236,12 @@ services:
           memory: 1536M
     networks: [acoj]
 
-  judge-service:
+  service-judge:
     build:
-      context: ./judge-service
+      context: ./service-judge
       dockerfile: Dockerfile
-    image: ${JUDGE_IMAGE:-acoj/judge-service:local}
-    container_name: acoj-judge
+    image: ${JUDGE_IMAGE:-acoj/service-judge:local}
+    container_name: acoj-service-judge
     restart: unless-stopped
     privileged: true
     depends_on:
@@ -260,7 +260,7 @@ services:
     volumes:
       # Soft sandbox (no cgroup): ./deploy/docker/judge/judge-soft.yaml
       - ./deploy/docker/judge/judge.yaml:/app/etc/judge.yaml:ro
-      - acoj_judge_tmp:/tmp/judgespace
+      - acoj_service_judge_tmp:/tmp/judgespace
     ports:
       - "${JUDGE_PORT:-8888}:8888"
     deploy:
@@ -272,12 +272,12 @@ services:
           memory: 512M
     networks: [acoj]
 
-  similarity-service:
+  service-similarity:
     build:
-      context: ./similarity-service
+      context: ./service-similarity
       dockerfile: Dockerfile
-    image: ${SIM_IMAGE:-acoj/similarity-service:local}
-    container_name: acoj-similarity
+    image: ${SIMILARITY_IMAGE:-acoj/service-similarity:local}
+    container_name: acoj-service-similarity
     restart: unless-stopped
     depends_on:
       mysql:
@@ -288,12 +288,12 @@ services:
         condition: service_completed_successfully
     environment:
       TZ: Asia/Shanghai
-      GOMAXPROCS: ${SIM_GOMAXPROCS:-1}
-      GOMEMLIMIT: ${SIM_GOMEMLIMIT:-384MiB}
+      GOMAXPROCS: ${SIMILARITY_GOMAXPROCS:-1}
+      GOMEMLIMIT: ${SIMILARITY_GOMEMLIMIT:-384MiB}
     volumes:
       - ./deploy/docker/similarity/similar.yaml:/app/etc/similar.yaml:ro
     ports:
-      - "${SIM_PORT:-8882}:8882"
+      - "${SIMILARITY_PORT:-8882}:8882"
     deploy:
       resources:
         limits:
@@ -304,14 +304,14 @@ services:
   # ───────────────────────── Frontends ─────────────────────────
   pc:
     build:
-      context: ./pc
+      context: ./app-pc
       dockerfile: Dockerfile
       network: host
     image: ${PC_IMAGE:-acoj/pc:local}
     container_name: acoj-pc
     restart: unless-stopped
     depends_on:
-      oj:
+      service-system:
         condition: service_started
     ports:
       - "${PC_PORT:-80}:80"
@@ -324,14 +324,14 @@ services:
 
   admin:
     build:
-      context: ./admin
+      context: ./app-admin
       dockerfile: Dockerfile
       network: host
     image: ${ADMIN_IMAGE:-acoj/admin:local}
     container_name: acoj-admin
     restart: unless-stopped
     depends_on:
-      oj:
+      service-system:
         condition: service_started
     ports:
       - "${ADMIN_PORT:-81}:81"
@@ -360,7 +360,7 @@ volumes:
     name: acoj-compose-nacos-logs
   acoj_minio_data:
     name: acoj-compose-minio
-  acoj_oj_logs:
-    name: acoj-compose-oj-logs
-  acoj_judge_tmp:
-    name: acoj-compose-judge-tmp
+  acoj_service_system_logs:
+    name: acoj-compose-service-system-logs
+  acoj_service_judge_tmp:
+    name: acoj-compose-service-judge-tmp

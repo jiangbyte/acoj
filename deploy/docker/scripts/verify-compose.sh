@@ -18,19 +18,19 @@ docker compose ps nacos
 echo "== nacos-init =="
 docker compose run --rm nacos-init
 
-echo "== minio-init + oj + similarity =="
-docker compose up -d minio-init oj similarity-service
+echo "== minio-init + service-system + service-similarity =="
+docker compose up -d minio-init service-system service-similarity
 
 echo "== judge (may fail if image missing) =="
-docker compose up -d judge-service || true
+docker compose up -d service-judge || true
 
-echo "== wait oj =="
+echo "== wait service-system =="
 i=0
-until curl -fsS http://127.0.0.1:89/actuator/health >/tmp/oj-health.json 2>/dev/null; do
+until curl -fsS http://127.0.0.1:89/actuator/health >/tmp/service-system-health.json 2>/dev/null; do
   i=$((i+1))
   if [ "$i" -gt 36 ]; then
-    echo "oj health timeout"
-    docker logs acoj-oj --tail 40
+    echo "service-system health timeout"
+    docker logs acoj-service-system --tail 40
     exit 1
   fi
   sleep 5
@@ -38,10 +38,10 @@ done
 
 echo "== final status =="
 docker compose ps -a --format 'table {{.Name}}\t{{.Status}}\t{{.Ports}}'
-echo "--- oj health ---"
-cat /tmp/oj-health.json
+echo "--- service-system health ---"
+cat /tmp/service-system-health.json
 echo
 echo "--- similarity logs ---"
-docker logs acoj-similarity --tail 15 2>&1 || true
+docker logs acoj-service-similarity --tail 15 2>&1 || true
 echo "--- judge logs ---"
-docker logs acoj-judge --tail 15 2>&1 || true
+docker logs acoj-service-judge --tail 15 2>&1 || true

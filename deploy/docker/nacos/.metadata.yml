@@ -1,6 +1,6 @@
 metadata:
 - appName: ''
-  dataId: judge-service.yaml
+  dataId: service-judge.yaml
   desc: ''
   group: DEFAULT_GROUP
   type: yaml
@@ -10,7 +10,7 @@ metadata:
   group: DEFAULT_GROUP
   type: json
 - appName: ''
-  dataId: similarity-service.yaml
+  dataId: service-similarity.yaml
   desc: ''
   group: DEFAULT_GROUP
   type: yaml
@@ -19,7 +19,7 @@ metadata:
   group: DEFAULT_GROUP
   type: yaml
 - appName: ''
-  dataId: oj.yaml
+  dataId: service-system.yaml
   desc: ''
   group: DEFAULT_GROUP
   type: yaml

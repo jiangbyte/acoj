@@ -17,11 +17,11 @@ Citation: CITATION.cff
 # -----------------------------------------------------------------------------
 # Modules
 # -----------------------------------------------------------------------------
-module.oj=1.0.0
-module.judge-service=1.0.0
-module.similarity-service=1.0.0
-module.admin=1.0.0
-module.pc=1.0.0
+module.service-system=1.0.0
+module.service-judge=1.0.0
+module.service-similarity=1.0.0
+module.app-admin=1.0.0
+module.app-pc=1.0.0
 
 # -----------------------------------------------------------------------------
 # Runtime / language baselines
@@ -53,9 +53,9 @@ dep.vite=7.x
 # -----------------------------------------------------------------------------
 # Default service ports (local / documentation defaults)
 # -----------------------------------------------------------------------------
-port.oj=89
-port.admin=81
-port.pc=80
-port.judge-service=8888
-port.similarity-service=8882
+port.service-system=89
+port.app-admin=81
+port.app-pc=80
+port.service-judge=8888
+port.service-similarity=8882
 port.nacos=8848

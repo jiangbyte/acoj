@@ -92,9 +92,9 @@ publish() {
 # Source: deploy/nacos_config_export.zip → DEFAULT_GROUP/*
 # Hosts rewritten for compose DNS (mysql/redis/rabbitmq/minio).
 publish "common.yaml" "${CONFIG_DIR}/common.yaml" "yaml"
-publish "oj.yaml" "${CONFIG_DIR}/oj.yaml" "yaml"
-publish "judge-service.yaml" "${CONFIG_DIR}/judge-service.yaml" "yaml"
-publish "similarity-service.yaml" "${CONFIG_DIR}/similarity-service.yaml" "yaml"
+publish "service-system.yaml" "${CONFIG_DIR}/service-system.yaml" "yaml"
+publish "service-judge.yaml" "${CONFIG_DIR}/service-judge.yaml" "yaml"
+publish "service-similarity.yaml" "${CONFIG_DIR}/service-similarity.yaml" "yaml"
 publish "spring.ai.alibaba.configurable.prompt" "${CONFIG_DIR}/spring.ai.alibaba.configurable.prompt" "json"
 
 echo "[nacos-init] done"

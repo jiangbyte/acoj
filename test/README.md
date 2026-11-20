@@ -25,7 +25,7 @@ test/
 | Load tests | [k6](https://k6.io/) |
 | Analysis | Python 3; `pandas`, `matplotlib`, `seaborn`, `numpy` (Chinese font such as SimHei optional) |
 
-The target `oj` service must be reachable.
+The target `service-system` service must be reachable.
 
 ## 1. Prepare Test Users
 
@@ -82,7 +82,7 @@ Under `ojtest`, directories are named by target concurrency, e.g. `100`, `120`, 
 
 Edit `optimized-oj-test.js` in the chosen directory and confirm at least:
 
-- `baseURL` / `serverIP` / `serverPORT` → target `oj`
+- `baseURL` / `serverIP` / `serverPORT` → target `service-system`
 - `testProblemId` → a real problem ID in that environment
 - `captchaCode` → matches the test captcha policy
 - Token data source → matches your CSV / SharedArray load path
@@ -122,11 +122,11 @@ Typical outputs (as produced by the script):
 ## Notes
 
 1. **Only load-test environments you are authorized to use**—never production or third-party systems without permission.
-2. Before submit-heavy scenarios, ensure the judge path (`oj` + RabbitMQ + `judge-service`) is ready; otherwise results are meaningless.
+2. Before submit-heavy scenarios, ensure the judge path (`service-system` + RabbitMQ + `service-judge`) is ready; otherwise results are meaningless.
 3. IPs, ports, problem IDs, and captchas in scripts are samples or leftovers—**update them for your environment every time**.
 4. Batch registration writes real DB rows; use a dedicated or disposable test database.
 
 ## Related Docs
 
 - Overview: [../README.md](../README.md)
-- Business backend: [../oj/README.md](../oj/README.md)
+- Business backend: [../service-system/README.md](../service-system/README.md)

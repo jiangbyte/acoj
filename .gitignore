@@ -87,7 +87,8 @@ build/
 ### Local Configuration ###
 **/TODO.md
 
-/judge-service/JudgeService
+/service-judge/service-judge
+/service-similarity/service-similarity
 
 depoloy/
 

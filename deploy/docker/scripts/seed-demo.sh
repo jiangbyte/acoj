@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Seed demo problems/users for judge + similarity testing, then tokenize library samples
-# via oj's library MQ consumer (production CodeTokenUtil).
+# via service-system's library MQ consumer (production CodeTokenUtil).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
@@ -10,7 +10,7 @@ MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-infra@123}"
 MYSQL_DATABASE="${MYSQL_DATABASE:-astro_code}"
 RABBITMQ_USER="${RABBITMQ_USER:-admin}"
 RABBITMQ_PASSWORD="${RABBITMQ_PASSWORD:-infra@123}"
-OJ_URL="${OJ_URL:-http://127.0.0.1:89}"
+SYSTEM_URL="${SYSTEM_URL:-http://127.0.0.1:89}"
 RMQ_API="${RMQ_API:-http://127.0.0.1:15672}"
 
 if [ -f .env ]; then
@@ -167,11 +167,11 @@ while [ "$i" -lt 30 ]; do
 done
 if [ "${cnt:-0}" -lt 5 ] 2>/dev/null; then
   echo "[seed] warning: expected 5 tokenized libraries, got ${cnt:-0}"
-  echo "[seed] check: docker compose logs oj --tail 50"
+  echo "[seed] check: docker compose logs service-system --tail 50"
 fi
 
 echo "== smoke: login + A+B submit =="
-TOKEN="$(curl -fsS -X POST "${OJ_URL}/api/v1/sys/auth/login" \
+TOKEN="$(curl -fsS -X POST "${SYSTEM_URL}/api/v1/sys/auth/login" \
   -H 'content-type: application/json' \
   -d '{"username":"junit_judge","password":"junit123456","platform":"CLIENT","captchaCode":"9926","uuid":"seed"}' \
   | python3 -c 'import sys,json; r=json.load(sys.stdin); print(r.get("data") or "")')"
@@ -201,7 +201,7 @@ int main() {
 }))
 PY
 )"
-SUBMIT_JSON="$(curl -fsS -X POST "${OJ_URL}/api/v1/data/submit/execute" \
+SUBMIT_JSON="$(curl -fsS -X POST "${SYSTEM_URL}/api/v1/data/submit/execute" \
   -H "content-type: application/json" \
   -H "Authorization: ${TOKEN}" \
   -d "${SUBMIT_BODY}")"

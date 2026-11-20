@@ -114,7 +114,7 @@ java:
   io:
     tmpdir=/tmp
 
-oj:
+system:
   storage:
     type: MINIO  # 存储类型：LOCAL, MINIO, OSS
     
