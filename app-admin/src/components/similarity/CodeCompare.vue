@@ -111,6 +111,50 @@ const activeTiles = computed(() => {
 /**
  * 按 token 文本顺序在源码中定位字符区间。
  */
+function skipComment(code: string, index: number) {
+  const lang = (props.language || '').toLowerCase()
+  const python = lang.includes('python')
+  if (python && code[index] === '#') {
+    let i = index
+    while (i < code.length && code[i] !== '\n')
+      i++
+    return i
+  }
+  const cFamily = lang === 'c' || lang.includes('cpp') || lang.includes('c++') || lang.includes('java') || lang === 'go' || lang.includes('golang')
+  if (cFamily && code.startsWith('//', index)) {
+    let i = index
+    while (i < code.length && code[i] !== '\n')
+      i++
+    return i
+  }
+  if (cFamily && code.startsWith('/*', index)) {
+    const end = code.indexOf('*/', index + 2)
+    return end < 0 ? code.length : end + 2
+  }
+  if ((lang === 'c' || lang.includes('cpp') || lang.includes('c++')) && code[index] === '#') {
+    let i = index
+    while (i < code.length && code[i] !== '\n')
+      i++
+    return i
+  }
+  return index
+}
+
+function indexOfToken(code: string, text: string, from: number) {
+  let i = from
+  while (i <= code.length - text.length) {
+    const next = skipComment(code, i)
+    if (next > i) {
+      i = next
+      continue
+    }
+    if (code.startsWith(text, i))
+      return i
+    i++
+  }
+  return -1
+}
+
 function locate(code: string, texts: string[]) {
   const spans: { start: number, end: number }[] = []
   let cursor = 0
@@ -119,7 +163,8 @@ function locate(code: string, texts: string[]) {
       spans.push({ start: cursor, end: cursor })
       continue
     }
-    const idx = code.indexOf(text, cursor)
+    // 注释不在 token 序列里，不能让注释中的同名片段抢走后面的源码位置
+    const idx = indexOfToken(code, text, cursor)
     if (idx < 0)
       return null
     spans.push({ start: idx, end: idx + text.length })
