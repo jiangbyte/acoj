@@ -71,3 +71,23 @@ go run main.go -f etc/similar-dev.yaml -nacos   # dev
 | service-system | `application-local.yaml` | `application-dev.yaml` | `application-dev.yaml.example` |
 | service-judge | `etc/judge-local.yaml` | `etc/judge-dev.yaml` | `etc/judge-dev.yaml.example` |
 | service-similarity | `etc/similar-local.yaml` | `etc/similar-dev.yaml` | `etc/similar-dev.yaml.example` |
+
+## shared-dev 业务数据
+
+共享 MySQL（Nacos `common.yaml` 中的 `astro_code`）的题库 / 题集 / 竞赛 / 普通用户 / 样本库 / 提交数据，按「线上导出 → 正规化」维护：
+
+1. 从 shared-dev 导出相关表（备份放在仓库外，例如 `~/Downloads/acoj-dev-export-YYYYMMDD/`）。
+2. 用 [`sql/scripts/gen_dev_formal_dataset.py`](../sql/scripts/gen_dev_formal_dataset.py) 生成雪花 ID、去掉 Seed/demo/junit 痕迹的 patch。
+3. 将 [`sql/patches/20261121_dev_formal_dataset.sql`](../sql/patches/20261121_dev_formal_dataset.sql) 写回同一库。
+
+**禁止**对共享库执行 [`deploy/docker/scripts/seed-demo.sh`](../deploy/docker/scripts/seed-demo.sh) 或导入 `deploy/docker/sql/01-judge-demo.sql` / `02-similarity-demo.sql`。那些脚本仅限本机 Docker Compose 库做联调。
+
+系统账号 `0` / `1` / `2`（default / SuperAdmin / Admin）与菜单、字典、角色配置不在上述 patch 覆盖范围内。
+
+正规化后若出现“题集/竞赛有题但无提交、AC 无样本”等断链，再跑闭环补齐：
+
+```bash
+python3 sql/scripts/fill_dev_closed_loop.py --apply
+```
+
+该脚本保证：每位普通用户都有 PROBLEM / SET / CONTEST 的 Accepted 记录与样本库；每场竞赛都有报名；每道题集题、竞赛题至少有一条对应模块提交；AC 组均有 `data_library` / `data_solved`（题集另有 `data_progress`）。
