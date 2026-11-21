@@ -1,6 +1,7 @@
 package io.charlie.web.modular.llm.service;
 
 import io.charlie.web.modular.llm.param.ChatRequest;
+import io.charlie.web.modular.llm.result.PromptExportResult;
 import io.charlie.web.modular.sys.conversation.entity.SysConversation;
 import reactor.core.publisher.Flux;
 
@@ -11,4 +12,9 @@ import reactor.core.publisher.Flux;
  */
 public interface LLMService {
     Flux<SysConversation> streamChat(ChatRequest request);
+
+    /**
+     * 导出当前生效的系统提示。
+     */
+    PromptExportResult exportPrompts();
 }

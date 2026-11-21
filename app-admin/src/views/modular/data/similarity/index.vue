@@ -49,7 +49,8 @@ const columns: DataTableColumns<any> = [
     title: 'Similarity',
     key: 'similarity',
     render(row: any) {
-      return row.similarity * 100
+      const value = Number(row.similarity)
+      return Number.isFinite(value) ? value.toFixed(6) : ''
     },
   },
   {
@@ -237,10 +238,16 @@ const pageParam = ref({
   sortField: 'id',
   sortOrder: 'ASCEND',
   keyword: '',
+  problemId: '',
+  userId: '',
+  submitId: '',
 })
 
 function resetHandle() {
   pageParam.value.keyword = ''
+  pageParam.value.problemId = ''
+  pageParam.value.userId = ''
+  pageParam.value.submitId = ''
   loadData()
 }
 
@@ -287,6 +294,15 @@ async function deleteBatchHandle() {
           <NSpace align="center">
             <NFormItem :show-feedback="false" label="Keywords" label-placement="left">
               <NInput v-model:value="pageParam.keyword" placeholder="Enter keywords" clearable @clear="resetHandle" />
+            </NFormItem>
+            <NFormItem :show-feedback="false" label="Problem" label-placement="left">
+              <NInput v-model:value="pageParam.problemId" placeholder="Problem ID" clearable />
+            </NFormItem>
+            <NFormItem :show-feedback="false" label="User" label-placement="left">
+              <NInput v-model:value="pageParam.userId" placeholder="User ID" clearable />
+            </NFormItem>
+            <NFormItem :show-feedback="false" label="Submit" label-placement="left">
+              <NInput v-model:value="pageParam.submitId" placeholder="Submit ID" clearable />
             </NFormItem>
             <NSpace align="center">
               <NButton type="primary" @click="loadData">

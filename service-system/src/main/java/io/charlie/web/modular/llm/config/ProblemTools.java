@@ -7,50 +7,63 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 /**
- * @author Charlie Zhang
- * @version v1.0
- * @date 30/06/2025
- * @description AI tool methods for problem context
+ * AI 题目上下文工具；调用过程写入工具轨迹。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class ProblemTools {
     private final DataProblemService dataProblemService;
+    private final LlmToolTraceRecorder toolTraceRecorder;
 
     @Tool(description = "Get problem description by problem ID")
     public String getProblemDescriptionById(@ToolParam(description = "Problem ID") String id) {
-        return dataProblemService.llmGetDescription(id);
+        return toolTraceRecorder.trace("getProblemDescriptionById", Map.of("id", id),
+                () -> dataProblemService.llmGetDescription(id));
+    }
+
+    @Tool(description = "Get problem sample input/output cases by problem ID")
+    public String getProblemSamplesById(@ToolParam(description = "Problem ID") String id) {
+        return toolTraceRecorder.trace("getProblemSamplesById", Map.of("id", id),
+                () -> dataProblemService.llmGetSamples(id));
     }
 
     @Tool(description = "Get problem resource constraints (time/memory limits) by problem ID")
     public String getProblemResourceConstraintsById(@ToolParam(description = "Problem ID") String id) {
-        return dataProblemService.llmGetResourceConstraints(id);
+        return toolTraceRecorder.trace("getProblemResourceConstraintsById", Map.of("id", id),
+                () -> dataProblemService.llmGetResourceConstraints(id));
     }
 
     @Tool(description = "Get problem difficulty by problem ID")
     public String getProblemDifficultyById(@ToolParam(description = "Problem ID") String id) {
-        return dataProblemService.getDifficulty(id);
+        return toolTraceRecorder.trace("getProblemDifficultyById", Map.of("id", id),
+                () -> dataProblemService.getDifficulty(id));
     }
 
     @Tool(description = "Get problem source by problem ID")
     public String getProblemSourceById(@ToolParam(description = "Problem ID") String id) {
-        return dataProblemService.llmGetSource(id);
+        return toolTraceRecorder.trace("getProblemSourceById", Map.of("id", id),
+                () -> dataProblemService.llmGetSource(id));
     }
 
     @Tool(description = "Get problem tags by problem ID")
     public String getProblemTagsById(@ToolParam(description = "Problem ID") String id) {
-        return dataProblemService.llmGetTags(id);
+        return toolTraceRecorder.trace("getProblemTagsById", Map.of("id", id),
+                () -> dataProblemService.llmGetTags(id));
     }
 
     @Tool(description = "Get problem category by problem ID")
     public String getProblemCategoryById(@ToolParam(description = "Problem ID") String id) {
-        return dataProblemService.llmGetCategory(id);
+        return toolTraceRecorder.trace("getProblemCategoryById", Map.of("id", id),
+                () -> dataProblemService.llmGetCategory(id));
     }
 
     @Tool(description = "Get allowed submission languages for the problem by problem ID")
     public String getProblemOpenLanguageById(@ToolParam(description = "Problem ID") String id) {
-        return dataProblemService.llmGetOpenLanguage(id);
+        return toolTraceRecorder.trace("getProblemOpenLanguageById", Map.of("id", id),
+                () -> dataProblemService.llmGetOpenLanguage(id));
     }
 }

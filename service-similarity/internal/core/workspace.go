@@ -135,10 +135,15 @@ func (w *Workspace) computeSimilarities(validSamples []model.DataLibrary, tokenC
 				tokens1 := tokenCache[s1.ID]
 				tokens2 := tokenCache[s2.ID]
 
-				matches := similarity.GreedyStringTiling(tokens1, tokens2, w.similarityMessage.MinMatchLength)
+				minMatch := w.similarityMessage.MinMatchLength
+				if minMatch < 1 {
+					minMatch = 8 // 与 admin UI / Java 默认对齐
+				}
+				matches, tiles := similarity.GreedyStringTilingTiles(tokens1, tokens2, minMatch)
 				similarityScore := calculateSimilarityScorePrecise(matches, tokens1, tokens2)
+				tileJSON, _ := json.Marshal(tiles)
 
-				taskSimilarity := w.createTaskSimilarity(&s1, &s2, similarityScore)
+				taskSimilarity := w.createTaskSimilarity(&s1, &s2, similarityScore, string(tileJSON))
 
 				mu.Lock()
 				taskSimilarities = append(taskSimilarities, taskSimilarity)
@@ -260,7 +265,7 @@ func (w *Workspace) Execute() *mq.SimilarityResultMessage {
 }
 
 // createTaskSimilarity 优化创建方法，减少重复的 JSON 序列化
-func (w *Workspace) createTaskSimilarity(sample1, sample2 *model.DataLibrary, similarityScore float64) *model.TaskSimilarity {
+func (w *Workspace) createTaskSimilarity(sample1, sample2 *model.DataLibrary, similarityScore float64, matchTiles string) *model.TaskSimilarity {
 	now := time.Now()
 	return &model.TaskSimilarity{
 		ID:         utils.GenerateID(),
@@ -271,6 +276,7 @@ func (w *Workspace) createTaskSimilarity(sample1, sample2 *model.DataLibrary, si
 		ModuleType: sample1.ModuleType,
 		Language:   sample1.Language,
 		Similarity: similarityScore,
+		MatchTiles: matchTiles,
 
 		SubmitUser:       sample1.UserID,
 		SubmitCode:       sample1.Code,

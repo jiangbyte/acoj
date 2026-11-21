@@ -4,8 +4,6 @@
 #   mysql + redis + rabbitmq + nacos + minio + service-system + service-judge + service-similarity
 #   + app-pc + app-admin
 #
-# Soft sandbox: change judge volume to deploy/docker/judge/judge-soft.yaml
-
 name: acoj
 
 services:
@@ -260,7 +258,6 @@ services:
       SNOWFLAKE_WORKER_ID: "1"
       SNOWFLAKE_DATACENTER_ID: "1"
     volumes:
-      # Soft sandbox (no cgroup): mount judge-soft.yaml → /app/etc/judge-local.yaml
       - ./deploy/docker/judge/judge.yaml:/app/etc/judge-local.yaml:ro
       - acoj_service_judge_tmp:/tmp/judgespace
     ports:

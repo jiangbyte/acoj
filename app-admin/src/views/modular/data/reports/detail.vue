@@ -2,8 +2,10 @@
 import { NDescriptions, NDescriptionsItem, NDrawer, NDrawerContent, NTime } from 'naive-ui'
 import { useTaskReportsFetch } from '@/composables/v1'
 import { FormatModuleType } from '@/utils'
+import WorkflowTrace from '@/components/similarity/WorkflowTrace.vue'
 
 const emit = defineEmits(['close'])
+const traceRef = ref()
 const show = ref(false)
 const { taskReportsDefaultData } = useTaskReportsFetch()
 const formData = ref<any>({ ...taskReportsDefaultData })
@@ -55,6 +57,9 @@ defineExpose({
         </NDescriptionsItem>
         <NDescriptionsItem label="Check Threshold">
           {{ formData.threshold }}
+        </NDescriptionsItem>
+        <NDescriptionsItem label="Min Match Length">
+          {{ formData.minMatchLength }}
         </NDescriptionsItem>
         <NDescriptionsItem label="Similarity Distribution">
           <!-- {{ formData.similarityDistribution }} -->
@@ -108,6 +113,13 @@ defineExpose({
       </NDescriptions>
       <template #footer>
         <NSpace align="center" justify="end">
+          <NButton
+            type="primary"
+            :disabled="!formData.problemId"
+            @click="traceRef.doOpen({ problemId: formData.problemId })"
+          >
+            Trace
+          </NButton>
           <NButton @click="doClose">
             <template #icon>
               <IconParkOutlineClose />
@@ -118,6 +130,7 @@ defineExpose({
       </template>
     </NDrawerContent>
   </NDrawer>
+  <WorkflowTrace ref="traceRef" />
 </template>
 
 <style scoped>

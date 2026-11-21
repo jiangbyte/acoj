@@ -29,7 +29,8 @@ type TaskSimilarity struct {
 	ModuleId         string     `gorm:"column:module_id;type:varchar(32)"`
 	ModuleType       string     `gorm:"column:module_Type;type:varchar(32)"`
 	Language         string     `gorm:"column:language;type:varchar(64)"`
-	Similarity       float64    `gorm:"column:similarity;type:decimal(10,2);default:0.00"`
+	Similarity       float64    `gorm:"column:similarity;type:decimal(10,6);default:0.000000"`
+	MatchTiles       string     `gorm:"column:match_tiles;type:json"`
 	SubmitUser       string     `gorm:"column:submit_user;type:varchar(32)"`
 	SubmitCode       string     `gorm:"column:submit_code;type:longtext"`
 	SubmitCodeLength int        `gorm:"column:submit_code_length;default:0"`

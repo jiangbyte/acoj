@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 /**
@@ -43,9 +44,42 @@ public class TaskSimilarityServiceImpl extends ServiceImpl<TaskSimilarityMapper,
     @Override
     @DS("slave")
     public Page<TaskSimilarity> page(TaskSimilarityPageParam taskSimilarityPageParam) {
+        // 1. 按 task/problem/submit/user 过滤，支撑跨工作流追溯
+        // 2. 相似度闭区间过滤；只填一端时另一端不限制，下限大于上限直接拒绝
+        // 3. 先按排序字段排完全部命中行，再分页，避免只重排当前页
         QueryWrapper<TaskSimilarity> queryWrapper = new QueryWrapper<TaskSimilarity>().checkSqlInjection();
         if (ObjectUtil.isNotEmpty(taskSimilarityPageParam.getTaskId())) {
             queryWrapper.lambda().eq(TaskSimilarity::getTaskId, taskSimilarityPageParam.getTaskId());
+        }
+        if (StrUtil.isNotBlank(taskSimilarityPageParam.getProblemId())) {
+            queryWrapper.lambda().eq(TaskSimilarity::getProblemId, taskSimilarityPageParam.getProblemId());
+        }
+        if (StrUtil.isNotBlank(taskSimilarityPageParam.getSubmitId())) {
+            queryWrapper.lambda().and(w -> w.eq(TaskSimilarity::getSubmitId, taskSimilarityPageParam.getSubmitId())
+                    .or()
+                    .eq(TaskSimilarity::getOriginId, taskSimilarityPageParam.getSubmitId()));
+        }
+        if (StrUtil.isNotBlank(taskSimilarityPageParam.getUserId())) {
+            queryWrapper.lambda().and(w -> w.eq(TaskSimilarity::getSubmitUser, taskSimilarityPageParam.getUserId())
+                    .or()
+                    .eq(TaskSimilarity::getOriginUser, taskSimilarityPageParam.getUserId()));
+        }
+        if (StrUtil.isNotBlank(taskSimilarityPageParam.getSubmitUser())) {
+            queryWrapper.lambda().eq(TaskSimilarity::getSubmitUser, taskSimilarityPageParam.getSubmitUser());
+        }
+        if (StrUtil.isNotBlank(taskSimilarityPageParam.getOriginUser())) {
+            queryWrapper.lambda().eq(TaskSimilarity::getOriginUser, taskSimilarityPageParam.getOriginUser());
+        }
+        BigDecimal minSimilarity = taskSimilarityPageParam.getMinSimilarity();
+        BigDecimal maxSimilarity = taskSimilarityPageParam.getMaxSimilarity();
+        if (minSimilarity != null && maxSimilarity != null && minSimilarity.compareTo(maxSimilarity) > 0) {
+            throw new BusinessException("minSimilarity cannot be greater than maxSimilarity");
+        }
+        if (minSimilarity != null) {
+            queryWrapper.lambda().ge(TaskSimilarity::getSimilarity, minSimilarity);
+        }
+        if (maxSimilarity != null) {
+            queryWrapper.lambda().le(TaskSimilarity::getSimilarity, maxSimilarity);
         }
 
         if (ObjectUtil.isAllNotEmpty(taskSimilarityPageParam.getSortField(), taskSimilarityPageParam.getSortOrder()) && ISortOrderEnum.isValid(taskSimilarityPageParam.getSortOrder())) {
@@ -53,6 +87,8 @@ public class TaskSimilarityServiceImpl extends ServiceImpl<TaskSimilarityMapper,
                     true,
                     taskSimilarityPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(taskSimilarityPageParam.getSortField()));
+        } else {
+            queryWrapper.lambda().orderByDesc(TaskSimilarity::getSimilarity);
         }
 
         return this.page(CommonPageRequest.Page(

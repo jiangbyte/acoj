@@ -208,10 +208,10 @@ func (r *taskSimilarityRepository) SelectDegreeStatistics(taskID string, thresho
 		minPercent float64
 		maxPercent float64
 	}{
-		{"HIGHLY_SUSPECTED", "高度可疑", 1, 0.9, 1.0},
-		{"MEDIUM_SUSPECTED", "中度可疑", 2, 0.7, 0.9},
-		{"LOW_SUSPECTED", "轻度可疑", 3, 0.5, 0.7},
-		{"NOT_REACHED", "未达阈值", 4, 1.0, 1.0}, // 特殊处理
+		{"HIGHLY_SUSPECTED", "Highly suspicious", 1, 0.9, 1.0},
+		{"MEDIUM_SUSPECTED", "Moderately suspicious", 2, 0.7, 0.9},
+		{"LOW_SUSPECTED", "Slightly suspicious", 3, 0.5, 0.7},
+		{"NOT_REACHED", "Below threshold", 4, 1.0, 1.0}, // 达到总阈值但低于最低分档
 	}
 
 	// 查询每个程度的数量

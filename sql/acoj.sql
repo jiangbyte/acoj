@@ -1172,9 +1172,10 @@ CREATE TABLE `task_reports`  (
   `problem_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题目ID',
   `sample_count` int NULL DEFAULT 0 COMMENT '样例数量',
   `similarity_group_count` int NULL DEFAULT 0 COMMENT '相似组数量',
-  `avg_similarity` decimal(10, 2) UNSIGNED NULL DEFAULT 0.00 COMMENT '平均相似度',
-  `max_similarity` decimal(10, 2) UNSIGNED NULL DEFAULT 0.00 COMMENT '最大相似度',
+  `avg_similarity` decimal(10, 6) UNSIGNED NULL DEFAULT 0.000000 COMMENT '平均相似度',
+  `max_similarity` decimal(10, 6) UNSIGNED NULL DEFAULT 0.000000 COMMENT '最大相似度',
   `threshold` decimal(10, 2) UNSIGNED NULL DEFAULT 0.50 COMMENT '检测阈值',
+  `min_match_length` int NULL DEFAULT NULL COMMENT 'GST 最小匹配长度（token 个数）',
   `similarity_distribution` json NULL COMMENT '相似度分布',
   `degree_statistics` json NULL COMMENT '程度统计',
   `check_mode` int NULL DEFAULT 1 COMMENT '检测模式',
@@ -1193,6 +1194,31 @@ CREATE TABLE `task_reports`  (
 -- ----------------------------
 
 -- ----------------------------
+-- Table structure for sys_conversation_tool_trace
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_conversation_tool_trace`;
+CREATE TABLE `sys_conversation_tool_trace`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
+  `conversation_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '对话ID',
+  `user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '用户ID',
+  `problem_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题目ID',
+  `tool_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工具名',
+  `tool_args` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '工具参数JSON',
+  `tool_result` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '工具返回摘要',
+  `duration_ms` int NULL DEFAULT NULL COMMENT '耗时毫秒',
+  `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'SUCCESS/ERROR',
+  `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '错误信息',
+  `deleted` tinyint(1) NULL DEFAULT 0 COMMENT '删除状态',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间戳',
+  `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
+  `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_conversation_id`(`conversation_id` ASC) USING BTREE,
+  INDEX `idx_user_problem`(`user_id` ASC, `problem_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'LLM 工具调用轨迹' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
 -- Table structure for task_similarity
 -- ----------------------------
 DROP TABLE IF EXISTS `task_similarity`;
@@ -1204,7 +1230,7 @@ CREATE TABLE `task_similarity`  (
   `module_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模块类型',
   `module_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模块ID',
   `language` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '编程语言',
-  `similarity` decimal(10, 2) UNSIGNED NULL DEFAULT 0.00 COMMENT '相似度',
+  `similarity` decimal(10, 6) UNSIGNED NULL DEFAULT 0.000000 COMMENT '相似度（精确到 6 位小数）',
   `submit_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '提交用户',
   `submit_code` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '源代码',
   `submit_code_length` int NULL DEFAULT 0 COMMENT '源代码长度',
@@ -1221,6 +1247,7 @@ CREATE TABLE `task_similarity`  (
   `origin_code_token` json NULL COMMENT '源代码Token标记',
   `origin_token_name` json NULL COMMENT '样本用户Token名称',
   `origin_token_texts` json NULL COMMENT '样本用户Token内容',
+  `match_tiles` json NULL COMMENT 'GST 匹配块',
   `deleted` tinyint(1) NULL DEFAULT 0 COMMENT '删除状态',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间戳',
   `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',

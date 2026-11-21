@@ -85,5 +85,17 @@ export function useSysConversationFetch() {
         },
       })
     },
+
+    toolTracePage(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/toolTrace/page`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+
+    exportPrompts() {
+      return $alova.Get<IResult<any>>(`${pathPrefix}llm/prompts/export`)
+    },
   }
 }

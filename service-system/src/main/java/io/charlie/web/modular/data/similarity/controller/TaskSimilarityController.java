@@ -52,7 +52,7 @@ public class TaskSimilarityController {
     @Operation(summary = "获取检测结果任务库分页")
     @SaCheckPermission("/task/similarity/page")
     @GetMapping("/task/similarity/page")
-    public Result<?> page(@ParameterObject TaskSimilarityPageParam taskSimilarityPageParam) {
+    public Result<?> page(@ParameterObject @Valid TaskSimilarityPageParam taskSimilarityPageParam) {
         return Result.success(taskSimilarityService.page(taskSimilarityPageParam));
     }
 

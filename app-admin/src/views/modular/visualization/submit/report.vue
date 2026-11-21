@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useSysGroupFetch, useTaskReportsFetch, useTaskSimilarityFetch } from '@/composables/v1'
-import type { DataTableColumns, SelectOption } from 'naive-ui'
-import { NAvatar, NButton, NEllipsis, NSpace, NTag, NText, NTime } from 'naive-ui'
-import CodeEditor from '@/components/common/editor/code/CodeEditor.vue'
+import { useTaskReportsFetch, useTaskSimilarityFetch } from '@/composables/v1'
+import type { DataTableColumns, DataTableSortState } from 'naive-ui'
+import { NAvatar, NEllipsis, NSpace, NTag, NText, NTime } from 'naive-ui'
+import CodeCompare from '@/components/similarity/CodeCompare.vue'
 import { actionIconBtn } from '@/utils'
 
 const route = useRoute()
@@ -10,10 +10,8 @@ const reportId = route.params.reportId // Get reportId
 const taskId = route.params.taskId // Get taskId
 
 const showModal = ref(false)
-const groupOptionsLoading = ref(false)
-const groupOptions = ref<SelectOption[]>([])
 
-const columns: DataTableColumns<any> = [
+const columns = computed<DataTableColumns<any>>(() => [
   // {
   //   title: 'Task ID',
   //   key: 'taskId',
@@ -25,9 +23,13 @@ const columns: DataTableColumns<any> = [
   {
     title: 'Similarity(%)',
     key: 'similarity',
-    width: 100,
+    width: 120,
+    sorter: true,
+    sortOrder: pageParam.value.sortField === 'similarity'
+      ? (pageParam.value.sortOrder === 'ASCEND' ? 'ascend' : 'descend')
+      : false,
     render: (row) => {
-      return h(NTag, { type: 'success' }, () => (row.similarity * 100).toFixed(2))
+      return h(NTag, { type: 'success' }, () => (Number(row.similarity) * 100).toFixed(4))
     },
   },
   {
@@ -147,12 +149,41 @@ const columns: DataTableColumns<any> = [
       ])
     },
   },
-]
+])
+
+function onSort(sorter: DataTableSortState | DataTableSortState[] | null) {
+  const state = Array.isArray(sorter) ? sorter[0] : sorter
+  pageParam.value.current = 1
+  if (!state || state.order === false || state.columnKey !== 'similarity') {
+    pageParam.value.sortField = 'similarity'
+    pageParam.value.sortOrder = 'DESCEND'
+  }
+  else {
+    pageParam.value.sortField = 'similarity'
+    pageParam.value.sortOrder = state.order === 'ascend' ? 'ASCEND' : 'DESCEND'
+  }
+  loadPairs()
+}
+
+const SUSPICION_LABELS: Record<string, string> = {
+  HIGHLY_SUSPECTED: 'Highly suspicious',
+  MEDIUM_SUSPECTED: 'Moderately suspicious',
+  LOW_SUSPECTED: 'Slightly suspicious',
+  NOT_REACHED: 'Below threshold',
+  BELOW_THRESHOLD: 'Below threshold',
+}
+
+function suspicionLabel(item: { cloneLevel?: string }) {
+  return (item?.cloneLevel && SUSPICION_LABELS[item.cloneLevel]) || item?.cloneLevel || ''
+}
 
 const similarityDataDetail = ref()
-function dataDetail(row: any) {
+async function dataDetail(row: any) {
   similarityDataDetail.value = row
   showModal.value = true
+  const { data } = await useTaskSimilarityFetch().taskSimilarityDetail({ id: row.id })
+  if (data)
+    similarityDataDetail.value = { ...row, ...data }
 }
 
 const pageParam = ref({
@@ -160,35 +191,57 @@ const pageParam = ref({
   size: 20,
   sortField: 'similarity',
   sortOrder: 'DESCEND',
-  keyword: '',
-  tagId: null,
-  categoryId: null,
-  difficulty: null,
   taskId,
 })
+const similarityMin = ref<number | null>(null)
+const similarityMax = ref<number | null>(null)
 const pageData = ref({
   total: 0,
   records: [],
   pages: 0,
 })
 
-const formData = ref({
-  groupId: null,
-})
 const detailData = ref()
+const pairsLoading = ref(false)
+
+function pairQuery() {
+  const query: Record<string, unknown> = {
+    current: pageParam.value.current,
+    size: pageParam.value.size,
+    sortField: pageParam.value.sortField,
+    sortOrder: pageParam.value.sortOrder,
+    taskId: pageParam.value.taskId,
+  }
+  if (similarityMin.value != null)
+    query.minSimilarity = similarityMin.value / 100
+  if (similarityMax.value != null)
+    query.maxSimilarity = similarityMax.value / 100
+  return query
+}
+
+function applySimilarityRange() {
+  if (similarityMin.value != null && similarityMax.value != null && similarityMin.value > similarityMax.value) {
+    window.$message?.warning('Min similarity cannot be greater than max')
+    return
+  }
+  pageParam.value.current = 1
+  loadPairs()
+}
+
+function loadPairs() {
+  pairsLoading.value = true
+  useTaskSimilarityFetch().taskSimilarityPage(pairQuery()).then(({ data }) => {
+    pageData.value = data
+  }).finally(() => {
+    pairsLoading.value = false
+  })
+}
+
 async function loadData() {
   useTaskReportsFetch().taskReportsDetail({ id: reportId }).then(({ data }) => {
     detailData.value = data
   })
-
-  useSysGroupFetch().sysGroupAuthTree({ keyword: '' }).then(({ data }) => {
-    groupOptions.value = data
-    groupOptionsLoading.value = false
-  })
-
-  useTaskSimilarityFetch().taskSimilarityPage(pageParam.value).then(({ data }) => {
-    pageData.value = data
-  })
+  loadPairs()
 }
 
 loadData()
@@ -302,12 +355,12 @@ loadData()
                 <NSpace class="w-full" justify="space-between">
                   <NSpace :size="1" vertical>
                     <p class="font-medium">
-                      Average Similarity：<NTag size="small">
+                      Average similarity: <NTag size="small">
                         {{ detailData?.avgSimilarity ? (detailData?.avgSimilarity * 100).toFixed(2) : 0 }} %
                       </NTag>
                     </p>
                     <p class="font-medium">
-                      Maximum Similarity：<NTag size="small">
+                      Maximum similarity: <NTag size="small">
                         {{ detailData?.maxSimilarity ? (detailData?.maxSimilarity * 100).toFixed(2) : 0 }} %
                       </NTag>
                     </p>
@@ -326,7 +379,7 @@ loadData()
                 <div v-for="(item, index) in detailData?.degreeStatistics" :key="index">
                   <div class="flex items-center justify-between w-full">
                     <NText>
-                      {{ item.cloneLevelName }} (≥{{ (item.similarity * 100).toFixed(2) }}%)
+                      {{ suspicionLabel(item) }} (≥{{ (item.similarity * 100).toFixed(2) }}%)
                     </NText>
                     <NText class="mr-4">
                       {{ item.count }} pairs
@@ -347,30 +400,45 @@ loadData()
 
           <n-card size="small" title="Suspected Clone Pairs" class="rounded-xl">
             <template #header-extra>
-              <NSpace align="center">
-                <n-tree-select
-                  v-model:value="formData.groupId"
-                  :options="groupOptions"
-                  label-field="name"
-                  key-field="id"
-                  :indent="12"
-                  placeholder="Filter by user group"
-                  class="w-50"
+              <NSpace align="center" :wrap="false">
+                <n-input-number
+                  v-model:value="similarityMin"
+                  :min="0"
+                  :max="100"
+                  :show-button="false"
+                  placeholder="Min %"
+                  class="w-24"
+                  clearable
                 />
-                <n-input placeholder="SearchSubmissionUserusername" />
-                <NButton type="primary" @click="loadData">
-                  Search
-                </NButton>
+                <NText depth="3">
+                  -
+                </NText>
+                <n-input-number
+                  v-model:value="similarityMax"
+                  :min="0"
+                  :max="100"
+                  :show-button="false"
+                  placeholder="Max %"
+                  class="w-24"
+                  clearable
+                />
+                <n-button size="small" type="primary" @click="applySimilarityRange">
+                  Filter
+                </n-button>
               </NSpace>
             </template>
-            <div class="divide-y divide-gray-100 dark:divide-gray-700">
+            <div class="h-420px">
               <n-data-table
+                remote
                 :columns="columns"
                 :data="pageData?.records"
+                :loading="pairsLoading"
                 :bordered="false"
                 :scroll-x="1400"
-                :row-key="(row: any) => row.userId"
-                class="flex-1 h-full"
+                flex-height
+                :row-key="(row: any) => row.id"
+                class="h-full"
+                @update:sorter="onSort"
               />
             </div>
             <n-pagination
@@ -383,8 +451,8 @@ loadData()
                 value: (i + 1) * 10,
               }))"
               class="flex justify-center items-center p-x-6 pt-6 pb-2"
-              @update:page="loadData"
-              @update:page-size="loadData"
+              @update:page="loadPairs"
+              @update:page-size="loadPairs"
             />
           </n-card>
         </NSpace>
@@ -396,117 +464,92 @@ loadData()
       preset="card"
       title="Suspicion Details"
       size="small"
-      class="w-1200px"
+      class="w-[min(1100px,96vw)]"
+      :content-style="{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }"
     >
-      <n-grid x-gap="12" :cols="2">
+      <n-grid x-gap="12" :cols="2" class="mb-3">
         <n-gi>
-          <NSpace align="center" size="small" class="mb-2" justify="space-between">
+          <NSpace align="center" size="small" justify="space-between">
             <NSpace align="center">
-              <NAvatar
-                :round="true"
-                :src="similarityDataDetail.submitUserAvatar"
-              />
-              <NText>
-                <NEllipsis style="width: 90px;">
-                  {{ similarityDataDetail.submitUserName }}
-                </NEllipsis>
-              </NText>
+              <NAvatar round :src="similarityDataDetail.submitUserAvatar" />
+              <NEllipsis style="max-width: 140px;">
+                {{ similarityDataDetail.submitUserName }}
+              </NEllipsis>
             </NSpace>
-            <div>
-              Submitted At：<NTime :time="Number(similarityDataDetail.submitTime) || Date.now()" />
-            </div>
-          </NSpace>
-          <NScrollbar class="h-[calc(600px-8rem)]">
-            <CodeEditor
-              :model-value="similarityDataDetail?.submitCode"
-              :language="similarityDataDetail?.language"
-              width="100%"
-              height="300px"
-              class="mb-2"
-              :options="{
-                readOnly: true,
-              }"
-            />
-            <NText>
-              Code Length：{{ similarityDataDetail?.submitCodeLength || 0 }}
+            <NText depth="3">
+              {{ similarityDataDetail?.submitCodeLength || 0 }} chars ·
+              <NTime :time="Number(similarityDataDetail.submitTime) || Date.now()" />
             </NText>
-            <n-collapse class="mt-2">
-              <n-collapse-item title="Syntax Tokens" name="1">
-                <NCode
-                  :code="JSON.stringify(similarityDataDetail.submitTokenName, null)"
-                  language="json"
-                  word-wrap
-                  show-line-numbers
-                />
-              </n-collapse-item>
-              <n-collapse-item title="Lexical Tokens" name="2">
-                <NCode
-                  :code="JSON.stringify(similarityDataDetail.submitTokenTexts, null)"
-                  language="json"
-                  word-wrap
-                  show-line-numbers
-                />
-              </n-collapse-item>
-            </n-collapse>
-          </NScrollbar>
+          </NSpace>
         </n-gi>
         <n-gi>
-          <NSpace align="center" size="small" class="mb-2" justify="space-between">
+          <NSpace align="center" size="small" justify="space-between">
             <NSpace align="center">
-              <NAvatar
-                :round="true"
-                :src="similarityDataDetail.originUserAvatar"
-              />
-              <NText>
-                <NEllipsis style="width: 90px;">
-                  {{ similarityDataDetail.originUserName }}
-                </NEllipsis>
-              </NText>
+              <NAvatar round :src="similarityDataDetail.originUserAvatar" />
+              <NEllipsis style="max-width: 140px;">
+                {{ similarityDataDetail.originUserName }}
+              </NEllipsis>
             </NSpace>
-            <div>
-              Submitted At：<NTime :time="Number(similarityDataDetail.originTime) || Date.now()" />
-            </div>
-          </NSpace>
-          <NScrollbar class="h-[calc(600px-8rem)]">
-            <CodeEditor
-              :model-value="similarityDataDetail?.originCode"
-              :language="similarityDataDetail?.language"
-              width="100%"
-              height="300px"
-              class="mb-2"
-              :options="{
-                readOnly: true,
-              }"
-            />
-            <NText>
-              Code Length：{{ similarityDataDetail?.originCodeLength || 0 }}
+            <NText depth="3">
+              {{ similarityDataDetail?.originCodeLength || 0 }} chars ·
+              <NTime :time="Number(similarityDataDetail.originTime) || Date.now()" />
             </NText>
-            <n-collapse class="mt-2">
-              <n-collapse-item title="Syntax Tokens" name="1">
-                <NCode
-                  :code="JSON.stringify(similarityDataDetail.originTokenName, null)"
-                  language="json"
-                  word-wrap
-                  show-line-numbers
-                />
-              </n-collapse-item>
-              <n-collapse-item title="Lexical Tokens" name="2">
-                <NCode
-                  :code="JSON.stringify(similarityDataDetail.originTokenTexts, null)"
-                  language="json"
-                  word-wrap
-                  show-line-numbers
-                />
-              </n-collapse-item>
-            </n-collapse>
-          </NScrollbar>
-        </n-gi>
-        <n-gi :span="2">
-          <div class="light-green" />
+          </NSpace>
         </n-gi>
       </n-grid>
+      <CodeCompare
+        :left-code="similarityDataDetail?.submitCode"
+        :right-code="similarityDataDetail?.originCode"
+        :left-tokens="similarityDataDetail?.submitTokenTexts"
+        :right-tokens="similarityDataDetail?.originTokenTexts"
+        :tiles="similarityDataDetail?.matchTiles"
+        :language="similarityDataDetail?.language"
+        height="360px"
+      />
+      <n-collapse class="mt-3">
+        <n-collapse-item title="Tokens" name="tokens">
+          <n-grid x-gap="12" :cols="2">
+            <n-gi>
+              <NText depth="3" class="mb-1 block">
+                Syntax
+              </NText>
+              <NCode
+                :code="JSON.stringify(similarityDataDetail.submitTokenName, null, 2)"
+                language="json"
+                word-wrap
+              />
+              <NText depth="3" class="mb-1 mt-3 block">
+                Lexical
+              </NText>
+              <NCode
+                :code="JSON.stringify(similarityDataDetail.submitTokenTexts, null, 2)"
+                language="json"
+                word-wrap
+              />
+            </n-gi>
+            <n-gi>
+              <NText depth="3" class="mb-1 block">
+                Syntax
+              </NText>
+              <NCode
+                :code="JSON.stringify(similarityDataDetail.originTokenName, null, 2)"
+                language="json"
+                word-wrap
+              />
+              <NText depth="3" class="mb-1 mt-3 block">
+                Lexical
+              </NText>
+              <NCode
+                :code="JSON.stringify(similarityDataDetail.originTokenTexts, null, 2)"
+                language="json"
+                word-wrap
+              />
+            </n-gi>
+          </n-grid>
+        </n-collapse-item>
+      </n-collapse>
       <template #action>
-        Similarity：{{ (similarityDataDetail.similarity * 100) || 0 }} %
+        Similarity: {{ ((Number(similarityDataDetail?.similarity) || 0) * 100).toFixed(2) }}%
       </template>
     </n-modal>
   </div>

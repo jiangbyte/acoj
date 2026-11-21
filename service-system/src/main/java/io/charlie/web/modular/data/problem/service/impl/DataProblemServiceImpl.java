@@ -484,4 +484,31 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         return JSONUtil.toJsonPrettyStr(allowedLanguages);
     }
 
+    @Override
+    @DS("slave")
+    public String llmGetSamples(String id) {
+        // 1. 校验题目存在
+        // 2. 一次查出样例用例，组装输入输出 JSON
+        DataProblem dataProblem = this.getById(id);
+        if (dataProblem == null) {
+            return "该题目不存在";
+        }
+        List<DataTestCase> samples = dataTestCaseMapper.selectList(new LambdaQueryWrapper<DataTestCase>()
+                .eq(DataTestCase::getProblemId, id)
+                .eq(DataTestCase::getIsSample, true)
+                .orderByAsc(DataTestCase::getCaseSign)
+                .last("LIMIT 20"));
+        if (samples == null || samples.isEmpty()) {
+            return "该题目暂无样例";
+        }
+        List<Map<String, String>> payload = samples.stream().map(sample -> {
+            Map<String, String> item = new LinkedHashMap<>();
+            item.put("caseSign", sample.getCaseSign());
+            item.put("input", sample.getInputData());
+            item.put("expectedOutput", sample.getExpectedOutput());
+            return item;
+        }).toList();
+        return JSONUtil.toJsonPrettyStr(payload);
+    }
+
 }

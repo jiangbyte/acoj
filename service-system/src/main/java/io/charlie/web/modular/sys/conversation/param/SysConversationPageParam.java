@@ -32,4 +32,13 @@ public class SysConversationPageParam implements Serializable {
 
     @Schema(description = "关键词")
     private String keyword;
+
+    @Schema(description = "用户ID（管理端筛选）")
+    private String userId;
+
+    @Schema(description = "题目ID")
+    private String problemId;
+
+    @Schema(description = "会话ID")
+    private String conversationId;
 }

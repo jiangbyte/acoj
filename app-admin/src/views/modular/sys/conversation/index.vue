@@ -190,14 +190,42 @@ const pageParam = ref({
   sortField: null,
   sortOrder: null,
   keyword: '',
+  userId: '',
+  problemId: '',
 })
 
 function resetHandle() {
   pageParam.value.keyword = ''
+  pageParam.value.userId = ''
+  pageParam.value.problemId = ''
   loadData()
 }
 
-const { sysConversationPage, sysConversationDelete } = useSysConversationFetch()
+const { sysConversationPage, sysConversationDelete, toolTracePage, exportPrompts } = useSysConversationFetch()
+const toolShow = ref(false)
+const toolLoading = ref(false)
+const toolRows = ref<any[]>([])
+const promptShow = ref(false)
+const promptData = ref<any>(null)
+
+async function openToolTrace() {
+  toolShow.value = true
+  toolLoading.value = true
+  const { data } = await toolTracePage({
+    current: 1,
+    size: 50,
+    userId: pageParam.value.userId,
+    problemId: pageParam.value.problemId,
+  })
+  toolRows.value = data?.records || []
+  toolLoading.value = false
+}
+
+async function openPrompt() {
+  const { data } = await exportPrompts()
+  promptData.value = data
+  promptShow.value = true
+}
 const loading = ref(false)
 async function loadData() {
   loading.value = true
@@ -241,6 +269,12 @@ async function deleteBatchHandle() {
             <NFormItem :show-feedback="false" label="Keywords" label-placement="left">
               <NInput v-model:value="pageParam.keyword" placeholder="Enter keywords" />
             </NFormItem>
+            <NFormItem :show-feedback="false" label="User" label-placement="left">
+              <NInput v-model:value="pageParam.userId" placeholder="User ID" clearable />
+            </NFormItem>
+            <NFormItem :show-feedback="false" label="Problem" label-placement="left">
+              <NInput v-model:value="pageParam.problemId" placeholder="Problem ID" clearable />
+            </NFormItem>
             <NSpace align="center">
               <NButton type="primary" @click="loadData">
                 <template #icon>
@@ -268,6 +302,12 @@ async function deleteBatchHandle() {
             <!-- <NButton type="primary">
               Conversation Memory
             </NButton> -->
+            <NButton @click="openToolTrace">
+              Tool traces
+            </NButton>
+            <NButton @click="openPrompt">
+              Prompt
+            </NButton>
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
                 Confirm delete
@@ -373,6 +413,27 @@ async function deleteBatchHandle() {
 
     <Form ref="formRef" @submit="loadData" />
     <Detail ref="detailRef" @submit="loadData" />
+
+    <NModal v-model:show="toolShow" preset="card" title="Tool traces" class="w-900px">
+      <NDataTable
+        :loading="toolLoading"
+        :columns="[
+          { title: 'Tool', key: 'toolName' },
+          { title: 'Status', key: 'status' },
+          { title: 'Duration', key: 'durationMs' },
+          { title: 'Args', key: 'toolArgs', ellipsis: { tooltip: true } },
+          { title: 'Result', key: 'toolResult', ellipsis: { tooltip: true } },
+        ]"
+        :data="toolRows"
+        :pagination="false"
+        :scroll-x="800"
+      />
+    </NModal>
+
+    <NModal v-model:show="promptShow" preset="card" title="Prompt" class="w-800px">
+      <NText>SHA-256: {{ promptData?.defaultPromptSha256 }}</NText>
+      <NCode class="mt-2" :code="promptData?.defaultPrompt || ''" word-wrap />
+    </NModal>
   </div>
 </template>
 

@@ -2,10 +2,11 @@
 import { NDescriptions, NDescriptionsItem, NDrawer, NDrawerContent, NTime } from 'naive-ui'
 import { useTaskSimilarityFetch } from '@/composables/v1'
 import { FormatModuleType } from '@/utils'
+import CodeCompare from '@/components/similarity/CodeCompare.vue'
 
 const emit = defineEmits(['close'])
 const show = ref(false)
-const { taskSimilarityDefaultData } = useTaskSimilarityFetch()
+const { taskSimilarityDefaultData, taskSimilarityDetail } = useTaskSimilarityFetch()
 const formData = ref<any>({ ...taskSimilarityDefaultData })
 function doClose() {
   emit('close')
@@ -13,9 +14,14 @@ function doClose() {
   formData.value = { ...taskSimilarityDefaultData }
 }
 
-function doOpen(row: any) {
+async function doOpen(row: any) {
   show.value = true
   formData.value = row
+  if (row?.id) {
+    const { data } = await taskSimilarityDetail({ id: row.id })
+    if (data)
+      formData.value = { ...row, ...data }
+  }
 }
 defineExpose({
   doOpen,
@@ -23,9 +29,17 @@ defineExpose({
 </script>
 
 <template>
-  <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
+  <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="1100" @after-leave="doClose">
     <NDrawerContent title="Details">
-      <NDescriptions label-placement="left" bordered :column="1">
+      <CodeCompare
+        :left-code="formData.submitCode"
+        :right-code="formData.originCode"
+        :left-tokens="formData.submitTokenTexts"
+        :right-tokens="formData.originTokenTexts"
+        :tiles="formData.matchTiles"
+        :language="formData.language"
+      />
+      <NDescriptions label-placement="left" bordered :column="1" class="mt-4">
         <NDescriptionsItem label="ID">
           {{ formData.id }}
         </NDescriptionsItem>

@@ -23,6 +23,7 @@ export function useTaskReportsFetch() {
     avgSimilarity: 0.0,
     maxSimilarity: 0.0,
     threshold: 0.0,
+    minMatchLength: 0,
     similarityDistribution: '',
     degreeStatistics: '',
     checkMode: 0,
@@ -74,6 +75,22 @@ export function useTaskReportsFetch() {
      */
     taskReportsDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+
+    workflowTraceByProblem(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix}task/trace/by-problem`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+
+    workflowTraceByUser(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix}task/trace/by-user`, {
         params: {
           ...data,
         },

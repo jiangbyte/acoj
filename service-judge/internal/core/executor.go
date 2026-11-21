@@ -1,12 +1,10 @@
 package core
 
 import (
-	"bytes"
-	"context"
 	"fmt"
+	"os/exec"
 	model2 "service-judge/internal/database/model"
 	"service-judge/internal/utils"
-	"os/exec"
 	"strings"
 	"sync"
 	"syscall"
@@ -48,21 +46,16 @@ type SandboxExecutor struct {
 
 // Execute 执行测试用例
 func (e *SandboxExecutor) Execute(workspace *Workspace, testCase *model2.DataTestCase) (*model2.DataJudgeCase, error) {
-	startTime := time.Now()
 	result := e.initResult(workspace, testCase)
 
-	soft := utils.IsSoftSandbox()
-	var cgroupPath string
-	if !soft {
-		path, err := utils.CreateCgroup(workspace.judgeRequest.MaxMemory)
-		if err != nil {
-			return e.handleError(result, fmt.Sprintf("创建cgroup失败: %v", err), 1, err)
-		}
-		cgroupPath = path
-		defer utils.CleanupCgroup(cgroupPath)
+	// 建带内存上限的 cgroup。失败就是系统错误，不再退回 /proc 轮询
+	group, err := utils.CreateCgroup(workspace.judgeRequest.MaxMemory)
+	if err != nil {
+		return e.handleError(result, fmt.Sprintf("创建cgroup失败: %v", err), 1, err)
 	}
+	defer group.Close()
 
-	return e.executeCommand(workspace, testCase, result, cgroupPath, soft, startTime)
+	return e.executeCommand(workspace, testCase, result, group)
 }
 
 // initResult 初始化结果对象
@@ -95,207 +88,173 @@ func (e *SandboxExecutor) initResult(workspace *Workspace, testCase *model2.Data
 
 // executeCommand 执行命令并处理结果
 func (e *SandboxExecutor) executeCommand(workspace *Workspace, testCase *model2.DataTestCase,
-	result *model2.DataJudgeCase, cgroupPath string, soft bool, startTime time.Time) (*model2.DataJudgeCase, error) {
+	result *model2.DataJudgeCase, group *utils.Group) (*model2.DataJudgeCase, error) {
 
-	cmd, stdoutBuf, stderrBuf, ctx, cancel, err := e.prepareCommand(workspace, testCase, soft)
+	cmd, stdoutBuf, stderrBuf, err := e.prepareCommand(workspace, testCase, group.FD())
 	if err != nil {
 		return e.handleError(result, fmt.Sprintf("准备命令失败: %v", err), 1, err)
 	}
-	defer cancel()
 
-	pgid, watcher, err := e.startAndManageProcess(cmd, cgroupPath, soft, workspace.judgeRequest.MaxMemory)
+	pgid, procStart, err := e.startAndManageProcess(cmd, group)
 	if err != nil {
 		return e.handleError(result, fmt.Sprintf("进程管理失败: %v", err), 1, err)
 	}
-	if watcher != nil {
-		defer watcher.Stop()
-	}
 
-	return e.waitForCompletion(cmd, ctx, workspace, testCase, result, cgroupPath, soft, watcher, pgid, startTime, stdoutBuf, stderrBuf)
+	return e.waitForCompletion(cmd, workspace, testCase, result, group, pgid, procStart, stdoutBuf, stderrBuf)
 }
 
-// prepareCommand 准备命令执行环境
-func (e *SandboxExecutor) prepareCommand(workspace *Workspace, testCase *model2.DataTestCase, soft bool) (
-	*exec.Cmd, *bytes.Buffer, *bytes.Buffer, context.Context, context.CancelFunc, error) {
+const defaultOutputLimitBytes = 2 << 20 // 2 MiB stdout/stderr 上限
+
+// prepareCommand 准备命令执行环境：chdir 到 workspace、限制输出字节、记录隔离边界。
+// 时限从进程真正跑起来才开始计，不在这里用 context 提前扣掉准备时间。
+func (e *SandboxExecutor) prepareCommand(workspace *Workspace, testCase *model2.DataTestCase, cgroupFD int) (
+	*exec.Cmd, *utils.LimitedWriter, *utils.LimitedWriter, error) {
 
 	runCmd := utils.GetRunCommand(workspace.langConfig, workspace.SourceFile, workspace.BuildFile)
-
-	timeout := time.Duration(workspace.judgeRequest.MaxTime)*time.Millisecond + 30*time.Millisecond
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-
-	cmd := exec.CommandContext(ctx, runCmd[0], runCmd[1:]...)
-	cmd.SysProcAttr = buildSysProcAttr(soft)
+	cmd := exec.Command(runCmd[0], runCmd[1:]...)
+	cmd.SysProcAttr = buildSysProcAttr(cgroupFD)
+	cmd.Dir = workspace.RunsPath
+	logx.Infof("sandbox dir=%s cgroup=v%d fd=%v", workspace.RunsPath, utils.CgroupVersion(), cgroupFD > 0)
 
 	cmd.Stdin = strings.NewReader(testCase.InputData)
-	var stdoutBuf, stderrBuf bytes.Buffer
-	cmd.Stdout = &stdoutBuf
-	cmd.Stderr = &stderrBuf
+	stdoutBuf := utils.NewLimitedWriter(defaultOutputLimitBytes)
+	stderrBuf := utils.NewLimitedWriter(defaultOutputLimitBytes)
+	cmd.Stdout = stdoutBuf
+	cmd.Stderr = stderrBuf
 
-	return cmd, &stdoutBuf, &stderrBuf, ctx, cancel, nil
+	return cmd, stdoutBuf, stderrBuf, nil
 }
 
-// startAndManageProcess 启动并管理进程；soft 模式启动 /proc 内存监视
-func (e *SandboxExecutor) startAndManageProcess(cmd *exec.Cmd, cgroupPath string, soft bool, maxMemoryKB float64) (int, *utils.MemoryWatcher, error) {
+// startAndManageProcess 启动进程。v2 用 cgroup fd 在创建时进组；v1 暂停后写入 procs 再恢复。
+func (e *SandboxExecutor) startAndManageProcess(cmd *exec.Cmd, group *utils.Group) (int, time.Time, error) {
 	if err := cmd.Start(); err != nil {
-		return 0, nil, fmt.Errorf("启动进程失败: %w", err)
+		return 0, time.Time{}, fmt.Errorf("启动进程失败: %w", err)
 	}
 
 	pgid := cmd.Process.Pid
-
-	if soft {
-		limitBytes := utils.MemoryLimitBytesFromKB(maxMemoryKB)
-		watcher := utils.StartMemoryWatcher(pgid, limitBytes, 0)
-		return pgid, watcher, nil
+	procStart := time.Now()
+	if group.FD() > 0 {
+		return pgid, procStart, nil
 	}
 
+	// v1 没有 CLONE_INTO_CGROUP，先停住再迁入，避免用户代码先跑出一段没被限制的内存
 	if err := syscall.Kill(pgid, syscall.SIGSTOP); err != nil {
 		syscall.Kill(-pgid, syscall.SIGKILL)
-		return 0, nil, fmt.Errorf("暂停进程失败: %w", err)
+		_ = cmd.Wait()
+		return 0, time.Time{}, fmt.Errorf("暂停进程失败: %w", err)
 	}
-
-	if err := utils.SetCgroupForProcess(cgroupPath, pgid); err != nil {
+	if err := group.AddProc(pgid); err != nil {
 		syscall.Kill(-pgid, syscall.SIGKILL)
-		return 0, nil, fmt.Errorf("设置cgroup失败: %w", err)
+		_ = cmd.Wait()
+		return 0, time.Time{}, fmt.Errorf("设置cgroup失败: %w", err)
 	}
-
 	if err := syscall.Kill(pgid, syscall.SIGCONT); err != nil {
 		syscall.Kill(-pgid, syscall.SIGKILL)
-		return 0, nil, fmt.Errorf("恢复进程失败: %w", err)
+		_ = cmd.Wait()
+		return 0, time.Time{}, fmt.Errorf("恢复进程失败: %w", err)
 	}
-
-	return pgid, nil, nil
+	return pgid, time.Now(), nil
 }
 
-// waitForCompletion 等待命令完成并收集结果
-func (e *SandboxExecutor) waitForCompletion(cmd *exec.Cmd, ctx context.Context, workspace *Workspace,
-	testCase *model2.DataTestCase, result *model2.DataJudgeCase, cgroupPath string, soft bool,
-	watcher *utils.MemoryWatcher, pgid int, startTime time.Time, stdoutBuf, stderrBuf *bytes.Buffer) (*model2.DataJudgeCase, error) {
+// waitForCompletion 等待命令完成并收集结果。时限从 procStart 起算，到点只杀进程组。
+func (e *SandboxExecutor) waitForCompletion(cmd *exec.Cmd, workspace *Workspace,
+	testCase *model2.DataTestCase, result *model2.DataJudgeCase, group *utils.Group, pgid int, procStart time.Time,
+	stdoutBuf, stderrBuf *utils.LimitedWriter) (*model2.DataJudgeCase, error) {
 
 	done := make(chan error, 1)
 	go func() {
 		done <- cmd.Wait()
 	}()
 
-	var exceedCh <-chan struct{}
-	if watcher != nil {
-		exceedCh = watcher.ExceededChan()
-	} else {
-		exceedCh = make(chan struct{})
+	limit := time.Duration(workspace.judgeRequest.MaxTime * float64(time.Millisecond))
+	stopCPU := group.WatchCPU(limit, pgid)
+	defer stopCPU()
+
+	var timeout <-chan time.Time
+	if limit > 0 {
+		timer := time.NewTimer(limit)
+		defer timer.Stop()
+		timeout = timer.C
 	}
 
+	var cmdErr error
+	timedOut := false
 	select {
-	case <-exceedCh:
+	case <-timeout:
+		timedOut = true
 		syscall.Kill(-pgid, syscall.SIGKILL)
-		<-done
-		return e.handleSoftMLE(workspace, result, watcher, startTime, stdoutBuf, stderrBuf)
-	case <-ctx.Done():
-		return e.handleTimeout(workspace, result, cgroupPath, soft, watcher, pgid, startTime, stdoutBuf, stderrBuf)
-	case err := <-done:
-		return e.handleCommandResult(workspace, testCase, result, cgroupPath, soft, watcher, startTime, stdoutBuf, stderrBuf, err)
+		cmdErr = <-done
+	case cmdErr = <-done:
 	}
-}
 
-func (e *SandboxExecutor) handleSoftMLE(workspace *Workspace, result *model2.DataJudgeCase,
-	watcher *utils.MemoryWatcher, startTime time.Time, stdoutBuf, stderrBuf *bytes.Buffer) (*model2.DataJudgeCase, error) {
-
-	elapsed := time.Since(startTime)
-	result.MaxTime = float64(elapsed.Milliseconds())
-	if watcher != nil {
-		result.MaxMemory = utils.FormatBytesKB(watcher.Peak())
-	}
+	cpu, memBytes := e.collectExecutionMetrics(result, group, procStart, timedOut)
 	result.OutputData = stdoutBuf.String()
-	result.Score = 0
-	result.Status = "MEMORY_LIMIT_EXCEEDED"
-	if stderr := strings.TrimSpace(stderrBuf.String()); stderr != "" {
-		result.Message = stderr
-	}
-	logx.Infof("soft MLE - 时间: %.2f ms, 内存: %.2f KB, 限制: %.2f KB",
-		result.MaxTime, result.MaxMemory, workspace.judgeRequest.MaxMemory)
-	return result, nil
-}
-
-// handleTimeout 处理超时情况
-func (e *SandboxExecutor) handleTimeout(workspace *Workspace, result *model2.DataJudgeCase,
-	cgroupPath string, soft bool, watcher *utils.MemoryWatcher, pgid int, startTime time.Time,
-	stdoutBuf, stderrBuf *bytes.Buffer) (*model2.DataJudgeCase, error) {
-
-	syscall.Kill(-pgid, syscall.SIGKILL)
-
-	elapsed := time.Since(startTime)
-	e.collectExecutionMetrics(result, cgroupPath, soft, watcher, elapsed)
-
-	result.OutputData = stdoutBuf.String()
-	result.Status = "TIME_LIMIT_EXCEEDED"
-
-	if stderr := strings.TrimSpace(stderrBuf.String()); stderr != "" {
-		result.Message = stderr
-	}
-
-	logx.Errorf("超时杀死进程组，运行时间: %v ms，时间限制: %v ms", elapsed.Milliseconds(), workspace.judgeRequest.MaxTime)
-	return result, nil
-}
-
-// handleCommandResult 处理命令执行结果
-func (e *SandboxExecutor) handleCommandResult(workspace *Workspace, testCase *model2.DataTestCase,
-	result *model2.DataJudgeCase, cgroupPath string, soft bool, watcher *utils.MemoryWatcher, startTime time.Time,
-	stdoutBuf, stderrBuf *bytes.Buffer, cmdErr error) (*model2.DataJudgeCase, error) {
-
-	elapsed := time.Since(startTime)
-	e.collectExecutionMetrics(result, cgroupPath, soft, watcher, elapsed)
-
-	result.OutputData = stdoutBuf.String()
-	result.Status = e.determineExecutionStatus(workspace, result, cgroupPath, soft, watcher, elapsed, cmdErr, stderrBuf.String(), testCase)
-
-	logx.Infof("运行完成 - 状态: %s, 时间: %.2f ms, 内存: %.2f KB",
-		result.Status, result.MaxTime, result.MaxMemory)
-
-	return result, nil
-}
-
-// collectExecutionMetrics 收集执行指标
-func (e *SandboxExecutor) collectExecutionMetrics(result *model2.DataJudgeCase,
-	cgroupPath string, soft bool, watcher *utils.MemoryWatcher, elapsed time.Duration) {
-
-	result.MaxTime = float64(elapsed.Milliseconds())
-
-	if soft {
-		if watcher != nil {
-			result.MaxMemory = utils.FormatBytesKB(watcher.Peak())
+	if timedOut {
+		result.Status = "TIME_LIMIT_EXCEEDED"
+		result.Score = 0
+		if stderr := strings.TrimSpace(stderrBuf.String()); stderr != "" {
+			result.Message = stderr
 		}
-		return
+		logx.Errorf("TLE - 运行时间: %.2f ms，时间限制: %.2f ms，内存: %.2f KB",
+			result.MaxTime, workspace.judgeRequest.MaxTime, result.MaxMemory)
+		return result, nil
 	}
 
-	if memoryUsed, err := utils.GetMemoryUsage(cgroupPath); err == nil {
-		result.MaxMemory = utils.FormatBytesKB(memoryUsed)
-	}
+	result.Status = e.determineExecutionStatus(workspace, result, group, cpu, memBytes, cmdErr, stderrBuf, stdoutBuf, testCase)
+	logx.Infof("运行完成 - 状态: %s, 时间: %.2f ms, 内存: %.2f KB, stdout截断=%v stderr截断=%v",
+		result.Status, result.MaxTime, result.MaxMemory, stdoutBuf.Truncated(), stderrBuf.Truncated())
+	return result, nil
 }
 
-// determineExecutionStatus 判断执行状态
-func (e *SandboxExecutor) determineExecutionStatus(workspace *Workspace, result *model2.DataJudgeCase,
-	cgroupPath string, soft bool, watcher *utils.MemoryWatcher, elapsed time.Duration, cmdErr error, stderr string, testCase *model2.DataTestCase) string {
+// collectExecutionMetrics 用 cgroup 的 CPU 时间和内存峰值填结果。
+// 墙钟只在 CPU 计数还没到、但进程被墙钟杀掉时用来解释 TLE。
+func (e *SandboxExecutor) collectExecutionMetrics(result *model2.DataJudgeCase, group *utils.Group, procStart time.Time, wallKilled bool) (time.Duration, uint64) {
+	wall := time.Since(procStart)
+	cpu, err := group.CPUTime()
+	if err != nil {
+		logx.Errorf("读取 cgroup CPU 时间失败: %v", err)
+	}
+	memBytes, memErr := group.MemoryPeak()
+	if memErr != nil {
+		logx.Errorf("读取 cgroup 内存峰值失败: %v", memErr)
+	}
+	reported := cpu
+	if wallKilled && wall > cpu {
+		reported = wall
+	}
+	result.MaxTime = utils.DurationMS(reported)
+	result.MaxMemory = utils.FormatBytesKB(memBytes)
+	logx.Infof("cgroup v%d cpu=%.2f ms wall=%.2f ms memory=%.2f KB",
+		group.Version, utils.DurationMS(cpu), utils.DurationMS(wall), result.MaxMemory)
+	return cpu, memBytes
+}
 
-	if elapsed > time.Duration(workspace.judgeRequest.MaxTime)*time.Millisecond {
+// determineExecutionStatus 判断执行状态。时间和内存都以 cgroup 计数为准。
+func (e *SandboxExecutor) determineExecutionStatus(workspace *Workspace, result *model2.DataJudgeCase,
+	group *utils.Group, cpu time.Duration, memBytes uint64, cmdErr error,
+	stderrBuf, stdoutBuf *utils.LimitedWriter, testCase *model2.DataTestCase) string {
+
+	limit := time.Duration(workspace.judgeRequest.MaxTime * float64(time.Millisecond))
+	limitBytes := utils.MemoryLimitBytesFromKB(workspace.judgeRequest.MaxMemory)
+
+	// 1. 内核报了 OOM，或峰值超过上限 → MLE
+	if group.OOMKilled() || (limitBytes > 0 && memBytes > limitBytes) {
+		result.Score = 0
+		return "MEMORY_LIMIT_EXCEEDED"
+	}
+	// 2. cgroup CPU 时间超过题目时限 → TLE
+	if limit > 0 && cpu > limit {
 		result.Score = 0
 		return "TIME_LIMIT_EXCEEDED"
 	}
 
-	limitBytes := utils.MemoryLimitBytesFromKB(workspace.judgeRequest.MaxMemory)
-	if soft {
-		peak := uint64(0)
-		if watcher != nil {
-			peak = watcher.Peak()
-			if watcher.Exceeded() {
-				result.Score = 0
-				return "MEMORY_LIMIT_EXCEEDED"
-			}
-		}
-		if limitBytes > 0 && peak >= limitBytes {
-			result.Score = 0
-			return "MEMORY_LIMIT_EXCEEDED"
-		}
-	} else if utils.CheckOOMEvent(cgroupPath) {
+	// 3. 输出超限截断证据
+	if stdoutBuf.Truncated() || stderrBuf.Truncated() {
 		result.Score = 0
-		return "MEMORY_LIMIT_EXCEEDED"
+		result.Message = fmt.Sprintf("output truncated: stdoutWritten=%d stderrWritten=%d limit=%d",
+			stdoutBuf.Written(), stderrBuf.Written(), defaultOutputLimitBytes)
+		logx.Infof("OUTPUT_LIMIT_EXCEEDED: %s", result.Message)
+		return "OUTPUT_LIMIT_EXCEEDED"
 	}
 
 	if cmdErr != nil {
@@ -304,7 +263,8 @@ func (e *SandboxExecutor) determineExecutionStatus(workspace *Workspace, result 
 		return "RUNTIME_ERROR"
 	}
 
-	if strings.TrimSpace(stderr) != "" {
+	stderr := strings.TrimSpace(stderrBuf.String())
+	if stderr != "" {
 		result.Score = 0
 		result.Message = stderr
 		return "RUNTIME_ERROR"

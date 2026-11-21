@@ -1,5 +1,6 @@
 package io.charlie.web.modular.llm.controller;
 
+import io.charlie.cores.result.Result;
 import io.charlie.web.modular.llm.param.ChatRequest;
 import io.charlie.web.modular.llm.service.LLMService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,6 +32,12 @@ public class LLMController {
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<?> streamChat(@Valid @RequestBody ChatRequest request) {
         return llmService.streamChat(request);
+    }
+
+    @Operation(summary = "导出系统提示")
+    @GetMapping("/llm/prompts/export")
+    public Result<?> exportPrompts() {
+        return Result.success(llmService.exportPrompts());
     }
 
 }

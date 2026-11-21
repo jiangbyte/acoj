@@ -6,6 +6,7 @@ import io.charlie.web.modular.sys.conversation.param.SysConversationPageParam;
 import io.charlie.web.modular.sys.conversation.param.SysConversationAddParam;
 import io.charlie.web.modular.sys.conversation.param.SysConversationEditParam;
 import io.charlie.web.modular.sys.conversation.param.SysConversationIdParam;
+import io.charlie.web.modular.sys.conversation.param.SysConversationToolTracePageParam;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import io.charlie.web.modular.sys.conversation.service.SysConversationService;
+import io.charlie.web.modular.sys.conversation.service.SysConversationToolTraceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,6 +37,7 @@ import java.util.List;
 @Validated
 public class SysConversationController {
     private final SysConversationService sysConversationService;
+    private final SysConversationToolTraceService sysConversationToolTraceService;
 
     @Operation(summary = "获取大模型对话分页")
     @SaCheckPermission("/sys/conversation/page")
@@ -84,5 +87,12 @@ public class SysConversationController {
     @GetMapping("/sys/conversation/history/{conversationId}")
     public Result<?> history(@PathVariable @NotBlank(message = "对话ID不能为空") String conversationId) {
         return Result.success(sysConversationService.historyByConversationId(conversationId));
+    }
+
+    @Operation(summary = "LLM 工具调用轨迹分页")
+    @SaCheckPermission("/sys/conversation/page")
+    @GetMapping("/sys/conversation/toolTrace/page")
+    public Result<?> toolTracePage(@ParameterObject SysConversationToolTracePageParam param) {
+        return Result.success(sysConversationToolTraceService.page(param));
     }
 }

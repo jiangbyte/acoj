@@ -47,6 +47,13 @@ public class SimilarityServiceImpl implements SimilarityService {
 
         String taskId = IdUtil.objectId();
 
+        // 1. 固定 GST 参数唯一来源：请求 minMatchLength，缺省对齐 admin UI 默认 8
+        // 2. 写入 task_reports 供详情回显
+        Integer minMatchLength = batchSimilarityParam.getMinMatchLength();
+        if (minMatchLength == null || minMatchLength < 1) {
+            minMatchLength = 8;
+        }
+
         TaskReports taskReports = new TaskReports();
         taskReports.setTaskId(taskId);
         taskReports.setModuleId(batchSimilarityParam.getModuleId());
@@ -54,16 +61,17 @@ public class SimilarityServiceImpl implements SimilarityService {
         taskReports.setSampleCount(Math.toIntExact(list.size()));
         taskReports.setModuleType("SET");
         taskReports.setThreshold(dataProblem.getThreshold());
+        taskReports.setMinMatchLength(minMatchLength);
 
         taskReportsMapper.insert(taskReports);
 
-        log.info("开始处理任务: {}", taskId);
+        log.info("开始处理任务: {}, minMatchLength={}", taskId, minMatchLength);
 
         SimilaritySubmitDto batchSimilaritySubmitDto = BeanUtil.toBean(batchSimilarityParam, SimilaritySubmitDto.class);
         batchSimilaritySubmitDto.setReportId(taskReports.getId());
         batchSimilaritySubmitDto.setTaskId(taskId);
         batchSimilaritySubmitDto.setLibIds(list);
-        batchSimilaritySubmitDto.setMinMatchLength(batchSimilarityParam.getMinMatchLength());
+        batchSimilaritySubmitDto.setMinMatchLength(minMatchLength);
         batchSimilaritySubmitDto.setThreshold(dataProblem.getThreshold());
         batchSimilaritySubmitDto.setTaskType(Boolean.TRUE);
 

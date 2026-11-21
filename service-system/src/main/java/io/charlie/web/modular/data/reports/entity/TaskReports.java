@@ -75,6 +75,9 @@ public class TaskReports extends CommonEntity {
     @Schema(description = "检测阈值")
     private BigDecimal threshold;
 
+    @Schema(description = "GST 最小匹配长度（实际用于筛查的 minMatchLength）")
+    private Integer minMatchLength;
+
     @Schema(description = "相似度分布")
     @TableField(typeHandler = JacksonTypeHandler.class)
     private List<Integer> similarityDistribution;

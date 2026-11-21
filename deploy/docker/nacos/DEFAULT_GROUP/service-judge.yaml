@@ -5,7 +5,7 @@ Port: 8888
 # 工作空间
 Workspace: "/tmp/judgespace"
 
-# 沙箱：auto=探测 cgroup；cgroup=强制；soft=/proc 轮询内存（适合本地 WSL）
+# 沙箱只使用 cgroup v1 或 v2，按本机挂载自动选择
 Sandbox:
   Mode: auto
 

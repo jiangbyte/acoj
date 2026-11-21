@@ -2,15 +2,21 @@ package similarity
 
 // MatchTile 表示匹配的区块
 type MatchTile struct {
-	Start1 int
-	Start2 int
-	Length int
+	Start1 int `json:"start1"`
+	Start2 int `json:"start2"`
+	Length int `json:"length"`
 }
 
-// GreedyStringTiling 贪婪字符串匹配算法
+// GreedyStringTiling 贪婪字符串匹配算法，返回匹配 token 数
 func GreedyStringTiling(token1, token2 []int, minMatchLength int) int {
+	total, _ := GreedyStringTilingTiles(token1, token2, minMatchLength)
+	return total
+}
+
+// GreedyStringTilingTiles 返回匹配 token 数和匹配块
+func GreedyStringTilingTiles(token1, token2 []int, minMatchLength int) (int, []MatchTile) {
 	if len(token1) == 0 || len(token2) == 0 {
-		return 0
+		return 0, nil
 	}
 	matched1 := make([]bool, len(token1))
 	matched2 := make([]bool, len(token2))
@@ -36,7 +42,7 @@ func GreedyStringTiling(token1, token2 []int, minMatchLength int) int {
 		totalMatches += tile.Length
 	}
 
-	return totalMatches
+	return totalMatches, tiles
 }
 
 func findMaxMatches(token1, token2 []int, matched1, matched2 []bool,

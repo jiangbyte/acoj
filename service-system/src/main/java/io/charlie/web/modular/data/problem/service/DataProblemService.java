@@ -60,4 +60,9 @@ public interface DataProblemService extends IService<DataProblem> {
     // 获取题目支持语言
     String llmGetOpenLanguage(String id);
 
+    /**
+     * 获取题目样例输入输出（供 LLM Tool）。
+     */
+    String llmGetSamples(String id);
+
 }

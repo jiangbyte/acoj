@@ -36,8 +36,10 @@ func (lm *LifecycleManager) InitializeServices(c config.Config) error {
 		lm.shutdownServices()
 	}
 
-	// 解析沙箱模式（cgroup / soft）
-	utils.InitSandboxMode(c.Sandbox.Mode)
+	// 只使用 cgroup。找不到 v1/v2 控制器时启动失败
+	if err := utils.InitSandboxMode(c.Sandbox.Mode); err != nil {
+		return err
+	}
 
 	// 创建新的服务实例
 	lm.serviceCtx = svc.NewServiceContext(c)

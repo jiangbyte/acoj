@@ -14,13 +14,6 @@ const columns: DataTableColumns<any> = [
     type: 'selection',
   },
   {
-    title: 'Report Type',
-    key: 'reportTypeName',
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
     title: 'Task ID',
     key: 'taskId',
     ellipsis: {

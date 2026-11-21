@@ -58,10 +58,9 @@ type RedisConfig struct {
 	PoolSize int    `json:",default=10"`
 }
 
-// SandboxConfig 沙箱资源限制模式
+// SandboxConfig 沙箱资源限制。只使用 cgroup v1 或 v2，没有 soft 降级。
 type SandboxConfig struct {
-	// Mode: auto | cgroup | soft
-	// auto：可写 cgroup v2 则用 cgroup，否则降级 soft（/proc 轮询内存）
+	// Mode: auto | cgroup。auto 与 cgroup 都表示按本机挂载选择 v2 或 v1。
 	Mode string `json:",default=auto"`
 }
 

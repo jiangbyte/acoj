@@ -129,16 +129,6 @@ curl -sS -X POST http://localhost:89/api/v1/task/similarity/batch \
   -d '{"moduleType":"PROBLEM","moduleId":"junit_sim_sum","problemId":"junit_sim_sum","language":"cpp","compareMode":"MULTI_BY_MULTI","userIds":["junit_sim_u_base","junit_sim_u_c01"],"minMatchLength":8}'
 ```
 
-## Soft sandbox (optional)
-
-If the host cannot run `--privileged` / cgroup, edit `docker-compose.yml` judge volume:
-
-```yaml
-- ./deploy/docker/judge/judge-soft.yaml:/app/etc/judge-local.yaml:ro
-```
-
-and remove `privileged: true`.
-
 ## Config layout
 
 ```text
@@ -154,7 +144,6 @@ deploy/
         service-similarity.yaml
         spring.ai.alibaba.configurable.prompt
     judge/judge.yaml        # bootstrap (points to nacos)
-    judge/judge-soft.yaml
     similarity/similar.yaml
     scripts/nacos-init.sh
 ```

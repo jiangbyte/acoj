@@ -64,7 +64,18 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
     @Override
     @DS("slave")
     public Page<DataLibrary> page(DataLibraryPageParam dataLibraryPageParam) {
+        // 1. 组装过滤条件（user/problem/submit）
+        // 2. 排序后分页查询，避免无条件扫全表
         QueryWrapper<DataLibrary> queryWrapper = new QueryWrapper<DataLibrary>().checkSqlInjection();
+        if (StrUtil.isNotBlank(dataLibraryPageParam.getUserId())) {
+            queryWrapper.lambda().eq(DataLibrary::getUserId, dataLibraryPageParam.getUserId());
+        }
+        if (StrUtil.isNotBlank(dataLibraryPageParam.getProblemId())) {
+            queryWrapper.lambda().eq(DataLibrary::getProblemId, dataLibraryPageParam.getProblemId());
+        }
+        if (StrUtil.isNotBlank(dataLibraryPageParam.getSubmitId())) {
+            queryWrapper.lambda().eq(DataLibrary::getSubmitId, dataLibraryPageParam.getSubmitId());
+        }
         queryWrapper.lambda().orderByDesc(DataLibrary::getCreateTime);
         if (ObjectUtil.isAllNotEmpty(dataLibraryPageParam.getSortField(), dataLibraryPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataLibraryPageParam.getSortOrder())) {
             queryWrapper.orderBy(

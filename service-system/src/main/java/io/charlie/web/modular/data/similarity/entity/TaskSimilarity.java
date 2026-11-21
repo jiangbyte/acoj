@@ -17,6 +17,7 @@ import java.util.List;
 
 import io.charlie.web.modular.data.problem.entity.DataProblem;
 import io.charlie.web.modular.sys.user.entity.SysUser;
+import io.charlie.web.utils.similarity.algorithm.MatchTile;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -149,4 +150,8 @@ public class TaskSimilarity extends CommonEntity {
     @Schema(description = "样本用户Token内容")
     @TableField(typeHandler = JacksonTypeHandler.class)
     private List<String> originTokenTexts;
+
+    @Schema(description = "匹配块")
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<MatchTile> matchTiles;
 }

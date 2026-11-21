@@ -28,17 +28,10 @@ Bootstrap: `etc/judge-local.yaml` (committed) or `etc/judge-dev.yaml` (gitignore
 | Item | Default / notes |
 | --- | --- |
 | Host / Port | `0.0.0.0:8888` |
-| Sandbox.Mode | `auto`: use cgroup if writable, else fall back to `soft`; or force `cgroup` / `soft` |
+| Sandbox.Mode | `auto` or `cgroup`: use cgroup v2 if the host delegates it, otherwise cgroup v1 |
 | Nacos | Address, namespace, `DataId: service-judge.yaml` |
 
 With `-nacos`, runtime config is loaded from Nacos `service-judge.yaml` (MySQL, Redis, RabbitMQ, language commands, etc.). Keep the namespace aligned with `service-system`.
-
-Local WSL example:
-
-```yaml
-Sandbox:
-  Mode: soft
-```
 
 ## Start
 
@@ -96,7 +89,7 @@ Optional Go runtime limits (defaults in entrypoint):
 ## Troubleshooting
 
 1. **Missing memory limit files / cgroup errors**  
-   Parent cgroup did not delegate `memory`/`cpu`, or the process lacks privilege. Use `Sandbox.Mode: soft`, or run with `--privileged` and initialize subtree control as in `entrypoint.sh`.
+   Parent cgroup did not delegate `memory`/`cpu`, or the process lacks privilege. Run with `--privileged` and initialize subtree control as in `entrypoint.sh`.
 
 2. **A language fails to compile**  
    Confirm the toolchain is installed on the host/image and language commands in Nacos are correct.

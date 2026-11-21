@@ -45,7 +45,18 @@ public class SysConversationServiceImpl extends ServiceImpl<SysConversationMappe
     @Override
     @DS("slave")
     public Page<SysConversation> page(SysConversationPageParam sysConversationPageParam) {
+        // 1. 管理端按 user/problem/conversation 过滤
+        // 2. 排序后分页
         QueryWrapper<SysConversation> queryWrapper = new QueryWrapper<SysConversation>().checkSqlInjection();
+        if (StrUtil.isNotBlank(sysConversationPageParam.getUserId())) {
+            queryWrapper.lambda().eq(SysConversation::getUserId, sysConversationPageParam.getUserId());
+        }
+        if (StrUtil.isNotBlank(sysConversationPageParam.getProblemId())) {
+            queryWrapper.lambda().eq(SysConversation::getProblemId, sysConversationPageParam.getProblemId());
+        }
+        if (StrUtil.isNotBlank(sysConversationPageParam.getConversationId())) {
+            queryWrapper.lambda().eq(SysConversation::getConversationId, sysConversationPageParam.getConversationId());
+        }
         if (ObjectUtil.isAllNotEmpty(sysConversationPageParam.getSortField(), sysConversationPageParam.getSortOrder()) && ISortOrderEnum.isValid(sysConversationPageParam.getSortOrder())) {
             queryWrapper.orderBy(
                     true,
@@ -159,11 +170,19 @@ public class SysConversationServiceImpl extends ServiceImpl<SysConversationMappe
     @Override
     @DS("slave")
     public Page<SysConversation> userHistorypage(SysConversationPageParam sysConversationPageParam) {
+        // 1. 仅当前登录用户；可选按 problemId 收窄
+        // 2. 分页返回会话消息
         QueryWrapper<SysConversation> queryWrapper = new QueryWrapper<SysConversation>().checkSqlInjection();
         if (StpUtil.isLogin()) {
             queryWrapper.lambda().eq(SysConversation::getUserId, StpUtil.getLoginIdAsString());
         } else {
             return new Page<>();
+        }
+        if (StrUtil.isNotBlank(sysConversationPageParam.getProblemId())) {
+            queryWrapper.lambda().eq(SysConversation::getProblemId, sysConversationPageParam.getProblemId());
+        }
+        if (StrUtil.isNotBlank(sysConversationPageParam.getConversationId())) {
+            queryWrapper.lambda().eq(SysConversation::getConversationId, sysConversationPageParam.getConversationId());
         }
 
         if (ObjectUtil.isAllNotEmpty(sysConversationPageParam.getSortField(), sysConversationPageParam.getSortOrder()) && ISortOrderEnum.isValid(sysConversationPageParam.getSortOrder())) {
@@ -171,6 +190,8 @@ public class SysConversationServiceImpl extends ServiceImpl<SysConversationMappe
                     true,
                     sysConversationPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(sysConversationPageParam.getSortField()));
+        } else {
+            queryWrapper.lambda().orderByDesc(SysConversation::getCreateTime);
         }
 
         return this.page(CommonPageRequest.Page(

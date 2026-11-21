@@ -10,6 +10,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AuthShell: typeof import('./../components/auth/AuthShell.vue')['default']
     Breadcrumb: typeof import('./../components/site/Breadcrumb.vue')['default']
+    CodeCompare: typeof import('./../components/similarity/CodeCompare.vue')['default']
     CodeEditor: typeof import('./../components/common/editor/code/CodeEditor.vue')['default']
     Collapse: typeof import('./../components/site/Collapse.vue')['default']
     Direction: typeof import('./../components/site/Direction.vue')['default']
@@ -117,5 +118,6 @@ declare module 'vue' {
     SingleSetModal: typeof import('./../components/set/SingleSetModal.vue')['default']
     TabBar: typeof import('./../components/site/TabBar.vue')['default']
     UserAvatar: typeof import('./../components/site/UserAvatar.vue')['default']
+    WorkflowTrace: typeof import('./../components/similarity/WorkflowTrace.vue')['default']
   }
 }

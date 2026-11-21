@@ -229,9 +229,9 @@
         )
         SELECT dc.degree as cloneLevel,
                CASE dc.degree
-                   WHEN 'HIGHLY_SUSPECTED' THEN '高度可疑'
-                   WHEN 'MEDIUM_SUSPECTED' THEN '中度可疑'
-                   WHEN 'LOW_SUSPECTED' THEN '轻度可疑'
+                   WHEN 'HIGHLY_SUSPECTED' THEN 'Highly suspicious'
+                   WHEN 'MEDIUM_SUSPECTED' THEN 'Moderately suspicious'
+                   WHEN 'LOW_SUSPECTED' THEN 'Slightly suspicious'
                    END as cloneLevelName,
                CASE dc.degree
                    WHEN 'HIGHLY_SUSPECTED' THEN #{threshold} * 0.9

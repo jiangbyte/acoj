@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"service-judge/internal/utils"
 	"os/exec"
+	"service-judge/internal/utils"
 	"strings"
 	"sync"
 	"syscall"
@@ -55,27 +55,17 @@ type DefaultCompiler struct {
 const compileTimeout = 5 * time.Second
 
 func (c *DefaultCompiler) Compile(workspace *Workspace) (*CompileResult, error) {
-	startTime := time.Now()
-	result := &CompileResult{
-		MaxTime: float64(time.Since(startTime).Milliseconds()),
-	}
+	result := &CompileResult{}
 
-	soft := utils.IsSoftSandbox()
-	var cgroupPath string
-	if !soft {
-		path, err := utils.CreateCgroupNoMemory()
-		if err != nil {
-			return c.handleError(result, fmt.Sprintf("创建cgroup失败: %v", err), 1, err)
-		}
-		cgroupPath = path
-		defer utils.CleanupCgroup(cgroupPath)
+	// 编译不设内存上限，但必须进 cgroup，时间和内存都从内核计数读取
+	group, err := utils.CreateCgroupNoMemory()
+	if err != nil {
+		return c.handleError(result, fmt.Sprintf("创建cgroup失败: %v", err), 1, err)
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), compileTimeout)
-	defer cancel()
+	defer group.Close()
 
 	compilerCmd := utils.GetCompileCommand(workspace.langConfig, workspace.SourceFile, workspace.BuildFile)
-	cmd := c.createCommand(ctx, compilerCmd, workspace.BuildPath, soft)
+	cmd := c.createCommand(compilerCmd, workspace.BuildPath, group.FD())
 
 	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd.Stdout = &stdoutBuf
@@ -86,96 +76,97 @@ func (c *DefaultCompiler) Compile(workspace *Workspace) (*CompileResult, error) 
 	}
 
 	pgid := cmd.Process.Pid
-	if !soft {
-		var err error
-		pgid, err = c.controlProcess(cmd, cgroupPath, result)
+	procStart := time.Now()
+	if group.FD() <= 0 {
+		pgid, err = c.controlProcess(cmd, group)
 		if err != nil {
 			return result, err
 		}
+		procStart = time.Now()
 	}
 
-	return c.waitForCompletion(cmd, ctx, pgid, cgroupPath, soft, &stdoutBuf, &stderrBuf, startTime, result)
+	return c.waitForCompletion(cmd, pgid, group, &stderrBuf, procStart, result)
 }
 
 // 创建命令实例
-func (c *DefaultCompiler) createCommand(ctx context.Context, compilerCmd []string, dir string, soft bool) *exec.Cmd {
-	cmd := exec.CommandContext(ctx, compilerCmd[0], compilerCmd[1:]...)
+func (c *DefaultCompiler) createCommand(compilerCmd []string, dir string, cgroupFD int) *exec.Cmd {
+	cmd := exec.Command(compilerCmd[0], compilerCmd[1:]...)
 	cmd.Dir = dir
-	cmd.SysProcAttr = buildSysProcAttr(soft)
+	cmd.SysProcAttr = buildSysProcAttr(cgroupFD)
 	return cmd
 }
 
-// 进程控制：暂停、设置cgroup、恢复
-func (c *DefaultCompiler) controlProcess(cmd *exec.Cmd, cgroupPath string, result *CompileResult) (int, error) {
+// 进程控制：暂停、写入 cgroup、恢复。v1 没有 clone 进组的办法时走这里。
+func (c *DefaultCompiler) controlProcess(cmd *exec.Cmd, group *utils.Group) (int, error) {
 	if err := syscall.Kill(cmd.Process.Pid, syscall.SIGSTOP); err != nil {
 		return 0, fmt.Errorf("暂停进程失败: %v", err)
 	}
 
 	pgid := cmd.Process.Pid
-	if err := utils.SetCgroupForProcess(cgroupPath, pgid); err != nil {
+	if err := group.AddProc(pgid); err != nil {
 		syscall.Kill(-pgid, syscall.SIGKILL)
+		_ = cmd.Wait()
 		return 0, fmt.Errorf("设置cgroup失败: %v", err)
 	}
 
 	if err := syscall.Kill(cmd.Process.Pid, syscall.SIGCONT); err != nil {
+		syscall.Kill(-pgid, syscall.SIGKILL)
+		_ = cmd.Wait()
 		return 0, fmt.Errorf("恢复进程失败: %v", err)
 	}
 
 	return pgid, nil
 }
 
-// 等待命令完成并处理结果
-func (c *DefaultCompiler) waitForCompletion(cmd *exec.Cmd, ctx context.Context, pgid int,
-	cgroupPath string, soft bool, stdoutBuf, stderrBuf *bytes.Buffer, startTime time.Time, result *CompileResult) (*CompileResult, error) {
+// 等待命令完成并处理结果。编译时限从进程开始跑起算。
+func (c *DefaultCompiler) waitForCompletion(cmd *exec.Cmd, pgid int,
+	group *utils.Group, stderrBuf *bytes.Buffer, procStart time.Time, result *CompileResult) (*CompileResult, error) {
 
 	done := make(chan error, 1)
 	go func() {
 		done <- cmd.Wait()
 	}()
 
+	timer := time.NewTimer(compileTimeout)
+	defer timer.Stop()
+
 	select {
-	case <-ctx.Done():
-		return c.handleTimeout(pgid, cgroupPath, soft, stderrBuf, startTime, result)
+	case <-timer.C:
+		syscall.Kill(-pgid, syscall.SIGKILL)
+		<-done
+		c.fillCompileMetrics(result, group, procStart)
+		stderr := strings.TrimSpace(stderrBuf.String())
+		if stderr != "" {
+			result.Message = stderr
+		}
+		result.Success = false
+		logx.Errorf("超时杀死整个进程组，运行时间: %.2f ms", result.MaxTime)
+		return result, context.DeadlineExceeded
 	case err := <-done:
-		return c.handleCompletion(err, cgroupPath, soft, stdoutBuf, stderrBuf, startTime, result)
+		return c.handleCompletion(err, group, stderrBuf, procStart, result)
 	}
 }
 
-// 处理超时情况
-func (c *DefaultCompiler) handleTimeout(pgid int, cgroupPath string, soft bool, stderrBuf *bytes.Buffer,
-	startTime time.Time, result *CompileResult) (*CompileResult, error) {
-
-	syscall.Kill(-pgid, syscall.SIGKILL)
-	elapsed := time.Since(startTime)
-
-	if !soft {
-		memoryUsed, _ := utils.GetMemoryUsage(cgroupPath)
-		result.MaxMemory = utils.FormatBytesKB(memoryUsed)
+// fillCompileMetrics 用进程墙钟和内核内存峰值填写编译消耗。
+func (c *DefaultCompiler) fillCompileMetrics(result *CompileResult, group *utils.Group, procStart time.Time) {
+	cpu, err := group.CPUTime()
+	if err != nil {
+		logx.Errorf("读取编译 CPU 时间失败: %v", err)
+		cpu = time.Since(procStart)
 	}
-	result.MaxTime = float64(elapsed.Milliseconds())
-
-	stderr := strings.TrimSpace(stderrBuf.String())
-	if stderr != "" {
-		result.Message = stderr
+	mem, memErr := group.MemoryPeak()
+	if memErr != nil {
+		logx.Errorf("读取编译内存峰值失败: %v", memErr)
 	}
-
-	result.Success = false
-	logx.Errorf("超时杀死整个进程组，运行时间: %v ms", elapsed)
-
-	return result, context.DeadlineExceeded
+	result.MaxTime = utils.DurationMS(cpu)
+	result.MaxMemory = utils.FormatBytesKB(mem)
 }
 
 // 处理正常完成情况
-func (c *DefaultCompiler) handleCompletion(err error, cgroupPath string, soft bool, stdoutBuf, stderrBuf *bytes.Buffer,
-	startTime time.Time, result *CompileResult) (*CompileResult, error) {
+func (c *DefaultCompiler) handleCompletion(err error, group *utils.Group, stderrBuf *bytes.Buffer,
+	procStart time.Time, result *CompileResult) (*CompileResult, error) {
 
-	elapsed := time.Since(startTime)
-	var memoryUsed uint64
-	if !soft {
-		memoryUsed, _ = utils.GetMemoryUsage(cgroupPath)
-		result.MaxMemory = utils.FormatBytesKB(memoryUsed)
-	}
-	result.MaxTime = float64(elapsed.Milliseconds())
+	c.fillCompileMetrics(result, group, procStart)
 
 	stderr := strings.TrimSpace(stderrBuf.String())
 	if stderr != "" || err != nil {
@@ -187,10 +178,8 @@ func (c *DefaultCompiler) handleCompletion(err error, cgroupPath string, soft bo
 		return result, err
 	}
 
-	logx.Infof("编译完成, 内存使用: %d bytes (峰值), %f KB, 用时 %f ms",
-		memoryUsed, result.MaxMemory, result.MaxTime)
+	logx.Infof("编译完成, 内存峰值: %.2f KB, 用时 %.2f ms", result.MaxMemory, result.MaxTime)
 	result.Success = true
-
 	return result, nil
 }
 
