@@ -38,6 +38,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -257,6 +259,11 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         return page;
     }
 
+    /** 与前端 / Jackson 一致：按 Asia/Shanghai 墙钟解释时间戳，再与 DATETIME 比较 */
+    private static final ZoneId FRONTEND_ZONE = ZoneId.of("Asia/Shanghai");
+    private static final DateTimeFormatter MYSQL_DATETIME =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     /**
      * 转义 SQL 字符串字面量中的单引号，避免拼接 exists 时注入。
      */
@@ -265,6 +272,13 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
             return "";
         }
         return value.replace("'", "''");
+    }
+
+    /**
+     * 将前端传入的 epoch Date 格式化为上海时区墙钟字符串，与库内 DATETIME 字面对齐。
+     */
+    private static String toFrontendDateTime(Date date) {
+        return date.toInstant().atZone(FRONTEND_ZONE).format(MYSQL_DATETIME);
     }
 
     @Override
@@ -288,14 +302,14 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         queryWrapper.lambda().isNotNull(DataLibrary::getCode).ne(DataLibrary::getCode, "");
         queryWrapper.apply("code_token IS NOT NULL AND code_token <> 'null' AND code_token <> '[]'");
 
-        // 3. 时间范围按提交时间（空则 create_time）；用 Unix 秒比较，避免 JVM 本地时区把 Date 格式化成
-        //    本地墙钟后与 MySQL DATETIME（按会话/存储约定）错位，导致 TIME_WINDOW 短窗恒为 0
+        // 3. 时间范围：按前端时间戳→Asia/Shanghai 墙钟，直接比 DATETIME，避免 UNIX_TIMESTAMP 受会话时区影响
+        //    手写 apply：需 IFNULL(submit_time, create_time)，Lambda 难以表达
         if (ObjectUtil.isAllNotEmpty(libraryQueryParam.getStartTime(), libraryQueryParam.getEndTime())) {
-            long startSec = libraryQueryParam.getStartTime().getTime() / 1000L;
-            long endSec = libraryQueryParam.getEndTime().getTime() / 1000L;
+            String start = toFrontendDateTime(libraryQueryParam.getStartTime());
+            String end = toFrontendDateTime(libraryQueryParam.getEndTime());
             queryWrapper.apply(
-                    "UNIX_TIMESTAMP(IFNULL(submit_time, create_time)) BETWEEN {0} AND {1}",
-                    startSec, endSec);
+                    "IFNULL(submit_time, create_time) >= {0} AND IFNULL(submit_time, create_time) <= {1}",
+                    start, end);
         }
 
         // 4. 对比模式附加条件
@@ -303,11 +317,10 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
             if ("TIME_WINDOW".equals(libraryQueryParam.getCodeFilter())
                     && libraryQueryParam.getCodeFilterTimeWindow() != null
                     && libraryQueryParam.getCodeFilterTimeWindow() > 0) {
-                long thresholdSec = System.currentTimeMillis() / 1000L
-                        - libraryQueryParam.getCodeFilterTimeWindow() * 60L;
-                queryWrapper.apply(
-                        "UNIX_TIMESTAMP(IFNULL(submit_time, create_time)) >= {0}",
-                        thresholdSec);
+                long thresholdMs = System.currentTimeMillis()
+                        - libraryQueryParam.getCodeFilterTimeWindow() * 60L * 1000L;
+                String threshold = toFrontendDateTime(new Date(thresholdMs));
+                queryWrapper.apply("IFNULL(submit_time, create_time) >= {0}", threshold);
             }
             // VALID_SUBMIT：已由步骤 2 的有效样本条件覆盖
         } else if ("GROUP_BY_GROUP".equals(libraryQueryParam.getCompareMode())) {

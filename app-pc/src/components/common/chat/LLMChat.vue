@@ -18,6 +18,11 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  /** 题集场景按需传入；题库等场景可省略 */
+  setId: {
+    type: String,
+    default: '',
+  },
 })
 
 const {
@@ -33,7 +38,7 @@ const chatRequestParam = ref({
   messageType: 'DailyConversation',
   userCode: props.userCode,
   language: props.language,
-  setId: '',
+  setId: props.setId || '',
 })
 
 const messages = ref<Array<any>>([])
@@ -144,11 +149,21 @@ function clearMessages() {
   newChat()
 }
 
+function syncContextFromProps() {
+  // 发送前同步最新题号/题集/语言/代码；无 setId 则传空，后端按需注入
+  chatRequestParam.value.problemId = props.problemId
+  chatRequestParam.value.setId = props.setId || ''
+  chatRequestParam.value.language = props.language
+  chatRequestParam.value.userCode = props.userCode
+}
+
 function sendMessage(messageType: string = 'DailyConversation') {
   if (!chatRequestParam.value.messageContent.trim() && messageType === 'DailyConversation') {
     window.$message?.warning('Enter a message')
     return
   }
+
+  syncContextFromProps()
 
   isUserStopped.value = false
 
@@ -341,7 +356,17 @@ watch(
   },
 )
 
+watch(
+  () => [props.userCode, props.language, props.setId] as const,
+  ([code, language, setId]) => {
+    chatRequestParam.value.userCode = code
+    chatRequestParam.value.language = language
+    chatRequestParam.value.setId = setId || ''
+  },
+)
+
 onMounted(() => {
+  syncContextFromProps()
   loadSessions()
 })
 

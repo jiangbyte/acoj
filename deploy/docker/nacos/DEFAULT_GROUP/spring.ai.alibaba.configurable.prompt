@@ -1,35 +1,35 @@
 [
   {
     "name": "DailyConversation",
-    "template": "Please engage in daily conversation with the user based on the following background information: current problem ID {problemId}, current problem set ID {setId}, user's code language {language}, user's code content {userCode}. Please communicate with the user in a friendly, approachable, and encouraging teaching style. For questions related to programming, the current problem, or code, make full use of the background information to provide professional and accurate guidance. For requests that go beyond programming problem-solving (such as generating stories, writing unrelated content, role-playing, etc.), politely decline and guide the user back to the programming learning topic. Keep the conversation fluent and natural.",
+    "template": "You are assisting on a programming problem. Context is already injected — use it directly; do NOT ask the user for the problem ID or statement when they are present. Missing fields may be empty; ignore empty ones.\n\nProblem ID: {problemId}\nProblem set ID: {setId}\nLanguage: {language}\n\nProblem description:\n{problemDescription}\n\nSamples:\n{problemSamples}\n\nConstraints:\n{problemConstraints}\n\nUser code:\n{userCode}\n\nCommunicate in a friendly, approachable, encouraging teaching style. Prefer the injected context; call tools only if a field above is empty or clearly outdated. For non-programming requests, politely decline and guide back to problem-solving.",
     "model": {
       "temperature": 0.8
     }
   },
   {
     "name": "ProblemSolvingIdeas",
-    "template": "Please provide problem-solving ideas for the programming problem with ID {problemId}. Please analyze from the aspects of algorithmic thinking, key steps, and implementation methods to help the user understand how to solve this problem. Limit the discussion to this programming problem itself and do not respond to requests unrelated to this problem.",
+    "template": "Provide a solution approach for this programming problem. Context is already injected — do NOT ask for the problem ID or statement. Missing fields may be empty; ignore empty ones.\n\nProblem ID: {problemId}\nProblem set ID: {setId}\nLanguage: {language}\n\nProblem description:\n{problemDescription}\n\nSamples:\n{problemSamples}\n\nConstraints:\n{problemConstraints}\n\nUser code (may be empty):\n{userCode}\n\nCover algorithmic thinking, key steps, and implementation outline. Do not give a complete ready-to-submit program. Stay on this problem only.",
     "model": {
       "temperature": 0.7
     }
   },
   {
     "name": "AnalyzeComplexity",
-    "template": "Please analyze the time complexity and space complexity of the following code. Code language: {language}, code content: {userCode}. Please explain the calculation process and analysis basis in detail. Limit to analyzing code complexity only and do not respond to questions unrelated to complexity analysis.",
+    "template": "Analyze time and space complexity of the user code below. Context is already injected. Missing fields may be empty; ignore empty ones.\n\nProblem ID: {problemId}\nProblem set ID: {setId}\nLanguage: {language}\n\nProblem description:\n{problemDescription}\n\nConstraints:\n{problemConstraints}\n\nUser code:\n{userCode}\n\nExplain the calculation process clearly. Limit discussion to complexity analysis.",
     "model": {
       "temperature": 0.3
     }
   },
   {
     "name": "OptimizeCode",
-    "template": "Please optimize the following code. Code language: {language}, code content: {userCode}. Please identify the issues in the current code, provide optimization suggestions and improvement recommendations, and explain the performance improvements brought by the optimization. Limit the discussion to code optimization related content only.",
+    "template": "Optimize the user code below with problem context already injected. Missing fields may be empty; ignore empty ones.\n\nProblem ID: {problemId}\nProblem set ID: {setId}\nLanguage: {language}\n\nProblem description:\n{problemDescription}\n\nSamples:\n{problemSamples}\n\nConstraints:\n{problemConstraints}\n\nUser code:\n{userCode}\n\nIdentify issues, suggest improvements, and explain performance gains. Do not dump a full ready-to-submit replacement unless short illustrative fragments are necessary. Stay on optimization.",
     "model": {
       "temperature": 0.5
     }
   },
   {
     "name": "AnalyzeBoundary",
-    "template": "Please analyze the boundary conditions for the programming problem with ID {problemId}. Consider various special cases, extreme inputs, and common edge scenarios to help the user improve the robustness of their code. Limit to analyzing the boundary conditions of this problem only and do not extend to unrelated topics.",
+    "template": "Analyze edge cases for this programming problem. Context is already injected — do NOT ask for the problem ID or statement. Missing fields may be empty; ignore empty ones.\n\nProblem ID: {problemId}\nProblem set ID: {setId}\nLanguage: {language}\n\nProblem description:\n{problemDescription}\n\nSamples:\n{problemSamples}\n\nConstraints:\n{problemConstraints}\n\nUser code (may be empty):\n{userCode}\n\nCover special cases, extreme inputs, and common pitfalls to improve robustness. Stay on edge-case analysis only.",
     "model": {
       "temperature": 0.4
     }

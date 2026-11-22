@@ -3,7 +3,9 @@ package io.charlie.web.modular.llm.service.impl;
 import com.alibaba.cloud.ai.prompt.ConfigurablePromptTemplate;
 import com.alibaba.cloud.ai.prompt.ConfigurablePromptTemplateFactory;
 import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
+import io.charlie.web.modular.data.problem.service.DataProblemService;
 import io.charlie.web.modular.llm.config.LLMProperties;
 import io.charlie.web.modular.llm.config.LlmToolTraceContext;
 import io.charlie.web.modular.llm.param.ChatRequest;
@@ -39,10 +41,13 @@ import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 @Service
 @RequiredArgsConstructor
 public class LLMServiceImpl implements LLMService {
+    private static final String DEFAULT_MESSAGE_TYPE = "DailyConversation";
+
     private final ChatClient chatClient;
     private final SysConversationService sysConversationService;
     private final ConfigurablePromptTemplateFactory promptTemplateFactory;
     private final LLMProperties llmProperties;
+    private final DataProblemService dataProblemService;
 
     @Override
     public Flux<SysConversation> streamChat(ChatRequest chatRequest) {
@@ -55,12 +60,15 @@ public class LLMServiceImpl implements LLMService {
         }
         LlmToolTraceContext.set(chatRequest.getConversationId(), userId, chatRequest.getProblemId());
 
-        // messageType 为空时直接走默认系统提示，避免 Nacos 模板工厂对 null key NPE
-        ConfigurablePromptTemplate configurablePromptTemplate = null;
-        if (chatRequest.getMessageType() != null && !chatRequest.getMessageType().isBlank()) {
-            configurablePromptTemplate = promptTemplateFactory.getTemplate(chatRequest.getMessageType());
+        // 2. 解析 messageType：空则回退 DailyConversation，保证普通聊天也走带上下文的 Nacos 模板
+        String messageType = StrUtil.blankToDefault(chatRequest.getMessageType(), DEFAULT_MESSAGE_TYPE);
+        chatRequest.setMessageType(messageType);
+        ConfigurablePromptTemplate configurablePromptTemplate = promptTemplateFactory.getTemplate(messageType);
+        if (configurablePromptTemplate == null && !DEFAULT_MESSAGE_TYPE.equals(messageType)) {
+            configurablePromptTemplate = promptTemplateFactory.getTemplate(DEFAULT_MESSAGE_TYPE);
+            log.warn("未找到 prompt 模版 {}，回退 {}", messageType, DEFAULT_MESSAGE_TYPE);
         }
-        log.info("使用对应的 prompt 模版：{}", chatRequest.getMessageType());
+        log.info("使用对应的 prompt 模版：{}", messageType);
 
         long startTime = System.currentTimeMillis();
         StringBuilder fullResponse = new StringBuilder();
@@ -70,19 +78,14 @@ public class LLMServiceImpl implements LLMService {
         // 保存用户消息到数据库
         sysConversationService.saveUserConversation(chatRequest);
 
+        // 3. 组装模板变量，并预注入题面/样例/约束（无需点按钮或等模型调 Tool）
         Map<String, Object> mapExcludeNull = chatRequest.toMapExcludeNull();
-        // 模板变量补空，避免 PromptTemplate 因缺变量失败
-        mapExcludeNull.putIfAbsent("problemId", chatRequest.getProblemId() == null ? "" : chatRequest.getProblemId());
-        mapExcludeNull.putIfAbsent("setId", chatRequest.getSetId() == null ? "" : chatRequest.getSetId());
-        mapExcludeNull.putIfAbsent("problemSetId", chatRequest.getSetId() == null ? "" : chatRequest.getSetId());
-        mapExcludeNull.putIfAbsent("language", chatRequest.getLanguage() == null ? "" : chatRequest.getLanguage());
-        mapExcludeNull.putIfAbsent("userCode", chatRequest.getUserCode() == null ? "" : chatRequest.getUserCode());
-        log.info("构建的参数为：{}", mapExcludeNull);
+        enrichPromptContext(chatRequest, mapExcludeNull);
+        log.info("构建的参数为：{}", mapExcludeNull.keySet());
 
         ChatClient.ChatClientRequestSpec requestSpec;
         if (configurablePromptTemplate == null) {
-            // 无 messageType：直接使用 ChatClient 默认系统提示（已含 hardened default-prompt）
-            log.info("未找到该 prompt 模版，使用系统默认提示词");
+            log.info("未找到任何 prompt 模版，使用系统默认提示词");
             requestSpec = chatClient.prompt().user(chatRequest.getMessageContent());
         } else {
             Prompt prompt = configurablePromptTemplate.create(mapExcludeNull);
@@ -143,6 +146,43 @@ public class LLMServiceImpl implements LLMService {
                             usage == null ? null : usage.getTotalTokens());
                     LlmToolTraceContext.clear();
                 });
+    }
+
+    /**
+     * 补齐模板变量，并按 problemId 预加载题面上下文，使任意 messageType 首轮即可用。
+     */
+    private void enrichPromptContext(ChatRequest chatRequest, Map<String, Object> mapExcludeNull) {
+        // 1. 基础字段兜底，避免 PromptTemplate 缺变量
+        mapExcludeNull.putIfAbsent("problemId", StrUtil.blankToDefault(chatRequest.getProblemId(), ""));
+        mapExcludeNull.putIfAbsent("setId", StrUtil.blankToDefault(chatRequest.getSetId(), ""));
+        mapExcludeNull.putIfAbsent("problemSetId", StrUtil.blankToDefault(chatRequest.getSetId(), ""));
+        mapExcludeNull.putIfAbsent("language", StrUtil.blankToDefault(chatRequest.getLanguage(), ""));
+        mapExcludeNull.putIfAbsent("userCode", StrUtil.blankToDefault(chatRequest.getUserCode(), ""));
+
+        // 2. 无题号则题面相关变量置空，模板仍可渲染
+        String problemId = chatRequest.getProblemId();
+        if (StrUtil.isBlank(problemId)) {
+            mapExcludeNull.putIfAbsent("problemDescription", "");
+            mapExcludeNull.putIfAbsent("problemSamples", "");
+            mapExcludeNull.putIfAbsent("problemConstraints", "");
+            return;
+        }
+
+        // 3. 预取题面/样例/约束；失败不阻断对话，留给 Tool 兜底
+        try {
+            mapExcludeNull.put("problemDescription",
+                    StrUtil.blankToDefault(dataProblemService.llmGetDescription(problemId), ""));
+            mapExcludeNull.put("problemSamples",
+                    StrUtil.blankToDefault(dataProblemService.llmGetSamples(problemId), ""));
+            mapExcludeNull.put("problemConstraints",
+                    StrUtil.blankToDefault(dataProblemService.llmGetResourceConstraints(problemId), ""));
+        }
+        catch (Exception e) {
+            log.warn("预注入题目上下文失败 problemId={}", problemId, e);
+            mapExcludeNull.putIfAbsent("problemDescription", "");
+            mapExcludeNull.putIfAbsent("problemSamples", "");
+            mapExcludeNull.putIfAbsent("problemConstraints", "");
+        }
     }
 
     /**

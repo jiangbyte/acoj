@@ -59,8 +59,26 @@ const libraryBatchCount = ref({
   compareCount: '0',
 })
 
+/** 当前 Preview 是否已对现行条件做过手动查询；改条件后需重新 Query */
+const previewReady = ref(false)
+const queryLoading = ref(false)
+
 const checkCountNum = computed(() => Number(libraryBatchCount.value.checkCount) || 0)
-const canStartCheck = computed(() => checkCountNum.value > 1 && checkCountNum.value <= 200)
+const canQuery = computed(() => !!formData.value.problemId && !!formData.value.language)
+const canStartCheck = computed(() => previewReady.value && checkCountNum.value > 1 && checkCountNum.value <= 200)
+
+/**
+ * 清空 Preview 计数并标记未查询，避免沿用过期结果去 Start check。
+ */
+function resetPreview() {
+  previewReady.value = false
+  libraryBatchCount.value = {
+    totalCount: '0',
+    checkCount: '0',
+    expectTime: '0',
+    compareCount: '0',
+  }
+}
 
 function doClose() {
   emit('close')
@@ -70,12 +88,7 @@ function doClose() {
     timeRange: [Date.now() - (2 * 24 * 60 * 60 * 1000), Date.now()],
     userIds: [],
   }
-  libraryBatchCount.value = {
-    totalCount: '0',
-    checkCount: '0',
-    expectTime: '0',
-    compareCount: '0',
-  }
+  resetPreview()
 }
 
 async function doSubmit() {
@@ -135,6 +148,7 @@ async function doOpen(row: any, moduleType: string) {
     timeRange: [Date.now() - (2 * 24 * 60 * 60 * 1000), Date.now()],
     userIds: [],
   }
+  resetPreview()
   syncTimeRangeToForm()
 
   const { data } = await useDataLibraryFetch().dataLibraryProblems({
@@ -205,7 +219,7 @@ async function loadUserData() {
 function handleUserGroupChange(value: any) {
   formData.value.groupId = value
   loadUserData()
-  updateQcount()
+  resetPreview()
 }
 
 defineExpose({
@@ -225,14 +239,7 @@ watch(
       && !languageOptions.value.some((opt: any) => opt.value === formData.value.language)) {
       formData.value.language = null
     }
-  },
-  { immediate: true },
-)
-
-watch(
-  () => formData.value.compareMode,
-  () => {
-    updateQcount()
+    resetPreview()
   },
 )
 
@@ -251,22 +258,37 @@ function syncTimeRangeToForm() {
   }
 }
 
-function updateQcount() {
-  syncTimeRangeToForm()
-  if (!formData.value.problemId || !formData.value.language) {
-    libraryBatchCount.value = {
-      totalCount: '0',
-      checkCount: '0',
-      expectTime: '0',
-      compareCount: '0',
-    }
+/**
+ * 按当前筛选项手动查询 Preview 计数；成功后才允许 Start check。
+ */
+async function queryPreview() {
+  // 1. 校验题/语言必填，并同步时间范围到请求字段
+  if (!canQuery.value) {
+    window.$message.warning('Select Problem and Language first')
     return
   }
-  useDataLibraryFetch().dataLibraryBatchQuery(formData.value).then(({ data }) => {
+  syncTimeRangeToForm()
+  // 2. 请求 batch/query，写入 Preview；失败则保持未就绪，禁止误提交
+  queryLoading.value = true
+  previewReady.value = false
+  try {
+    const { data } = await useDataLibraryFetch().dataLibraryBatchQuery(formData.value)
     if (data) {
       libraryBatchCount.value = data
+      previewReady.value = true
     }
-  })
+    else {
+      resetPreview()
+      window.$message.error('Failed to query preview')
+    }
+  }
+  catch {
+    resetPreview()
+    window.$message.error('Failed to query preview')
+  }
+  finally {
+    queryLoading.value = false
+  }
 }
 </script>
 
@@ -288,10 +310,7 @@ function updateQcount() {
               label-field="title"
               value-field="id"
               :options="setProblemOptions"
-              @update-value="() => {
-                loadUserData()
-                updateQcount()
-              }"
+              @update:value="() => loadUserData()"
             />
           </NFormItem>
           <NFormItem label="Language" path="language">
@@ -300,9 +319,9 @@ function updateQcount() {
               placeholder="Select a language"
               :options="languageOptions"
               :disabled="!formData.problemId"
-              @update-value="() => {
+              @update:value="() => {
                 loadUserData()
-                updateQcount()
+                resetPreview()
               }"
             />
           </NFormItem>
@@ -312,13 +331,13 @@ function updateQcount() {
               type="datetimerange"
               clearable
               placeholder="Select a time range (optional)"
-              @update-value="() => updateQcount()"
+              @update:value="() => resetPreview()"
             />
           </NFormItem>
         </NCard>
         <NCard title="Check Strategy" size="small" class="mb-4">
           <NFormItem label="Comparison Mode">
-            <NRadioGroup v-model:value="formData.compareMode">
+            <NRadioGroup v-model:value="formData.compareMode" @update:value="() => resetPreview()">
               <NSpace>
                 <NRadio value="PAIR_BY_PAIR">
                   Pairwise
@@ -366,9 +385,7 @@ function updateQcount() {
                   :loading="pageLoading"
                   flex-height
                   class="h-90"
-                  @update:checked-row-keys="() => {
-                    updateQcount()
-                  }"
+                  @update:checked-row-keys="() => resetPreview()"
                 />
               </NSpace>
               <template #action>
@@ -391,7 +408,7 @@ function updateQcount() {
             </NCard>
           </NFormItem>
           <NFormItem v-if="formData.compareMode === 'PAIR_BY_PAIR'" label="Code Filter">
-            <NRadioGroup v-model:value="formData.codeFilter" @update-value="() => updateQcount()">
+            <NRadioGroup v-model:value="formData.codeFilter" @update:value="() => resetPreview()">
               <NRadio value="VALID_SUBMIT">
                 Valid submissions
               </NRadio>
@@ -402,7 +419,7 @@ function updateQcount() {
           </NFormItem>
           <n-grid v-if="formData.compareMode === 'PAIR_BY_PAIR' && formData.codeFilter === 'TIME_WINDOW'" :cols="12" :x-gap="12">
             <n-form-item-gi :span="8" label="Time window (minutes)">
-              <NInputNumber v-model:value="formData.codeFilterTimeWindow" :min="1" :max="120" @update:value="updateQcount" />
+              <NInputNumber v-model:value="formData.codeFilterTimeWindow" :min="1" :max="120" @update:value="() => resetPreview()" />
             </n-form-item-gi>
           </n-grid>
         </NCard>
@@ -420,6 +437,11 @@ function updateQcount() {
           </NFormItem>
         </NCard>
         <NCard title="Preview" size="small">
+          <template #header-extra>
+            <NButton size="small" type="primary" secondary :loading="queryLoading" :disabled="!canQuery" @click="queryPreview">
+              Query
+            </NButton>
+          </template>
           <NSpace vertical class="w-full">
             <NSpace vertical>
               <NSpace justify="space-between">
@@ -439,7 +461,10 @@ function updateQcount() {
                 </NTag>
               </NSpace>
             </NSpace>
-            <NAlert v-if="formData.problemId && formData.language && checkCountNum <= 1" type="warning" class="mt-2">
+            <NAlert v-if="!previewReady && canQuery" type="info" class="mt-2">
+              Click Query to refresh Preview before starting a check.
+            </NAlert>
+            <NAlert v-else-if="previewReady && checkCountNum <= 1" type="warning" class="mt-2">
               Need at least 2 submissions with valid code tokens in scope before starting a check.
             </NAlert>
           </NSpace>
@@ -452,12 +477,19 @@ function updateQcount() {
             Cancel
           </NButton>
           <NButton
+            :loading="queryLoading"
+            :disabled="!canQuery"
+            @click="queryPreview"
+          >
+            Query
+          </NButton>
+          <NButton
             type="primary"
             :loading="loading"
             :disabled="!canStartCheck"
             @click="handleConfirm"
           >
-            {{ `Start check (${libraryBatchCount.checkCount})` }}
+            {{ `Start check (${previewReady ? libraryBatchCount.checkCount : '-'})` }}
           </NButton>
         </NSpace>
       </template>

@@ -415,6 +415,7 @@ const problemListRef = ref()
               <LLMChat
                 :key="`llm-chat-${routeProblemId}`"
                 :problem-id="routeProblemId"
+                :set-id="props.moduleType === 'SET' ? String(routeSetId || '') : ''"
                 :language="submitParam.language || ''"
                 :user-code="submitParam.code"
               />
@@ -493,6 +494,7 @@ const problemListRef = ref()
                   <LLMChat
                     :key="`llm-chat-${routeProblemId}`"
                     :problem-id="routeProblemId"
+                    :set-id="props.moduleType === 'SET' ? String(routeSetId || '') : ''"
                     :language="submitParam.language || ''"
                     :user-code="submitParam.code"
                   />
