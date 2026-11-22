@@ -94,7 +94,7 @@ Publish configs in the matching Nacos namespace (local default profile: `dev`):
 | `service-judge.yaml` | Judge runtime config (optional; local yaml alone is possible) |
 | `service-similarity.yaml` | Similarity runtime config (optional) |
 
-**local** = 本机基础设施；**dev** = 本机代码 + 共同远程基础设施。启动说明见 **[docs/dev-start.md](docs/dev-start.md)**（真实主机地址只写在 gitignore 的 `*-dev` 与远程 Nacos，勿写进仓库）。
+**local** uses infrastructure on your machine. **dev** runs the code locally against shared remote infrastructure. See **[docs/dev-start.md](docs/dev-start.md)** for startup instructions. Keep real host addresses only in gitignored `*-dev` files and remote Nacos; never commit them to the repository.
 
 ### 2. Initialize the database
 
@@ -108,8 +108,8 @@ mysql -u root -p acoj < sql/acoj.sql
 ```bash
 # From the repository root
 mvn -pl service-system -am clean package -DskipTests
-mvn -pl service-system spring-boot:run          # local（默认）
-mvn -pl service-system spring-boot:run -Pdev    # 个人 dev
+mvn -pl service-system spring-boot:run          # local (default)
+mvn -pl service-system spring-boot:run -Pdev    # personal dev
 ```
 
 Or:
@@ -121,12 +121,26 @@ java -jar service-system/target/service-system-1.0.0.jar
 | Item | Default |
 | --- | --- |
 | URL | http://127.0.0.1:89 |
-| Maven profile | `local`（默认；个人机用 `-Pdev`） |
+| Maven profile | `local` (default; use `-Pdev` on a personal machine) |
 | Nacos configs | `common.yaml` + `service-system.yaml` |
 
-More detail: [docs/dev-start.md](docs/dev-start.md)、[service-system/README.md](service-system/README.md).
+More detail: [docs/dev-start.md](docs/dev-start.md), [service-system/README.md](service-system/README.md).
 
 ### 4. Start judge / similarity services
+
+From the repository root, `make` starts against **dev** by default and also accepts `ENV=local`:
+
+```bash
+make judge                 # dev
+make similarity            # dev
+
+make judge ENV=local
+make similarity ENV=local
+```
+
+The corresponding `*-dev.yaml` bootstrap files are gitignored. Create them from the checked-in `*.example` files before the first dev run.
+
+Direct `go run` commands are also available:
 
 ```bash
 # Judge (separate terminal)

@@ -50,6 +50,20 @@ mvn spring-boot:run -Pdev -Dspring-boot.run.arguments='--server.port=8089'
 
 ## judge / similarity
 
+推荐在仓库根目录通过 Makefile 启动，默认使用 **dev** 环境：
+
+```bash
+make judge            # dev + service-judge/etc/judge-dev.yaml
+make similarity       # dev + service-similarity/etc/similar-dev.yaml
+
+make judge ENV=local  # local + service-judge/etc/judge-local.yaml
+make similarity ENV=local
+```
+
+`ENV` 只接受 `dev` 和 `local`。首次使用 dev 时，先按上文从前置模板创建对应的 `*-dev.yaml`。
+
+也可以进入服务目录直接启动：
+
 ```bash
 # judge
 cd service-judge
@@ -61,8 +75,6 @@ cd service-similarity
 go run main.go -f etc/similar-local.yaml -nacos # local
 go run main.go -f etc/similar-dev.yaml -nacos   # dev
 ```
-
-默认 `-f` 是 `*-local.yaml`；协作开发请显式用 `*-dev.yaml`。
 
 ## 配置文件对照
 
