@@ -86,7 +86,7 @@ const forwardAttrs = computed(() => {
   position: relative;
   display: grid;
   overflow: hidden;
-  background: var(--n-color-embedded, rgba(0, 0, 0, 0.04));
+  background: transparent;
   vertical-align: middle;
   box-sizing: border-box;
   place-items: stretch;
@@ -107,6 +107,7 @@ const forwardAttrs = computed(() => {
   align-items: center;
   justify-content: center;
   min-height: 4rem;
+  background: var(--n-color-embedded, rgba(0, 0, 0, 0.04));
   color: var(--n-text-color-3, rgba(0, 0, 0, 0.35));
 }
 

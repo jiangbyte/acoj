@@ -22,12 +22,11 @@ defineProps<{
             {{ subtitle }}
           </p>
         </div>
-        <SafeImage
+        <img
           class="welcome-img"
           :src="loginGif"
           alt=""
-          object-fit="contain"
-        />
+        >
       </aside>
       <section class="box-item login">
         <slot />

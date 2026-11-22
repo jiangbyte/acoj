@@ -195,6 +195,18 @@ def transform_user(row: dict[str, Any], id_map: dict[str, str]) -> dict[str, Any
         email = out.get("email")
         if isinstance(email, str) and ("junit" in email or "test.local" in email):
             out["email"] = f"user{suffix}@acoj.dev"
+    # 2. 兜底：中文昵称 / User_数字 → 英文 User{数字或后缀}
+    nickname = str(out.get("nickname") or "")
+    cn_nick = re.match(r"^用户[_-]?(\d+)$", nickname)
+    us_nick = re.match(r"^User_(\d+)$", nickname)
+    if cn_nick:
+        out["nickname"] = f"User{cn_nick.group(1)}"
+        if out.get("username") in {"user", "", None}:
+            out["username"] = f"user{cn_nick.group(1)}"
+    elif us_nick:
+        out["nickname"] = f"User{us_nick.group(1)}"
+    elif re.search(r"[\u4e00-\u9fff]", nickname):
+        out["nickname"] = f"User{suffix}"
     for key in list(out.keys()):
         if key in {"username", "nickname", "email"}:
             continue

@@ -145,14 +145,11 @@ async function handleLogin(e?: Event) {
             title="Refresh verification code"
             @click="refreshCaptcha"
           >
-            <SafeImage
+            <img
               v-if="captchaRef.captcha"
               :src="captchaRef.captcha"
               alt="Verification Code"
-              class="w-full h-full"
-              object-fit="contain"
-              :icon-size="18"
-            />
+            >
             <span v-else>Click to refresh</span>
           </button>
         </div>
