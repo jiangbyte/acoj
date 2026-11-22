@@ -2,12 +2,21 @@ Name: service-judge
 Host: 0.0.0.0
 Port: 8888
 
+# 注意：本文件供 Docker Compose 内网主机名（mysql/redis/rabbitmq）。
+# 本机 make judge ENV=dev 使用的是远程 Nacos，应对齐 deploy/nacos-dev/DEFAULT_GROUP/service-judge.yaml（47.110.3.35）。
+# 切勿把本 docker 模板直接发布到共享远程 Nacos，否则本机无法解析 rabbitmq。
+
 # 工作空间
 Workspace: "/tmp/judgespace"
 
-# 沙箱只使用 cgroup v1 或 v2，按本机挂载自动选择
+# 沙箱：cgroup 资源限制 + 断网/降权 + 可选 bwrap 目录 jail
 Sandbox:
   Mode: auto
+  DisableNetwork: true
+  DropPrivileges: true
+  Uid: 65534
+  Gid: 65534
+  UseBwrap: auto
 
 # MySQL 配置
 MySQL:

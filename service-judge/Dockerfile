@@ -188,6 +188,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get -o Acquire::Retries=5 update && \
     apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
     wget ca-certificates gcc g++ build-essential pkg-config libseccomp-dev \
+    bubblewrap \
     openjdk-17-jdk python3 python3-pip && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 

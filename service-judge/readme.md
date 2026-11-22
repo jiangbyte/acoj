@@ -29,6 +29,9 @@ Bootstrap: `etc/judge-local.yaml` (committed) or `etc/judge-dev.yaml` (gitignore
 | --- | --- |
 | Host / Port | `0.0.0.0:8888` |
 | Sandbox.Mode | `auto` or `cgroup`: use cgroup v2 if the host delegates it, otherwise cgroup v1 |
+| Sandbox.DisableNetwork | default `true`: empty net namespace / `bwrap --unshare-net` |
+| Sandbox.DropPrivileges | default `true`: run as `Uid`/`Gid` (65534) when judge is root |
+| Sandbox.UseBwrap | `auto`/`on`/`off`: filesystem jail via bubblewrap when available |
 | Nacos | Address, namespace, `DataId: service-judge.yaml` |
 
 With `-nacos`, runtime config is loaded from Nacos `service-judge.yaml` (MySQL, Redis, RabbitMQ, language commands, etc.). Keep the namespace aligned with `service-system`.

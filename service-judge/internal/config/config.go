@@ -58,10 +58,18 @@ type RedisConfig struct {
 	PoolSize int    `json:",default=10"`
 }
 
-// SandboxConfig 沙箱资源限制。只使用 cgroup v1 或 v2，没有 soft 降级。
+// SandboxConfig 沙箱：cgroup 资源限制 + 进程隔离（网络/用户/可选 bwrap 目录 jail）。
 type SandboxConfig struct {
-	// Mode: auto | cgroup。auto 与 cgroup 都表示按本机挂载选择 v2 或 v1。
+	// Mode: auto | cgroup。按本机挂载选择 v2 或 v1。
 	Mode string `json:",default=auto"`
+	// DisableNetwork：用户进程进入空网络命名空间，禁止访问外网/内网服务。
+	DisableNetwork bool `json:",default=true"`
+	// DropPrivileges：以 Uid/Gid 运行用户进程（需 judge 以 root 启动）。
+	DropPrivileges bool `json:",default=true"`
+	Uid            uint32 `json:",default=65534"`
+	Gid            uint32 `json:",default=65534"`
+	// UseBwrap：auto|on|off。auto 表示检测到 bubblewrap 则用其做目录隔离。
+	UseBwrap string `json:",default=auto"`
 }
 
 // 配置队列

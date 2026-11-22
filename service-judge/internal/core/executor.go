@@ -105,16 +105,22 @@ func (e *SandboxExecutor) executeCommand(workspace *Workspace, testCase *model2.
 
 const defaultOutputLimitBytes = 2 << 20 // 2 MiB stdout/stderr 上限
 
-// prepareCommand 准备命令执行环境：chdir 到 workspace、限制输出字节、记录隔离边界。
+// prepareCommand 准备命令执行环境：隔离网络/目录、chdir、限制输出字节。
 // 时限从进程真正跑起来才开始计，不在这里用 context 提前扣掉准备时间。
 func (e *SandboxExecutor) prepareCommand(workspace *Workspace, testCase *model2.DataTestCase, cgroupFD int) (
 	*exec.Cmd, *utils.LimitedWriter, *utils.LimitedWriter, error) {
 
 	runCmd := utils.GetRunCommand(workspace.langConfig, workspace.SourceFile, workspace.BuildFile)
-	cmd := exec.Command(runCmd[0], runCmd[1:]...)
-	cmd.SysProcAttr = buildSysProcAttr(cgroupFD)
-	cmd.Dir = workspace.RunsPath
-	logx.Infof("sandbox dir=%s cgroup=v%d fd=%v", workspace.RunsPath, utils.CgroupVersion(), cgroupFD > 0)
+	plan, err := utils.BuildIsolatePlan(runCmd, workspace.RootPath, workspace.RunsPath, workspace.config.Sandbox, cgroupFD)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	cmd := exec.Command(plan.Argv[0], plan.Argv[1:]...)
+	cmd.SysProcAttr = plan.Attr
+	if plan.Dir != "" {
+		cmd.Dir = plan.Dir
+	}
+	logx.Infof("sandbox mode=%s dir=%s cgroup=v%d fd=%v", plan.Mode, workspace.RunsPath, utils.CgroupVersion(), cgroupFD > 0)
 
 	cmd.Stdin = strings.NewReader(testCase.InputData)
 	stdoutBuf := utils.NewLimitedWriter(defaultOutputLimitBytes)

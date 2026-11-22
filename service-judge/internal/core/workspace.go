@@ -3,15 +3,17 @@ package core
 import (
 	"context"
 	"fmt"
-	"service-judge/internal/config"
-	"service-judge/internal/mq"
-	"service-judge/internal/svc"
-	"service-judge/internal/utils"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
+
+	"service-judge/internal/config"
+	"service-judge/internal/mq"
+	"service-judge/internal/svc"
+	"service-judge/internal/utils"
 
 	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -110,12 +112,24 @@ func (w *Workspace) buildErrorResponse(message string, status string) *mq.JudgeR
 	}
 }
 
-// createDirs 创建目录
+// createDirs 创建目录；若启用降权则以配置 Uid/Gid 属主，避免 nobody 无法写编译产物。
 func (w *Workspace) createDirs() error {
-	dirs := []string{w.SourcePath, w.BuildPath, w.RunsPath}
+	dirs := []string{w.RootPath, w.SourcePath, w.BuildPath, w.RunsPath}
 	for _, dir := range dirs {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return fmt.Errorf("创建目录 %s 失败: %w", dir, err)
+		}
+	}
+	if w.config.Sandbox.DropPrivileges && os.Geteuid() == 0 {
+		uid := int(w.config.Sandbox.Uid)
+		gid := int(w.config.Sandbox.Gid)
+		if err := filepath.Walk(w.RootPath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			return syscall.Chown(path, uid, gid)
+		}); err != nil {
+			return fmt.Errorf("设置工作区属主失败: %w", err)
 		}
 	}
 	return nil
@@ -144,6 +158,9 @@ func (w *Workspace) writeSourceCode() error {
 
 	if err := os.WriteFile(filePath, []byte(w.judgeRequest.Code), 0644); err != nil {
 		return fmt.Errorf("写入源代码文件失败: %w", err)
+	}
+	if w.config.Sandbox.DropPrivileges && os.Geteuid() == 0 {
+		_ = syscall.Chown(filePath, int(w.config.Sandbox.Uid), int(w.config.Sandbox.Gid))
 	}
 
 	w.SourceFile = filePath

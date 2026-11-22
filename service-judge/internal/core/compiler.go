@@ -65,7 +65,15 @@ func (c *DefaultCompiler) Compile(workspace *Workspace) (*CompileResult, error) 
 	defer group.Close()
 
 	compilerCmd := utils.GetCompileCommand(workspace.langConfig, workspace.SourceFile, workspace.BuildFile)
-	cmd := c.createCommand(compilerCmd, workspace.BuildPath, group.FD())
+	plan, planErr := utils.BuildIsolatePlan(compilerCmd, workspace.RootPath, workspace.BuildPath, workspace.config.Sandbox, group.FD())
+	if planErr != nil {
+		return c.handleError(result, fmt.Sprintf("构建编译隔离失败: %v", planErr), 1, planErr)
+	}
+	cmd := exec.Command(plan.Argv[0], plan.Argv[1:]...)
+	cmd.SysProcAttr = plan.Attr
+	if plan.Dir != "" {
+		cmd.Dir = plan.Dir
+	}
 
 	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd.Stdout = &stdoutBuf
@@ -86,14 +94,6 @@ func (c *DefaultCompiler) Compile(workspace *Workspace) (*CompileResult, error) 
 	}
 
 	return c.waitForCompletion(cmd, pgid, group, &stderrBuf, procStart, result)
-}
-
-// 创建命令实例
-func (c *DefaultCompiler) createCommand(compilerCmd []string, dir string, cgroupFD int) *exec.Cmd {
-	cmd := exec.Command(compilerCmd[0], compilerCmd[1:]...)
-	cmd.Dir = dir
-	cmd.SysProcAttr = buildSysProcAttr(cgroupFD)
-	return cmd
 }
 
 // 进程控制：暂停、写入 cgroup、恢复。v1 没有 clone 进组的办法时走这里。
@@ -188,7 +188,7 @@ func (c *DefaultCompiler) handleError(result *CompileResult, message string, exi
 	result.Success = false
 	result.Message = message
 	result.ExitCode = exitCode
-	logx.Errorf(message)
+	logx.Errorf("%s", message)
 	return result, err
 }
 
