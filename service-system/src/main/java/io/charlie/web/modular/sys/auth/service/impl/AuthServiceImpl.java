@@ -214,16 +214,18 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginUser getLoginUser() {
+        // 1. 取当前登录用户 ID，查库；账号已删或会话残留时强制下线
+        // 2. 翻译字典/关联字段后拷贝为 LoginUser
+        // 3. 填充角色名与菜单权限点
         String userId = StpUtil.getLoginIdAsString();
-        // 获取用户信息
         SysUser sysUser = sysUserMapper.selectById(userId);
+        if (sysUser == null) {
+            StpUtil.logout();
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
+        }
         transService.transOne(sysUser);
         LoginUser loginUser = new LoginUser();
         BeanUtils.copyProperties(sysUser, loginUser);
-        // 手机号，邮箱脱敏
-//        loginUser.setTelephone(DesensitizedUtil.mobilePhone(sysUser.getTelephone()));
-//        loginUser.setEmail(DesensitizedUtil.email(sysUser.getEmail()));
-        // 查询这个用户的角色名
         loginUser.setRoleNames(sysRoleService.getRoleNamesByUserId(sysUser.getId()));
 
         List<String> list = sysMenuMapper.selectPermissionsByUserId(userId);
@@ -258,9 +260,12 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void changePassword(PasswordChangeParam passwordChangeParam) {
         String loginIdAsString = StpUtil.getLoginIdAsString();
-        // 获取用户信息
+        // 获取用户信息；会话对应用户已不存在时强制下线
         SysUser sysUser = sysUserMapper.selectById(loginIdAsString);
-
+        if (sysUser == null) {
+            StpUtil.logout();
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
+        }
 
         // 验证旧密码
         if (!BCrypt.checkpw(passwordChangeParam.getOldPassword(), sysUser.getPassword())) {
