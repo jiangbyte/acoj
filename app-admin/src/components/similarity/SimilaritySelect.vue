@@ -16,10 +16,10 @@ const defaultFormData = {
   problemId: null,
   language: null as any,
 
-  startTime: 0,
-  endTime: 0,
+  startTime: null as number | null,
+  endTime: null as number | null,
 
-  timeRange: [Date.now() - (2 * 24 * 60 * 60 * 1000), Date.now()],
+  timeRange: [Date.now() - (2 * 24 * 60 * 60 * 1000), Date.now()] as [number, number] | null,
 
   compareMode: 'PAIR_BY_PAIR',
 
@@ -59,18 +59,32 @@ const libraryBatchCount = ref({
   compareCount: '0',
 })
 
+const checkCountNum = computed(() => Number(libraryBatchCount.value.checkCount) || 0)
+const canStartCheck = computed(() => checkCountNum.value > 1 && checkCountNum.value <= 200)
+
 function doClose() {
   emit('close')
   show.value = false
-  formData.value = { ...defaultFormData }
+  formData.value = {
+    ...defaultFormData,
+    timeRange: [Date.now() - (2 * 24 * 60 * 60 * 1000), Date.now()],
+    userIds: [],
+  }
+  libraryBatchCount.value = {
+    totalCount: '0',
+    checkCount: '0',
+    expectTime: '0',
+    compareCount: '0',
+  }
 }
 
 async function doSubmit() {
-  if (Number(libraryBatchCount.value.checkCount) <= 1 || Number(libraryBatchCount.value.checkCount) > 200) {
+  if (!canStartCheck.value) {
     window.$message.warning(`Submission count ${libraryBatchCount.value.checkCount} is out of range and cannot be submitted`)
     return
   }
 
+  syncTimeRangeToForm()
   formRef.value?.validate(async (errors: any) => {
     if (!errors) {
       loading.value = true
@@ -114,26 +128,20 @@ const groupOptions = ref<SelectOption[]>([])
 const pageData = ref()
 async function doOpen(row: any, moduleType: string) {
   show.value = true
-  formData.value.moduleId = row.id as any
-  formData.value.moduleType = moduleType as any
+  formData.value = {
+    ...defaultFormData,
+    moduleId: row.id as any,
+    moduleType: moduleType as any,
+    timeRange: [Date.now() - (2 * 24 * 60 * 60 * 1000), Date.now()],
+    userIds: [],
+  }
+  syncTimeRangeToForm()
 
-  console.log('=============')
-  // Valid code in the repository
-  // useDataLibraryFetch().dataLibraryProblems({
-  //   moduleType,
-  //   moduleId: row.id as any,
-  // }).then(({ data }) => {
-  //   setProblemOptions.value = data
-  //   console.log(data)
-  // })
   const { data } = await useDataLibraryFetch().dataLibraryProblems({
     moduleType,
     moduleId: row.id as any,
   })
-  console.log(data)
-  setProblemOptions.value = data
-
-  console.log('----------')
+  setProblemOptions.value = data || []
 
   loadUserData()
   getGroupLists('')
@@ -184,15 +192,20 @@ const columns: DataTableColumns<any> = [
 const pageLoading = ref(false)
 async function loadUserData() {
   pageLoading.value = true
-  const { data } = await dataLibraryiUserPage(formData.value)
-  if (data) {
-    pageData.value = data
+  try {
+    const { data } = await dataLibraryiUserPage(formData.value)
+    if (data) {
+      pageData.value = data
+    }
+  }
+  finally {
     pageLoading.value = false
   }
 }
 function handleUserGroupChange(value: any) {
   formData.value.groupId = value
   loadUserData()
+  updateQcount()
 }
 
 defineExpose({
@@ -206,17 +219,53 @@ watch(
     languageOptions.value = problem?.allowedLanguages?.map((language: any) => ({
       label: language.charAt(0).toUpperCase() + language.slice(1),
       value: language,
-    }))
+    })) || []
+    // 换题后清空语言，避免旧语言命中错误集合
+    if (formData.value.language
+      && !languageOptions.value.some((opt: any) => opt.value === formData.value.language)) {
+      formData.value.language = null
+    }
   },
-  { immediate: true }, // Run once during initialization
+  { immediate: true },
 )
 
+watch(
+  () => formData.value.compareMode,
+  () => {
+    updateQcount()
+  },
+)
+
+/**
+ * 将 Time Range 同步到 start/end；清空时置 null，避免下标空指针。
+ */
+function syncTimeRangeToForm() {
+  const range = formData.value.timeRange
+  if (Array.isArray(range) && range.length >= 2 && range[0] != null && range[1] != null) {
+    formData.value.startTime = range[0]
+    formData.value.endTime = range[1]
+  }
+  else {
+    formData.value.startTime = null
+    formData.value.endTime = null
+  }
+}
+
 function updateQcount() {
-  formData.value.startTime = formData.value.timeRange[0]
-  formData.value.endTime = formData.value.timeRange[1]
+  syncTimeRangeToForm()
+  if (!formData.value.problemId || !formData.value.language) {
+    libraryBatchCount.value = {
+      totalCount: '0',
+      checkCount: '0',
+      expectTime: '0',
+      compareCount: '0',
+    }
+    return
+  }
   useDataLibraryFetch().dataLibraryBatchQuery(formData.value).then(({ data }) => {
-    libraryBatchCount.value = data
-    console.log(data)
+    if (data) {
+      libraryBatchCount.value = data
+    }
   })
 }
 </script>
@@ -224,7 +273,11 @@ function updateQcount() {
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
     <NDrawerContent title="Code Similarity Settings">
-      <NAlert type="info" class="mb-4">System limit: process up to <NTag size="small" type="info">200</NTag> submissions</NAlert>
+      <NAlert type="info" class="mb-4">
+        System limit: process up to <NTag size="small" type="info">
+          200
+        </NTag> submissions
+      </NAlert>
 
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="130">
         <NCard title="Check Scope" size="small" class="mb-4">
@@ -235,7 +288,7 @@ function updateQcount() {
               label-field="title"
               value-field="id"
               :options="setProblemOptions"
-              @update-value="(e) => {
+              @update-value="() => {
                 loadUserData()
                 updateQcount()
               }"
@@ -247,7 +300,7 @@ function updateQcount() {
               placeholder="Select a language"
               :options="languageOptions"
               :disabled="!formData.problemId"
-              @update-value="(e) => {
+              @update-value="() => {
                 loadUserData()
                 updateQcount()
               }"
@@ -259,7 +312,7 @@ function updateQcount() {
               type="datetimerange"
               clearable
               placeholder="Select a time range (optional)"
-              @update-value="(e) => updateQcount()"
+              @update-value="() => updateQcount()"
             />
           </NFormItem>
         </NCard>
@@ -295,14 +348,13 @@ function updateQcount() {
                       clearable
                       placeholder="Select a user group"
                       @update:value="(e) => {
-                        updateQcount()
                         handleUserGroupChange(e)
                       }"
                       @search="getGroupLists"
                     />
                   </NSpace>
                   <NP type="info" show-icon>
-                    Current: {{ pageData?.records.length }} records
+                    Current: {{ pageData?.records?.length || 0 }} records
                   </NP>
                 </NSpace>
                 <NDataTable
@@ -314,7 +366,7 @@ function updateQcount() {
                   :loading="pageLoading"
                   flex-height
                   class="h-90"
-                  @update:checked-row-keys="(e) => {
+                  @update:checked-row-keys="() => {
                     updateQcount()
                   }"
                 />
@@ -339,7 +391,7 @@ function updateQcount() {
             </NCard>
           </NFormItem>
           <NFormItem v-if="formData.compareMode === 'PAIR_BY_PAIR'" label="Code Filter">
-            <NRadioGroup v-model:value="formData.codeFilter" @update-value="(e) => updateQcount()">
+            <NRadioGroup v-model:value="formData.codeFilter" @update-value="() => updateQcount()">
               <NRadio value="VALID_SUBMIT">
                 Valid submissions
               </NRadio>
@@ -387,6 +439,9 @@ function updateQcount() {
                 </NTag>
               </NSpace>
             </NSpace>
+            <NAlert v-if="formData.problemId && formData.language && checkCountNum <= 1" type="warning" class="mt-2">
+              Need at least 2 submissions with valid code tokens in scope before starting a check.
+            </NAlert>
           </NSpace>
         </NCard>
       </NForm>
@@ -399,7 +454,7 @@ function updateQcount() {
           <NButton
             type="primary"
             :loading="loading"
-            :disabled="Number(libraryBatchCount.checkCount) <= 1 || Number(libraryBatchCount.checkCount) > 200"
+            :disabled="!canStartCheck"
             @click="handleConfirm"
           >
             {{ `Start check (${libraryBatchCount.checkCount})` }}

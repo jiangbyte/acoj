@@ -1179,6 +1179,8 @@ CREATE TABLE `task_reports`  (
   `similarity_distribution` json NULL COMMENT '相似度分布',
   `degree_statistics` json NULL COMMENT '程度统计',
   `check_mode` int NULL DEFAULT 1 COMMENT '检测模式',
+  `exec_status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'COMPLETED' COMMENT 'PENDING/PROCESSING/COMPLETED/FAILED',
+  `exec_message` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '失败原因摘要',
   `deleted` tinyint(1) NULL DEFAULT 0 COMMENT '删除状态',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间戳',
   `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',

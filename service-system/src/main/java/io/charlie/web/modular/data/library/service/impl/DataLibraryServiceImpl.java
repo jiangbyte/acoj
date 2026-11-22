@@ -3,7 +3,6 @@ package io.charlie.web.modular.data.library.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
@@ -199,6 +198,7 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
     @Override
     @DS("slave")
     public Page<SysUser> getLibraryUserPage(DataLibraryUserPageParam dataLibraryUserPageParam) {
+        // 1. 权限组为空直接空页，避免无 scope 扫全用户
         QueryWrapper<SysUser> queryWrapper = new QueryWrapper<SysUser>().checkSqlInjection();
 
         List<String> accessibleGroupIds = dataScopeUtil.getDataScopeContext().getAccessibleGroupIds();
@@ -208,47 +208,39 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
 
         queryWrapper.lambda().in(SysUser::getGroupId, accessibleGroupIds);
 
-        // 统一的 EXISTS 条件构建
-        StringBuilder existsSql = new StringBuilder("SELECT 1 FROM data_library dl WHERE dl.user_id = sys_user.id AND dl.module_type = 'SET' ");
-
-        boolean hasCondition = false;
-
-        // 添加 problemIds 条件
-        if (ObjectUtil.isNotEmpty(dataLibraryUserPageParam.getProblemIds())) {
-            existsSql.append(" AND dl.problem_id IN (")
-                    .append(dataLibraryUserPageParam.getProblemIds().stream()
-                            .map(id -> "'" + id + "'")
-                            .collect(Collectors.joining(",")))
-                    .append(")");
-            hasCondition = true;
+        // 2. 与筛查 queryLibrary 同源：按 moduleType/moduleId/problemId/language 过滤 library 用户
+        String moduleType = StrUtil.blankToDefault(dataLibraryUserPageParam.getModuleType(), "SET");
+        String moduleId = StrUtil.blankToDefault(dataLibraryUserPageParam.getModuleId(), dataLibraryUserPageParam.getSetId());
+        String problemId = dataLibraryUserPageParam.getProblemId();
+        if (StrUtil.isBlank(problemId) && ObjectUtil.isNotEmpty(dataLibraryUserPageParam.getProblemIds())) {
+            problemId = dataLibraryUserPageParam.getProblemIds().getFirst();
         }
 
-        // 添加 setId 条件
-        if (GalaxyStringUtil.isNotEmpty(dataLibraryUserPageParam.getSetId())) {
-            existsSql.append(" AND dl.module_id = '").append(dataLibraryUserPageParam.getSetId()).append("'");
-            hasCondition = true;
+        StringBuilder existsSql = new StringBuilder(
+                "SELECT 1 FROM data_library dl WHERE dl.user_id = sys_user.id AND dl.deleted = 0");
+        existsSql.append(" AND dl.module_type = '").append(escapeSqlLiteral(moduleType)).append("'");
+        if (StrUtil.isNotBlank(moduleId)) {
+            existsSql.append(" AND dl.module_id = '").append(escapeSqlLiteral(moduleId)).append("'");
         }
-
-        // 添加 language 条件
-        if (GalaxyStringUtil.isNotEmpty(dataLibraryUserPageParam.getLanguage())) {
-            if (!dataLibraryUserPageParam.getLanguage().equals("null")) {
-                existsSql.append(" AND dl.language = '").append(dataLibraryUserPageParam.getLanguage()).append("'");
-                hasCondition = true;
-            }
+        if (StrUtil.isNotBlank(problemId)) {
+            existsSql.append(" AND dl.problem_id = '").append(escapeSqlLiteral(problemId)).append("'");
         }
-
-        // 只有当有具体条件时才添加 EXISTS，或者保持原样查询所有有 data_library 记录的用户
-        if (hasCondition) {
-            queryWrapper.exists(existsSql.toString());
-        } else {
-            // 如果没有特定条件，但想查询所有在 data_library 中有记录的用户
-            queryWrapper.exists("SELECT 1 FROM data_library dl WHERE dl.user_id = sys_user.id AND dl.module_type = 'SET' ");
+        if (GalaxyStringUtil.isNotEmpty(dataLibraryUserPageParam.getLanguage())
+                && !"null".equals(dataLibraryUserPageParam.getLanguage())) {
+            existsSql.append(" AND LOWER(dl.language) = '")
+                    .append(escapeSqlLiteral(dataLibraryUserPageParam.getLanguage().toLowerCase()))
+                    .append("'");
         }
+        // 有效样本：有代码且有 token，与 batch 可比对集合一致
+        existsSql.append(" AND dl.code IS NOT NULL AND dl.code <> ''");
+        existsSql.append(" AND dl.code_token IS NOT NULL AND dl.code_token <> 'null' AND dl.code_token <> '[]'");
+        queryWrapper.exists(existsSql.toString());
 
         if (GalaxyStringUtil.isNotEmpty(dataLibraryUserPageParam.getGroupId())) {
             queryWrapper.lambda().eq(SysUser::getGroupId, dataLibraryUserPageParam.getGroupId());
         }
-        if (ObjectUtil.isAllNotEmpty(dataLibraryUserPageParam.getSortField(), dataLibraryUserPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataLibraryUserPageParam.getSortOrder())) {
+        if (ObjectUtil.isAllNotEmpty(dataLibraryUserPageParam.getSortField(), dataLibraryUserPageParam.getSortOrder())
+                && ISortOrderEnum.isValid(dataLibraryUserPageParam.getSortOrder())) {
             queryWrapper.orderBy(
                     true,
                     dataLibraryUserPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
@@ -265,8 +257,19 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         return page;
     }
 
+    /**
+     * 转义 SQL 字符串字面量中的单引号，避免拼接 exists 时注入。
+     */
+    private static String escapeSqlLiteral(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("'", "''");
+    }
+
     @Override
     public QueryWrapper<DataLibrary> queryLibrary(BatchLibraryQueryParam libraryQueryParam) {
+        // 1. 基础范围：模块 + 题目 + 语言
         log.debug("开始执行批量查询 {}", JSONUtil.toJsonStr(libraryQueryParam));
         QueryWrapper<DataLibrary> queryWrapper = new QueryWrapper<DataLibrary>().checkSqlInjection();
 
@@ -281,28 +284,38 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
             queryWrapper.lambda().eq(DataLibrary::getLanguage, libraryQueryParam.getLanguage().toLowerCase());
         }
 
-        // 时间范围筛选
+        // 2. 有效可比对样本：有源码且有 token（与 Go 跳过空 token 行为对齐）
+        queryWrapper.lambda().isNotNull(DataLibrary::getCode).ne(DataLibrary::getCode, "");
+        queryWrapper.apply("code_token IS NOT NULL AND code_token <> 'null' AND code_token <> '[]'");
+
+        // 3. 时间范围按提交时间（空则 create_time）；用 Unix 秒比较，避免 JVM 本地时区把 Date 格式化成
+        //    本地墙钟后与 MySQL DATETIME（按会话/存储约定）错位，导致 TIME_WINDOW 短窗恒为 0
         if (ObjectUtil.isAllNotEmpty(libraryQueryParam.getStartTime(), libraryQueryParam.getEndTime())) {
-            queryWrapper.lambda().between(DataLibrary::getUpdateTime, libraryQueryParam.getStartTime(), libraryQueryParam.getEndTime());
+            long startSec = libraryQueryParam.getStartTime().getTime() / 1000L;
+            long endSec = libraryQueryParam.getEndTime().getTime() / 1000L;
+            queryWrapper.apply(
+                    "UNIX_TIMESTAMP(IFNULL(submit_time, create_time)) BETWEEN {0} AND {1}",
+                    startSec, endSec);
         }
 
-        // 两两对比 PAIR_BY_PAIR，默认情况，不做处理
+        // 4. 对比模式附加条件
         if ("PAIR_BY_PAIR".equals(libraryQueryParam.getCompareMode())) {
-            // 代码筛选
-            if (ObjectUtil.isNotEmpty(libraryQueryParam.getCodeFilter())) {
-                // 代码筛选时间窗口（分钟）
-                if ("TIME_WINDOW".equals(libraryQueryParam.getCodeFilter())) {
-                    queryWrapper.lambda().ge(DataLibrary::getUpdateTime, DateUtil.offsetMinute(new Date(), -libraryQueryParam.getCodeFilterTimeWindow()));
-                }
+            if ("TIME_WINDOW".equals(libraryQueryParam.getCodeFilter())
+                    && libraryQueryParam.getCodeFilterTimeWindow() != null
+                    && libraryQueryParam.getCodeFilterTimeWindow() > 0) {
+                long thresholdSec = System.currentTimeMillis() / 1000L
+                        - libraryQueryParam.getCodeFilterTimeWindow() * 60L;
+                queryWrapper.apply(
+                        "UNIX_TIMESTAMP(IFNULL(submit_time, create_time)) >= {0}",
+                        thresholdSec);
             }
+            // VALID_SUBMIT：已由步骤 2 的有效样本条件覆盖
         } else if ("GROUP_BY_GROUP".equals(libraryQueryParam.getCompareMode())) {
-            // 组内对比 GROUP_BY_GROUP
             if (ObjectUtil.isNotEmpty(libraryQueryParam.getGroupId())) {
                 queryWrapper.exists("SELECT 1 FROM sys_user u WHERE u.id = user_id AND u.group_id = {0}",
                         libraryQueryParam.getGroupId());
             }
         } else if ("MULTI_BY_MULTI".equals(libraryQueryParam.getCompareMode())) {
-            // 多人对比 MULTI_BY_MULTI
             if (ObjectUtil.isNotEmpty(libraryQueryParam.getUserIds())) {
                 queryWrapper.lambda().in(DataLibrary::getUserId, libraryQueryParam.getUserIds());
             }
@@ -319,10 +332,9 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         long checkCount = count > 200 ? 200 : count;
 
         LibraryBatchCount batchCount = new LibraryBatchCount();
-        batchCount.setTotalCount(String.valueOf(count)); // 获取有效记录代码总数量
+        batchCount.setTotalCount(String.valueOf(count));
         batchCount.setCheckCount(String.valueOf(checkCount));
 
-        // 组合数计算（基于实际检查数量）
         long compareCount = checkCount > 1 ? checkCount * (checkCount - 1) / 2 : 0;
         batchCount.setCompareCount(String.valueOf(compareCount));
 
@@ -331,37 +343,32 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
 
     @Override
     public List<String> libraryIds(BatchLibraryQueryParam libraryQueryParam) {
-//        QueryWrapper<DataLibrary> dataLibraryQueryWrapper = this.queryLibrary(libraryQueryParam);
-//        List<DataLibrary> list = this.list(dataLibraryQueryWrapper);
-//        if (ObjectUtil.isNotEmpty(list)) {
-//            return list.stream()
-//                    .map(DataLibrary::getId)
-//                    .distinct()
-//                    .toList();
-//        }
-//
-//        return List.of();
-
+        // 1. 与 Preview 同一过滤；按提交时间倒序截断，保证超 200 时集合可复现
         QueryWrapper<DataLibrary> dataLibraryQueryWrapper = this.queryLibrary(libraryQueryParam);
-        // 限制最多查200条
-        dataLibraryQueryWrapper.last("LIMIT 250");
+        dataLibraryQueryWrapper.select("id");
+        dataLibraryQueryWrapper.last("ORDER BY IFNULL(submit_time, create_time) DESC, id DESC LIMIT 200");
 
         List<DataLibrary> list = this.list(dataLibraryQueryWrapper);
-        if (ObjectUtil.isNotEmpty(list)) {
-            return list.stream()
-                    .map(DataLibrary::getId)
-                    .distinct()
-                    .limit(200) // 再加一层保险（因为 distinct 可能减少数量，但不会超过200）
-                    .toList();
+        if (ObjectUtil.isEmpty(list)) {
+            return List.of();
         }
-        return List.of();
+        return list.stream()
+                .map(DataLibrary::getId)
+                .filter(StrUtil::isNotBlank)
+                .distinct()
+                .toList();
     }
 
     @Override
     public List<DataProblem> getLibraryProblemList(String moduleType, String moduleId) {
+        // 1. 只取 distinct problem_id，避免大模块全量拉 library
         QueryWrapper<DataLibrary> queryWrapper = new QueryWrapper<DataLibrary>().checkSqlInjection();
-        queryWrapper.lambda().eq(DataLibrary::getModuleType, moduleType);
-        queryWrapper.lambda().eq(DataLibrary::getModuleId, moduleId);
+        queryWrapper.select("DISTINCT problem_id");
+        queryWrapper.lambda()
+                .eq(DataLibrary::getModuleType, moduleType)
+                .eq(DataLibrary::getModuleId, moduleId)
+                .isNotNull(DataLibrary::getProblemId)
+                .ne(DataLibrary::getProblemId, "");
         List<DataLibrary> list = this.list(queryWrapper);
         if (ObjectUtil.isEmpty(list)) {
             return List.of();
@@ -369,8 +376,12 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
 
         List<String> stringList = list.stream()
                 .map(DataLibrary::getProblemId)
+                .filter(StrUtil::isNotBlank)
                 .distinct()
                 .toList();
+        if (ObjectUtil.isEmpty(stringList)) {
+            return List.of();
+        }
         List<DataProblem> dataProblems = dataProblemMapper.selectByIds(stringList);
         transService.transBatch(dataProblems);
         return dataProblems;

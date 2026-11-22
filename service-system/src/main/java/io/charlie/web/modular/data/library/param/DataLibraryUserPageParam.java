@@ -1,7 +1,6 @@
 package io.charlie.web.modular.data.library.param;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 import java.io.Serial;
@@ -41,8 +40,21 @@ public class DataLibraryUserPageParam implements Serializable {
 
     private String type;
 
+    @Schema(description = "模块类型 SET/CONTEST")
+    private String moduleType;
+
+    @Schema(description = "模块ID")
+    private String moduleId;
+
+    @Schema(description = "题目ID")
+    private String problemId;
+
+    /** @deprecated 兼容旧字段，优先用 problemId */
     private List<String> problemIds;
+
+    /** @deprecated 兼容旧字段，优先用 moduleId */
     private String setId;
+
     private String language;
 
 }

@@ -15,7 +15,9 @@ import io.charlie.web.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.modular.data.reports.entity.TaskReports;
 import io.charlie.web.modular.data.reports.mapper.TaskReportsMapper;
 import io.charlie.web.modular.task.similarity.dto.SimilaritySubmitDto;
+import io.charlie.web.modular.task.similarity.enums.SimilarityExecStatus;
 import io.charlie.web.modular.task.similarity.handle.SimilarityHandleMessage;
+import io.charlie.web.modular.task.similarity.service.SimilarityProgressService;
 import io.charlie.web.modular.task.similarity.service.SimilarityService;
 import io.charlie.web.utils.similarity.utils.CodeTokenUtil;
 import io.charlie.web.utils.similarity.utils.TokenDetail;
@@ -44,40 +46,55 @@ public class SimilarityServiceImpl implements SimilarityService {
     private final CodeTokenUtil codeTokenUtil;
 
     private final TaskReportsMapper taskReportsMapper;
+    private final SimilarityProgressService progressService;
 
     @Override
     public String batch(BatchLibraryQueryParam batchSimilarityParam) {
+        // 1. 取有效样本；不足 2 条无法两两对比，直接拒绝避免空转报告
         List<String> list = dataLibraryService.libraryIds(batchSimilarityParam);
-        if (ObjectUtil.isEmpty(list)) {
-            throw new BusinessException("参数错误");
+        if (ObjectUtil.isEmpty(list) || list.size() < 2) {
+            throw new BusinessException("Need at least 2 valid submissions with code tokens");
         }
 
         DataProblem dataProblem = dataProblemMapper.selectById(batchSimilarityParam.getProblemId());
+        if (dataProblem == null) {
+            throw new BusinessException("Problem not found");
+        }
 
         String taskId = IdUtil.objectId();
 
-        // 1. 固定 GST 参数唯一来源：请求 minMatchLength，缺省对齐 admin UI 默认 8
-        // 2. 写入 task_reports 供详情回显
+        // 2. 固定 GST 参数；写入 PENDING 报告
         Integer minMatchLength = batchSimilarityParam.getMinMatchLength();
         if (minMatchLength == null || minMatchLength < 1) {
             minMatchLength = 8;
         }
 
+        String moduleType = StrUtil.blankToDefault(batchSimilarityParam.getModuleType(), "SET");
+        int pairCount = list.size() * (list.size() - 1) / 2;
+
         TaskReports taskReports = new TaskReports();
         taskReports.setTaskId(taskId);
         taskReports.setModuleId(batchSimilarityParam.getModuleId());
         taskReports.setProblemId(batchSimilarityParam.getProblemId());
-        taskReports.setSampleCount(Math.toIntExact(list.size()));
-        taskReports.setModuleType("SET");
+        taskReports.setSampleCount(0);
+        taskReports.setModuleType(moduleType);
         taskReports.setThreshold(dataProblem.getThreshold());
         taskReports.setMinMatchLength(minMatchLength);
+        taskReports.setExecStatus(SimilarityExecStatus.PENDING.getValue());
+        taskReports.setExecMessage(null);
 
         taskReportsMapper.insert(taskReports);
 
-        // 3. 用当前分词规则重写样本 token。库里的旧序列仍含注释换行，不重算的话比对结果不会变
+        // 3. 比对前按当前规则重算样本 token
         refreshLibraryTokens(list);
 
-        log.info("开始处理任务: {}, minMatchLength={}", taskId, minMatchLength);
+        // 4. 发 MQ 前标记 PROCESSING，并初始化 Redis 进度（组合对数）
+        taskReports.setExecStatus(SimilarityExecStatus.PROCESSING.getValue());
+        taskReportsMapper.updateById(taskReports);
+        progressService.initProgress(taskId, pairCount);
+
+        log.info("开始处理任务: {}, samples={}, pairs={}, minMatchLength={}",
+                taskId, list.size(), pairCount, minMatchLength);
 
         SimilaritySubmitDto batchSimilaritySubmitDto = BeanUtil.toBean(batchSimilarityParam, SimilaritySubmitDto.class);
         batchSimilaritySubmitDto.setReportId(taskReports.getId());

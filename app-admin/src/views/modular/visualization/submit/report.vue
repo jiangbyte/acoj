@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTaskReportsFetch, useTaskSimilarityFetch } from '@/composables/v1'
 import type { DataTableColumns, DataTableSortState } from 'naive-ui'
-import { NEllipsis, NSpace, NTag, NText, NTime } from 'naive-ui'
+import { NAlert, NEllipsis, NSpace, NTag, NText, NTime } from 'naive-ui'
 import CodeCompare from '@/components/similarity/CodeCompare.vue'
 import { actionIconBtn, renderSafeAvatar } from '@/utils'
 
@@ -199,6 +199,8 @@ const pageData = ref({
 
 const detailData = ref()
 const pairsLoading = ref(false)
+const reportReady = computed(() => String(detailData.value?.execStatus || 'COMPLETED').toUpperCase() === 'COMPLETED')
+const reportStatusLabel = computed(() => String(detailData.value?.execStatus || 'COMPLETED').toUpperCase())
 
 function pairQuery() {
   const query: Record<string, unknown> = {
@@ -248,12 +250,21 @@ loadData()
     <n-card size="small" class="flex-1">
       <NScrollbar class="h-[calc(100vh-9.5rem)]">
         <NSpace vertical :size="20">
+          <NAlert v-if="detailData && !reportReady" :type="reportStatusLabel === 'FAILED' ? 'error' : 'warning'">
+            Task status is {{ reportStatusLabel }}. Full statistics are available only after the check completes.
+            <template v-if="detailData?.execMessage">
+              {{ detailData.execMessage }}
+            </template>
+          </NAlert>
           <div class="flex justify-between items-center">
             <div>
               <h2 class="text-[clamp(1.25rem,3vw,1.75rem)] font-bold mb-2">
                 Clone Statistics
               </h2>
               <NSpace align="center">
+                <NTag :type="reportStatusLabel === 'COMPLETED' ? 'success' : reportStatusLabel === 'FAILED' ? 'error' : 'info'" size="small">
+                  {{ reportStatusLabel }}
+                </NTag>
                 <NTag v-if="detailData?.reportTypeName">
                   {{ detailData?.reportTypeName ? detailData.reportTypeName : '-' }}
                 </NTag>

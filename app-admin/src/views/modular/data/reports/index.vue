@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
+import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NTag, NTooltip } from 'naive-ui'
 import { useTaskReportsFetch } from '@/composables/v1'
 import { FormatModuleType, actionDeleteBtn, actionIconBtn } from '@/utils'
 import Form from './form.vue'
@@ -9,6 +9,36 @@ import Detail from './detail.vue'
 const router = useRouter()
 const formRef = ref()
 const detailRef = ref()
+
+const RUNNING_STATUSES = new Set(['PENDING', 'PROCESSING'])
+
+function isRunning(status?: string) {
+  return RUNNING_STATUSES.has(String(status || '').toUpperCase())
+}
+
+function canOpenReport(status?: string) {
+  return String(status || '').toUpperCase() === 'COMPLETED'
+}
+
+function canDelete(status?: string) {
+  const s = String(status || '').toUpperCase()
+  return s === 'COMPLETED' || s === 'FAILED' || !status
+}
+
+function statusTagType(status?: string): 'default' | 'info' | 'success' | 'error' | 'warning' {
+  switch (String(status || '').toUpperCase()) {
+    case 'PROCESSING':
+      return 'info'
+    case 'COMPLETED':
+      return 'success'
+    case 'FAILED':
+      return 'error'
+    case 'PENDING':
+    default:
+      return 'default'
+  }
+}
+
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
@@ -23,7 +53,7 @@ const columns: DataTableColumns<any> = [
   {
     title: 'Submission Module',
     key: 'moduleType',
-    render: (row) => FormatModuleType(row.moduleType),
+    render: row => FormatModuleType(row.moduleType),
   },
   {
     title: 'Problem',
@@ -33,39 +63,45 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
+    title: 'Status',
+    key: 'execStatus',
+    width: 130,
+    render(row: any) {
+      const status = row.execStatus || 'COMPLETED'
+      const tag = h(NTag, { type: statusTagType(status), size: 'small' }, { default: () => status })
+      if (row.execMessage) {
+        return h(NTooltip, null, {
+          trigger: () => tag,
+          default: () => row.execMessage,
+        })
+      }
+      return tag
+    },
+  },
+  {
     title: 'Clone Pair Count',
     key: 'sampleCount',
   },
-  // {
-  //   title: 'Similar Group Count',
-  //   key: 'similarityGroupCount',
-  // },
   {
     title: 'Average Similarity',
     key: 'avgSimilarity',
     render(row: any) {
-      return row.avgSimilarity * 100
+      const n = Number(row.avgSimilarity)
+      return Number.isFinite(n) ? (n * 100).toFixed(2) : '0.00'
     },
   },
   {
     title: 'Maximum Similarity',
     key: 'maxSimilarity',
     render(row: any) {
-      return row.maxSimilarity * 100
+      const n = Number(row.maxSimilarity)
+      return Number.isFinite(n) ? (n * 100).toFixed(2) : '0.00'
     },
   },
   {
     title: 'Check Threshold',
     key: 'threshold',
   },
-  // {
-  //   title: 'Similarity Distribution',
-  //   key: 'similarityDistribution',
-  // },
-  // {
-  //   title: 'Level Statistics',
-  //   key: 'degreeStatistics',
-  // },
   {
     title: 'Check Mode',
     key: 'checkModeName',
@@ -79,24 +115,32 @@ const columns: DataTableColumns<any> = [
     width: 100,
     fixed: 'right',
     render(row: any) {
-      return h(NSpace, { align: 'center', wrap: false }, () => [
-        // h(NButton, {
-        //   type: 'primary',
-        //   size: 'small',
-        //   onClick: () => formRef.value.doOpen(row, true),
-        // }, () => 'Edit'),
-        // h(NButton, { size: 'small', type: 'warning', onClick: () => {} }, () => 'Similarity Report'),
-        actionIconBtn({
-          kind: 'stats',
-          onClick: () => {
-            router.push({
-              path: `/visualization/submit/report/${row.id}/task/${row.taskId}`,
-            })
-          },
-        }),
-        // h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => 'DataDetails'),
-        actionDeleteBtn(() => deleteHandle(row)),
-      ])
+      const running = isRunning(row.execStatus)
+      const openOk = canOpenReport(row.execStatus)
+      const deleteOk = canDelete(row.execStatus)
+      const runningTip = 'Task still running'
+      const failedTip = 'No report available for failed task'
+
+      const statsBtn = actionIconBtn({
+        kind: 'stats',
+        title: openOk ? 'View report' : (running ? runningTip : failedTip),
+        disabled: !openOk,
+        onClick: () => {
+          if (!openOk)
+            return
+          router.push({
+            path: `/visualization/submit/report/${row.id}/task/${row.taskId}`,
+          })
+        },
+      })
+
+      const deleteBtn = actionDeleteBtn(
+        () => deleteHandle(row),
+        deleteOk ? 'Delete' : (running ? runningTip : 'Delete'),
+        { disabled: !deleteOk },
+      )
+
+      return h(NSpace, { align: 'center', wrap: false }, () => [statsBtn, deleteBtn])
     },
   },
 ]
@@ -153,18 +197,59 @@ function resetHandle() {
 
 const { taskReportsPage, taskReportsDelete } = useTaskReportsFetch()
 const loading = ref(false)
-async function loadData() {
-  loading.value = true
-  const { data } = await taskReportsPage(pageParam.value)
-  if (data) {
-    pageData.value = data
+let pollTimer: ReturnType<typeof setInterval> | null = null
+
+function hasRunningTasks() {
+  const records = pageData.value?.records || []
+  return records.some((row: any) => isRunning(row.execStatus))
+}
+
+function stopPoll() {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+}
+
+function ensurePoll() {
+  if (hasRunningTasks()) {
+    if (!pollTimer) {
+      pollTimer = setInterval(() => {
+        loadData(true)
+      }, 5000)
+    }
+  }
+  else {
+    stopPoll()
+  }
+}
+
+async function loadData(silent = false) {
+  if (!silent)
+    loading.value = true
+  try {
+    const { data } = await taskReportsPage(pageParam.value)
+    if (data) {
+      pageData.value = data
+    }
+  }
+  finally {
     loading.value = false
+    ensurePoll()
   }
 }
 
 loadData()
 
+onBeforeUnmount(() => {
+  stopPoll()
+})
+
 async function deleteHandle(row: any) {
+  if (!canDelete(row.execStatus)) {
+    window.$message.warning('Cannot delete a running task')
+    return
+  }
   const param = [{
     id: row.id,
   }]
@@ -176,7 +261,18 @@ async function deleteHandle(row: any) {
 }
 const checkedRowKeys = ref<string[]>([])
 async function deleteBatchHandle() {
-  const param = checkedRowKeys.value.map(id => ({ id }))
+  const records = pageData.value?.records || []
+  const selected = records.filter((row: any) => checkedRowKeys.value.includes(row.id))
+  const deletable = selected.filter((row: any) => canDelete(row.execStatus))
+  const skipped = selected.length - deletable.length
+  if (deletable.length === 0) {
+    window.$message.warning('No completed or failed tasks selected for delete')
+    return
+  }
+  if (skipped > 0) {
+    window.$message.info(`Skipped ${skipped} running task(s)`)
+  }
+  const param = deletable.map((row: any) => ({ id: row.id }))
   const { success } = await taskReportsDelete(param)
   if (success) {
     window.$message.success('Deleted successfully')
@@ -196,7 +292,7 @@ async function deleteBatchHandle() {
               <NInput v-model:value="pageParam.keyword" placeholder="Enter keywords" clearable @clear="resetHandle" />
             </NFormItem>
             <NSpace align="center">
-              <NButton type="primary" @click="loadData">
+              <NButton type="primary" @click="loadData()">
                 <template #icon>
                   <IconParkOutlineSearch />
                 </template>
@@ -213,12 +309,6 @@ async function deleteBatchHandle() {
         </NSpace>
         <NSpace align="center" justify="space-between">
           <NSpace align="center">
-            <!-- <NButton type="primary" @click="formRef.doOpen(null, false)">
-              <template #icon>
-                <IconParkOutlinePlus />
-              </template>
-              Create
-            </NButton> -->
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
                 Confirm delete
@@ -232,7 +322,7 @@ async function deleteBatchHandle() {
           </NSpace>
           <NSpace align="center">
             <NFormItem :show-feedback="false" label-placement="left">
-              <NButton text @click="loadData">
+              <NButton text @click="loadData()">
                 <template #icon>
                   <IconParkOutlineRefresh />
                 </template>
@@ -243,7 +333,7 @@ async function deleteBatchHandle() {
                 v-model:value="displayKey"
                 :options="columnDisplayOptions"
                 multiple
-                @update:value="loadData"
+                @update:value="loadData()"
               >
                 <NButton text>
                   <template #icon>
@@ -256,7 +346,7 @@ async function deleteBatchHandle() {
               <NPopselect
                 v-model:value="pageParam.sortField"
                 :options="columnSortFieldOptions"
-                @update:value="loadData"
+                @update:value="loadData()"
               >
                 <NButton text>
                   <template #icon>
@@ -269,7 +359,7 @@ async function deleteBatchHandle() {
               <NPopselect
                 v-model:value="pageParam.sortOrder"
                 :options="sortOrderOptions"
-                @update:value="loadData"
+                @update:value="loadData()"
               >
                 <NButton text>
                   <template #icon>
@@ -290,7 +380,7 @@ async function deleteBatchHandle() {
         :bordered="false"
         :row-key="(row: any) => row.id"
         :loading="loading"
-        :scroll-x="1400"
+        :scroll-x="1500"
         flex-height
         class="flex-1 h-full"
       />
@@ -315,15 +405,15 @@ async function deleteBatchHandle() {
               value: (i + 1) * 10,
             }))"
             :page-slot="5"
-            @update:page="loadData"
-            @update:page-size="loadData"
+            @update:page="loadData()"
+            @update:page-size="loadData()"
           />
         </NSpace>
       </template>
     </NCard>
 
-    <Form ref="formRef" @submit="loadData" />
-    <Detail ref="detailRef" @submit="loadData" />
+    <Form ref="formRef" @submit="loadData()" />
+    <Detail ref="detailRef" @submit="loadData()" />
   </div>
 </template>
 

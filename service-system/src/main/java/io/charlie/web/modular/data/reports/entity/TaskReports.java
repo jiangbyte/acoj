@@ -93,4 +93,10 @@ public class TaskReports extends CommonEntity {
     @Schema(description = "检测模式名称")
     @TableField(exist = false)
     private String checkModeName;
+
+    @Schema(description = "执行状态 PENDING/PROCESSING/COMPLETED/FAILED")
+    private String execStatus;
+
+    @Schema(description = "执行失败原因摘要")
+    private String execMessage;
 }

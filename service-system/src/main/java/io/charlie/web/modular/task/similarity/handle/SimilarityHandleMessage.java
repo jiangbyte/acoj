@@ -145,8 +145,8 @@
 
 package io.charlie.web.modular.task.similarity.handle;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import io.charlie.web.modular.data.reports.entity.TaskReports;
 import io.charlie.web.modular.data.reports.mapper.TaskReportsMapper;
 import io.charlie.web.modular.data.similarity.dto.CloneLevel;
@@ -154,7 +154,9 @@ import io.charlie.web.modular.data.similarity.dto.TaskReportStats;
 import io.charlie.web.modular.data.similarity.mapper.TaskSimilarityMapper;
 import io.charlie.web.modular.task.similarity.dto.SimilaritySubmitDto;
 import io.charlie.web.modular.task.similarity.dto.SimilaritySubmitResultDto;
+import io.charlie.web.modular.task.similarity.enums.SimilarityExecStatus;
 import io.charlie.web.modular.task.similarity.mq.SimilarlyQueueProperties;
+import io.charlie.web.modular.task.similarity.service.SimilarityProgressService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -170,7 +172,7 @@ import java.util.List;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 20/09/2025
- * @description 相似度处理
+ * @description 相似度处理：发任务 + 收结果并回写报告状态
  */
 @Slf4j
 @Component
@@ -179,6 +181,7 @@ public class SimilarityHandleMessage {
     private final RabbitTemplate rabbitTemplate;
     private final TaskSimilarityMapper taskSimilarityMapper;
     private final TaskReportsMapper taskReportsMapper;
+    private final SimilarityProgressService progressService;
 
     private final SimilarlyQueueProperties properties;
 
@@ -194,30 +197,33 @@ public class SimilarityHandleMessage {
     @Transactional
     @RabbitListener(queues = "${system.mq.similarity.result.queue}", concurrency = "1")
     public void receiveSimilarity(SimilaritySubmitResultDto submitResultDto) {
-        log.info("收到相似检测任务消息，任务ID: {}, 报告ID: {}",
+        // 1. 基础校验
+        if (submitResultDto == null) {
+            log.error("接收到的消息为空");
+            return;
+        }
+        log.info("收到相似检测任务消息，任务ID: {}, 报告ID: {}, isOk={}",
                 submitResultDto.getTaskId(),
-                submitResultDto.getReportId());
+                submitResultDto.getReportId(),
+                submitResultDto.getIsOk());
+
+        if (submitResultDto.getTaskId() == null || submitResultDto.getReportId() == null) {
+            log.error("任务ID或报告ID为空，任务ID: {}, 报告ID: {}",
+                    submitResultDto.getTaskId(),
+                    submitResultDto.getReportId());
+            return;
+        }
 
         try {
-            // 1. 参数基础校验
-            if (submitResultDto == null) {
-                log.error("接收到的消息为空");
+            // 2. worker 明确失败：只标记 FAILED，不假装完成统计
+            if (Boolean.FALSE.equals(submitResultDto.getIsOk())) {
+                markFailed(submitResultDto.getReportId(), submitResultDto.getTaskId(),
+                        "Similarity worker reported failure (insufficient samples or compute error)");
                 return;
             }
 
-            if (submitResultDto.getTaskId() == null || submitResultDto.getReportId() == null) {
-                log.error("任务ID或报告ID为空，任务ID: {}, 报告ID: {}",
-                        submitResultDto.getTaskId(),
-                        submitResultDto.getReportId());
-                return;
-            }
-
-            UpdateWrapper<TaskReports> updateWrapper = new UpdateWrapper<TaskReports>().checkSqlInjection();
-
-            // 2. 从数据库中查询统计信息
+            // 3. 汇总 task_similarity 统计
             TaskReportStats taskReportStats = taskSimilarityMapper.selectSimilarityStatsByTaskId(submitResultDto.getTaskId());
-
-            // 处理统计信息为空的情况
             if (taskReportStats == null) {
                 log.warn("未找到任务 {} 的统计信息，使用默认值", submitResultDto.getTaskId());
                 taskReportStats = new TaskReportStats();
@@ -227,24 +233,20 @@ public class SimilarityHandleMessage {
                 taskReportStats.setMaxSimilarity(BigDecimal.ZERO);
             }
 
-            // 3. 获取相似度分布数组
             List<Integer> distributionArray = taskSimilarityMapper.selectSimilarityDistribution(submitResultDto.getTaskId());
             if (distributionArray == null) {
                 distributionArray = new ArrayList<>();
-                log.info("任务 {} 的相似度分布为空，使用空列表", submitResultDto.getTaskId());
             }
 
-            // 4. 获取程度统计
             List<CloneLevel> degreeStats = taskSimilarityMapper.selectDegreeStatistics(
                     submitResultDto.getTaskId(),
                     submitResultDto.getThreshold()
             );
             if (degreeStats == null) {
                 degreeStats = new ArrayList<>();
-                log.info("任务 {} 的程度统计为空，使用空列表", submitResultDto.getTaskId());
             }
 
-            // 5. 构建更新条件
+            // 4. 回写统计 + COMPLETED
             TaskReports taskReports = new TaskReports();
             taskReports.setId(submitResultDto.getReportId());
             taskReports.setTaskId(submitResultDto.getTaskId());
@@ -254,16 +256,16 @@ public class SimilarityHandleMessage {
             taskReports.setMaxSimilarity(taskReportStats.getMaxSimilarity());
             taskReports.setSimilarityDistribution(distributionArray);
             taskReports.setDegreeStatistics(degreeStats);
+            taskReports.setExecStatus(SimilarityExecStatus.COMPLETED.getValue());
+            taskReports.setExecMessage(null);
 
-            // 6. 执行更新并检查结果
             int updateCount = taskReportsMapper.updateById(taskReports);
             if (updateCount == 0) {
                 log.warn("未更新任何记录，报告ID: {}, 任务ID: {}",
                         submitResultDto.getReportId(),
                         submitResultDto.getTaskId());
-            } else {
-                log.info("成功更新 {} 条记录", updateCount);
             }
+            progressService.completeProgress(submitResultDto.getTaskId());
 
             log.info("任务 {} 统计完成 - 样本数: {}, 相似组数: {}, 最大相似度: {}, 平均相似度: {}",
                     submitResultDto.getTaskId(),
@@ -274,11 +276,38 @@ public class SimilarityHandleMessage {
 
         } catch (Exception e) {
             log.error("处理相似检测任务失败，任务ID: {}, 报告ID: {}, 错误信息: {}",
-                    submitResultDto != null ? submitResultDto.getTaskId() : "null",
-                    submitResultDto != null ? submitResultDto.getReportId() : "null",
+                    submitResultDto.getTaskId(),
+                    submitResultDto.getReportId(),
                     e.getMessage(), e);
-            // 异常重试
+            // 5. 消费异常落库 FAILED，避免列表一直 PROCESSING；再抛出触发 MQ 重试策略由容器决定
+            try {
+                markFailed(submitResultDto.getReportId(), submitResultDto.getTaskId(),
+                        abbreviate(e.getMessage()));
+            } catch (Exception markEx) {
+                log.error("标记任务失败状态时出错: {}", markEx.getMessage(), markEx);
+            }
             throw e;
         }
+    }
+
+    /**
+     * 将报告标记为 FAILED 并同步 Redis 进度。
+     */
+    private void markFailed(String reportId, String taskId, String message) {
+        TaskReports failed = new TaskReports();
+        failed.setId(reportId);
+        failed.setTaskId(taskId);
+        failed.setExecStatus(SimilarityExecStatus.FAILED.getValue());
+        failed.setExecMessage(abbreviate(StrUtil.blankToDefault(message, "Unknown error")));
+        taskReportsMapper.updateById(failed);
+        progressService.failProgress(taskId, failed.getExecMessage());
+        log.warn("任务 {} 标记为 FAILED: {}", taskId, failed.getExecMessage());
+    }
+
+    private static String abbreviate(String message) {
+        if (message == null) {
+            return null;
+        }
+        return message.length() <= 500 ? message : message.substring(0, 500);
     }
 }

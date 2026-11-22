@@ -50,10 +50,10 @@ defineExpose({
           {{ formData.similarityGroupCount }}
         </NDescriptionsItem>
         <NDescriptionsItem label="Average Similarity">
-          {{ formData.avgSimilarity * 100 }}
+          {{ Number.isFinite(Number(formData.avgSimilarity)) ? (Number(formData.avgSimilarity) * 100).toFixed(2) : '0.00' }}
         </NDescriptionsItem>
         <NDescriptionsItem label="Maximum Similarity">
-          {{ formData.maxSimilarity * 100 }}
+          {{ Number.isFinite(Number(formData.maxSimilarity)) ? (Number(formData.maxSimilarity) * 100).toFixed(2) : '0.00' }}
         </NDescriptionsItem>
         <NDescriptionsItem label="Check Threshold">
           {{ formData.threshold }}

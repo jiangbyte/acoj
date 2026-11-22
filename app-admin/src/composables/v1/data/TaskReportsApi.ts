@@ -27,6 +27,8 @@ export function useTaskReportsFetch() {
     similarityDistribution: '',
     degreeStatistics: '',
     checkMode: 0,
+    execStatus: 'COMPLETED',
+    execMessage: '',
     createTime: '',
     createUser: '',
     updateTime: '',

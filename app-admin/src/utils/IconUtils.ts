@@ -78,9 +78,16 @@ export function actionIconBtn(options: {
 }
 
 /**
- * 删除确认：图标按钮 + Popconfirm
+ * 删除确认：图标按钮 + Popconfirm；disabled 时仅渲染禁用按钮，不弹确认。
  */
-export function actionDeleteBtn(onConfirm: () => void | Promise<void>, title = 'Delete') {
+export function actionDeleteBtn(
+  onConfirm: () => void | Promise<void>,
+  title = 'Delete',
+  options?: { disabled?: boolean },
+) {
+  if (options?.disabled) {
+    return actionIconBtn({ kind: 'delete', title, disabled: true })
+  }
   return h(NPopconfirm, {
     onPositiveClick: onConfirm,
   }, {
