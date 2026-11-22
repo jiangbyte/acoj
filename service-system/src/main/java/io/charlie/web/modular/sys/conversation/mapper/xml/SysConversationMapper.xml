@@ -2,4 +2,80 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.charlie.web.modular.sys.conversation.mapper.SysConversationMapper">
 
+    <!-- 会话筛选条件复用 -->
+    <sql id="sessionWhere">
+        sc.deleted = 0
+        <if test="param.userId != null and param.userId != ''">
+            AND sc.user_id = #{param.userId}
+        </if>
+        <if test="param.problemId != null and param.problemId != ''">
+            AND sc.problem_id = #{param.problemId}
+        </if>
+        <if test="param.conversationId != null and param.conversationId != ''">
+            AND sc.conversation_id = #{param.conversationId}
+        </if>
+        <if test="param.keyword != null and param.keyword != ''">
+            AND (
+                sc.conversation_id LIKE CONCAT('%', #{param.keyword}, '%')
+                OR sc.message_content LIKE CONCAT('%', #{param.keyword}, '%')
+            )
+        </if>
+    </sql>
+
+    <!--
+      按 conversation_id 聚合为会话摘要；ORM 无法完成该聚合故用手写 SQL。
+      独立 mpCount，避免分页插件解析 GROUP_CONCAT 失败后回退包一层。
+    -->
+    <select id="selectSessionPage"
+            resultType="io.charlie.web.modular.sys.conversation.result.SysConversationSessionVO">
+        SELECT
+            sc.conversation_id AS id,
+            sc.conversation_id AS conversationId,
+            MAX(sc.user_id) AS userId,
+            MAX(sc.problem_id) AS problemId,
+            MAX(sc.set_id) AS setId,
+            MAX(sc.is_set) AS isSet,
+            COUNT(*) AS messageCount,
+            SUBSTRING_INDEX(
+                GROUP_CONCAT(
+                    CASE WHEN sc.message_role = 'USER' AND sc.message_content IS NOT NULL AND sc.message_content != ''
+                        THEN LEFT(sc.message_content, 200) END
+                    ORDER BY sc.create_time ASC
+                    SEPARATOR '&lt;|&gt;'
+                ),
+                '&lt;|&gt;',
+                1
+            ) AS preview,
+            SUBSTRING_INDEX(
+                GROUP_CONCAT(sc.message_type ORDER BY sc.create_time DESC SEPARATOR ','),
+                ',',
+                1
+            ) AS lastMessageType,
+            CASE
+                WHEN SUM(CASE WHEN sc.status = 'ERROR' THEN 1 ELSE 0 END) &gt; 0 THEN 'ERROR'
+                ELSE 'SUCCESS'
+            END AS status,
+            COALESCE(SUM(sc.total_tokens), 0) AS totalTokens,
+            COALESCE(SUM(sc.streaming_duration), 0) AS totalDurationMs,
+            MIN(sc.create_time) AS startedAt,
+            MAX(sc.create_time) AS lastActiveAt
+        FROM sys_conversation sc
+        <where>
+            <include refid="sessionWhere"/>
+        </where>
+        GROUP BY sc.conversation_id
+        ORDER BY lastActiveAt DESC
+    </select>
+
+    <select id="selectSessionPage_mpCount" resultType="long">
+        SELECT COUNT(1) FROM (
+            SELECT sc.conversation_id
+            FROM sys_conversation sc
+            <where>
+                <include refid="sessionWhere"/>
+            </where>
+            GROUP BY sc.conversation_id
+        ) session_cnt
+    </select>
+
 </mapper>

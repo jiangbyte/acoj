@@ -5,7 +5,6 @@ import { useTokenStore } from '@/stores'
 import { useSysConversationFetch } from '@/composables/v1'
 import MdViewer from '@/components/common/editor/md/MarkdownViewer.vue'
 
-// Implementation note.
 const props = defineProps({
   problemId: {
     type: String,
@@ -21,7 +20,11 @@ const props = defineProps({
   },
 })
 
-const { sysConversationStreamUrl } = useSysConversationFetch()
+const {
+  sysConversationStreamUrl,
+  userSessionPage,
+  sysConversationHistory,
+} = useSysConversationFetch()
 
 const chatRequestParam = ref({
   conversationId: '',
@@ -39,30 +42,124 @@ const controller = ref<AbortController | null>(null)
 const currentAssistantMessage = ref('')
 const currentMessageType = ref('')
 const isUserStopped = ref(false)
+const sessionList = ref<any[]>([])
+const sessionLoading = ref(false)
+const switching = ref(false)
+const historyShow = ref(false)
 
 const tokenStore = useTokenStore()
 
-// Implementation note.
+/**
+ * 打开历史抽屉并刷新会话列表。
+ */
+async function openHistory() {
+  historyShow.value = true
+  await loadSessions()
+}
+
+/**
+ * 加载当前题目的历史会话列表。
+ */
+async function loadSessions() {
+  if (!props.problemId) {
+    sessionList.value = []
+    return
+  }
+  sessionLoading.value = true
+  try {
+    const { data, success } = await userSessionPage({
+      current: 1,
+      size: 50,
+      problemId: props.problemId,
+    })
+    if (success) {
+      sessionList.value = data?.records || []
+    }
+  }
+  finally {
+    sessionLoading.value = false
+  }
+}
+
+/**
+ * 切换到指定会话并灌入历史消息。
+ */
+async function switchSession(conversationId: string) {
+  if (!conversationId) {
+    return
+  }
+  // 已是当前会话则仅关闭抽屉
+  if (conversationId === chatRequestParam.value.conversationId && messages.value.length > 0) {
+    historyShow.value = false
+    return
+  }
+  if (isLoading.value) {
+    stopSending()
+  }
+  switching.value = true
+  try {
+    // 1. 绑定 conversationId
+    // 2. 拉历史消息映射到本地 messages
+    // 3. 清空输入与流式中间态并关闭抽屉
+    chatRequestParam.value.conversationId = conversationId
+    const { data, success } = await sysConversationHistory(conversationId)
+    if (!success) {
+      window.$message?.error('Failed to load conversation')
+      return
+    }
+    messages.value = (data || []).map((item: any) => ({
+      conversationId: item.conversationId,
+      messageContent: item.messageContent || '',
+      messageType: item.messageType || 'DailyConversation',
+      messageRole: item.messageRole,
+      responseTime: Number(item.responseTime || item.createTime || Date.now()),
+      isCompleted: true,
+      isStopped: false,
+    }))
+    currentAssistantMessage.value = ''
+    chatRequestParam.value.messageContent = ''
+    isUserStopped.value = false
+    historyShow.value = false
+  }
+  finally {
+    switching.value = false
+  }
+}
+
+/**
+ * 新开对话：清空本地状态，下次发送生成新 conversationId。
+ */
+function newChat() {
+  if (isLoading.value) {
+    stopSending()
+  }
+  messages.value = []
+  chatRequestParam.value.conversationId = ''
+  currentAssistantMessage.value = ''
+  isUserStopped.value = false
+  chatRequestParam.value.messageContent = ''
+}
+
+function clearMessages() {
+  newChat()
+}
+
 function sendMessage(messageType: string = 'DailyConversation') {
   if (!chatRequestParam.value.messageContent.trim() && messageType === 'DailyConversation') {
     window.$message?.warning('Enter a message')
     return
   }
 
-  // Implementation note.
   isUserStopped.value = false
 
-  // Implementation note.
   if (!chatRequestParam.value.conversationId) {
     chatRequestParam.value.conversationId = `task-${uuidv4()}`
-    console.log('Generated conversation ID:', chatRequestParam.value.conversationId)
   }
 
   isLoading.value = true
   currentAssistantMessage.value = ''
   currentMessageType.value = messageType
 
-  // Implementation note.
   let messageContentToSend = ''
   let userDisplayMessage = ''
 
@@ -71,7 +168,6 @@ function sendMessage(messageType: string = 'DailyConversation') {
     userDisplayMessage = chatRequestParam.value.messageContent
   }
   else {
-    // Implementation note.
     const buttonMessages = {
       ProblemSolvingIdeas: 'Help me develop an approach to this problem',
       AnalyzeComplexity: 'Analyze the time and space complexity of this code',
@@ -82,7 +178,6 @@ function sendMessage(messageType: string = 'DailyConversation') {
     userDisplayMessage = messageContentToSend
   }
 
-  // Implementation note.
   messages.value.push({
     conversationId: chatRequestParam.value.conversationId,
     messageContent: userDisplayMessage,
@@ -91,18 +186,7 @@ function sendMessage(messageType: string = 'DailyConversation') {
     responseTime: Date.now(),
   })
 
-  // Implementation note.
   controller.value = new AbortController()
-
-  console.log('Sending request:', {
-    conversationId: chatRequestParam.value.conversationId,
-    problemId: chatRequestParam.value.problemId,
-    messageContent: messageContentToSend,
-    messageType,
-    userCode: chatRequestParam.value.userCode,
-    language: chatRequestParam.value.language,
-    setId: chatRequestParam.value.setId,
-  })
 
   fetchEventSource(sysConversationStreamUrl, {
     method: 'POST',
@@ -123,55 +207,19 @@ function sendMessage(messageType: string = 'DailyConversation') {
 
     onopen: async (response) => {
       if (response.ok) {
-        console.log('SSE connection established')
         return
       }
       window.$message?.error(`Connection failed: ${response.status}`)
       handleRequestEnd(false)
-      // Implementation note.
       throw new Error(`SSE connection failed: ${response.status}`)
     },
-    // onmessage: (event) => {
-    //   try {
-    //     if (event.data) {
-    //       const data = JSON.parse(event.data)
-    //       console.log('Message received:', data)
-
-    // Implementation note.
-    //       if (data.messageContent) {
-    //         const content = data.messageContent
-    //         currentAssistantMessage.value += content
-
-    // Implementation note.
-    //         const lastMessageIndex = messages.value.length - 1
-    //         if (lastMessageIndex >= 0 && messages.value[lastMessageIndex].messageRole === 'ASSISTANT') {
-    //           messages.value[lastMessageIndex].messageContent = currentAssistantMessage.value
-    //         }
-    //       }
-
-    // Implementation note.
-    //       if (data.finishReason || data.finished) {
-    //         console.log('Message complete')
-    //         handleRequestEnd(true)
-    //       }
-    //     }
-    //   }
-    //   catch (error) {
-    //     console.error('Failed to parse message:', error)
-    //     window.$message?.error('Invalid response format')
-    //     handleRequestEnd(true)
-    //   }
-    // },
     onmessage: (event) => {
       try {
         if (event.data) {
           const data = JSON.parse(event.data)
-          console.log('Message received:', data)
 
-          // Implementation note.
           if (data.messageContent) {
             const content = data.messageContent
-            // Implementation note.
             if (!currentAssistantMessage.value) {
               messages.value.push({
                 conversationId: chatRequestParam.value.conversationId,
@@ -185,16 +233,13 @@ function sendMessage(messageType: string = 'DailyConversation') {
             }
             currentAssistantMessage.value += content
 
-            // Implementation note.
             const lastMessageIndex = messages.value.length - 1
             if (lastMessageIndex >= 0 && messages.value[lastMessageIndex].messageRole === 'ASSISTANT') {
               messages.value[lastMessageIndex].messageContent = currentAssistantMessage.value
             }
           }
 
-          // Implementation note.
           if (data.finishReason || data.finished) {
-            console.log('Message complete')
             handleRequestEnd(true)
           }
         }
@@ -207,40 +252,34 @@ function sendMessage(messageType: string = 'DailyConversation') {
     },
     onerror: (error) => {
       console.error('SSE error:', error)
-      // Implementation note.
       if (!isUserStopped.value) {
         window.$message?.error('Connection error. Response stopped')
       }
       handleRequestEnd(true)
-      // Implementation note.
       throw error
     },
     onclose: () => {
-      console.log('SSE connection closed')
       handleRequestEnd(true)
     },
   })
 
-  // Implementation note.
   if (messageType === 'DailyConversation') {
     chatRequestParam.value.messageContent = ''
   }
 }
-// Implementation note.
+
 function handleButtonClick(messageType: string | undefined) {
   sendMessage(messageType)
 }
-// Implementation note.
+
 function handleRequestEnd(isCompleted: boolean) {
   isLoading.value = false
 
   const lastMessageIndex = messages.value.length - 1
   if (lastMessageIndex >= 0 && messages.value[lastMessageIndex].messageRole === 'ASSISTANT') {
-    // Implementation note.
     messages.value[lastMessageIndex].isCompleted = isCompleted
     messages.value[lastMessageIndex].isStopped = isUserStopped.value
 
-    // Implementation note.
     if (!messages.value[lastMessageIndex].messageContent && !isUserStopped.value) {
       messages.value.pop()
     }
@@ -248,16 +287,16 @@ function handleRequestEnd(isCompleted: boolean) {
 
   currentAssistantMessage.value = ''
   controller.value = null
+  // 结束后刷新侧栏，确保新会话/更新时间可见
+  loadSessions()
 }
 
-// StopSend
 function stopSending() {
   if (controller.value) {
     isUserStopped.value = true
     controller.value.abort()
     isLoading.value = false
 
-    // Implementation note.
     const lastMessageIndex = messages.value.length - 1
     if (lastMessageIndex >= 0 && messages.value[lastMessageIndex].messageRole === 'ASSISTANT') {
       messages.value[lastMessageIndex].isStopped = true
@@ -267,50 +306,45 @@ function stopSending() {
   }
 }
 
-// Clear Chat
-function clearMessages() {
-  messages.value = []
-  chatRequestParam.value.conversationId = ''
-  currentAssistantMessage.value = ''
-  isUserStopped.value = false
-}
-
 const isCollapse = ref(false)
 function handleCollapse() {
   isCollapse.value = !isCollapse.value
 }
 
-// Implementation note.
 function shouldShowTyping(message: any) {
   return !message.messageContent && !message.isCompleted && !message.isStopped
 }
 
-// Implementation note.
 function shouldShowStopped(message: any) {
   return message.isStopped && message.messageContent
 }
 
-// Implementation note.
 function scrollToBottom() {
   nextTick(() => {
-    const chatContainer = document.querySelector('.overflow-scroll')
+    const chatContainer = document.querySelector('.llm-chat-scroll')
     if (chatContainer) {
       chatContainer.scrollTop = chatContainer.scrollHeight
     }
   })
 }
 
-// Implementation note.
 watch(messages, () => {
   scrollToBottom()
 }, { deep: true })
 
-// Implementation note.
+watch(
+  () => props.problemId,
+  (id) => {
+    chatRequestParam.value.problemId = id
+    newChat()
+    loadSessions()
+  },
+)
+
 onMounted(() => {
-  // Implementation note.
+  loadSessions()
 })
 
-// Implementation note.
 function getMessageTypeText(type: string | number) {
   const typeMap = {
     DailyConversation: 'Chat',
@@ -319,7 +353,14 @@ function getMessageTypeText(type: string | number) {
     OptimizeCode: 'Code Optimization',
     AnalyzeBoundary: 'Edge Case Analysis',
   } as const
-  return typeMap[type as keyof typeof typeMap]
+  return typeMap[type as keyof typeof typeMap] || String(type || '')
+}
+
+function sessionTitle(session: any) {
+  if (session.preview) {
+    return session.preview
+  }
+  return getMessageTypeText(session.lastMessageType) || 'Conversation'
 }
 </script>
 
@@ -328,7 +369,7 @@ function getMessageTypeText(type: string | number) {
     vertical
     :size="0"
   >
-    <n-flex ref="chatContainer" vertical class="overflow-scroll" :class="{ 'h-112': !isCollapse, 'h-149': isCollapse }">
+    <n-flex ref="chatContainer" vertical class="overflow-scroll llm-chat-scroll" :class="{ 'h-112': !isCollapse, 'h-149': isCollapse }">
       <div>
         <n-empty
           v-if="messages.length === 0"
@@ -344,9 +385,7 @@ function getMessageTypeText(type: string | number) {
             No messages yet. Choose an action below to start
           </n-text>
         </n-empty>
-        <!-- Section -->
         <div v-for="(message, index) in messages" :key="index">
-          <!-- Section -->
           <n-card v-if="message.messageRole === 'USER'" size="small" class="bg-#f0f7ff mb-4" :bordered="false">
             <n-flex vertical :size="4">
               <div class="flex items-center justify-between">
@@ -361,7 +400,6 @@ function getMessageTypeText(type: string | number) {
             </n-flex>
           </n-card>
 
-          <!-- Section -->
           <n-card v-if="message.messageRole === 'ASSISTANT'" size="small" class="mb-4">
             <n-flex vertical :size="4">
               <n-flex align="center" justify="space-between">
@@ -371,7 +409,6 @@ function getMessageTypeText(type: string | number) {
                 <n-time :time="message.responseTime" />
               </n-flex>
 
-              <!-- Section -->
               <MdViewer v-if="message.messageContent" :model-value="message.messageContent" />
               <n-spin v-if="shouldShowTyping(message)" size="small">
                 Thinking...
@@ -391,14 +428,28 @@ function getMessageTypeText(type: string | number) {
       </div>
     </n-flex>
 
-    <!-- Section -->
     <n-card size="small">
       <NFlex
         vertical
         :size="8"
       >
         <n-flex justify="space-between">
-          <n-flex align="center">
+          <n-flex align="center" :wrap="true">
+            <n-button
+              size="small"
+              @click="openHistory"
+            >
+              <template #icon>
+                <icon-park-outline-history />
+              </template>
+              History
+            </n-button>
+            <n-button
+              size="small"
+              @click="newChat"
+            >
+              New Chat
+            </n-button>
             <n-button
               type="primary"
               size="small"
@@ -479,6 +530,51 @@ function getMessageTypeText(type: string | number) {
         </NFlex>
       </NFlex>
     </n-card>
+
+    <NDrawer v-model:show="historyShow" placement="left" :width="320">
+      <NDrawerContent title="Conversation History" closable>
+        <template #header-extra>
+          <n-button size="small" type="primary" quaternary @click="newChat(); historyShow = false">
+            New Chat
+          </n-button>
+        </template>
+        <n-spin :show="sessionLoading || switching">
+          <n-empty
+            v-if="!sessionLoading && sessionList.length === 0"
+            class="py-8"
+            description="No history yet"
+            size="small"
+          />
+          <n-space v-else vertical :size="8">
+            <div
+              v-for="session in sessionList"
+              :key="session.conversationId"
+              class="px-3 py-2 cursor-pointer rounded border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              :class="{ 'bg-#f0f7ff dark:bg-gray-800 border-blue-200!': session.conversationId === chatRequestParam.conversationId }"
+              @click="switchSession(session.conversationId)"
+            >
+              <n-ellipsis :line-clamp="2" class="text-sm">
+                {{ sessionTitle(session) }}
+              </n-ellipsis>
+              <div class="flex items-center justify-between mt-1 gap-1">
+                <n-tag size="tiny" :bordered="false">
+                  {{ getMessageTypeText(session.lastMessageType) || 'Chat' }}
+                </n-tag>
+                <n-time
+                  v-if="session.lastActiveAt"
+                  class="text-xs text-gray-400"
+                  :time="Number(session.lastActiveAt)"
+                  type="relative"
+                />
+              </div>
+              <n-text depth="3" class="text-xs">
+                {{ session.messageCount || 0 }} messages
+              </n-text>
+            </div>
+          </n-space>
+        </n-spin>
+      </NDrawerContent>
+    </NDrawer>
   </NFlex>
 </template>
 

@@ -100,6 +100,17 @@ export function useSysConversationFetch() {
         },
       })
     },
+    /**
+     * 当前用户按题的会话列表
+     */
+    userSessionPage(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/userSession/page`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+
     sysConversationStream(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix}chat/stream`, data, {
         headers: {

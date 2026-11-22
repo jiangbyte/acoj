@@ -6,6 +6,7 @@ import io.charlie.web.modular.sys.conversation.param.SysConversationPageParam;
 import io.charlie.web.modular.sys.conversation.param.SysConversationAddParam;
 import io.charlie.web.modular.sys.conversation.param.SysConversationEditParam;
 import io.charlie.web.modular.sys.conversation.param.SysConversationIdParam;
+import io.charlie.web.modular.sys.conversation.param.SysConversationSessionIdParam;
 import io.charlie.web.modular.sys.conversation.param.SysConversationToolTracePageParam;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -87,6 +88,35 @@ public class SysConversationController {
     @GetMapping("/sys/conversation/history/{conversationId}")
     public Result<?> history(@PathVariable @NotBlank(message = "对话ID不能为空") String conversationId) {
         return Result.success(sysConversationService.historyByConversationId(conversationId));
+    }
+
+    @Operation(summary = "按对话ID分页获取历史")
+    @GetMapping("/sys/conversation/history/{conversationId}/page")
+    public Result<?> historyPage(@PathVariable @NotBlank(message = "对话ID不能为空") String conversationId,
+                                 @RequestParam(required = false) Integer current,
+                                 @RequestParam(required = false) Integer size) {
+        return Result.success(sysConversationService.historyPageByConversationId(conversationId, current, size));
+    }
+
+    @Operation(summary = "管理端会话聚合分页")
+    @SaCheckPermission("/sys/conversation/page")
+    @GetMapping("/sys/conversation/session/page")
+    public Result<?> sessionPage(@ParameterObject SysConversationPageParam sysConversationPageParam) {
+        return Result.success(sysConversationService.sessionPage(sysConversationPageParam));
+    }
+
+    @Operation(summary = "当前用户会话聚合分页")
+    @GetMapping("/sys/conversation/userSession/page")
+    public Result<?> userSessionPage(@ParameterObject SysConversationPageParam sysConversationPageParam) {
+        return Result.success(sysConversationService.userSessionPage(sysConversationPageParam));
+    }
+
+    @Operation(summary = "按会话ID删除对话")
+    @SaCheckPermission("/sys/conversation/delete")
+    @PostMapping("/sys/conversation/session/delete")
+    public Result<?> sessionDelete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<SysConversationSessionIdParam> sessionIdParamList) {
+        sysConversationService.deleteByConversationIds(sessionIdParamList);
+        return Result.success();
     }
 
     @Operation(summary = "LLM 工具调用轨迹分页")

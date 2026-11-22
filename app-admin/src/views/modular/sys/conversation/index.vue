@@ -1,12 +1,10 @@
 <script lang="ts" setup>
 import { actionDeleteBtn, actionIconBtn, renderSafeAvatar } from '@/utils'
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NEllipsis, NPagination, NPopconfirm, NSpace } from 'naive-ui'
+import { NButton, NCard, NDataTable, NEllipsis, NPagination, NPopconfirm, NSpace, NTag, NTime } from 'naive-ui'
 import { useSysConversationFetch } from '@/composables/v1'
-import Form from './form.vue'
 import Detail from './detail.vue'
 
-const formRef = ref()
 const detailRef = ref()
 const columns: DataTableColumns<any> = [
   {
@@ -18,10 +16,7 @@ const columns: DataTableColumns<any> = [
     ellipsis: {
       tooltip: true,
     },
-  },
-  {
-    title: 'Message Role',
-    key: 'messageRoleName',
+    minWidth: 220,
   },
   {
     title: 'User',
@@ -39,7 +34,7 @@ const columns: DataTableColumns<any> = [
                     size: 'small',
                     round: true,
                     src: row.userAvatar,
-                  }
+                  },
                 ),
                 h(
                   NEllipsis,
@@ -62,70 +57,60 @@ const columns: DataTableColumns<any> = [
     ellipsis: {
       tooltip: true,
     },
+    minWidth: 140,
   },
   {
-    title: 'Problem Set',
-    key: 'setIdName',
-    ellipsis: {
-      tooltip: true,
+    title: 'Messages',
+    key: 'messageCount',
+    width: 90,
+  },
+  {
+    title: 'Last Type',
+    key: 'lastMessageTypeName',
+    width: 150,
+    render(row: any) {
+      return row.lastMessageTypeName || row.lastMessageType || ''
     },
   },
   {
-    title: 'Set Conversation',
-    key: 'isSetName',
+    title: 'Status',
+    key: 'status',
+    width: 100,
+    render(row: any) {
+      const isError = row.status === 'ERROR'
+      return h(NTag, { type: isError ? 'error' : 'success', size: 'small' }, { default: () => row.status || 'SUCCESS' })
+    },
   },
   {
-    title: 'Message Type',
-    key: 'messageTypeName',
+    title: 'Tokens',
+    key: 'totalTokens',
+    width: 90,
   },
-  // {
-  //   title: 'Message Content',
-  //   key: 'messageContent',
-  // },
-  // {
-  //   title: 'User Code',
-  //   key: 'userCode',
-  // },
-  // {
-  //   title: 'Code Language',
-  //   key: 'languageName',
-  // },
-  // {
-  //   title: 'NoticeTokens',
-  //   key: 'promptTokens',
-  // },
-  // {
-  //   title: 'Completion Tokens',
-  //   key: 'completionTokens',
-  // },
-  // {
-  //   title: 'Total Tokens',
-  //   key: 'totalTokens',
-  // },
-  // {
-  //   title: 'Response Time',
-  //   key: 'responseTime',
-  // },
-  // {
-  //   title: 'Streaming Duration',
-  //   key: 'streamingDuration',
-  // },
-  // {
-  //   title: 'Status',
-  //   key: 'status',
-  // },
-  // {
-  //   title: 'Error Message',
-  //   key: 'errorMessage',
-  // },
   {
-    title: 'User Platform',
-    key: 'userPlatform',
+    title: 'Duration',
+    key: 'totalDurationMs',
+    width: 110,
+    render(row: any) {
+      const ms = Number(row.totalDurationMs || 0)
+      return ms > 0 ? `${ms} ms` : '-'
+    },
   },
-  // {
-  //   title: 'IP Address',
-  //   key: 'ipAddress',
-  // },
+  {
+    title: 'Last Active',
+    key: 'lastActiveAt',
+    width: 170,
+    render(row: any) {
+      return row.lastActiveAt ? h(NTime, { time: Number(row.lastActiveAt) }) : ''
+    },
+  },
+  {
+    title: 'Preview',
+    key: 'preview',
+    ellipsis: {
+      tooltip: true,
+    },
+    minWidth: 180,
+  },
   {
     title: 'Actions',
     key: 'action',
@@ -133,11 +118,6 @@ const columns: DataTableColumns<any> = [
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center', wrap: false }, () => [
-        // h(NButton, {
-        //   type: 'primary',
-        //   size: 'small',
-        //   onClick: () => formRef.value.doOpen(row, true),
-        // }, () => 'Edit'),
         actionIconBtn({ kind: 'detail', onClick: () => detailRef.value.doOpen(row) }),
         actionDeleteBtn(() => deleteHandle(row)),
       ])
@@ -147,9 +127,8 @@ const columns: DataTableColumns<any> = [
 
 const columnSortFieldOptions = computed<any[]>(() => {
   return [
-    { label: 'ID', value: 'id' },
-    { label: 'Created At', value: 'createTime' },
-    { label: 'Updated At', value: 'updateTime' },
+    { label: 'Last Active', value: 'lastActiveAt' },
+    { label: 'Started At', value: 'startedAt' },
   ]
 })
 const sortOrderOptions = computed(() => [
@@ -185,8 +164,8 @@ const pageData = ref()
 const pageParam = ref({
   current: 1,
   size: 20,
-  sortField: null,
-  sortOrder: null,
+  sortField: null as string | null,
+  sortOrder: null as string | null,
   keyword: '',
   userId: '',
   problemId: '',
@@ -199,25 +178,9 @@ function resetHandle() {
   loadData()
 }
 
-const { sysConversationPage, sysConversationDelete, toolTracePage, exportPrompts } = useSysConversationFetch()
-const toolShow = ref(false)
-const toolLoading = ref(false)
-const toolRows = ref<any[]>([])
+const { sessionPage, sessionDelete, exportPrompts } = useSysConversationFetch()
 const promptShow = ref(false)
 const promptData = ref<any>(null)
-
-async function openToolTrace() {
-  toolShow.value = true
-  toolLoading.value = true
-  const { data } = await toolTracePage({
-    current: 1,
-    size: 50,
-    userId: pageParam.value.userId,
-    problemId: pageParam.value.problemId,
-  })
-  toolRows.value = data?.records || []
-  toolLoading.value = false
-}
 
 async function openPrompt() {
   const { data } = await exportPrompts()
@@ -227,9 +190,12 @@ async function openPrompt() {
 const loading = ref(false)
 async function loadData() {
   loading.value = true
-  const { data } = await sysConversationPage(pageParam.value)
+  const { data } = await sessionPage(pageParam.value)
   if (data) {
     pageData.value = data
+    loading.value = false
+  }
+  else {
     loading.value = false
   }
 }
@@ -238,9 +204,9 @@ loadData()
 
 async function deleteHandle(row: any) {
   const param = [{
-    id: row.id,
+    conversationId: row.conversationId,
   }]
-  const { success } = await sysConversationDelete(param)
+  const { success } = await sessionDelete(param)
   if (success) {
     window.$message.success('Deleted successfully')
     await loadData()
@@ -248,8 +214,8 @@ async function deleteHandle(row: any) {
 }
 const checkedRowKeys = ref<string[]>([])
 async function deleteBatchHandle() {
-  const param = checkedRowKeys.value.map(id => ({ id }))
-  const { success } = await sysConversationDelete(param)
+  const param = checkedRowKeys.value.map(conversationId => ({ conversationId }))
+  const { success } = await sessionDelete(param)
   if (success) {
     window.$message.success('Deleted successfully')
     await loadData()
@@ -291,24 +257,12 @@ async function deleteBatchHandle() {
         </NSpace>
         <NSpace align="center" justify="space-between">
           <NSpace align="center">
-            <!-- <NButton type="primary" @click="formRef.doOpen(null, false)">
-              <template #icon>
-                <IconParkOutlinePlus />
-              </template>
-              Create
-            </NButton> -->
-            <!-- <NButton type="primary">
-              Conversation Memory
-            </NButton> -->
-            <NButton @click="openToolTrace">
-              Tool traces
-            </NButton>
             <NButton @click="openPrompt">
               Prompt
             </NButton>
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
-                Confirm delete
+                Confirm delete selected sessions
               </template>
               <template #trigger>
                 <NButton type="error">
@@ -375,7 +329,7 @@ async function deleteBatchHandle() {
         :columns="filteredColumns"
         :data="pageData?.records"
         :bordered="false"
-        :row-key="(row: any) => row.id"
+        :row-key="(row: any) => row.conversationId"
         :loading="loading"
         flex-height
         :scroll-x="1400"
@@ -385,10 +339,10 @@ async function deleteBatchHandle() {
         <NSpace align="center" justify="space-between" class="w-full">
           <NSpace align="center">
             <NP type="info" show-icon>
-              Current: {{ pageData?.records.length }} records
+              Current: {{ pageData?.records?.length || 0 }} sessions
             </NP>
             <NP type="info" show-icon>
-              Selected: {{ checkedRowKeys.length }} rows
+              Selected: {{ checkedRowKeys.length }} sessions
             </NP>
           </NSpace>
           <NPagination
@@ -409,32 +363,35 @@ async function deleteBatchHandle() {
       </template>
     </NCard>
 
-    <Form ref="formRef" @submit="loadData" />
     <Detail ref="detailRef" @submit="loadData" />
 
-    <NModal v-model:show="toolShow" preset="card" title="Tool traces" class="w-900px">
-      <NDataTable
-        :loading="toolLoading"
-        :columns="[
-          { title: 'Tool', key: 'toolName' },
-          { title: 'Status', key: 'status' },
-          { title: 'Duration', key: 'durationMs' },
-          { title: 'Args', key: 'toolArgs', ellipsis: { tooltip: true } },
-          { title: 'Result', key: 'toolResult', ellipsis: { tooltip: true } },
-        ]"
-        :data="toolRows"
-        :pagination="false"
-        :scroll-x="800"
-      />
-    </NModal>
-
-    <NModal v-model:show="promptShow" preset="card" title="Prompt" class="w-800px">
-      <NText>SHA-256: {{ promptData?.defaultPromptSha256 }}</NText>
-      <NCode class="mt-2" :code="promptData?.defaultPrompt || ''" word-wrap />
+    <NModal v-model:show="promptShow" preset="card" title="Prompt" class="w-800px fixed-height-modal">
+      <div class="modal-scroll-body">
+        <NText>SHA-256: {{ promptData?.defaultPromptSha256 }}</NText>
+        <NCode class="mt-2" :code="promptData?.defaultPrompt || ''" word-wrap />
+      </div>
     </NModal>
   </div>
 </template>
 
 <style scoped>
+.modal-scroll-body {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+</style>
 
+<style>
+.fixed-height-modal.n-card {
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.fixed-height-modal.n-card .n-card__content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
 </style>

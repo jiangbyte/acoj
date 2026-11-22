@@ -54,6 +54,42 @@ export function useSysConversationFetch() {
       })
     },
 
+    /**
+     * 管理端会话聚合分页
+     */
+    sessionPage(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/session/page`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+
+    /**
+     * 按会话 ID 批量删除
+     */
+    sessionDelete(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/session/delete`, data)
+    },
+
+    /**
+     * 按会话 ID 拉取消息时间线
+     */
+    conversationHistory(conversationId: string) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/history/${conversationId}`)
+    },
+
+    /**
+     * 按会话 ID 分页拉取消息时间线
+     */
+    conversationHistoryPage(conversationId: string, data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/history/${conversationId}/page`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+
     /*
      * LLM Conversation create endpoint
      */
