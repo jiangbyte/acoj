@@ -42,15 +42,18 @@ func TestCgroupV1Accuracy(t *testing.T) {
 	if os.Getenv("ACOJ_CG1_INNER") == "1" {
 		// 1. 在特权容器里挂上 v1 的 memory 和 cpuacct
 		// 2. 用这套挂载跑和 v2 相同的精度断言
-		if err := mountCgroupV1("/cg/mem", "/cg/cpu"); err != nil {
+		if err := mountCgroupV1("/cg/mem", "/cg/cpu", "/cg/pids"); err != nil {
 			t.Fatal(err)
 		}
-		OverrideSandbox(CgroupV1, "/cg/mem", "/cg/cpu")
+		OverrideSandbox(CgroupV1, "/cg/mem", "/cg/cpu", "/cg/pids")
 		assertResourceAccuracy(t)
 		return
 	}
-	if mem, cpu, ok := discoverV1Mounts(); ok {
-		OverrideSandbox(CgroupV1, mem, cpu)
+	if mem, cpu, pids, ok := discoverV1Mounts(); ok {
+		if pids == "" {
+			t.Skip("本机 cgroup v1 无可用 pids 控制器")
+		}
+		OverrideSandbox(CgroupV1, mem, cpu, pids)
 		assertResourceAccuracy(t)
 		return
 	}
@@ -128,9 +131,9 @@ func runSample(t *testing.T, limitKB float64, mode string) sample {
 		err   error
 	)
 	if limitKB > 0 {
-		group, err = CreateCgroup(limitKB)
+		group, err = CreateCgroup(limitKB, defaultMaxPids)
 	} else {
-		group, err = CreateCgroupNoMemory()
+		group, err = CreateCgroupNoMemory(defaultMaxPids)
 	}
 	if err != nil {
 		t.Fatal(err)
@@ -187,17 +190,23 @@ func burnCPU(d time.Duration) {
 	}
 }
 
-func mountCgroupV1(memoryDir, cpuDir string) error {
+func mountCgroupV1(memoryDir, cpuDir, pidsDir string) error {
 	if err := os.MkdirAll(memoryDir, 0755); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(cpuDir, 0755); err != nil {
 		return err
 	}
+	if err := os.MkdirAll(pidsDir, 0755); err != nil {
+		return err
+	}
 	if err := syscall.Mount("none", memoryDir, "cgroup", 0, "memory"); err != nil {
 		return err
 	}
-	return syscall.Mount("none", cpuDir, "cgroup", 0, "cpuacct")
+	if err := syscall.Mount("none", cpuDir, "cgroup", 0, "cpuacct"); err != nil {
+		return err
+	}
+	return syscall.Mount("none", pidsDir, "cgroup", 0, "pids")
 }
 
 func runV1InDocker(t *testing.T) {

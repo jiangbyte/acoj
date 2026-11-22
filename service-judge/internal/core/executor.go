@@ -7,6 +7,7 @@ import (
 	"service-judge/internal/utils"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -49,7 +50,7 @@ func (e *SandboxExecutor) Execute(workspace *Workspace, testCase *model2.DataTes
 	result := e.initResult(workspace, testCase)
 
 	// 建带内存上限的 cgroup。失败就是系统错误，不再退回 /proc 轮询
-	group, err := utils.CreateCgroup(workspace.judgeRequest.MaxMemory)
+	group, err := utils.CreateCgroup(workspace.judgeRequest.MaxMemory, workspace.config.Sandbox.MaxPids)
 	if err != nil {
 		return e.handleError(result, fmt.Sprintf("创建cgroup失败: %v", err), 1, err)
 	}
@@ -95,10 +96,23 @@ func (e *SandboxExecutor) executeCommand(workspace *Workspace, testCase *model2.
 		return e.handleError(result, fmt.Sprintf("准备命令失败: %v", err), 1, err)
 	}
 
+	// 输出超限时杀进程组：启动前挂回调，启动后写入 pgid
+	var killPgid atomic.Int32
+	killOnTruncate := func() {
+		pgid := int(killPgid.Load())
+		if pgid > 0 {
+			_ = syscall.Kill(-pgid, syscall.SIGKILL)
+			_ = syscall.Kill(pgid, syscall.SIGKILL)
+		}
+	}
+	stdoutBuf.SetOnTruncate(killOnTruncate)
+	stderrBuf.SetOnTruncate(killOnTruncate)
+
 	pgid, procStart, err := e.startAndManageProcess(cmd, group)
 	if err != nil {
 		return e.handleError(result, fmt.Sprintf("进程管理失败: %v", err), 1, err)
 	}
+	killPgid.Store(int32(pgid))
 
 	return e.waitForCompletion(cmd, workspace, testCase, result, group, pgid, procStart, stdoutBuf, stderrBuf)
 }

@@ -18,21 +18,32 @@ import (
 // cgroup v2 的 CLONE_INTO_CGROUP 要求目录 fd 用 O_PATH 打开。amd64 的 syscall 包没有这个常量。
 const oPath = 0x200000
 
-// Group 一次评测使用的 cgroup。v2 只有一个目录；v1 的内存和 cpuacct 可能是两个目录。
+const defaultMaxPids = 64
+
+// Group 一次评测使用的 cgroup。v2 只有一个目录；v1 的内存/cpuacct/pids 可能是多棵树。
 type Group struct {
 	Version int
 	Dir     string
 	CPUDir  string
+	PidsDir string
 	fd      int
 }
 
-// CreateCgroup 按题目内存上限（KB）建组。v2 写 memory.max，v1 写 memory.limit_in_bytes。
-func CreateCgroup(maxMemoryKB float64) (*Group, error) {
+// ResolveMaxPids 归一化配置中的进程数上限。
+func ResolveMaxPids(maxPids int) int {
+	if maxPids <= 0 {
+		return defaultMaxPids
+	}
+	return maxPids
+}
+
+// CreateCgroup 按题目内存上限（KB）建组，并强制施加 pids.max。
+func CreateCgroup(maxMemoryKB float64, maxPids int) (*Group, error) {
 	limitBytes := uint64(maxMemoryKB * 1024)
 	if limitBytes == 0 {
 		return nil, fmt.Errorf("内存上限无效: %.2f KB", maxMemoryKB)
 	}
-	group, err := createGroup()
+	group, err := createGroup(ResolveMaxPids(maxPids))
 	if err != nil {
 		return nil, err
 	}
@@ -43,27 +54,34 @@ func CreateCgroup(maxMemoryKB float64) (*Group, error) {
 	return group, nil
 }
 
-// CreateCgroupNoMemory 只记账、不设上限，编译阶段用来读峰值和 CPU 时间。
-func CreateCgroupNoMemory() (*Group, error) {
-	return createGroup()
+// CreateCgroupNoMemory 只记账、不设内存上限，仍强制施加 pids.max（编译阶段防 fork）。
+func CreateCgroupNoMemory(maxPids int) (*Group, error) {
+	return createGroup(ResolveMaxPids(maxPids))
 }
 
-func createGroup() (*Group, error) {
+func createGroup(maxPids int) (*Group, error) {
 	where, err := currentPlace()
 	if err != nil {
 		return nil, err
+	}
+	if where.pidsParent == "" {
+		return nil, fmt.Errorf("cgroup pids 父目录未初始化，拒绝无 PID 上限创建")
 	}
 	name := GenerateCgroupName()
 	group := &Group{
 		Version: where.version,
 		Dir:     filepath.Join(where.memoryParent, name),
 		CPUDir:  filepath.Join(where.cpuParent, name),
+		PidsDir: filepath.Join(where.pidsParent, name),
 	}
 	if group.CPUDir == "" {
 		group.CPUDir = group.Dir
 	}
+	if group.PidsDir == "" {
+		group.PidsDir = group.Dir
+	}
 
-	// 1. 先建内存目录，v1 的 cpuacct 是另一棵树时再平行建一个同名目录
+	// 1. 先建内存目录；v1 的 cpuacct / pids 是另一棵树时再平行建同名目录
 	if err := os.Mkdir(group.Dir, 0755); err != nil {
 		return nil, fmt.Errorf("创建 cgroup 失败: %w", err)
 	}
@@ -73,8 +91,20 @@ func createGroup() (*Group, error) {
 			return nil, fmt.Errorf("创建 cpu cgroup 失败: %w", err)
 		}
 	}
+	if group.PidsDir != group.Dir {
+		if err := os.Mkdir(group.PidsDir, 0755); err != nil {
+			group.removeDirs()
+			return nil, fmt.Errorf("创建 pids cgroup 失败: %w", err)
+		}
+	}
 
-	// 2. v2 打开目录 fd，进程在 clone 时就进组，启动阶段的内存也会记进 memory.peak
+	// 2. 强制写 pids.max；不可用则 fail-closed
+	if err := group.applyPidsLimit(maxPids); err != nil {
+		group.removeDirs()
+		return nil, err
+	}
+
+	// 3. v2 打开目录 fd，进程在 clone 时就进组，启动阶段的内存也会记进 memory.peak
 	if group.Version == CgroupV2 {
 		fd, openErr := syscall.Open(group.Dir, oPath|syscall.O_CLOEXEC, 0)
 		if openErr != nil {
@@ -84,6 +114,21 @@ func createGroup() (*Group, error) {
 		group.fd = fd
 	}
 	return group, nil
+}
+
+func (g *Group) applyPidsLimit(maxPids int) error {
+	if maxPids <= 0 {
+		return fmt.Errorf("进程数上限无效: %d", maxPids)
+	}
+	dir := g.PidsDir
+	if dir == "" {
+		dir = g.Dir
+	}
+	path := filepath.Join(dir, "pids.max")
+	if err := os.WriteFile(path, []byte(strconv.Itoa(maxPids)), 0644); err != nil {
+		return fmt.Errorf("设置 pids.max=%d 失败（拒绝无 PID 上限运行）: %w", maxPids, err)
+	}
+	return nil
 }
 
 func (g *Group) applyMemoryLimit(limitBytes uint64) error {
@@ -125,6 +170,11 @@ func (g *Group) AddProc(pid int) error {
 	}
 	if g.CPUDir != g.Dir {
 		if err := writePID(g.CPUDir, pid); err != nil {
+			return err
+		}
+	}
+	if g.PidsDir != "" && g.PidsDir != g.Dir {
+		if err := writePID(g.PidsDir, pid); err != nil {
 			return err
 		}
 	}
@@ -276,6 +326,9 @@ func (g *Group) Close() {
 		if g.CPUDir != g.Dir {
 			g.killMembers(g.CPUDir)
 		}
+		if g.PidsDir != "" && g.PidsDir != g.Dir {
+			g.killMembers(g.PidsDir)
+		}
 	}
 	g.removeDirs()
 }
@@ -300,6 +353,9 @@ func (g *Group) removeDirs() {
 	removeCgroupDir(g.Dir)
 	if g.CPUDir != g.Dir {
 		removeCgroupDir(g.CPUDir)
+	}
+	if g.PidsDir != "" && g.PidsDir != g.Dir {
+		removeCgroupDir(g.PidsDir)
 	}
 }
 

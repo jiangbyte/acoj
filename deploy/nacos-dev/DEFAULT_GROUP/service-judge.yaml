@@ -5,14 +5,15 @@ Port: 8888
 # 工作空间
 Workspace: "/tmp/judgespace"
 
-# 沙箱：cgroup 资源限制 + 断网/降权 + 可选 bwrap 目录 jail
+# 沙箱：cgroup 资源限制 + 断网/降权 + 强制 bwrap 目录 jail + PID 上限
 Sandbox:
   Mode: auto
   DisableNetwork: true
   DropPrivileges: true
   Uid: 65534
   Gid: 65534
-  UseBwrap: auto
+  UseBwrap: "on"
+  MaxPids: 64
 
 # MySQL / Redis / RabbitMQ：dev 共用远程机（与 common.yaml 一致），禁止用 docker 内网名
 MySQL:

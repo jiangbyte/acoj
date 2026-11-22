@@ -58,7 +58,7 @@ type RedisConfig struct {
 	PoolSize int    `json:",default=10"`
 }
 
-// SandboxConfig 沙箱：cgroup 资源限制 + 进程隔离（网络/用户/可选 bwrap 目录 jail）。
+// SandboxConfig 沙箱：cgroup 资源限制 + 进程隔离（网络/用户/bwrap 目录 jail）。
 type SandboxConfig struct {
 	// Mode: auto | cgroup。按本机挂载选择 v2 或 v1。
 	Mode string `json:",default=auto"`
@@ -68,8 +68,10 @@ type SandboxConfig struct {
 	DropPrivileges bool `json:",default=true"`
 	Uid            uint32 `json:",default=65534"`
 	Gid            uint32 `json:",default=65534"`
-	// UseBwrap：auto|on|off。auto 表示检测到 bubblewrap 则用其做目录隔离。
-	UseBwrap string `json:",default=auto"`
+	// UseBwrap：on|off|auto。默认 on；缺失 bwrap 时 fail-closed，仅显式 off 走 clone。
+	UseBwrap string `json:",default=on"`
+	// MaxPids：单次评测/编译 cgroup 内进程数上限（pids.max），fail-closed。
+	MaxPids int `json:",default=64"`
 }
 
 // 配置队列

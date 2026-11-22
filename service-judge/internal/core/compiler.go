@@ -58,7 +58,7 @@ func (c *DefaultCompiler) Compile(workspace *Workspace) (*CompileResult, error) 
 	result := &CompileResult{}
 
 	// 编译不设内存上限，但必须进 cgroup，时间和内存都从内核计数读取
-	group, err := utils.CreateCgroupNoMemory()
+	group, err := utils.CreateCgroupNoMemory(workspace.config.Sandbox.MaxPids)
 	if err != nil {
 		return c.handleError(result, fmt.Sprintf("创建cgroup失败: %v", err), 1, err)
 	}

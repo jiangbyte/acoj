@@ -41,15 +41,15 @@ func BuildIsolatePlan(argv []string, rootPath, workDir string, cfg config.Sandbo
 		return nil, fmt.Errorf("解析工作目录失败: %w", err)
 	}
 
-	useBwrap := shouldUseBwrap(cfg.UseBwrap)
-	if useBwrap {
-		plan, berr := buildBwrapPlan(argv, rootAbs, workAbs, cfg, cgroupFD)
-		if berr == nil {
-			return plan, nil
-		}
-		logx.Errorf("bwrap 隔离不可用，回退 clone 隔离: %v", berr)
+	// 仅显式 off 走 clone；on/auto/空均要求 bwrap，缺失则 fail-closed（禁止无目录 jail 回退）
+	if !shouldUseBwrap(cfg.UseBwrap) {
+		return buildClonePlan(argv, workAbs, cfg, cgroupFD)
 	}
-	return buildClonePlan(argv, workAbs, cfg, cgroupFD)
+	plan, err := buildBwrapPlan(argv, rootAbs, workAbs, cfg, cgroupFD)
+	if err != nil {
+		return nil, fmt.Errorf("bwrap 隔离必需但不可用: %w", err)
+	}
+	return plan, nil
 }
 
 func shouldUseBwrap(mode string) bool {
@@ -57,11 +57,8 @@ func shouldUseBwrap(mode string) bool {
 	switch mode {
 	case "off", "false", "0", "no":
 		return false
-	case "on", "true", "1", "yes":
+	default: // on / auto / 空：默认强制 bwrap
 		return true
-	default: // auto
-		_, err := lookPath("bwrap")
-		return err == nil
 	}
 }
 

@@ -20,6 +20,7 @@ type sandboxPlace struct {
 	version      int
 	memoryParent string
 	cpuParent    string
+	pidsParent   string // v2 与 memory 同目录；v1 为独立 pids 挂载
 }
 
 var (
@@ -50,7 +51,7 @@ func InitSandboxMode(configured string) error {
 	sandboxMu.Lock()
 	place = found
 	sandboxMu.Unlock()
-	logx.Infof("sandbox cgroup=v%d memory=%s cpu=%s", found.version, found.memoryParent, found.cpuParent)
+	logx.Infof("sandbox cgroup=v%d memory=%s cpu=%s pids=%s", found.version, found.memoryParent, found.cpuParent, found.pidsParent)
 	return nil
 }
 
@@ -61,13 +62,16 @@ func CgroupVersion() int {
 	return place.version
 }
 
-// OverrideSandbox 测试时指定层级，不走自动发现。
-func OverrideSandbox(version int, memoryParent, cpuParent string) {
+// OverrideSandbox 测试时指定层级，不走自动发现。pidsParent 为空时与 memoryParent 相同。
+func OverrideSandbox(version int, memoryParent, cpuParent, pidsParent string) {
 	if cpuParent == "" {
 		cpuParent = memoryParent
 	}
+	if pidsParent == "" {
+		pidsParent = memoryParent
+	}
 	sandboxMu.Lock()
-	place = sandboxPlace{version: version, memoryParent: memoryParent, cpuParent: cpuParent}
+	place = sandboxPlace{version: version, memoryParent: memoryParent, cpuParent: cpuParent, pidsParent: pidsParent}
 	sandboxMu.Unlock()
 }
 
@@ -82,13 +86,16 @@ func currentPlace() (sandboxPlace, error) {
 
 func discoverSandbox() (sandboxPlace, error) {
 	if mem, ok := discoverV2Parent(); ok {
-		return sandboxPlace{version: CgroupV2, memoryParent: mem, cpuParent: mem}, nil
+		return sandboxPlace{version: CgroupV2, memoryParent: mem, cpuParent: mem, pidsParent: mem}, nil
 	}
-	mem, cpu, ok := discoverV1Mounts()
+	mem, cpu, pids, ok := discoverV1Mounts()
 	if !ok {
 		return sandboxPlace{}, fmt.Errorf("没有可写的 cgroup v1 或 v2 内存控制器")
 	}
-	return sandboxPlace{version: CgroupV1, memoryParent: mem, cpuParent: cpu}, nil
+	if pids == "" {
+		return sandboxPlace{}, fmt.Errorf("cgroup v1 未找到可写 pids 控制器，拒绝无 PID 上限启动")
+	}
+	return sandboxPlace{version: CgroupV1, memoryParent: mem, cpuParent: cpu, pidsParent: pids}, nil
 }
 
 // discoverV2Parent 从当前 cgroup 向上找能限制内存、且带 cpu.stat 的父目录。
@@ -151,14 +158,18 @@ func probeV2Parent(parent string) bool {
 	if _, err := os.Stat(filepath.Join(dir, "cpu.stat")); err != nil {
 		return false
 	}
+	// pids 控制器必须可写，否则无法 fail-closed 施加进程数上限
+	if err := os.WriteFile(filepath.Join(dir, "pids.max"), []byte("64"), 0644); err != nil {
+		return false
+	}
 	return true
 }
 
-// discoverV1Mounts 从 mountinfo 找出 cgroup v1 的 memory 和 cpuacct 挂载点。
-func discoverV1Mounts() (memoryMount, cpuMount string, ok bool) {
+// discoverV1Mounts 从 mountinfo 找出 cgroup v1 的 memory、cpuacct、pids 挂载点。
+func discoverV1Mounts() (memoryMount, cpuMount, pidsMount string, ok bool) {
 	data, err := os.ReadFile("/proc/self/mountinfo")
 	if err != nil {
-		return "", "", false
+		return "", "", "", false
 	}
 	for _, line := range strings.Split(string(data), "\n") {
 		parts := strings.Split(line, " - ")
@@ -177,14 +188,29 @@ func discoverV1Mounts() (memoryMount, cpuMount string, ok bool) {
 		if strings.Contains(super, "cpuacct") && cpuMount == "" && dirWritable(mountpoint) {
 			cpuMount = mountpoint
 		}
+		if strings.Contains(super, "pids") && pidsMount == "" && probeV1Pids(mountpoint) {
+			pidsMount = mountpoint
+		}
 	}
 	if memoryMount == "" {
-		return "", "", false
+		return "", "", "", false
 	}
 	if cpuMount == "" {
 		cpuMount = memoryMount
 	}
-	return memoryMount, cpuMount, true
+	return memoryMount, cpuMount, pidsMount, true
+}
+
+func probeV1Pids(parent string) bool {
+	if !dirWritable(parent) {
+		return false
+	}
+	dir := filepath.Join(parent, fmt.Sprintf("judge-probe-%d", os.Getpid()))
+	if err := os.Mkdir(dir, 0755); err != nil {
+		return false
+	}
+	defer syscall.Rmdir(dir)
+	return os.WriteFile(filepath.Join(dir, "pids.max"), []byte("64"), 0644) == nil
 }
 
 func probeV1Memory(parent string) bool {
