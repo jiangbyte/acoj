@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useSiteStore } from '@/stores'
 import { dateEnUS, enUS } from 'naive-ui'
-
 import hljs from 'highlight.js/lib/core'
 
 // Implementation note.

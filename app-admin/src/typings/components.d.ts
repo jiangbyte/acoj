@@ -111,6 +111,8 @@ declare module 'vue' {
     ProblemManageSelectModal: typeof import('./../components/problem/ProblemManageSelectModal.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SafeAvatar: typeof import('./../components/common/media/SafeAvatar.vue')['default']
+    SafeImage: typeof import('./../components/common/media/SafeImage.vue')['default']
     SiderNav: typeof import('./../components/site/SiderNav.vue')['default']
     SimilarityDistributionChart: typeof import('./../components/similarity/SimilarityDistributionChart.vue')['default']
     SimilaritySelect: typeof import('./../components/similarity/SimilaritySelect.vue')['default']

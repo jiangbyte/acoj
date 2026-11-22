@@ -46,7 +46,7 @@ public class SysGroupController {
         return Result.success(sysGroupService.page(sysGroupPageParam));
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Add Group", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加用户组")
     @SaCheckPermission("/sys/group/add")
     @PostMapping("/sys/group/add")
@@ -55,7 +55,7 @@ public class SysGroupController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Edit Group", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑用户组")
     @SaCheckPermission("/sys/group/edit")
     @PostMapping("/sys/group/edit")
@@ -64,7 +64,7 @@ public class SysGroupController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Delete Group", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除用户组")
     @SaCheckPermission("/sys/group/delete")
     @PostMapping("/sys/group/delete")

@@ -190,7 +190,7 @@ onUnmounted(() => {
           <Dropdown v-if="useTokenStore().isLogined">
             <template #avatar>
               <n-space align="center">
-                <n-avatar
+                <SafeAvatar
                   round
                   :src="profile?.avatar"
                 />
@@ -211,7 +211,7 @@ onUnmounted(() => {
         </template>
         <template v-else>
           <n-space v-if="useTokenStore().isLogined" align="center" @click="doOpen">
-            <n-avatar
+            <SafeAvatar
               round
               :src="profile?.avatar"
             />

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
+import { renderSafeAvatar } from '@/utils'
 import { useProblemUserRankingFetch } from '@/composables'
-import { NAvatar, NSpace, NText } from 'naive-ui'
-
+import { NSpace, NText } from 'naive-ui'
 const { problemUserWeeklyRankingPage: problemWeeklyRankingPage } = useProblemUserRankingFetch()
 
 const totalRankingPageData = ref()
@@ -37,7 +37,7 @@ const userRankingColumns = [
         { align: 'center' },
         {
           default: () => [
-            h(NAvatar, { src: row.avatar, size: 'small' }),
+            renderSafeAvatar( { src: row.avatar, size: 'small' }),
             h(NText, { depth: 3 }, row.nickname),
           ],
         },

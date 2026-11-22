@@ -31,7 +31,7 @@ import io.charlie.cores.result.Result;
 public class FileController {
     private final StorageServiceFactory storageServiceFactory;
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "File Upload", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "文件上传")
     @PostMapping("/sys/file/upload")
     public Result<?> upload(@RequestParam("file") MultipartFile file) {

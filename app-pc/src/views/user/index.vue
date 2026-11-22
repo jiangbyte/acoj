@@ -59,7 +59,7 @@ loadData()
           >
             <NSpace align="center" :wrap="false" class="mb-2">
               <NSpace vertical align="center" size="small">
-                <NAvatar
+                <SafeAvatar
                   round
                   :size="70"
                   :src="detailData?.avatar"

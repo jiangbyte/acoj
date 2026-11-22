@@ -8,7 +8,8 @@ spring:
     time-zone: Asia/Shanghai
     locale: en_US
   profiles:
-    active: @profiles.active@
+#    active: @profiles.active@
+    active: dev
   # Nacos 连接与 spring.config.import 必须写在同一 profile 文件中（application-{profile}.yaml），
   # 否则 import 早于 profile 覆盖，会出现 serverAddr/namespace 为空、连到错误租户。
 

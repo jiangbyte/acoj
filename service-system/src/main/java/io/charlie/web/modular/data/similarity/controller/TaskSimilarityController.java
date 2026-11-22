@@ -56,7 +56,7 @@ public class TaskSimilarityController {
         return Result.success(taskSimilarityService.page(taskSimilarityPageParam));
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Add Similarity Task", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "添加检测结果任务库")
     @SaCheckPermission("/task/similarity/add")
     @PostMapping("/task/similarity/add")
@@ -65,7 +65,7 @@ public class TaskSimilarityController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Edit Similarity Task", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "编辑检测结果任务库")
     @SaCheckPermission("/task/similarity/edit")
     @PostMapping("/task/similarity/edit")
@@ -74,7 +74,7 @@ public class TaskSimilarityController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Delete Similarity Task", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "删除检测结果任务库")
     @SaCheckPermission("/task/similarity/delete")
     @PostMapping("/task/similarity/delete")

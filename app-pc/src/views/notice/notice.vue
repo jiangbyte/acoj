@@ -43,12 +43,13 @@ loadData()
           <EmptyData v-else-if="!detailData" />
           <template v-else>
             <!-- Section -->
-            <n-image
+            <SafeImage
               v-if="detailData.cover"
               :src="detailData.cover"
               width="100%"
               object-fit="cover"
-              class="w-full h-62 md:h-60 rounded-t-xl object-cover"
+              class="w-full h-62 md:h-60 rounded-t-xl"
+              previewable
             />
 
             <!-- Section -->
@@ -64,7 +65,7 @@ loadData()
                       Author:
                     </n-text>
                     <n-space align="center" :size="0">
-                      <n-avatar :src="detailData.createUserAvatar" round :size="36" class="mr-3 shadow-sm" />
+                      <SafeAvatar :src="detailData.createUserAvatar" round :size="36" class="mr-3 shadow-sm" />
                       <n-text class="flex-1">
                         {{ detailData.createUserName }}
                       </n-text>

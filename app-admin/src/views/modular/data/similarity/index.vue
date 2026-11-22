@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { actionDeleteBtn, actionIconBtn } from '@/utils'
+import { actionDeleteBtn, actionIconBtn, renderSafeAvatar } from '@/utils'
 import type { DataTableColumns } from 'naive-ui'
-import { NAvatar, NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NText, NTime } from 'naive-ui'
+import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NText, NTime } from 'naive-ui'
 import { useTaskSimilarityFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -62,14 +62,12 @@ const columns: DataTableColumns<any> = [
         { align: 'center', size: 'small' },
         {
           default: () => [
-            h(
-              NAvatar,
+            renderSafeAvatar(
               {
                 size: 'small',
                 round: true,
                 src: row.submitUserAvatar,
               },
-              {},
             ),
             h(
               NText,
@@ -121,14 +119,12 @@ const columns: DataTableColumns<any> = [
         { align: 'center', size: 'small' },
         {
           default: () => [
-            h(
-              NAvatar,
+            renderSafeAvatar(
               {
                 size: 'small',
                 round: true,
                 src: row.originUserAvatar,
               },
-              {},
             ),
             h(
               NText,

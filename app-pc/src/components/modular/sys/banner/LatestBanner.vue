@@ -131,10 +131,11 @@ function openLink(item: any) {
           :key="item.id"
           class="carousel-item"
         >
-          <img
+          <SafeImage
             class="carousel-img"
             :src="item.banner"
-          >
+            object-fit="cover"
+          />
           <div class="carousel-caption">
             <div class="caption-title">
               {{ item.title }}
@@ -228,7 +229,6 @@ img:hover {
 .carousel-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
 }
 
 .carousel-caption {

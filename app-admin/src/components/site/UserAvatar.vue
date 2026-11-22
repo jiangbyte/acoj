@@ -22,7 +22,7 @@ onUnmounted(() => {
 
 <template>
   <NSpace align="center">
-    <NAvatar
+    <SafeAvatar
       round
       :src="response?.data ? response?.data.avatar : '#'"
     />

@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { NButton, NModal, NSlider, NSpace, NText } from 'naive-ui'
-
 const props = withDefaults(defineProps<{
   show: boolean
   /** Local image to crop */

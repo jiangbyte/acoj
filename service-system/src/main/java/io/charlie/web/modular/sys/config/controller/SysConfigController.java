@@ -46,7 +46,7 @@ public class SysConfigController {
         return Result.success(sysConfigService.page(sysConfigPageParam));
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Add System Config", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加系统配置")
     @SaCheckPermission("/sys/config/add")
     @PostMapping("/sys/config/add")
@@ -55,7 +55,7 @@ public class SysConfigController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Edit System Config", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑系统配置")
     @SaCheckPermission("/sys/config/edit")
     @PostMapping("/sys/config/edit")
@@ -64,7 +64,7 @@ public class SysConfigController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Delete System Config", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除系统配置")
     @SaCheckPermission("/sys/config/delete")
     @PostMapping("/sys/config/delete")

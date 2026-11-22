@@ -50,7 +50,7 @@ public class SysRoleController {
         return Result.success(sysRoleService.page(sysRolePageParam));
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Add Role", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加角色")
     @SaCheckPermission("/sys/role/add")
     @PostMapping("/sys/role/add")
@@ -59,7 +59,7 @@ public class SysRoleController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Edit Role", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑角色")
     @SaCheckPermission("/sys/role/edit")
     @PostMapping("/sys/role/edit")
@@ -68,7 +68,7 @@ public class SysRoleController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Delete Role", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除角色")
     @SaCheckPermission("/sys/role/delete")
     @PostMapping("/sys/role/delete")
@@ -96,7 +96,7 @@ public class SysRoleController {
         return Result.success(sysRoleService.authRoles1());
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Grant Roles", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "授权角色")
     @PostMapping("/sys/role/assign")
     public Result<?> assign(@RequestBody @Valid SysRoleAssignParam sysRoleAssignParam) {
@@ -105,7 +105,7 @@ public class SysRoleController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Grant Menus", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "授权菜单")
     @PostMapping("/sys/role/menu/assign")
     public Result<?> assignMenu(@RequestBody @Valid SysMenuAssignParam sysMenuPermissionParam) {

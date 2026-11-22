@@ -1,8 +1,8 @@
 <script lang="ts" setup>
+import { renderSafeAvatar } from '@/utils'
 import { useDataLibraryFetch, useTaskSimilarityFetch } from '@/composables/v1'
 import type { DataTableColumns, SelectOption } from 'naive-ui'
-import { NAlert, NAvatar, NButton, NCard, NDatePicker, NDrawer, NDrawerContent, NForm, NInputNumber, NRadio, NRadioGroup, NSlider, NSpace, NTag, NText, NTreeSelect } from 'naive-ui'
-
+import { NAlert, NButton, NCard, NDatePicker, NDrawer, NDrawerContent, NForm, NInputNumber, NRadio, NRadioGroup, NSlider, NSpace, NTag, NText, NTreeSelect } from 'naive-ui'
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)
 const loading = ref(false)
@@ -158,14 +158,12 @@ const columns: DataTableColumns<any> = [
         { align: 'center', size: 'small' },
         {
           default: () => [
-            h(
-              NAvatar,
+            renderSafeAvatar(
               {
                 size: 'small',
                 round: true,
                 src: row.avatar,
               },
-              {},
             ),
             h(
               NText,

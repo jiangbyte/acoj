@@ -1,8 +1,8 @@
 <script lang="ts" setup>
+import { renderSafeImage } from '@/utils'
 import { useProSetFetch } from '@/composables'
 import type { DataTableColumns } from 'naive-ui'
 import { NImage } from 'naive-ui'
-
 // Define props and emits
 const props = defineProps<{
   setId?: string
@@ -38,7 +38,7 @@ const setColumns: DataTableColumns<any> = [
     title: 'Cover',
     key: 'cover',
     render: (row) => {
-      return h(NImage, { src: row.cover, width: 50, height: 50, objectFit: 'cover' })
+      return renderSafeImage({ src: row.cover, width: 50, height: 50, objectFit: 'cover', previewable: true })
     },
   },
   {

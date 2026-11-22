@@ -6,7 +6,6 @@ import {
   TimeOutline,
 } from '@vicons/ionicons5'
 // import { NSpin } from 'naive-ui'
-
 interface Props {
   detailData?: any
 }

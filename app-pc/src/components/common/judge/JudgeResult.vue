@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { useDataSubmitFetch } from '@/composables/v1'
 import { NSpin } from 'naive-ui'
-
 interface Props {
   isPolling: boolean
   pollingCount: number

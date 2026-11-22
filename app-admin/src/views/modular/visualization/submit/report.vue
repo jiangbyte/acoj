@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useTaskReportsFetch, useTaskSimilarityFetch } from '@/composables/v1'
 import type { DataTableColumns, DataTableSortState } from 'naive-ui'
-import { NAvatar, NEllipsis, NSpace, NTag, NText, NTime } from 'naive-ui'
+import { NEllipsis, NSpace, NTag, NText, NTime } from 'naive-ui'
 import CodeCompare from '@/components/similarity/CodeCompare.vue'
-import { actionIconBtn } from '@/utils'
+import { actionIconBtn, renderSafeAvatar } from '@/utils'
 
 const route = useRoute()
 const reportId = route.params.reportId // Get reportId
@@ -42,14 +42,12 @@ const columns = computed<DataTableColumns<any>>(() => [
         { align: 'center', size: 'small' },
         {
           default: () => [
-            h(
-              NAvatar,
+            renderSafeAvatar(
               {
                 size: 'small',
                 round: true,
                 src: row.submitUserAvatar,
               },
-              {},
             ),
             h(
               NEllipsis,
@@ -88,14 +86,12 @@ const columns = computed<DataTableColumns<any>>(() => [
         { align: 'center', size: 'small' },
         {
           default: () => [
-            h(
-              NAvatar,
+            renderSafeAvatar(
               {
                 size: 'small',
                 round: true,
                 src: row.originUserAvatar,
               },
-              {},
             ),
             h(
               NEllipsis,
@@ -471,7 +467,7 @@ loadData()
         <n-gi>
           <NSpace align="center" size="small" justify="space-between">
             <NSpace align="center">
-              <NAvatar round :src="similarityDataDetail.submitUserAvatar" />
+              <SafeAvatar round :src="similarityDataDetail.submitUserAvatar" />
               <NEllipsis style="max-width: 140px;">
                 {{ similarityDataDetail.submitUserName }}
               </NEllipsis>
@@ -485,7 +481,7 @@ loadData()
         <n-gi>
           <NSpace align="center" size="small" justify="space-between">
             <NSpace align="center">
-              <NAvatar round :src="similarityDataDetail.originUserAvatar" />
+              <SafeAvatar round :src="similarityDataDetail.originUserAvatar" />
               <NEllipsis style="max-width: 140px;">
                 {{ similarityDataDetail.originUserName }}
               </NEllipsis>

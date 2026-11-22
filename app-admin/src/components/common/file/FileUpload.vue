@@ -1,4 +1,5 @@
 <!-- <script lang="ts" setup>
+import { renderSafeImage } from '@/utils'
 import { NUpload } from 'naive-ui'
 import type { UploadCustomRequestOptions, UploadFileInfo } from 'naive-ui'
 import { useFileFetch } from '@/composables/v1'
@@ -111,8 +112,9 @@ function handleError({
 </style> -->
 
 <script lang="ts" setup>
-import { NButton, NIcon, NImage, NProgress, NSpace, NUpload } from 'naive-ui'
+import { NButton, NIcon, NProgress, NSpace, NUpload } from 'naive-ui'
 import type { UploadCustomRequestOptions, UploadFileInfo } from 'naive-ui'
+import { renderSafeImage } from '@/utils'
 import { useFileFetch } from '@/composables/v1'
 
 const props = defineProps<{
@@ -294,12 +296,12 @@ function renderFileList({ fileList }: { fileList: UploadFileInfo[] }) {
 
       // Image preview or file icon
       props.isImage && file.url
-        ? h(NImage, {
+        ? renderSafeImage( {
             src: file.url,
             width: '100%',
             height: '80px',
             class: 'object-cover rounded mb-2',
-            previewDisabled: true,
+            previewable: false,
           })
         : h('div', {
             class: 'w-full h-20 bg-gray-100 rounded flex items-center justify-center mb-2',

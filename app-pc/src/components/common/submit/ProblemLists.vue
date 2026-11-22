@@ -4,7 +4,6 @@ import { AesCrypto } from '@/utils'
 import { Icon } from '@iconify/vue/offline'
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NDrawer, NDrawerContent, NSpace, NTag } from 'naive-ui'
-
 const emit = defineEmits(['close', 'submit'])
 
 const router = useRouter()

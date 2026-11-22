@@ -19,7 +19,7 @@ defineProps<{
       </template>
       <n-thing>
         <n-space align="center">
-          <n-avatar :src="item?.avatar" round :size="36" class="mr-2" />
+          <SafeAvatar :src="item?.avatar" round :size="36" class="mr-2" />
           <n-space :size="0" vertical>
             <n-text class="flex-1">
               <n-ellipsis style="width: 90px">
@@ -42,7 +42,7 @@ defineProps<{
       })"
     >
       <RankIcon :rank="item.rank" />
-      <n-avatar :src="item.avatar" round :size="40" class="mr-3" />
+      <SafeAvatar :src="item.avatar" round :size="40" class="mr-3" />
       <div class="flex-1">
         <div class="font-medium mb-0.5">
           {{ item.nickname }}

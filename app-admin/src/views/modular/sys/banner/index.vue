@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { actionDeleteBtn, actionIconBtn } from '@/utils'
+import { actionDeleteBtn, actionIconBtn, renderSafeImage } from '@/utils'
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NCard, NDataTable, NImage, NPagination, NPopconfirm, NSpace, NTag } from 'naive-ui'
 import { useSysBannerFetch } from '@/composables/v1'
@@ -16,7 +16,7 @@ const columns: DataTableColumns<any> = [
     title: 'Banner',
     key: 'banner',
     render: (row) => {
-      return h(NImage, { src: row.banner, width: 50, height: 50, objectFit: 'cover' })
+      return renderSafeImage({ src: row.banner, width: 50, height: 50, objectFit: 'cover', previewable: true })
     },
   },
   {

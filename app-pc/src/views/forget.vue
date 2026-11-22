@@ -129,12 +129,14 @@ const version = import.meta.env.VITE_VERSION
               class="h-[34px] cursor-pointer"
               @click="refreshCaptcha"
             >
-              <img
+              <SafeImage
                 v-if="captchaRef.captcha"
                 :src="captchaRef.captcha"
                 alt="Verification Code"
                 class="h-full"
-              >
+                object-fit="contain"
+                :icon-size="18"
+              />
               <div
                 v-else
                 class="h-full w-[100px] bg-gray-100 flex items-center justify-center text-gray-400"

@@ -46,7 +46,7 @@ public class DataSolvedController {
         return Result.success(dataSolvedService.page(dataSolvedPageParam));
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Add Solved Record", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "添加用户解决")
     @SaCheckPermission("/data/solved/add")
     @PostMapping("/data/solved/add")
@@ -55,7 +55,7 @@ public class DataSolvedController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Edit Solved Record", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "编辑用户解决")
     @SaCheckPermission("/data/solved/edit")
     @PostMapping("/data/solved/edit")
@@ -64,7 +64,7 @@ public class DataSolvedController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Delete Solved Record", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "删除用户解决")
     @SaCheckPermission("/data/solved/delete")
     @PostMapping("/data/solved/delete")

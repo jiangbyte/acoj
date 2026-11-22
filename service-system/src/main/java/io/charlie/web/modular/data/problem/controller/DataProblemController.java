@@ -60,7 +60,7 @@ public class DataProblemController {
         return Result.success(dataProblemService.setPage(dataProblemPageParam));
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Add Problem", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "添加题目")
     @SaCheckPermission("/data/problem/add")
     @PostMapping("/data/problem/add")
@@ -69,7 +69,7 @@ public class DataProblemController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Edit Problem", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "编辑题目")
     @SaCheckPermission("/data/problem/edit")
     @PostMapping("/data/problem/edit")
@@ -78,7 +78,7 @@ public class DataProblemController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Delete Problem", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "删除题目")
     @SaCheckPermission("/data/problem/delete")
     @PostMapping("/data/problem/delete")

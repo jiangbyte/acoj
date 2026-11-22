@@ -46,7 +46,7 @@ public class DataProgressController {
         return Result.success(dataProgressService.page(dataProgressPageParam));
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Add Set Progress", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "添加题集进度")
     @SaCheckPermission("/data/progress/add")
     @PostMapping("/data/progress/add")
@@ -55,7 +55,7 @@ public class DataProgressController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Edit Set Progress", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "编辑题集进度")
     @SaCheckPermission("/data/progress/edit")
     @PostMapping("/data/progress/edit")
@@ -64,7 +64,7 @@ public class DataProgressController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Delete Set Progress", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "删除题集进度")
     @SaCheckPermission("/data/progress/delete")
     @PostMapping("/data/progress/delete")

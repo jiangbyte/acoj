@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useUserRankingFetch } from '@/composables/v1'
-import { AesCrypto } from '@/utils'
-import { NAvatar, NEllipsis, NSpace, NTag, NText } from 'naive-ui'
+import { AesCrypto, renderSafeAvatar } from '@/utils'
+import { NEllipsis, NSpace, NTag, NText } from 'naive-ui'
 import RankIcon from '@/components/common/rank/RankIcon.vue'
 
 const totalRankingPageData = ref()
@@ -77,7 +77,7 @@ const userRankingColumns = [
         { align: 'center' },
         {
           default: () => [
-            h(NAvatar, { src: row.avatar, size: 'small', round: true }),
+            renderSafeAvatar( { src: row.avatar, size: 'small', round: true }),
             h(
               NEllipsis,
               {

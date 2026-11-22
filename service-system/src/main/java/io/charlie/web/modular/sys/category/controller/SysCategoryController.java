@@ -45,7 +45,7 @@ public class SysCategoryController {
     }
 
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Add Category", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加分类")
     @SaCheckPermission("/sys/category/add")
     @PostMapping("/sys/category/add")
@@ -54,7 +54,7 @@ public class SysCategoryController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Edit Category", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑分类")
     @SaCheckPermission("/sys/category/edit")
     @PostMapping("/sys/category/edit")
@@ -63,7 +63,7 @@ public class SysCategoryController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Delete Category", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除分类")
     @SaCheckPermission("/sys/category/delete")
     @PostMapping("/sys/category/delete")

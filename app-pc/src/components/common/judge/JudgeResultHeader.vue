@@ -9,7 +9,7 @@ defineProps<Props>()
 <template>
   <n-card size="small" hoverable>
     <n-flex align="center">
-      <n-avatar
+      <SafeAvatar
         round
         :size="64"
         :src="resultTaskData?.userAvatar"

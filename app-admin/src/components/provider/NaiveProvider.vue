@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useDialog, useLoadingBar, useMessage, useNotification } from 'naive-ui'
-
 function registerNaiveTools() {
   window.$loadingBar = useLoadingBar()
   window.$dialog = useDialog()

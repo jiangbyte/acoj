@@ -17,7 +17,7 @@ defineProps<{
     >
       <div class="md:flex">
         <div class="md:w-1/3 h-32 md:h-auto relative">
-          <img :src="item.cover" :alt="item.title" class="absolute inset-0 w-full h-full object-cover">
+          <SafeImage :src="item.cover" :alt="item.title" class="absolute inset-0 w-full h-full" object-fit="cover" />
         </div>
         <div class="md:w-2/3 p-x-6 pt-6 pb-1">
           <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">

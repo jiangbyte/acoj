@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { useDataContestProblemFetch, useDataProblemFetch, useDataSetProblemFetch } from '@/composables/v1'
 import { NButton, NDataTable, NDrawer, NDrawerContent, NInput, NMessageProvider, NSpace, NTag, useMessage } from 'naive-ui'
-
 const emit = defineEmits(['close'])
 const show = ref(false)
 const message = useMessage()

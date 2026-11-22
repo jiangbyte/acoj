@@ -198,7 +198,7 @@ function resetHandle() {
                     responsive="screen"
                   >
                     <n-gi span="1 l:3">
-                      <img :src="item?.cover" class="w-full h-50 l:h-50 rounded-xl object-cover">
+                      <SafeImage :src="item?.cover" class="w-full h-50 l:h-50 rounded-xl" object-fit="cover" />
                     </n-gi>
                     <n-gi span="1 l:5" class="flex items-center w-full">
                       <n-thing class="w-full">
@@ -242,7 +242,7 @@ function resetHandle() {
                         <template #footer>
                           <n-space :size="0" align="center" justify="space-between">
                             <n-space align="center" :size="0">
-                              <n-avatar :src="item?.createUserAvatar" round class="mr-2" />
+                              <SafeAvatar :src="item?.createUserAvatar" round class="mr-2" />
                               <n-text class="flex-1">
                                 {{ item?.createUserName }}
                               </n-text>

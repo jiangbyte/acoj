@@ -227,7 +227,7 @@ function updateProfile() {
           <NSpace vertical size="large">
             <NSpace align="center" :wrap="false">
               <NSpace vertical align="center" size="small">
-                <NAvatar
+                <SafeAvatar
                   round
                   :size="90"
                   :src="userInfo.avatar"

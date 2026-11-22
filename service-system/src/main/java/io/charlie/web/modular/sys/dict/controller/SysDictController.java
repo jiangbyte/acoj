@@ -44,7 +44,7 @@ public class SysDictController {
         return Result.success(sysDictService.page(sysDictPageParam));
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Add Dictionary", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加系统字典")
     @SaCheckPermission("/sys/dict/add")
     @PostMapping("/sys/dict/add")
@@ -53,7 +53,7 @@ public class SysDictController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Edit Dictionary", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑系统字典")
     @SaCheckPermission("/sys/dict/edit")
     @PostMapping("/sys/dict/edit")
@@ -62,7 +62,7 @@ public class SysDictController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Delete Dictionary", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除系统字典")
     @SaCheckPermission("/sys/dict/delete")
     @PostMapping("/sys/dict/delete")

@@ -27,7 +27,7 @@ defineProps<{
             class="h-25 rounded-xl"
             preview-disabled
           /> -->
-          <img :src="item?.cover" class="w-full h-35 m:h-26 l:h-28 rounded-xl object-cover">
+          <SafeImage :src="item?.cover" class="w-full h-35 m:h-26 l:h-28 rounded-xl" object-fit="cover" />
         </n-gi>
         <n-gi span="1 l:5" class="flex items-center w-full">
           <n-thing class="w-full">
@@ -46,7 +46,7 @@ defineProps<{
             <template #footer>
               <n-space :size="0" align="center" justify="space-between">
                 <n-space align="center" :size="0">
-                  <n-avatar :src="item?.createUserAvatar" round class="mr-2" />
+                  <SafeAvatar :src="item?.createUserAvatar" round class="mr-2" />
                   <n-text class="flex-1">
                     <n-ellipsis style="width: 90px">
                       {{ item?.createUserName }}

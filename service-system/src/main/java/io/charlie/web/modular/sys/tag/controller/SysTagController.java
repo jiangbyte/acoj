@@ -44,7 +44,7 @@ public class SysTagController {
         return Result.success(sysTagService.page(sysTagPageParam));
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Add Tag", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加标签")
     @SaCheckPermission("/sys/tag/add")
     @PostMapping("/sys/tag/add")
@@ -53,7 +53,7 @@ public class SysTagController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Edit Tag", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑标签")
     @SaCheckPermission("/sys/tag/edit")
     @PostMapping("/sys/tag/edit")
@@ -62,7 +62,7 @@ public class SysTagController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Delete Tag", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除标签")
     @SaCheckPermission("/sys/tag/delete")
     @PostMapping("/sys/tag/delete")

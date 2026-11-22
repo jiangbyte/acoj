@@ -16,7 +16,7 @@ defineProps<{
       })"
     >
       <div class="flex items-center">
-        <NAvatar :src="item.avatar" round :size="40" class="mr-3" />
+        <SafeAvatar :src="item.avatar" round :size="40" class="mr-3" />
         <div class="flex-1">
           <div class="font-medium">
             <n-ellipsis style="width: 90px">

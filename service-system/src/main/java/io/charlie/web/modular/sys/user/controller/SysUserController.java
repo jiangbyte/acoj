@@ -44,7 +44,7 @@ public class SysUserController {
         return Result.success(sysUserService.page(sysUserPageParam));
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Add User", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加用户")
     @SaCheckPermission("/sys/user/add")
     @PostMapping("/sys/user/add")
@@ -53,7 +53,7 @@ public class SysUserController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Edit User", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑用户")
     @SaCheckPermission("/sys/user/edit")
     @PostMapping("/sys/user/edit")
@@ -62,7 +62,7 @@ public class SysUserController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Delete User", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除用户")
     @SaCheckPermission("/sys/user/delete")
     @PostMapping("/sys/user/delete")

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { NCard, NGi, NGrid, NIcon, NNumberAnimation, NSpace, NStatistic, NTabPane, NTabs } from 'naive-ui'
-
 import TodayHourlySubmitTrend from './components/TodayHourlySubmitTrend.vue'
 import ProblemRateChart from './components/ProblemRateChart.vue'
 import LanguageChart from './components/LanguageChart.vue'

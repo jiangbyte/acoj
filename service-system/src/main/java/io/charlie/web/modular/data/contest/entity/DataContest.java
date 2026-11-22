@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.charlie.cores.config.timestamp.DateToTimestampSerializer;
 import io.charlie.cores.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.cores.pojo.CommonEntity;
+import io.charlie.web.modular.sys.category.entity.SysCategory;
 import io.charlie.web.modular.sys.file.config.StorageAccessUrl;
 
 import java.io.Serial;
@@ -52,7 +53,12 @@ public class DataContest extends CommonEntity {
     private String ruleType;
 
     @Schema(description = "分类")
+    @Trans(type = TransType.SIMPLE, target = SysCategory.class, fields = "name", ref = "categoryName")
     private String category;
+
+    @Schema(description = "分类名称")
+    @TableField(exist = false)
+    private String categoryName;
 
     @Schema(description = "封面")
     @StorageAccessUrl

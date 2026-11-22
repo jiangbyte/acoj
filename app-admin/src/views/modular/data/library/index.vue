@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NAvatar, NButton, NCard, NDataTable, NEllipsis, NPagination, NPopconfirm, NSpace, NTime } from 'naive-ui'
+import { NButton, NCard, NDataTable, NEllipsis, NPagination, NPopconfirm, NSpace, NTime } from 'naive-ui'
 import { useDataLibraryFetch } from '@/composables/v1'
-import { FormatModuleType, actionIconBtn} from '@/utils'
+import { FormatModuleType, actionIconBtn, renderSafeAvatar } from '@/utils'
 import Form from './form.vue'
 import Detail from './detail.vue'
 
@@ -21,14 +21,12 @@ const columns: DataTableColumns<any> = [
         { align: 'center', size: 'small', wrap: false },
         {
           default: () => [
-            h(
-              NAvatar,
+            renderSafeAvatar(
               {
                 size: 'small',
                 round: true,
                 src: row.userAvatar,
               },
-              {},
             ),
             h(
               NEllipsis,

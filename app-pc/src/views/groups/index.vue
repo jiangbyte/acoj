@@ -129,12 +129,12 @@
         <!-- Section -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300">
           <div class="relative h-40 overflow-hidden">
-            <img src="https://picsum.photos/seed/programming/800/400" alt="Programming community cover" class="w-full h-full object-cover">
+            <SafeImage src="https://picsum.photos/seed/programming/800/400" alt="Programming community cover" class="w-full h-full" object-fit="cover" />
             <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
             <div class="absolute bottom-4 left-4 right-4 flex items-end justify-between">
               <div class="flex items-center space-x-3">
                 <div class="w-16 h-16 rounded-full border-4 border-white dark:border-gray-800 overflow-hidden">
-                  <img src="https://picsum.photos/seed/coding/200/200" alt="Programming community avatar" class="w-full h-full object-cover">
+                  <SafeImage src="https://picsum.photos/seed/coding/200/200" alt="Programming community avatar" class="w-full h-full" object-fit="cover" />
                 </div>
                 <div>
                   <h3 class="text-xl font-bold text-white">
@@ -169,12 +169,12 @@
         <!-- Recommended Groups2 - Competition Team -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300">
           <div class="relative h-40 overflow-hidden">
-            <img src="https://picsum.photos/seed/acm/800/400" alt="ACM training team cover" class="w-full h-full object-cover">
+            <SafeImage src="https://picsum.photos/seed/acm/800/400" alt="ACM training team cover" class="w-full h-full" object-fit="cover" />
             <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
             <div class="absolute bottom-4 left-4 right-4 flex items-end justify-between">
               <div class="flex items-center space-x-3">
                 <div class="w-16 h-16 rounded-full border-4 border-white dark:border-gray-800 overflow-hidden">
-                  <img src="https://picsum.photos/seed/compete/200/200" alt="ACM training team avatar" class="w-full h-full object-cover">
+                  <SafeImage src="https://picsum.photos/seed/compete/200/200" alt="ACM training team avatar" class="w-full h-full" object-fit="cover" />
                 </div>
                 <div>
                   <h3 class="text-xl font-bold text-white">
@@ -218,7 +218,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
           <div class="p-4 flex items-start space-x-3">
             <div class="w-14 h-14 rounded-full overflow-hidden flex-shrink-0">
-              <img src="https://picsum.photos/seed/python/200/200" alt="Python community avatar" class="w-full h-full object-cover">
+              <SafeImage src="https://picsum.photos/seed/python/200/200" alt="Python community avatar" class="w-full h-full" object-fit="cover" />
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex justify-between items-start">
@@ -251,7 +251,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
           <div class="p-4 flex items-start space-x-3">
             <div class="w-14 h-14 rounded-full overflow-hidden flex-shrink-0">
-              <img src="https://picsum.photos/seed/frontend/200/200" alt="Frontend community avatar" class="w-full h-full object-cover">
+              <SafeImage src="https://picsum.photos/seed/frontend/200/200" alt="Frontend community avatar" class="w-full h-full" object-fit="cover" />
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex justify-between items-start">
@@ -284,7 +284,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
           <div class="p-4 flex items-start space-x-3">
             <div class="w-14 h-14 rounded-full overflow-hidden flex-shrink-0">
-              <img src="https://picsum.photos/seed/interview/200/200" alt="Developer interview community avatar" class="w-full h-full object-cover">
+              <SafeImage src="https://picsum.photos/seed/interview/200/200" alt="Developer interview community avatar" class="w-full h-full" object-fit="cover" />
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex justify-between items-start">
@@ -317,7 +317,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
           <div class="p-4 flex items-start space-x-3">
             <div class="w-14 h-14 rounded-full overflow-hidden flex-shrink-0">
-              <img src="https://picsum.photos/seed/beginner/200/200" alt="Beginner programming community avatar" class="w-full h-full object-cover">
+              <SafeImage src="https://picsum.photos/seed/beginner/200/200" alt="Beginner programming community avatar" class="w-full h-full" object-fit="cover" />
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex justify-between items-start">
@@ -350,7 +350,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
           <div class="p-4 flex items-start space-x-3">
             <div class="w-14 h-14 rounded-full overflow-hidden flex-shrink-0">
-              <img src="https://picsum.photos/seed/ml/200/200" alt="Machine learning and AI group avatar" class="w-full h-full object-cover">
+              <SafeImage src="https://picsum.photos/seed/ml/200/200" alt="Machine learning and AI group avatar" class="w-full h-full" object-fit="cover" />
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex justify-between items-start">
@@ -383,7 +383,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
           <div class="p-4 flex items-start space-x-3">
             <div class="w-14 h-14 rounded-full overflow-hidden flex-shrink-0">
-              <img src="https://picsum.photos/seed/project/200/200" alt="Open-source collaboration group avatar" class="w-full h-full object-cover">
+              <SafeImage src="https://picsum.photos/seed/project/200/200" alt="Open-source collaboration group avatar" class="w-full h-full" object-fit="cover" />
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex justify-between items-start">

@@ -45,7 +45,7 @@ public class DataLibraryController {
     }
 
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Add Library Entry", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "添加提交样本库")
     @SaCheckPermission("/data/library/add")
     @PostMapping("/data/library/add")
@@ -54,7 +54,7 @@ public class DataLibraryController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Edit Library Entry", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "编辑提交样本库")
     @SaCheckPermission("/data/library/edit")
     @PostMapping("/data/library/edit")
@@ -63,7 +63,7 @@ public class DataLibraryController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Delete Library Entry", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "删除提交样本库")
     @SaCheckPermission("/data/library/delete")
     @PostMapping("/data/library/delete")

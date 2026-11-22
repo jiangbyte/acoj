@@ -62,7 +62,7 @@ public class DataSubmitController {
         return Result.success(dataSubmitService.setPage(dataSubmitPageParam));
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Add Submission", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "添加提交")
     @SaCheckPermission("/data/submit/add")
     @PostMapping("/data/submit/add")
@@ -71,7 +71,7 @@ public class DataSubmitController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Edit Submission", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "编辑提交")
     @SaCheckPermission("/data/submit/edit")
     @PostMapping("/data/submit/edit")
@@ -80,7 +80,7 @@ public class DataSubmitController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Delete Submission", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "删除提交")
     @SaCheckPermission("/data/submit/delete")
     @PostMapping("/data/submit/delete")

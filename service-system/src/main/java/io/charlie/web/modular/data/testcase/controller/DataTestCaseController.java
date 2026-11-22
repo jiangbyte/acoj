@@ -47,7 +47,7 @@ public class DataTestCaseController {
     }
 
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Add Test Case", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "添加题目测试用例")
     @SaCheckPermission("/data/test/case/add")
     @PostMapping("/data/test/case/add")
@@ -57,7 +57,7 @@ public class DataTestCaseController {
     }
 
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Edit Test Case", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "编辑题目测试用例")
     @SaCheckPermission("/data/test/case/edit")
     @PostMapping("/data/test/case/edit")
@@ -67,7 +67,7 @@ public class DataTestCaseController {
     }
 
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Delete Test Case", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "删除题目测试用例")
     @SaCheckPermission("/data/test/case/delete")
     @PostMapping("/data/test/case/delete")

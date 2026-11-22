@@ -44,7 +44,7 @@ public class SysBannerController {
         return Result.success(sysBannerService.page(sysBannerPageParam));
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Add Banner", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加横幅")
     @SaCheckPermission("/sys/banner/add")
     @PostMapping("/sys/banner/add")
@@ -53,7 +53,7 @@ public class SysBannerController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Edit Banner", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑横幅")
     @SaCheckPermission("/sys/banner/edit")
     @PostMapping("/sys/banner/edit")
@@ -62,7 +62,7 @@ public class SysBannerController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Delete Banner", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除横幅")
     @SaCheckPermission("/sys/banner/delete")
     @PostMapping("/sys/banner/delete")

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
+import { renderSafeAvatar } from '@/utils'
 import type { SelectOption, SelectRenderLabel, SelectRenderTag } from 'naive-ui'
-import { NAvatar, NButton, NDrawer, NDrawerContent, NEllipsis, NForm, NFormItem, NInput } from 'naive-ui'
+import { NButton, NDrawer, NDrawerContent, NEllipsis, NForm, NFormItem, NInput } from 'naive-ui'
 import { useSysGroupFetch, useSysUserFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close', 'submit'])
@@ -120,7 +121,7 @@ const renderSingleSelectTag: SelectRenderTag = ({ option }) => {
       },
     },
     [
-      h(NAvatar, {
+      renderSafeAvatar( {
         src: String(option.avatar),
         round: true,
         size: 24,
@@ -143,7 +144,7 @@ const renderLabel: SelectRenderLabel = (option) => {
       },
     },
     [
-      h(NAvatar, {
+      renderSafeAvatar( {
         src: String(option.avatar),
         round: true,
         size: 'small',

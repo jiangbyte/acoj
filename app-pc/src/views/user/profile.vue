@@ -210,7 +210,7 @@ const profileRules = {
             </template>
             <n-space align="center" :wrap="false">
               <div class="w-24 h-24 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
-                <img :src="profileData?.avatar" alt="Current avatar" class="w-full h-full object-cover">
+                <SafeImage :src="profileData?.avatar" alt="Current avatar" class="w-full h-full" object-fit="cover" />
               </div>
               <n-space vertical>
                 <FileUploadButton
@@ -237,7 +237,7 @@ const profileRules = {
             </template>
             <n-space vertical>
               <div class="relative h-40 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
-                <img :src="profileData?.background" class="w-full h-full object-cover">
+                <SafeImage :src="profileData?.background" class="w-full h-full" object-fit="cover" />
                 <div class="absolute right-3 bottom-3 px-3 py-1.5 text-sm transition-colors">
                   <FileUploadButton v-model="profileData.background" :is-image="true" buttontext="Change Cover" type="primary" @success="updateBackground" />
                 </div>

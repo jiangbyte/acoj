@@ -15,14 +15,25 @@ const tagCreateFormRef = ref()
 
 const recentlogs = ref()
 const todayTotal = ref()
+
+/** 日志分类码转英文展示文案 */
+function formatLogCategory(category?: string | null) {
+  const map: Record<string, string> = {
+    OPERATION: 'Operation',
+    LOGIN_LOGOUT: 'Login / Logout',
+    OTHER: 'Other',
+  }
+  if (!category)
+    return 'Unknown'
+  return map[category] || category
+}
+
 function loadData() {
   useSysLogFetch().sysLogRecent().then(({ data }) => {
     recentlogs.value = data
-    console.log(data)
   })
   useSysUserFetch().getProfile().then(({ data }) => {
     userInfo.value = data
-    console.log(data)
 
     if (!data.loginTime) {
       userInfo.value.loginTime = Date.now()
@@ -205,7 +216,7 @@ function checkPermission(permission: string) {
                     <div class="flex items-center gap-2 justify-between">
                       <n-space align="center">
                         <n-space align="center" size="small">
-                          <n-avatar size="small" round :src="item?.userAvatar" />
+                          <SafeAvatar size="small" round :src="item?.userAvatar" />
                           <n-text>{{ item?.userIdName }}</n-text>
                         </n-space>
                         <n-text>{{ item?.operation || 'No action' }}</n-text>
@@ -216,7 +227,7 @@ function checkPermission(permission: string) {
                           size="small"
                           type="info"
                         >
-                          {{ item?.category || 'Unknown' }}
+                          {{ formatLogCategory(item?.category) }}
                         </NTag>
                         <n-time :time="Number(item.operationTime)" />
                       </n-space>

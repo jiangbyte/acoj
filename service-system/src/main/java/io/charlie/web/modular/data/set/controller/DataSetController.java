@@ -50,7 +50,7 @@ public class DataSetController {
         return Result.success(dataSetService.pageClient(dataSetPageParam));
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Add Problem Set", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "添加题集")
     @SaCheckPermission("/data/set/add")
     @PostMapping("/data/set/add")
@@ -59,7 +59,7 @@ public class DataSetController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Edit Problem Set", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "编辑题集")
     @SaCheckPermission("/data/set/edit")
     @PostMapping("/data/set/edit")
@@ -68,7 +68,7 @@ public class DataSetController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Delete Problem Set", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "删除题集")
     @SaCheckPermission("/data/set/delete")
     @PostMapping("/data/set/delete")

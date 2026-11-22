@@ -46,7 +46,7 @@ public class SysNoticeController {
         return Result.success(sysNoticeService.page(sysNoticePageParam));
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Add Notice", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加公告")
     @SaCheckPermission("/sys/notice/add")
     @PostMapping("/sys/notice/add")
@@ -55,7 +55,7 @@ public class SysNoticeController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Edit Notice", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑公告")
     @SaCheckPermission("/sys/notice/edit")
     @PostMapping("/sys/notice/edit")
@@ -64,7 +64,7 @@ public class SysNoticeController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Delete Notice", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除公告")
     @SaCheckPermission("/sys/notice/delete")
     @PostMapping("/sys/notice/delete")

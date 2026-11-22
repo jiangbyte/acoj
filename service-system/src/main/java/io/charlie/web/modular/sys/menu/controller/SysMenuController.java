@@ -44,7 +44,7 @@ public class SysMenuController {
         return Result.success(sysMenuService.page(sysMenuPageParam));
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Add Menu", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加菜单")
     @SaCheckPermission("/sys/menu/add")
     @PostMapping("/sys/menu/add")
@@ -53,7 +53,7 @@ public class SysMenuController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Edit Menu", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑菜单")
     @SaCheckPermission("/sys/menu/edit")
     @PostMapping("/sys/menu/edit")
@@ -62,7 +62,7 @@ public class SysMenuController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Delete Menu", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除菜单")
     @SaCheckPermission("/sys/menu/delete")
     @PostMapping("/sys/menu/delete")
@@ -90,7 +90,7 @@ public class SysMenuController {
         return Result.success(sysMenuService.authMenu());
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Log(value = "Grant Menu Permissions", category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "授权菜单权限")
     @PostMapping("/sys/menu/auth/assign/permission")
     public Result<?> assignMenuPermission(@RequestBody @Valid SysMenuPermissionParam sysMenuPermissionParam) {

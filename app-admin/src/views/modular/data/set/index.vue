@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { actionDeleteBtn, actionIconBtn } from '@/utils'
+import { actionDeleteBtn, actionIconBtn, renderSafeImage } from '@/utils'
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NCard, NDataTable, NImage, NPagination, NPopconfirm, NSpace, NTag, NTime } from 'naive-ui'
 import { useDataSetFetch } from '@/composables/v1'
@@ -29,7 +29,7 @@ const columns: DataTableColumns<any> = [
     title: 'Cover',
     key: 'cover',
     render: (row) => {
-      return h(NImage, { src: row.cover, width: 50, height: 50, objectFit: 'cover' })
+      return renderSafeImage({ src: row.cover, width: 50, height: 50, objectFit: 'cover', previewable: true })
     },
   },
   // {

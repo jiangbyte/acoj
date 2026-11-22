@@ -46,7 +46,7 @@ public class TaskReportsController {
         return Result.success(taskReportsService.page(taskReportsPageParam));
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Add Report", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "添加报告库")
     @SaCheckPermission("/task/reports/add")
     @PostMapping("/task/reports/add")
@@ -55,7 +55,7 @@ public class TaskReportsController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Edit Report", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "编辑报告库")
     @SaCheckPermission("/task/reports/edit")
     @PostMapping("/task/reports/edit")
@@ -64,7 +64,7 @@ public class TaskReportsController {
         return Result.success();
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
+    @Log(value = "Delete Report", category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "删除报告库")
     @SaCheckPermission("/task/reports/delete")
     @PostMapping("/task/reports/delete")

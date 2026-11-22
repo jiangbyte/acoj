@@ -29,7 +29,7 @@ defineExpose({
           {{ formData.id }}
         </NDescriptionsItem>
         <NDescriptionsItem label="Banner">
-          <NImage :src="formData.banner" width="100" height="100" object-fit="cover" />
+          <SafeImage :src="formData.banner" width="100" height="100" object-fit="cover"  previewable />
         </NDescriptionsItem>
         <NDescriptionsItem label="Title">
           {{ formData.title }}
@@ -70,7 +70,7 @@ defineExpose({
         <NDescriptionsItem label="Created By">
           <!-- {{ formData.createUserName }} -->
           <NSpace align="center" size="small">
-            <NAvatar
+            <SafeAvatar
               size="small"
               :round="true"
               :src="formData.createUserAvatar"
@@ -84,7 +84,7 @@ defineExpose({
         <NDescriptionsItem label="Updated By">
           <!-- {{ formData.updateUserName }} -->
           <NSpace align="center" size="small">
-            <NAvatar
+            <SafeAvatar
               size="small"
               :round="true"
               :src="formData.updateUserAvatar"

@@ -46,10 +46,10 @@ function getGenderText(gender: 0 | 1 | 2) {
           {{ formData.nickname }}
         </NDescriptionsItem>
         <NDescriptionsItem label="Avatar">
-          <NImage :src="formData.avatar" width="100" height="100" object-fit="cover" />
+          <SafeImage :src="formData.avatar" width="100" height="100" object-fit="cover"  previewable />
         </NDescriptionsItem>
         <NDescriptionsItem label="Background Image">
-          <NImage :src="formData.background" width="100" height="100" object-fit="cover" />
+          <SafeImage :src="formData.background" width="100" height="100" object-fit="cover"  previewable />
         </NDescriptionsItem>
         <NDescriptionsItem label="Bio">
           {{ formData.quote }}
@@ -72,7 +72,7 @@ function getGenderText(gender: 0 | 1 | 2) {
         <NDescriptionsItem label="Created By">
           <!-- {{ formData.createUserName }} -->
           <NSpace align="center" size="small">
-            <NAvatar
+            <SafeAvatar
               size="small"
               :round="true"
               :src="formData.createUserAvatar"
@@ -86,7 +86,7 @@ function getGenderText(gender: 0 | 1 | 2) {
         <NDescriptionsItem label="Updated By">
           <!-- {{ formData.updateUserName }} -->
           <NSpace align="center" size="small">
-            <NAvatar
+            <SafeAvatar
               size="small"
               :round="true"
               :src="formData.updateUserAvatar"

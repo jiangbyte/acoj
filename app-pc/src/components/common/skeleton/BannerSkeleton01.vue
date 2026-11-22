@@ -4,9 +4,10 @@
       <div
         class="carousel-item"
       >
-        <img
+        <SafeImage
           class="carousel-img"
-        >
+          object-fit="cover"
+        />
         <div class="carousel-caption">
           <div class="caption-title">
             <n-skeleton class="w-50 h-7 mb-2" />

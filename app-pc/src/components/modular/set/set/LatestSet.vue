@@ -16,7 +16,7 @@ defineProps<{
       })"
     >
       <div class="h-40 relative">
-        <img :src="item.cover" class="absolute inset-0 w-full h-full object-cover">
+        <SafeImage :src="item.cover" class="absolute inset-0 w-full h-full" object-fit="cover" />
       </div>
       <div class="p-5">
         <div class="flex items-center mb-2">

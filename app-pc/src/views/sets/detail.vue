@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import { AesCrypto } from '@/utils'
+import { AesCrypto, renderSafeAvatar } from '@/utils'
 import { useDataSetFetch, useDataSubmitFetch } from '@/composables/v1'
 import type { DataTableColumns, ImageInst } from 'naive-ui'
-import { NAvatar, NButton, NEllipsis, NSpace, NTag, NText, NTime } from 'naive-ui'
+import { NButton, NEllipsis, NSpace, NTag, NText, NTime } from 'naive-ui'
 import { Icon } from '@iconify/vue/offline'
 
 const route = useRoute()
@@ -164,14 +164,12 @@ const submitColumns: DataTableColumns<any> = [
         { align: 'center', size: 'small' },
         {
           default: () => [
-            h(
-              NAvatar,
+            renderSafeAvatar(
               {
                 size: 'small',
                 round: true,
                 src: row.userAvatar,
               },
-              {},
             ),
             h(
               NEllipsis,
@@ -299,14 +297,12 @@ const userColumns: DataTableColumns<any> = [
         { align: 'center', size: 'small' },
         {
           default: () => [
-            h(
-              NAvatar,
+            renderSafeAvatar(
               {
                 size: 'small',
                 round: true,
                 src: row.avatar,
               },
-              {},
             ),
             h(
               NEllipsis,
@@ -365,14 +361,12 @@ const processColumns: DataTableColumns<any> = [
         { align: 'center', size: 'small' },
         {
           default: () => [
-            h(
-              NAvatar,
+            renderSafeAvatar(
               {
                 size: 'small',
                 round: true,
                 src: row.userAvatar,
               },
-              {},
             ),
             h(
               NText,
@@ -507,19 +501,12 @@ function onfinishTime() {
             class="relative"
           >
             <n-gi span="1 l:3" class="relative">
-              <img
-                :src="detailData?.cover" class="w-full
-               <!-- Section -->
-                rounded-t-xl rounded-tr-xl rounded-tl-xl
-                rounded-br-none rounded-bl-none
-                <!-- Section -->
-                m:rounded-l-xl m:rounded-bl-xl m:rounded-tl-xl
-                m:rounded-r-none m:rounded-tr-none m:rounded-br-none
-                l:rounded-l-xl l:rounded-bl-xl l:rounded-tl-xl
-                l:rounded-r-none l:rounded-tr-none l:rounded-br-none
-                object-cover h-50 m:absolute m:inset-0 m:h-full l:absolute l:inset-0 l:h-full"
+              <SafeImage
+                :src="detailData?.cover"
+                class="w-full rounded-t-xl m:rounded-l-xl m:rounded-r-none l:rounded-l-xl l:rounded-r-none h-50 m:absolute m:inset-0 m:h-full l:absolute l:inset-0 l:h-full"
+                object-fit="cover"
                 @click="handleClickImage"
-              >
+              />
               <n-image
                 ref="imageRef"
                 :src="detailData?.cover"
@@ -563,7 +550,7 @@ function onfinishTime() {
                   <template #footer>
                     <NSpace :size="0" align="center" justify="space-between">
                       <NSpace align="center" :size="0">
-                        <NAvatar :src="detailData?.createUserAvatar" round class="mr-2" />
+                        <SafeAvatar :src="detailData?.createUserAvatar" round class="mr-2" />
                         <NText class="flex-1">
                           {{ detailData?.createUserName }}
                         </NText>
