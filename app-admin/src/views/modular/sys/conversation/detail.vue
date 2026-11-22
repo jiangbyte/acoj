@@ -417,7 +417,7 @@ defineExpose({
               >
                 <template #extra>
                   <NText depth="3" class="text-xs">
-                    Tools are recorded when the model invokes them. Older rows without conversationId are matched by session time window.
+                    Tools are recorded when the model invokes them (e.g. fetch description by problemId). Older rows without conversationId are matched by session time window.
                   </NText>
                 </template>
               </NEmpty>

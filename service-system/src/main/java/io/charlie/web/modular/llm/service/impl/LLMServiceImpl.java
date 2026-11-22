@@ -5,7 +5,6 @@ import com.alibaba.cloud.ai.prompt.ConfigurablePromptTemplateFactory;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
-import io.charlie.web.modular.data.problem.service.DataProblemService;
 import io.charlie.web.modular.llm.config.LLMProperties;
 import io.charlie.web.modular.llm.config.LlmToolTraceContext;
 import io.charlie.web.modular.llm.param.ChatRequest;
@@ -47,7 +46,6 @@ public class LLMServiceImpl implements LLMService {
     private final SysConversationService sysConversationService;
     private final ConfigurablePromptTemplateFactory promptTemplateFactory;
     private final LLMProperties llmProperties;
-    private final DataProblemService dataProblemService;
 
     @Override
     public Flux<SysConversation> streamChat(ChatRequest chatRequest) {
@@ -78,7 +76,7 @@ public class LLMServiceImpl implements LLMService {
         // 保存用户消息到数据库
         sysConversationService.saveUserConversation(chatRequest);
 
-        // 3. 组装模板变量，并预注入题面/样例/约束（无需点按钮或等模型调 Tool）
+        // 3. 仅注入常驻 ID/代码变量；题面等详情由模型按 ID 调 Tool 查询
         Map<String, Object> mapExcludeNull = chatRequest.toMapExcludeNull();
         enrichPromptContext(chatRequest, mapExcludeNull);
         log.info("构建的参数为：{}", mapExcludeNull.keySet());
@@ -149,40 +147,14 @@ public class LLMServiceImpl implements LLMService {
     }
 
     /**
-     * 补齐模板变量，并按 problemId 预加载题面上下文，使任意 messageType 首轮即可用。
+     * 仅补齐常驻模板变量（ID/语言/用户代码）；有则注入，无则空串。题面详情交给 Tool。
      */
     private void enrichPromptContext(ChatRequest chatRequest, Map<String, Object> mapExcludeNull) {
-        // 1. 基础字段兜底，避免 PromptTemplate 缺变量
         mapExcludeNull.putIfAbsent("problemId", StrUtil.blankToDefault(chatRequest.getProblemId(), ""));
         mapExcludeNull.putIfAbsent("setId", StrUtil.blankToDefault(chatRequest.getSetId(), ""));
         mapExcludeNull.putIfAbsent("problemSetId", StrUtil.blankToDefault(chatRequest.getSetId(), ""));
         mapExcludeNull.putIfAbsent("language", StrUtil.blankToDefault(chatRequest.getLanguage(), ""));
         mapExcludeNull.putIfAbsent("userCode", StrUtil.blankToDefault(chatRequest.getUserCode(), ""));
-
-        // 2. 无题号则题面相关变量置空，模板仍可渲染
-        String problemId = chatRequest.getProblemId();
-        if (StrUtil.isBlank(problemId)) {
-            mapExcludeNull.putIfAbsent("problemDescription", "");
-            mapExcludeNull.putIfAbsent("problemSamples", "");
-            mapExcludeNull.putIfAbsent("problemConstraints", "");
-            return;
-        }
-
-        // 3. 预取题面/样例/约束；失败不阻断对话，留给 Tool 兜底
-        try {
-            mapExcludeNull.put("problemDescription",
-                    StrUtil.blankToDefault(dataProblemService.llmGetDescription(problemId), ""));
-            mapExcludeNull.put("problemSamples",
-                    StrUtil.blankToDefault(dataProblemService.llmGetSamples(problemId), ""));
-            mapExcludeNull.put("problemConstraints",
-                    StrUtil.blankToDefault(dataProblemService.llmGetResourceConstraints(problemId), ""));
-        }
-        catch (Exception e) {
-            log.warn("预注入题目上下文失败 problemId={}", problemId, e);
-            mapExcludeNull.putIfAbsent("problemDescription", "");
-            mapExcludeNull.putIfAbsent("problemSamples", "");
-            mapExcludeNull.putIfAbsent("problemConstraints", "");
-        }
     }
 
     /**
