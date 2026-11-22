@@ -158,6 +158,10 @@ function syncContextFromProps() {
 }
 
 function sendMessage(messageType: string = 'DailyConversation') {
+  // 流式进行中禁止重入，避免同一句话重复落库到 Timeline
+  if (isLoading.value) {
+    return
+  }
   if (!chatRequestParam.value.messageContent.trim() && messageType === 'DailyConversation') {
     window.$message?.warning('Enter a message')
     return
@@ -471,6 +475,7 @@ function sessionTitle(session: any) {
             </n-button>
             <n-button
               size="small"
+              :disabled="isLoading"
               @click="newChat"
             >
               New Chat
@@ -478,32 +483,35 @@ function sessionTitle(session: any) {
             <n-button
               type="primary"
               size="small"
+              :disabled="isLoading"
               @click="handleButtonClick('ProblemSolvingIdeas')"
             >
               Solution Approach
             </n-button>
             <n-button
               size="small"
-              :disabled="!props.userCode && !props.language"
+              :disabled="isLoading || (!props.userCode && !props.language)"
               @click="handleButtonClick('AnalyzeComplexity')"
             >
               Analyze Complexity
             </n-button>
             <n-button
               size="small"
-              :disabled="!props.userCode && !props.language"
+              :disabled="isLoading || (!props.userCode && !props.language)"
               @click="handleButtonClick('OptimizeCode')"
             >
               Optimize Code
             </n-button>
             <n-button
               size="small"
+              :disabled="isLoading"
               @click="handleButtonClick('AnalyzeBoundary')"
             >
               Analyze Edge Cases
             </n-button>
             <n-button
               size="small"
+              :disabled="isLoading"
               @click="clearMessages"
             >
               Clear Chat
@@ -522,6 +530,7 @@ function sessionTitle(session: any) {
           type="textarea"
           placeholder="Need help? Ask AI a question, such as how to improve this code's time complexity."
           :autosize="{ minRows: 4, maxRows: 4 }"
+          :disabled="isLoading"
           @keydown.enter.exact.prevent="sendMessage()"
         />
         <NFlex
@@ -533,6 +542,7 @@ function sessionTitle(session: any) {
             type="primary"
             size="small"
             :loading="isLoading"
+            :disabled="isLoading"
             @click="sendMessage()"
           >
             <template #icon>
