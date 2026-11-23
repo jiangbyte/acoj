@@ -32,13 +32,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Judge module functional tests (J_01 ~ J_04).
+ * 判题模块功能测试：AC / 编译错误 / 资源超限 / 运行时错误。
  * <p>
- * Calls Controller → Service directly; real MQ / service-judge writes back results.
- * Before running:
+ * 直接调 Controller → Service；由真实 MQ / service-judge 回写结果。
+ * 运行前：
  * <ol>
- *   <li>Execute {@code sql/judge_test_problem.sql} (user junit_judge / junit123456, problem and cases)</li>
- *   <li>Ensure Nacos, MySQL, Redis, RabbitMQ, service-system, and service-judge are available</li>
+ *   <li>执行 {@code sql/judge_test_problem.sql}（用户 junit_judge / junit123456，题目与用例）</li>
+ *   <li>确保 Nacos、MySQL、Redis、RabbitMQ、service-system、service-judge 可用</li>
  * </ol>
  */
 @SpringBootTest(classes = Application.class)
@@ -112,8 +112,8 @@ class JudgeModuleTest {
 
     @Test
     @Order(1)
-    @DisplayName("J_01 Accepted: correct code should be ACCEPTED")
-    void j01_accepted() throws Exception {
+    @DisplayName("正确代码应判定为 ACCEPTED")
+    void accepted() throws Exception {
         DataSubmit result = submitAndWait(ACCEPTED_CODE);
 
         assertEquals(JudgeStatus.ACCEPTED.getValue(), result.getStatus(),
@@ -123,8 +123,8 @@ class JudgeModuleTest {
 
     @Test
     @Order(2)
-    @DisplayName("J_02 Compilation error: syntax error should return COMPILATION_ERROR with message")
-    void j02_compilationError() throws Exception {
+    @DisplayName("语法错误应返回 COMPILATION_ERROR 及错误信息")
+    void compilationError() throws Exception {
         DataSubmit result = submitAndWait(COMPILE_ERROR_CODE);
 
         assertEquals(JudgeStatus.COMPILATION_ERROR.getValue(), result.getStatus(),
@@ -136,8 +136,8 @@ class JudgeModuleTest {
 
     @Test
     @Order(3)
-    @DisplayName("J_03 Resource limit: infinite loop should return TLE or MLE")
-    void j03_resourceLimitExceeded() throws Exception {
+    @DisplayName("死循环应触发 TIME_LIMIT_EXCEEDED 或 MEMORY_LIMIT_EXCEEDED")
+    void resourceLimitExceeded() throws Exception {
         DataSubmit result = submitAndWait(TIME_LIMIT_CODE);
 
         Set<String> expected = Set.of(
@@ -151,8 +151,8 @@ class JudgeModuleTest {
 
     @Test
     @Order(4)
-    @DisplayName("J_04 Runtime error: out-of-bounds access should return RUNTIME_ERROR")
-    void j04_runtimeError() throws Exception {
+    @DisplayName("越界访问应返回 RUNTIME_ERROR")
+    void runtimeError() throws Exception {
         DataSubmit result = submitAndWait(RUNTIME_ERROR_CODE);
 
         assertEquals(JudgeStatus.RUNTIME_ERROR.getValue(), result.getStatus(),
