@@ -18,8 +18,8 @@ docker compose ps nacos
 echo "== nacos-init =="
 docker compose run --rm nacos-init
 
-echo "== minio-init + service-system + service-similarity =="
-docker compose up -d minio-init service-system service-similarity
+echo "== silo-init + service-system + service-similarity =="
+docker compose up -d silo-init service-system service-similarity
 
 echo "== judge (may fail if image missing) =="
 docker compose up -d service-judge || true

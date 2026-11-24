@@ -24,7 +24,6 @@ COPY --from=builder /build/service-system/target/service-system-1.0.0.jar /app/s
 
 EXPOSE 89
 
-# 4 vCPU / 8 GiB 同机：堆约 1.5G，给中间件与判题留内存
 ENTRYPOINT ["java", \
     "-Xms1536m", \
     "-Xmx1536m", \

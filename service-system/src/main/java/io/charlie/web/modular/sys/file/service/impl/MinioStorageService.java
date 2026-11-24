@@ -257,19 +257,13 @@ public class MinioStorageService implements StorageService {
         }
         String cleaned = StorageObjectNames.stripQuery(storedOrUrl);
         if (isOurMinioUrl(cleaned)) {
-            String prefix = buildPublicUrlPrefix();
-            if (cleaned.startsWith(prefix)
-                    || cleaned.startsWith(prefix.replace("https://", "http://"))
-                    || cleaned.startsWith(prefix.replace("http://", "https://"))) {
-                String after = cleaned;
-                if (cleaned.startsWith(prefix)) {
-                    after = cleaned.substring(prefix.length());
-                } else if (cleaned.startsWith(prefix.replace("https://", "http://"))) {
-                    after = cleaned.substring(prefix.replace("https://", "http://").length());
-                } else {
-                    after = cleaned.substring(prefix.replace("http://", "https://").length());
+            // 1. 依次匹配对外 / 内网前缀（含 http/https 互换），剥出桶后路径
+            // 2. 路径里若还有子目录则只取文件名入库；否则整段作为 objectName
+            for (String prefix : ourUrlPrefixes()) {
+                String matched = matchPrefixIgnoreScheme(cleaned, prefix);
+                if (matched != null) {
+                    return matched.contains("/") ? StorageObjectNames.extractFileName(matched) : matched;
                 }
-                return after.contains("/") ? StorageObjectNames.extractFileName(after) : after;
             }
             return StorageObjectNames.extractFileName(cleaned);
         }
@@ -285,22 +279,68 @@ public class MinioStorageService implements StorageService {
         return buildPublicUrlPrefix() + objectName;
     }
 
+    /**
+     * 对外访问前缀：优先 access-url（浏览器可达），否则回退 SDK endpoint。
+     */
     private String buildPublicUrlPrefix() {
-        String endpoint = storageProperties.getMinio().getEndpoint();
-        if (endpoint.endsWith("/")) {
-            endpoint = endpoint.substring(0, endpoint.length() - 1);
+        StorageProperties.MinioProperties minio = storageProperties.getMinio();
+        String base = StringUtils.hasText(minio.getAccessUrl()) ? minio.getAccessUrl() : minio.getEndpoint();
+        return toBucketPrefix(base);
+    }
+
+    /** SDK 内网 endpoint 对应的桶前缀，用于识别历史/内网 URL。 */
+    private String buildInternalUrlPrefix() {
+        return toBucketPrefix(storageProperties.getMinio().getEndpoint());
+    }
+
+    private String toBucketPrefix(String base) {
+        if (!StringUtils.hasText(base)) {
+            return "";
         }
+        String endpoint = base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
         return endpoint + "/" + bucketName + "/";
+    }
+
+    private String[] ourUrlPrefixes() {
+        String publicPrefix = buildPublicUrlPrefix();
+        String internalPrefix = buildInternalUrlPrefix();
+        if (!StringUtils.hasText(internalPrefix) || internalPrefix.equals(publicPrefix)) {
+            return new String[]{publicPrefix};
+        }
+        return new String[]{publicPrefix, internalPrefix};
     }
 
     private boolean isOurMinioUrl(String value) {
         if (!StringUtils.hasText(value)) {
             return false;
         }
-        String prefix = buildPublicUrlPrefix();
-        return value.startsWith(prefix)
-                || value.startsWith(prefix.replace("https://", "http://"))
-                || value.startsWith(prefix.replace("http://", "https://"));
+        for (String prefix : ourUrlPrefixes()) {
+            if (matchPrefixIgnoreScheme(value, prefix) != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 前缀匹配（忽略 http/https 差异）；命中则返回去掉前缀后的剩余路径，否则 null。
+     */
+    private String matchPrefixIgnoreScheme(String value, String prefix) {
+        if (!StringUtils.hasText(prefix)) {
+            return null;
+        }
+        if (value.startsWith(prefix)) {
+            return value.substring(prefix.length());
+        }
+        String http = prefix.replace("https://", "http://");
+        if (value.startsWith(http)) {
+            return value.substring(http.length());
+        }
+        String https = prefix.replace("http://", "https://");
+        if (value.startsWith(https)) {
+            return value.substring(https.length());
+        }
+        return null;
     }
 
     private boolean isExternalUrl(String value) {

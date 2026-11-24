@@ -1,11 +1,11 @@
-# Docker Compose (4 vCPU / 8 GiB)
+# Docker Compose
 
 Single-node stack with infrastructure + OJ backend + judge + similarity.
 
 Nacos configs are taken from `deploy/nacos_config_export.zip` (copied under
 `deploy/docker/nacos/DEFAULT_GROUP/`), with hosts rewritten for Compose DNS
-(`mysql` / `redis` / `rabbitmq` / `minio`). Infra passwords match the export:
-`infra@123`, DB `astro_code`, RabbitMQ `admin`, MinIO bucket `astro-code-oj`.
+(`mysql` / `redis` / `rabbitmq` / `silo`). Infra passwords match the export:
+`infra@123`, DB `astro_code`, RabbitMQ `admin`, Silo bucket `astro-code-oj`.
 
 ## Image versions
 
@@ -19,22 +19,6 @@ Nacos configs are taken from `deploy/nacos_config_export.zip` (copied under
 | judge / similarity base | `ubuntu:22.04` |
 | pc / admin build | `node:22-alpine` |
 | pc / admin runtime | `nginx:1.23.1-alpine` |
-
-## Memory budget (approx.)
-
-| Service | Limit |
-|---|---|
-| MySQL | 768M |
-| Redis | 128M |
-| RabbitMQ | 320M |
-| Nacos | 640M |
-| MinIO | 256M |
-| service-system (JVM 1.5G heap) | 2304M |
-| service-judge | 1024M |
-| service-similarity | 512M |
-| **Total peak** | **~6–7 GiB** |
-
-Leave ~1 GiB for OS / page cache.
 
 ## Prerequisites
 
@@ -84,11 +68,29 @@ Private packages need `docker login ghcr.io` (GitHub PAT with `read:packages`).
 
 ## Start
 
+应用镜像统一使用 GHCR 命名（`ghcr.io/jiangbyte/acoj-*`）。本地先构建再启动（`PULL_POLICY=build` 不会拉远程）：
+
 ```bash
+cp .env.example .env   # 若还没有
 docker compose up -d --build
 ```
 
-Wait until `nacos-init` / `minio-init` finish and `service-system` becomes healthy:
+确认无问题后再推仓库：
+
+```bash
+make docker-push TAG=latest
+# 或: docker compose push
+```
+
+别人机器拉取已推送镜像时，设 `PULL_POLICY=missing`（或 `always`）后：
+
+```bash
+docker login ghcr.io
+docker compose pull
+docker compose up -d
+```
+
+Wait until `nacos-init` / `silo-init` finish and `service-system` becomes healthy:
 
 ```bash
 docker compose ps
@@ -105,7 +107,7 @@ ensures the Compose namespace exists, then publishes configs under `DEFAULT_GROU
 | OJ API | http://localhost:89 |
 | Nacos | http://localhost:8848/nacos (nacos/nacos) |
 | RabbitMQ UI | http://localhost:15672 (admin/infra@123) |
-| MinIO Console | http://localhost:9001 (admin/infra@123) |
+| Silo Console | http://localhost:9001 (admin/infra@123) |
 | Judge | http://localhost:8888 |
 | Similarity | http://localhost:8882 |
 | PC | http://localhost:80 |
@@ -173,7 +175,7 @@ deploy/
     scripts/nacos-init.sh
 ```
 
-Hosts inside the compose network use service DNS names: `mysql`, `redis`, `rabbitmq`, `nacos`, `minio`.
+Hosts inside the compose network use service DNS names: `mysql`, `redis`, `rabbitmq`, `nacos`, `silo`.
 
 ## Common issues
 

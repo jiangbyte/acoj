@@ -90,7 +90,7 @@ publish() {
 }
 
 # Source: deploy/nacos_config_export.zip → DEFAULT_GROUP/*
-# Hosts rewritten for compose DNS (mysql/redis/rabbitmq/minio).
+# Hosts rewritten for compose DNS (mysql/redis/rabbitmq/silo).
 publish "common.yaml" "${CONFIG_DIR}/common.yaml" "yaml"
 publish "service-system.yaml" "${CONFIG_DIR}/service-system.yaml" "yaml"
 publish "service-judge.yaml" "${CONFIG_DIR}/service-judge.yaml" "yaml"

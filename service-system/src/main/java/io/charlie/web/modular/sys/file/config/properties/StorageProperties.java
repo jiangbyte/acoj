@@ -31,7 +31,13 @@ public class StorageProperties {
 
     @Data
     public static class MinioProperties {
-        private String endpoint; // MinIO服务端地址
+        /** SDK 连接地址（容器内可写 silo:9000 / minio:9000） */
+        private String endpoint;
+        /**
+         * 浏览器可访问的对外基址（不含桶名）；为空则回退 endpoint。
+         * Compose 场景通常为 http://localhost:9000，避免把内网主机名返回给前端。
+         */
+        private String accessUrl;
         private String accessKey; // MinIO访问密钥
         private String secretKey; // MinIO密钥
         private String bucketName; // 存储桶名称

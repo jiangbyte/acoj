@@ -155,9 +155,11 @@ system:
       base-path: /data/uploads
       access-url: http://localhost:89/api/v1/sys/file/download/
     
-    # MinIO 存储配置
+    # 对象存储（Silo，MinIO 兼容 API）
+    # endpoint：容器内 SDK 访问；access-url：返回给浏览器的对外地址（映射宿主机 9000）
     minio:
-      endpoint: http://minio:9000
+      endpoint: http://silo:9000
+      access-url: http://localhost:9000
       access-key: admin
       secret-key: infra@123
       bucket-name: astro-code-oj

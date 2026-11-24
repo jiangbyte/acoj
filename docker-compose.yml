@@ -1,9 +1,3 @@
-# ACOJ Docker Compose — tuned for 4 vCPU / 8 GiB
-#
-# Default stack (~6–7 GiB peak):
-#   mysql + redis + rabbitmq + nacos + minio + service-system + service-judge + service-similarity
-#   + app-pc + app-admin
-#
 name: acoj
 
 services:
@@ -125,9 +119,10 @@ services:
           memory: 640M
     networks: [acoj]
 
-  minio:
-    image: minio/minio:RELEASE.2024-04-18T19-09-19Z
-    container_name: acoj-minio
+  # Silo：MinIO 兼容对象存储（API/控制台协议与 MinIO 一致）
+  silo:
+    image: ${SILO_IMAGE:-pgsty/silo:RELEASE.2026-08-06T00-00-00Z}
+    container_name: acoj-silo
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -137,7 +132,7 @@ services:
       - "${MINIO_API_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
-      - acoj_minio_data:/data
+      - acoj_silo_data:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
       interval: 10s
@@ -169,18 +164,18 @@ services:
     restart: "no"
     networks: [acoj]
 
-  minio-init:
-    image: minio/mc:RELEASE.2024-04-18T16-45-29Z
-    container_name: acoj-minio-init
+  silo-init:
+    image: ${SILO_IMAGE:-pgsty/silo:RELEASE.2026-08-06T00-00-00Z}
+    container_name: acoj-silo-init
     depends_on:
-      minio:
+      silo:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+      mc alias set local http://silo:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
       mc mb -p local/${MINIO_BUCKET:-astro-code-oj} || true;
       mc anonymous set download local/${MINIO_BUCKET:-astro-code-oj} || true;
-      echo minio bucket ready
+      echo silo bucket ready
       "
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-admin}
@@ -190,11 +185,13 @@ services:
     networks: [acoj]
 
   # ───────────────────────── Application ─────────────────────────
+  # 镜像名与 GHCR 一致；本地：docker compose up -d --build（PULL_POLICY=build 不拉远程）
   service-system:
+    image: ${SYSTEM_IMAGE:-ghcr.io/jiangbyte/acoj-service-system:latest}
+    pull_policy: ${PULL_POLICY:-build}
     build:
       context: .
       dockerfile: service-system/Dockerfile
-    image: ${SYSTEM_IMAGE:-acoj/service-system:local}
     container_name: acoj-service-system
     restart: unless-stopped
     depends_on:
@@ -206,7 +203,7 @@ services:
         condition: service_healthy
       nacos-init:
         condition: service_completed_successfully
-      minio-init:
+      silo-init:
         condition: service_completed_successfully
     environment:
       TZ: Asia/Shanghai
@@ -238,10 +235,11 @@ services:
     networks: [acoj]
 
   service-judge:
+    image: ${JUDGE_IMAGE:-ghcr.io/jiangbyte/acoj-service-judge:latest}
+    pull_policy: ${PULL_POLICY:-build}
     build:
       context: ./service-judge
       dockerfile: Dockerfile
-    image: ${JUDGE_IMAGE:-acoj/service-judge:local}
     container_name: acoj-service-judge
     restart: unless-stopped
     privileged: true
@@ -273,10 +271,11 @@ services:
     networks: [acoj]
 
   service-similarity:
+    image: ${SIMILARITY_IMAGE:-ghcr.io/jiangbyte/acoj-service-similarity:latest}
+    pull_policy: ${PULL_POLICY:-build}
     build:
       context: ./service-similarity
       dockerfile: Dockerfile
-    image: ${SIMILARITY_IMAGE:-acoj/service-similarity:local}
     container_name: acoj-service-similarity
     restart: unless-stopped
     depends_on:
@@ -303,12 +302,13 @@ services:
 
   # ───────────────────────── Frontends ─────────────────────────
   pc:
+    image: ${PC_IMAGE:-ghcr.io/jiangbyte/acoj-pc:latest}
+    pull_policy: ${PULL_POLICY:-build}
     build:
       context: ./app-pc
       dockerfile: Dockerfile
       args:
         VITE_GATEWAY: ${VITE_GATEWAY:-http://localhost:89}
-    image: ${PC_IMAGE:-acoj/pc:local}
     container_name: acoj-pc
     restart: unless-stopped
     depends_on:
@@ -324,12 +324,13 @@ services:
     networks: [acoj]
 
   admin:
+    image: ${ADMIN_IMAGE:-ghcr.io/jiangbyte/acoj-admin:latest}
+    pull_policy: ${PULL_POLICY:-build}
     build:
       context: ./app-admin
       dockerfile: Dockerfile
       args:
         VITE_GATEWAY: ${VITE_GATEWAY:-http://localhost:89}
-    image: ${ADMIN_IMAGE:-acoj/admin:local}
     container_name: acoj-admin
     restart: unless-stopped
     depends_on:
@@ -360,8 +361,8 @@ volumes:
     name: acoj-compose-nacos
   acoj_nacos_logs:
     name: acoj-compose-nacos-logs
-  acoj_minio_data:
-    name: acoj-compose-minio
+  acoj_silo_data:
+    name: acoj-compose-silo
   acoj_service_system_logs:
     name: acoj-compose-service-system-logs
   acoj_service_judge_tmp:
