@@ -71,6 +71,21 @@ The judge host also needs language runtimes (e.g. `g++`, JDK, Python3, Go). See 
 
 Exact image tags for Docker Compose are listed in `deploy/docker/README.md`.
 
+Published app images (via GitHub Actions → GHCR):
+
+| Image | Registry |
+| --- | --- |
+| service-system | `ghcr.io/jiangbyte/acoj-service-system` |
+| service-judge | `ghcr.io/jiangbyte/acoj-service-judge` |
+| service-similarity | `ghcr.io/jiangbyte/acoj-service-similarity` |
+| app-pc | `ghcr.io/jiangbyte/acoj-pc` |
+| app-admin | `ghcr.io/jiangbyte/acoj-admin` |
+
+```bash
+make docker-build TAG=latest   # local build
+make docker-push TAG=latest    # push to ghcr.io (needs packages:write)
+```
+
 ## Quick Start (local)
 
 Recommended order: **infrastructure → business backend → judge / similarity → frontends**.

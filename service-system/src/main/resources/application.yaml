@@ -8,8 +8,8 @@ spring:
     time-zone: Asia/Shanghai
     locale: en_US
   profiles:
-#    active: @profiles.active@
-    active: dev
+    # 由 Maven profile 注入：local（默认）/ dev / docker / prod；容器内也可被 SPRING_PROFILES_ACTIVE 覆盖
+    active: @profiles.active@
   # Nacos 连接与 spring.config.import 必须写在同一 profile 文件中（application-{profile}.yaml），
   # 否则 import 早于 profile 覆盖，会出现 serverAddr/namespace 为空、连到错误租户。
 

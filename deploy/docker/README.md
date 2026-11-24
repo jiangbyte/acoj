@@ -39,23 +39,48 @@ Leave ~1 GiB for OS / page cache.
 ## Prerequisites
 
 1. Docker Engine 24+ with Compose v2
-2. Build OJ jar first (Dockerfile copies `service-system/target/service-system-1.0.0.jar`).
-   Use `-Pdocker` (or `-Pdev`) so the jar uses the Compose Nacos namespace ID
-   in `.env` / `NACOS_NAMESPACE` (`nacos:8848`, password `nacos`):
+2. Copy env file:
 
 ```bash
-mvn -pl service-system -am package -DskipTests -Pdocker
+cp .env.example .env
 ```
+
+3. `service-system` image is **multi-stage** (Maven package happens inside Docker).
+   No host-side `mvn package` is required for Compose.
 
    Note: SCA 2025 ships Nacos client 3.x, which does not treat empty/`public`
    the same as Nacos Server 2.5. Compose therefore uses a real namespace ID
    (default `8fee08f3-44ea-4e26-a9b5-530c582330a3`).
 
-3. Copy env file:
+## GHCR images
+
+GitHub Actions (`.github/workflows/docker-publish.yml`) publishes:
+
+| Image | Path |
+|---|---|
+| business API | `ghcr.io/jiangbyte/acoj-service-system` |
+| judge | `ghcr.io/jiangbyte/acoj-service-judge` |
+| similarity | `ghcr.io/jiangbyte/acoj-service-similarity` |
+| PC | `ghcr.io/jiangbyte/acoj-pc` |
+| Admin | `ghcr.io/jiangbyte/acoj-admin` |
+
+Triggers: push to `jv_fixed`, version tags `v*`, or manual **workflow_dispatch**.
+
+Local build / push:
 
 ```bash
-cp .env.example .env
+make docker-build TAG=1.0.0
+make docker-push TAG=1.0.0
 ```
+
+Pull into Compose by setting image vars in `.env` (see `.env.example`), then:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Private packages need `docker login ghcr.io` (GitHub PAT with `read:packages`).
 
 ## Start
 
@@ -152,7 +177,7 @@ Hosts inside the compose network use service DNS names: `mysql`, `redis`, `rabbi
 
 ## Common issues
 
-1. **service-system image build fails / jar missing** — run `mvn -pl service-system -am package -DskipTests -Pdocker` first.
+1. **service-system image build fails** — ensure Docker BuildKit is on and the build context is the repo root (`docker compose build service-system`).
 2. **service-system cannot load config** — check `docker compose logs nacos-init`; configs come from the zip export under `DEFAULT_GROUP/`.
 3. **Judge OOM / host freeze** — lower `JUDGE_GOMEMLIMIT` / disable similarity temporarily: `docker compose stop service-similarity`.
 4. **Frontends call wrong API** — rebuild pc/admin with `VITE_GATEWAY=http://localhost:89` (or your server IP).

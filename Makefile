@@ -1,9 +1,14 @@
 ENV ?= dev
 GO ?= go
+REGISTRY ?= ghcr.io
+OWNER ?= jiangbyte
+TAG ?= latest
+VITE_GATEWAY ?= http://localhost:89
 
 .DEFAULT_GOAL := help
 
-.PHONY: help judge similarity check-env check-judge-config check-similarity-config
+.PHONY: help judge similarity check-env check-judge-config check-similarity-config \
+	docker-build docker-push docker-login
 
 help:
 	@printf '%s\n' \
@@ -11,6 +16,9 @@ help:
 		'' \
 		'  make judge [ENV=dev|local]       Start service-judge (default: ENV=dev)' \
 		'  make similarity [ENV=dev|local]  Start service-similarity (default: ENV=dev)' \
+		'  make docker-build [TAG=latest]   Build five app images for GHCR naming' \
+		'  make docker-login                Login to ghcr.io via gh auth token' \
+		'  make docker-push [TAG=latest]    Push five app images to ghcr.io' \
 		'  make help                        Show this help'
 
 check-env:
@@ -44,3 +52,28 @@ judge: check-judge-config
 similarity: check-similarity-config
 	@printf 'Starting service-similarity with env=%s...\n' "$(ENV)"
 	@cd service-similarity && $(GO) run main.go -f etc/similar-$(ENV).yaml -nacos
+
+docker-login:
+	@gh auth token | docker login $(REGISTRY) -u "$$(gh api user -q .login)" --password-stdin
+
+docker-build:
+	@printf 'Building images with tag=%s...\n' "$(TAG)"
+	DOCKER_BUILDKIT=1 docker build -f service-system/Dockerfile \
+		-t $(REGISTRY)/$(OWNER)/acoj-service-system:$(TAG) .
+	DOCKER_BUILDKIT=1 docker build -f service-judge/Dockerfile \
+		-t $(REGISTRY)/$(OWNER)/acoj-service-judge:$(TAG) ./service-judge
+	DOCKER_BUILDKIT=1 docker build -f service-similarity/Dockerfile \
+		-t $(REGISTRY)/$(OWNER)/acoj-service-similarity:$(TAG) ./service-similarity
+	DOCKER_BUILDKIT=1 docker build -f app-pc/Dockerfile \
+		--build-arg VITE_GATEWAY=$(VITE_GATEWAY) \
+		-t $(REGISTRY)/$(OWNER)/acoj-pc:$(TAG) ./app-pc
+	DOCKER_BUILDKIT=1 docker build -f app-admin/Dockerfile \
+		--build-arg VITE_GATEWAY=$(VITE_GATEWAY) \
+		-t $(REGISTRY)/$(OWNER)/acoj-admin:$(TAG) ./app-admin
+
+docker-push: docker-login
+	docker push $(REGISTRY)/$(OWNER)/acoj-service-system:$(TAG)
+	docker push $(REGISTRY)/$(OWNER)/acoj-service-judge:$(TAG)
+	docker push $(REGISTRY)/$(OWNER)/acoj-service-similarity:$(TAG)
+	docker push $(REGISTRY)/$(OWNER)/acoj-pc:$(TAG)
+	docker push $(REGISTRY)/$(OWNER)/acoj-admin:$(TAG)

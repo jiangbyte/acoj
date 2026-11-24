@@ -192,8 +192,8 @@ services:
   # ───────────────────────── Application ─────────────────────────
   service-system:
     build:
-      context: ./service-system
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: service-system/Dockerfile
     image: ${SYSTEM_IMAGE:-acoj/service-system:local}
     container_name: acoj-service-system
     restart: unless-stopped
@@ -210,6 +210,7 @@ services:
         condition: service_completed_successfully
     environment:
       TZ: Asia/Shanghai
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       SPRING_CLOUD_NACOS_SERVER_ADDR: nacos:8848
       SPRING_CLOUD_NACOS_USERNAME: ${NACOS_USERNAME:-nacos}
       SPRING_CLOUD_NACOS_PASSWORD: ${NACOS_PASSWORD:-nacos}
@@ -305,7 +306,8 @@ services:
     build:
       context: ./app-pc
       dockerfile: Dockerfile
-      network: host
+      args:
+        VITE_GATEWAY: ${VITE_GATEWAY:-http://localhost:89}
     image: ${PC_IMAGE:-acoj/pc:local}
     container_name: acoj-pc
     restart: unless-stopped
@@ -325,7 +327,8 @@ services:
     build:
       context: ./app-admin
       dockerfile: Dockerfile
-      network: host
+      args:
+        VITE_GATEWAY: ${VITE_GATEWAY:-http://localhost:89}
     image: ${ADMIN_IMAGE:-acoj/admin:local}
     container_name: acoj-admin
     restart: unless-stopped
