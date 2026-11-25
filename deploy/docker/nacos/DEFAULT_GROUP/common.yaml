@@ -1,3 +1,12 @@
+server:
+  tomcat:
+    threads:
+      max: 280
+      min-spare: 20
+    max-connections: 500
+    accept-count: 200
+    connection-timeout: 5000
+
 spring:
   servlet:
     multipart:
@@ -12,6 +21,13 @@ spring:
     dynamic:
       primary: master          # 必须有
       strict: true
+      druid:
+        initial-size: 10
+        min-idle: 10
+        max-active: 100
+        max-wait: 30000
+        time-between-eviction-runs-millis: 60000
+        min-evictable-idle-time-millis: 300000
       datasource:
         master:
           url: jdbc:mysql://mysql:3306/astro_code?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
@@ -37,10 +53,10 @@ spring:
       timeout: 10s
       lettuce:
         pool:
-          max-active: 200
+          max-active: 64
           max-wait: -1ms
-          max-idle: 10
-          min-idle: 0
+          max-idle: 16
+          min-idle: 4
   cache:
     type: redis
     redis:
@@ -54,6 +70,11 @@ spring:
     username: admin
     password: infra123!
     virtual-host: /
+    listener:
+      simple:
+        prefetch: 8
+        concurrency: 4
+        max-concurrency: 12
     # listener:
     #   simple:
     #     acknowledge-mode: manual

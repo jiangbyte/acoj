@@ -2,6 +2,10 @@ Name: service-similarity
 Host: 0.0.0.0
 Port: 8882
 
+Consumer:
+  MaxConcurrency: 2
+  Prefetch: 2
+
 MySQL:
   Host: mysql:3306
   Username: root
@@ -10,8 +14,8 @@ MySQL:
   Charset: utf8mb4
   ParseTime: true
   Loc: Local
-  MaxIdleConns: 10
-  MaxOpenConns: 100
+  MaxIdleConns: 5
+  MaxOpenConns: 15
   ConnMaxLifetime: "1h"
 
 Redis:

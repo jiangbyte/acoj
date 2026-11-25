@@ -44,9 +44,9 @@ public class RabbitConfig {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(new Jackson2JsonMessageConverter());
-        factory.setConcurrentConsumers(5); // 初始消费者数量
-        factory.setMaxConcurrentConsumers(20); // 最大消费者数量
-        factory.setPrefetchCount(10); // 控制预取数量
+        factory.setConcurrentConsumers(4);
+        factory.setMaxConcurrentConsumers(12);
+        factory.setPrefetchCount(8);
         // 设置重试机制
         factory.setAdviceChain(RetryInterceptorBuilder.stateless()
                 .maxAttempts(3) // 最大重试次数
@@ -66,9 +66,9 @@ public class RabbitConfig {
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(new Jackson2JsonMessageConverter());
 
-        // 判题结果处理相对轻量，可以支持较高并发
-        factory.setConcurrentConsumers(3);
-        factory.setMaxConcurrentConsumers(10);
+        // 判题结果处理相对轻量
+        factory.setConcurrentConsumers(2);
+        factory.setMaxConcurrentConsumers(8);
         factory.setPrefetchCount(1);
 
         // 判题结果需要快速确认，避免重复判题

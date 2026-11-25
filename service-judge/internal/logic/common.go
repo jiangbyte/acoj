@@ -19,14 +19,25 @@ type CommonLogic struct {
 	semaphore chan struct{} // 控制并发数量的信号量
 }
 
+/**
+ * 创建判题消费者；并发上限来自 Nacos Consumer 配置。
+ */
 func NewCommonLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CommonLogic {
+	// 1. 读取并校验 MaxConcurrency，非法时回落到 4
+	maxConcurrency := svcCtx.Config.Consumer.MaxConcurrency
+	if maxConcurrency <= 0 {
+		maxConcurrency = 4
+	}
 	return &CommonLogic{
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		semaphore: make(chan struct{}, 100), // 控制并发数量
+		semaphore: make(chan struct{}, maxConcurrency),
 	}
 }
 
+/**
+ * 启动判题队列消费：声明队列 → 设置 QoS → 信号量限流处理。
+ */
 func (l *CommonLogic) StartConsumer() {
 	CommonChannel := l.svcCtx.Initializer.GetRabbitMQManager().CommonChannel
 
@@ -39,9 +50,16 @@ func (l *CommonLogic) StartConsumer() {
 		return
 	}
 
-	// 增加预取计数，提高并发度
+	// 1. Prefetch 与并发上限对齐，防止 broker 一次塞过多未 ack 消息
+	prefetch := l.svcCtx.Config.Consumer.Prefetch
+	if prefetch <= 0 {
+		prefetch = len(l.semaphore)
+		if prefetch <= 0 {
+			prefetch = 4
+		}
+	}
 	err = CommonChannel.Qos(
-		100, // 增加预取计数
+		prefetch,
 		0,
 		false,
 	)
@@ -50,6 +68,7 @@ func (l *CommonLogic) StartConsumer() {
 		return
 	}
 
+	// 2. 注册消费者并进入限流处理循环
 	msgs, err := CommonChannel.Consume(
 		l.svcCtx.Config.RabbitMQ.Common.JudgeQueue,
 		"", false, false, false, false, nil,
@@ -59,7 +78,7 @@ func (l *CommonLogic) StartConsumer() {
 		return
 	}
 
-	logx.Info("题目消费者已成功启动")
+	logx.Infof("题目消费者已成功启动 (concurrency=%d prefetch=%d)", len(l.semaphore), prefetch)
 
 	var wg sync.WaitGroup
 

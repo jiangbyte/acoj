@@ -58,6 +58,14 @@ type RedisConfig struct {
 	PoolSize int    `json:",default=10"`
 }
 
+// ConsumerConfig MQ 消费并发与预取。
+type ConsumerConfig struct {
+	// MaxConcurrency：同时执行的评测任务上限（信号量）。
+	MaxConcurrency int `json:",default=4"`
+	// Prefetch：RabbitMQ QoS 预取，建议与 MaxConcurrency 同量级。
+	Prefetch int `json:",default=4"`
+}
+
 // SandboxConfig 沙箱：cgroup 资源限制 + 进程隔离（网络/用户/bwrap 目录 jail）。
 type SandboxConfig struct {
 	// Mode: auto | cgroup。按本机挂载选择 v2 或 v1。
@@ -84,4 +92,5 @@ type Config struct {
 	RabbitMQ  RabbitMQConfig   `json:",optional"`
 	Redis     RedisConfig      `json:",optional"` // 新增 Redis 配置
 	Sandbox   SandboxConfig    `json:",optional"` // 沙箱模式
+	Consumer  ConsumerConfig   `json:",optional"` // MQ 消费并发
 }

@@ -30,18 +30,15 @@ func NewMySQLManager(c config.MySQLConfig) (*MySQLManager, error) {
 		return nil, err
 	}
 
-	// 优化连接池配置以适应高并发
-	sqlDB.SetMaxIdleConns(50)                 // 增加最大空闲连接数
-	sqlDB.SetMaxOpenConns(200)                // 增加最大打开连接数
-	sqlDB.SetConnMaxLifetime(5 * time.Minute) // 减少连接最大生存时间
-	sqlDB.SetConnMaxIdleTime(2 * time.Minute) // 设置连接最大空闲时间
+	// 1. 连接池已在 connectMySQL 按配置设置；这里只补空闲回收，避免覆盖 Nacos 限流
+	sqlDB.SetConnMaxIdleTime(2 * time.Minute)
 
-	// 测试连接
+	// 2. 探活，失败则直接返回
 	if err := sqlDB.Ping(); err != nil {
 		return nil, fmt.Errorf("数据库连接测试失败: %v", err)
 	}
 
-	logx.Info("MySQL 连接成功")
+	logx.Infof("MySQL 连接成功 (maxOpen=%d maxIdle=%d)", c.MaxOpenConns, c.MaxIdleConns)
 	return &MySQLManager{DB: db}, nil
 }
 

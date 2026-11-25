@@ -18,6 +18,10 @@ Sandbox:
   UseBwrap: "on"
   MaxPids: 64
 
+Consumer:
+  MaxConcurrency: 4
+  Prefetch: 4
+
 MySQL:
   Host: mysql:3306
   Username: root
@@ -26,8 +30,8 @@ MySQL:
   Charset: utf8mb4
   ParseTime: true
   Loc: Local
-  MaxIdleConns: 10
-  MaxOpenConns: 100
+  MaxIdleConns: 5
+  MaxOpenConns: 20
   ConnMaxLifetime: "1h"
 
 Redis:

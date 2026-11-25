@@ -2,7 +2,7 @@
 set -e
 
 export GOMAXPROCS="${GOMAXPROCS:-2}"
-export GOMEMLIMIT="${GOMEMLIMIT:-512MiB}"
+export GOMEMLIMIT="${GOMEMLIMIT:-384MiB}"
 
 # 创建临时cgroup
 mkdir /sys/fs/cgroup/temp_group

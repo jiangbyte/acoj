@@ -25,10 +25,10 @@ COPY --from=builder /build/service-system/target/service-system-1.0.0.jar /app/s
 EXPOSE 89
 
 ENTRYPOINT ["java", \
-    "-Xms1536m", \
-    "-Xmx1536m", \
+    "-Xms1280m", \
+    "-Xmx1280m", \
     "-XX:MaxMetaspaceSize=256M", \
-    "-XX:MaxDirectMemorySize=192M", \
+    "-XX:MaxDirectMemorySize=160M", \
     "-XX:+UseG1GC", \
     "-XX:MaxGCPauseMillis=200", \
     "-XX:ParallelGCThreads=2", \

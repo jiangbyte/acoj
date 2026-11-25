@@ -19,14 +19,25 @@ type CommonLogic struct {
 	semaphore chan struct{} // 控制并发数量的信号量
 }
 
+/**
+ * 创建相似度消费者；并发上限来自 Nacos Consumer 配置。
+ */
 func NewCommonLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CommonLogic {
+	// 1. 校验 MaxConcurrency，非法回落 2
+	maxConcurrency := svcCtx.Config.Consumer.MaxConcurrency
+	if maxConcurrency <= 0 {
+		maxConcurrency = 2
+	}
 	return &CommonLogic{
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		semaphore: make(chan struct{}, 100), // 控制并发数量
+		semaphore: make(chan struct{}, maxConcurrency),
 	}
 }
 
+/**
+ * 启动相似度队列消费，Prefetch 与信号量同量级。
+ */
 func (l *CommonLogic) StartConsumer() {
 	CommonChannel := l.svcCtx.Initializer.GetRabbitMQManager().CommonChannel
 
@@ -39,9 +50,16 @@ func (l *CommonLogic) StartConsumer() {
 		return
 	}
 
-	// 增加预取计数，提高并发度
+	// 1. Prefetch 对齐并发上限
+	prefetch := l.svcCtx.Config.Consumer.Prefetch
+	if prefetch <= 0 {
+		prefetch = len(l.semaphore)
+		if prefetch <= 0 {
+			prefetch = 2
+		}
+	}
 	err = CommonChannel.Qos(
-		100, // 增加预取计数
+		prefetch,
 		0,
 		false,
 	)
@@ -50,6 +68,7 @@ func (l *CommonLogic) StartConsumer() {
 		return
 	}
 
+	// 2. 注册消费者
 	msgs, err := CommonChannel.Consume(
 		l.svcCtx.Config.RabbitMQ.Common.SimilarityQueue,
 		"", false, false, false, false, nil,
@@ -59,7 +78,7 @@ func (l *CommonLogic) StartConsumer() {
 		return
 	}
 
-	logx.Info("相似消费者已成功启动")
+	logx.Infof("相似消费者已成功启动 (concurrency=%d prefetch=%d)", len(l.semaphore), prefetch)
 
 	var wg sync.WaitGroup
 

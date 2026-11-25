@@ -41,6 +41,12 @@ type RabbitMQConfig struct {
 	} `json:",optional"`
 }
 
+// ConsumerConfig MQ 消费并发与预取。
+type ConsumerConfig struct {
+	MaxConcurrency int `json:",default=2"`
+	Prefetch       int `json:",default=2"`
+}
+
 // 配置队列
 type Config struct {
 	rest.RestConf
@@ -49,4 +55,5 @@ type Config struct {
 	MasterMySQL MySQLConfig    `json:",optional"`
 	SlaveMySQL  MySQLConfig    `json:",optional"`
 	RabbitMQ    RabbitMQConfig `json:",optional"`
+	Consumer    ConsumerConfig `json:",optional"`
 }
