@@ -5,7 +5,7 @@ Single-node stack with infrastructure + OJ backend + judge + similarity.
 Nacos configs are taken from `deploy/nacos_config_export.zip` (copied under
 `deploy/docker/nacos/DEFAULT_GROUP/`), with hosts rewritten for Compose DNS
 (`mysql` / `redis` / `rabbitmq` / `silo`). Infra passwords match the export:
-`infra@123`, DB `astro_code`, RabbitMQ `admin`, Silo bucket `astro-code-oj`.
+`infra123!`, DB `astro_code`, RabbitMQ `admin`, Silo bucket `astro-code-oj`.
 
 ## Image versions
 
@@ -106,55 +106,12 @@ ensures the Compose namespace exists, then publishes configs under `DEFAULT_GROU
 |---|---|
 | OJ API | http://localhost:89 |
 | Nacos | http://localhost:8848/nacos (nacos/nacos) |
-| RabbitMQ UI | http://localhost:15672 (admin/infra@123) |
-| Silo Console | http://localhost:9001 (admin/infra@123) |
+| RabbitMQ UI | http://localhost:15672 (admin/infra123!) |
+| Silo Console | http://localhost:9001 (admin/infra123!) |
 | Judge | http://localhost:8888 |
 | Similarity | http://localhost:8882 |
 | PC | http://localhost:80 |
 | Admin | http://localhost:81 |
-
-## Demo data (judge + similarity)
-
-After the stack is healthy:
-
-```bash
-bash deploy/docker/scripts/seed-demo.sh
-```
-
-This loads:
-
-| What | ID / account |
-|---|---|
-| Judge user | `junit_judge` / `junit123456` |
-| Judge problem | `junit_judge_a_plus_b` (A + B, C++/Java/…) |
-| Sim user | `junit_sim` / `junit123456` |
-| Sim peers | `junit_sim_base`, `junit_sim_c01`…`c04` / `junit123456` |
-| Sim problem | `junit_sim_sum` (array sum samples) |
-
-Login (test captcha bypass `9926`):
-
-```bash
-curl -sS -X POST http://localhost:89/api/v1/sys/auth/login \
-  -H 'content-type: application/json' \
-  -d '{"username":"junit_judge","password":"junit123456","platform":"CLIENT","captchaCode":"9926","uuid":"x"}'
-```
-
-Submit A+B (replace `$TOKEN`):
-
-```bash
-curl -sS -X POST http://localhost:89/api/v1/data/submit/execute \
-  -H "Authorization: $TOKEN" -H 'content-type: application/json' \
-  -d '{"judgeTaskId":"demo-1","problemId":"junit_judge_a_plus_b","moduleType":"PROBLEM","moduleId":"junit_judge_a_plus_b","language":"cpp","submitType":true,"code":"#include <iostream>\nint main(){long long a,b;std::cin>>a>>b;std::cout<<a+b<<std::endl;}"}'
-```
-
-Similarity batch (BASE vs identical C01 → expect ~1.0):
-
-```bash
-# login as junit_sim first, then:
-curl -sS -X POST http://localhost:89/api/v1/task/similarity/batch \
-  -H "Authorization: $TOKEN" -H 'content-type: application/json' \
-  -d '{"moduleType":"PROBLEM","moduleId":"junit_sim_sum","problemId":"junit_sim_sum","language":"cpp","compareMode":"MULTI_BY_MULTI","userIds":["junit_sim_u_base","junit_sim_u_c01"],"minMatchLength":8}'
-```
 
 ## Config layout
 

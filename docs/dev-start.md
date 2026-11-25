@@ -92,8 +92,6 @@ go run main.go -f etc/similar-dev.yaml -nacos   # dev
 2. 用 [`sql/scripts/gen_dev_formal_dataset.py`](../sql/scripts/gen_dev_formal_dataset.py) 生成雪花 ID、去掉 Seed/demo/junit 痕迹的 patch。
 3. 将 [`sql/patches/20261121_dev_formal_dataset.sql`](../sql/patches/20261121_dev_formal_dataset.sql) 写回同一库。
 
-**禁止**对共享库执行 [`deploy/docker/scripts/seed-demo.sh`](../deploy/docker/scripts/seed-demo.sh) 或导入 `deploy/docker/sql/01-judge-demo.sql` / `02-similarity-demo.sql`。那些脚本仅限本机 Docker Compose 库做联调。
-
 系统账号 `0` / `1` / `2`（default / SuperAdmin / Admin）与菜单、字典、角色配置不在上述 patch 覆盖范围内。
 
 正规化后若出现“题集/竞赛有题但无提交、AC 无样本”等断链，再跑闭环补齐：

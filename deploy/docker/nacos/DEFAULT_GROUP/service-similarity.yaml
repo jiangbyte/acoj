@@ -2,11 +2,10 @@ Name: service-similarity
 Host: 0.0.0.0
 Port: 8882
 
-# MySQL 配置
 MySQL:
   Host: mysql:3306
   Username: root
-  Password: "infra@123"
+  Password: "infra123!"
   Database: astro_code
   Charset: utf8mb4
   ParseTime: true
@@ -17,13 +16,12 @@ MySQL:
 
 Redis:
   Host: "redis:6379"
-  Password: "infra@123"   # 与 redis.conf 的 requirepass 一致
+  Password: "infra123!"
   DB: 0
   PoolSize: 10
 
-# RabbitMQ 配置
 RabbitMQ:
-  Host: "amqp://admin:infra%40123@rabbitmq:5672/"
+  Host: "amqp://admin:infra123%21@rabbitmq:5672/"
   VirtualHost: "/"
   Common:
     SimilarityExchange: "common.sim.exchange"

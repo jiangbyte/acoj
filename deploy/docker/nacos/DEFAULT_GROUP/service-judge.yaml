@@ -3,13 +3,12 @@ Host: 0.0.0.0
 Port: 8888
 
 # 注意：本文件供 Docker Compose 内网主机名（mysql/redis/rabbitmq）。
-# 本机 make judge ENV=dev 使用的是远程 Nacos，应对齐 deploy/nacos-dev/DEFAULT_GROUP/service-judge.yaml（47.110.3.35）。
-# 切勿把本 docker 模板直接发布到共享远程 Nacos，否则本机无法解析 rabbitmq。
+# 切勿把本 docker 模板直接发布到共享远程 Nacos，否则本机无法解析服务名。
 
 # 工作空间
 Workspace: "/tmp/judgespace"
 
-# 沙箱：cgroup 资源限制 + 断网/降权 + 强制 bwrap 目录 jail + PID 上限
+# 沙箱：cgroup 资源限制 + 断网/降权 + 可选 bwrap 目录 jail
 Sandbox:
   Mode: auto
   DisableNetwork: true
@@ -19,11 +18,10 @@ Sandbox:
   UseBwrap: "on"
   MaxPids: 64
 
-# MySQL 配置
 MySQL:
   Host: mysql:3306
   Username: root
-  Password: "infra@123"
+  Password: "infra123!"
   Database: astro_code
   Charset: utf8mb4
   ParseTime: true
@@ -34,13 +32,12 @@ MySQL:
 
 Redis:
   Host: "redis:6379"
-  Password: "infra@123"   # 与 redis.conf 的 requirepass 一致
+  Password: "infra123!"
   DB: 0
   PoolSize: 10
 
-# RabbitMQ 配置
 RabbitMQ:
-  Host: "amqp://admin:infra%40123@rabbitmq:5672/"
+  Host: "amqp://admin:infra123%21@rabbitmq:5672/"
   VirtualHost: "/"
   Common:
     JudgeExchange: "common.judge.exchange"

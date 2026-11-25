@@ -1,6 +1,21 @@
 metadata:
 - appName: ''
+  dataId: common.yaml
+  desc: ''
+  group: DEFAULT_GROUP
+  type: yaml
+- appName: ''
+  dataId: service-system.yaml
+  desc: ''
+  group: DEFAULT_GROUP
+  type: yaml
+- appName: ''
   dataId: service-judge.yaml
+  desc: ''
+  group: DEFAULT_GROUP
+  type: yaml
+- appName: ''
+  dataId: service-similarity.yaml
   desc: ''
   group: DEFAULT_GROUP
   type: yaml
@@ -9,17 +24,3 @@ metadata:
   desc: ''
   group: DEFAULT_GROUP
   type: json
-- appName: ''
-  dataId: service-similarity.yaml
-  desc: ''
-  group: DEFAULT_GROUP
-  type: yaml
-- appName: ''
-  dataId: common.yaml
-  group: DEFAULT_GROUP
-  type: yaml
-- appName: ''
-  dataId: service-system.yaml
-  desc: ''
-  group: DEFAULT_GROUP
-  type: yaml

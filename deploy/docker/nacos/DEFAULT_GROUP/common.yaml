@@ -3,10 +3,6 @@ spring:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
-
-  jackson:
-    time-zone: Asia/Shanghai
-    locale: en_US
       
   main:
     banner-mode: off
@@ -21,21 +17,23 @@ spring:
           url: jdbc:mysql://mysql:3306/astro_code?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
           type: com.alibaba.druid.pool.DruidDataSource
           username: root
-          password: infra@123
+          password: infra123!
           driver-class-name: com.mysql.cj.jdbc.Driver
         slave:
           url: jdbc:mysql://mysql:3306/astro_code?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
           type: com.alibaba.druid.pool.DruidDataSource
           username: root
-          password: infra@123
+          password: infra123!
           driver-class-name: com.mysql.cj.jdbc.Driver
 
   data:
     redis:
       database: 1
+      # host: redis
       host: redis
       port: 6379
-      password: infra@123
+      # username: root
+      password: infra123!
       timeout: 10s
       lettuce:
         pool:
@@ -50,11 +48,25 @@ spring:
       cache-null-values: true
 
   rabbitmq:
+    # host: rabbitmq
     host: rabbitmq
     port: 5672
     username: admin
-    password: infra@123
+    password: infra123!
     virtual-host: /
+    # listener:
+    #   simple:
+    #     acknowledge-mode: manual
+    #     retry:
+    #       enabled: true
+    #       max-attempts: 3
+    #       multiplier: 2
+    #       initial-interval: 1000
+    # connection-timeout: 10000
+    # cache:
+    #   channel:
+    #     size: 5
+    #     checkout-timeout: 10000
 
 sa-token:
   token-name: Authorization
@@ -68,9 +80,10 @@ sa-token:
   is-print: false
   alone-redis: 
     database: 2
+    # host: redis
     host: redis
     port: 6379
-    password: infra@123
+    password: infra123!
     timeout: 10s
 
 mybatis-plus:
@@ -132,7 +145,6 @@ system:
       - jpeg
       - png
       - gif
-      - webp
       - pdf
       - doc
       - docx
@@ -146,14 +158,13 @@ system:
       - jpeg
       - png
       - gif
-      - webp
       - pdf
       - txt
     
     # 本地存储配置
     local:
       base-path: /data/uploads
-      access-url: http://localhost:89/api/v1/sys/file/download/
+      access-url: http://localhost:93/oj/api/v1/sys/file/download/
     
     # 对象存储（Silo，MinIO 兼容 API）
     # endpoint：容器内 SDK 访问；access-url：返回给浏览器的对外地址（映射宿主机 9000）
@@ -161,7 +172,7 @@ system:
       endpoint: http://silo:9000
       access-url: http://localhost:9000
       access-key: admin
-      secret-key: infra@123
+      secret-key: infra123!
       bucket-name: astro-code-oj
       region: us-east-1
     

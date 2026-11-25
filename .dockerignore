@@ -20,7 +20,6 @@ backup sql
 test
 docs
 antlrv4
-deploy/nacos-dev
 
 *.md
 !deploy/docker/README.md
