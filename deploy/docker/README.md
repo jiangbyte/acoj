@@ -38,8 +38,6 @@ cp .env.example .env
 
 ## GHCR images
 
-GitHub Actions (`.github/workflows/docker-publish.yml`) publishes:
-
 | Image | Path |
 |---|---|
 | business API | `ghcr.io/jiangbyte/acoj-service-system` |
@@ -48,13 +46,11 @@ GitHub Actions (`.github/workflows/docker-publish.yml`) publishes:
 | PC | `ghcr.io/jiangbyte/acoj-pc` |
 | Admin | `ghcr.io/jiangbyte/acoj-admin` |
 
-Triggers: push to `jv_fixed`, version tags `v*`, or manual **workflow_dispatch**.
-
-Local build / push:
+日常在本地构建并推送：
 
 ```bash
-make docker-build TAG=1.0.0
-make docker-push TAG=1.0.0
+make docker-build TAG=latest
+make docker-push TAG=latest
 ```
 
 Pull into Compose by setting image vars in `.env` (see `.env.example`), then:
@@ -64,7 +60,7 @@ docker compose pull
 docker compose up -d
 ```
 
-Private packages need `docker login ghcr.io` (GitHub PAT with `read:packages`).
+Private packages need `docker login ghcr.io`（`read:packages`；推送用 `packages:write`）。
 
 ## Start
 

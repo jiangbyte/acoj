@@ -71,7 +71,7 @@ The judge host also needs language runtimes (e.g. `g++`, JDK, Python3, Go). See 
 
 Exact image tags for Docker Compose are listed in `deploy/docker/README.md`.
 
-Published app images (via GitHub Actions → GHCR):
+Published app images（本地 `make docker-build` / `make docker-push` → GHCR）：
 
 | Image | Registry |
 | --- | --- |
