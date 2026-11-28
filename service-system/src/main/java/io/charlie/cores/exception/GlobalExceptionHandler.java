@@ -12,7 +12,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
@@ -29,43 +28,54 @@ import java.io.IOException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
     @ExceptionHandler(NotLoginException.class)
-    public <T> Result<T> handleNotLoginException(NotLoginException e) {
-        return Result.failure(ResultCode.UNAUTHORIZED);
+    public Object handleNotLoginException(NotLoginException e,
+                                          HttpServletRequest request,
+                                          HttpServletResponse response) {
+        return respondJsonOrSseSilent(request, response, HttpStatus.UNAUTHORIZED,
+                Result.failure(ResultCode.UNAUTHORIZED));
     }
 
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
     @ExceptionHandler(NotPermissionException.class)
-    public <T> Result<T> handleNotPermissionException(NotPermissionException e) {
-        return Result.failure(ResultCode.UNAUTHORIZED);
+    public Object handleNotPermissionException(NotPermissionException e,
+                                               HttpServletRequest request,
+                                               HttpServletResponse response) {
+        return respondJsonOrSseSilent(request, response, HttpStatus.UNAUTHORIZED,
+                Result.failure(ResultCode.UNAUTHORIZED));
     }
 
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(BusinessException.class)
-    public <T> Result<T> handleBizException(BusinessException e) {
+    public Object handleBizException(BusinessException e,
+                                     HttpServletRequest request,
+                                     HttpServletResponse response) {
+        Result<?> body;
         if (e.getResultCode() != null) {
-            return Result.failure(e.getResultCode());
+            body = Result.failure(e.getResultCode());
+        } else {
+            log.error("业务异常：{}", e.getMessage());
+            e.printStackTrace();
+            body = Result.failure(e.getMessage());
         }
-        log.error("业务异常：{}", e.getMessage());
-        e.printStackTrace();
-        return Result.failure(e.getMessage());
+        return respondJsonOrSseSilent(request, response, HttpStatus.BAD_REQUEST, body);
     }
 
-
-    @ResponseStatus(HttpStatus.NOT_FOUND)
     @ExceptionHandler(NoHandlerFoundException.class)
-    public <T> Result<T> processException(NoHandlerFoundException e) {
+    public Object processException(NoHandlerFoundException e,
+                                   HttpServletRequest request,
+                                   HttpServletResponse response) {
         log.error("请求地址不存在：{}", e.getMessage());
         e.printStackTrace();
-        return Result.failure(ResultCode.NOT_FOUND, e.getMessage());
+        return respondJsonOrSseSilent(request, response, HttpStatus.NOT_FOUND,
+                Result.failure(ResultCode.NOT_FOUND, e.getMessage()));
     }
 
-    @ResponseStatus(HttpStatus.NOT_FOUND)
     @ExceptionHandler(NoResourceFoundException.class)
-    public <T> Result<T> processNoResourceFoundException(NoResourceFoundException e) {
+    public Object processNoResourceFoundException(NoResourceFoundException e,
+                                                  HttpServletRequest request,
+                                                  HttpServletResponse response) {
         log.error("请求地址不存在：{}", e.getMessage());
-        return Result.failure(ResultCode.NOT_FOUND, e.getMessage());
+        return respondJsonOrSseSilent(request, response, HttpStatus.NOT_FOUND,
+                Result.failure(ResultCode.NOT_FOUND, e.getMessage()));
     }
 
     /**
@@ -82,66 +92,85 @@ public class GlobalExceptionHandler {
         log.warn("异步请求不可用: {}", e.getMessage());
     }
 
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    /**
+     * 未分类 RuntimeException：断开/SSE 静默，普通请求再写 JSON 500。
+     */
     @ExceptionHandler(RuntimeException.class)
-    public Object processException(RuntimeException e, HttpServletRequest request) {
-        // 1. 断开类异常交给静默处理，避免 RuntimeException 处理器抢先返回 Result
+    public Object processException(RuntimeException e,
+                                   HttpServletRequest request,
+                                   HttpServletResponse response) {
+        // 1. 断开类异常静默结束，避免强制 500 + 写 Result
         if (isClientDisconnected(e) || (isSseRequest(request) && isBrokenPipe(e))) {
             log.debug("客户端已断开(Runtime): uri={} msg={}", request.getRequestURI(), e.getMessage());
             return null;
         }
-        log.error("系统异常：{}", e.getMessage());
-        e.printStackTrace();
+        // 2. SSE 其它运行时异常：只打日志，不写 JSON（produces 已是 event-stream）
         if (isSseRequest(request)) {
-            // SSE 已开始推流时不要再写 JSON Result
+            log.error("SSE系统异常: uri={} msg={}", request.getRequestURI(), e.getMessage());
+            e.printStackTrace();
+            if (!response.isCommitted()) {
+                response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            }
             return null;
         }
+        // 3. 普通请求返回统一错误体
+        log.error("系统异常：{}", e.getMessage());
+        e.printStackTrace();
+        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
         return Result.failure(ResultCode.SYSTEM_ERROR, ResultCode.SYSTEM_ERROR.getMessage());
     }
 
     /**
      * 处理参数类型转换失败（如 @PathVariable 或 @RequestParam 类型不匹配）
      */
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public <T> Result<T> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+    public Object handleTypeMismatch(MethodArgumentTypeMismatchException e,
+                                     HttpServletRequest request,
+                                     HttpServletResponse response) {
         String errorMsg = String.format("参数 '%s' 类型错误，应为 %s 类型",
                 e.getName(),
                 e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "未知");
         log.error("参数类型错误：{}", errorMsg);
         e.printStackTrace();
-        return Result.failure(ResultCode.PARAM_ERROR, errorMsg);
+        return respondJsonOrSseSilent(request, response, HttpStatus.BAD_REQUEST,
+                Result.failure(ResultCode.PARAM_ERROR, errorMsg));
     }
 
     /**
      * 处理 @RequestParam 参数校验失败异常（Spring 6+）
      */
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(ValidationException.class)
-    public Result<?> handleHandlerMethodValidationException(ValidationException e) {
+    public Object handleHandlerMethodValidationException(ValidationException e,
+                                                         HttpServletRequest request,
+                                                         HttpServletResponse response) {
         String errorMsg = e.getMessage();
         log.error("参数校验异常：{}", errorMsg);
         e.printStackTrace();
-        return Result.failure(ResultCode.PARAM_ERROR, errorMsg);
+        return respondJsonOrSseSilent(request, response, HttpStatus.BAD_REQUEST,
+                Result.failure(ResultCode.PARAM_ERROR, errorMsg));
     }
 
     /**
      * 处理 @Validated 方法参数校验异常（兼容旧版）
      */
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public Result<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+    public Object handleMethodArgumentNotValidException(MethodArgumentNotValidException e,
+                                                        HttpServletRequest request,
+                                                        HttpServletResponse response) {
         String errorMsg = e.getBindingResult().getFieldErrors().stream()
                 .findFirst()
                 .map(error -> String.format("%s: %s", error.getField(), error.getDefaultMessage()))
                 .orElse("参数校验失败");
         log.error("参数校验异常：{}", errorMsg);
         e.printStackTrace();
-        return Result.failure(ResultCode.PARAM_ERROR, errorMsg);
+        return respondJsonOrSseSilent(request, response, HttpStatus.BAD_REQUEST,
+                Result.failure(ResultCode.PARAM_ERROR, errorMsg));
     }
 
     @ExceptionHandler(Exception.class)
-    public Object handleException(Exception e, HttpServletRequest request) {
+    public Object handleException(Exception e,
+                                  HttpServletRequest request,
+                                  HttpServletResponse response) {
         // 1. 客户端断开：静默结束
         if (isClientDisconnected(e) || isBrokenPipe(e)) {
             log.debug("客户端已断开: uri={} msg={}", request.getRequestURI(), e.getMessage());
@@ -150,10 +179,14 @@ public class GlobalExceptionHandler {
         // 2. SSE 其它异常：只打日志，禁止再创建 SseEmitter / 写 Result
         if (isSseRequest(request)) {
             log.error("SSE请求异常: uri={} msg={}", request.getRequestURI(), e.getMessage());
+            if (!response.isCommitted()) {
+                response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            }
             return null;
         }
         // 3. 普通请求返回 Result
         log.error("系统异常: {}", e.getMessage(), e);
+        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
         return Result.failure("系统异常: " + e.getMessage());
     }
 
@@ -163,16 +196,41 @@ public class GlobalExceptionHandler {
                                                    HttpServletResponse response) {
         if (isSseRequest(request)) {
             log.info("SSE连接超时: {}", e.getMessage());
-            response.setStatus(HttpStatus.NO_CONTENT.value());
+            if (!response.isCommitted()) {
+                response.setStatus(HttpStatus.NO_CONTENT.value());
+            }
         } else {
             log.warn("异步请求超时: {}", e.getMessage());
         }
     }
 
     @ExceptionHandler(SubmitLimitException.class)
-    public Result<?> handleSubmitLimitException(SubmitLimitException e) {
+    public Object handleSubmitLimitException(SubmitLimitException e,
+                                             HttpServletRequest request,
+                                             HttpServletResponse response) {
         log.info("提交限流: {}", e.getMessage());
-        return Result.failure(e.getMessage());
+        // 与历史行为一致：业务失败体 + HTTP 200
+        return respondJsonOrSseSilent(request, response, HttpStatus.OK,
+                Result.failure(e.getMessage()));
+    }
+
+    /**
+     * 普通请求写 JSON；SSE 只设状态码（未提交时），避免 event-stream 上再写 Result。
+     */
+    private Object respondJsonOrSseSilent(HttpServletRequest request,
+                                          HttpServletResponse response,
+                                          HttpStatus status,
+                                          Result<?> body) {
+        // 1. SSE：禁止返回 Result，防止 Content-Type 冲突引发二次异常
+        if (isSseRequest(request)) {
+            if (!response.isCommitted()) {
+                response.setStatus(status.value());
+            }
+            return null;
+        }
+        // 2. 普通请求：设置状态码并返回统一错误体
+        response.setStatus(status.value());
+        return body;
     }
 
     /**
