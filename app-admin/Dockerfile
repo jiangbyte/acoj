@@ -14,7 +14,8 @@ RUN --mount=type=cache,id=pnpm-admin,target=/pnpm/store \
     pnpm install --frozen-lockfile
 
 FROM deps AS builder
-ARG VITE_GATEWAY=http://localhost:89
+# 生产默认空串：请求走当前页面同源 /api，由 nginx 反代到 service-system
+ARG VITE_GATEWAY=
 ENV VITE_GATEWAY=$VITE_GATEWAY
 COPY . .
 RUN pnpm run build

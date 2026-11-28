@@ -93,9 +93,9 @@ services:
     environment:
       MODE: standalone
       PREFER_HOST_MODE: hostname
-      JVM_XMS: 192m
-      JVM_XMX: 192m
-      JVM_XMN: 96m
+      JVM_XMS: 256m
+      JVM_XMX: 256m
+      JVM_XMN: 128m
       NACOS_AUTH_ENABLE: "true"
       NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN:-SecretKey012345678901234567890123456789012345678901234567890123456789}
       NACOS_AUTH_IDENTITY_KEY: serverIdentity
@@ -116,8 +116,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 448M
+          cpus: "1.0"
+          memory: 768M
     networks: [acoj]
 
   # Silo：MinIO 兼容对象存储（API/控制台协议与 MinIO 一致）
@@ -188,7 +188,7 @@ services:
   # ───────────────────────── Application ─────────────────────────
   # 镜像名与 GHCR 一致；本地：docker compose up -d --build（PULL_POLICY=build 不拉远程）
   service-system:
-    image: ${SYSTEM_IMAGE:-ghcr.io/jiangbyte/acoj-service-system:latest}
+    image: ${SYSTEM_IMAGE:-registry.cn-beijing.aliyuncs.com/jiangbytecr/acoj-service-system:latest}
     pull_policy: ${PULL_POLICY:-build}
     build:
       context: .
@@ -216,6 +216,7 @@ services:
       SPRING_CLOUD_NACOS_CONFIG_NAMESPACE: ${NACOS_NAMESPACE:-}
       SPRING_CLOUD_NACOS_DISCOVERY_GROUP: DEFAULT_GROUP
       SPRING_CLOUD_NACOS_CONFIG_GROUP: DEFAULT_GROUP
+      SPRING_AI_DASHSCOPE_API_KEY: ${SPRING_AI_DASHSCOPE_API_KEY:-${DASHSCOPE_API_KEY:-}}
     ports:
       - "${SYSTEM_PORT:-89}:89"
     volumes:
@@ -236,7 +237,7 @@ services:
     networks: [acoj]
 
   service-judge:
-    image: ${JUDGE_IMAGE:-ghcr.io/jiangbyte/acoj-service-judge:latest}
+    image: ${JUDGE_IMAGE:-registry.cn-beijing.aliyuncs.com/jiangbytecr/acoj-service-judge:latest}
     pull_policy: ${PULL_POLICY:-build}
     build:
       context: ./service-judge
@@ -272,7 +273,7 @@ services:
     networks: [acoj]
 
   service-similarity:
-    image: ${SIMILARITY_IMAGE:-ghcr.io/jiangbyte/acoj-service-similarity:latest}
+    image: ${SIMILARITY_IMAGE:-registry.cn-beijing.aliyuncs.com/jiangbytecr/acoj-service-similarity:latest}
     pull_policy: ${PULL_POLICY:-build}
     build:
       context: ./service-similarity
@@ -303,13 +304,14 @@ services:
 
   # ───────────────────────── Frontends ─────────────────────────
   pc:
-    image: ${PC_IMAGE:-ghcr.io/jiangbyte/acoj-pc:latest}
+    image: ${PC_IMAGE:-registry.cn-beijing.aliyuncs.com/jiangbytecr/acoj-pc:latest}
     pull_policy: ${PULL_POLICY:-build}
     build:
       context: ./app-pc
       dockerfile: Dockerfile
       args:
-        VITE_GATEWAY: ${VITE_GATEWAY:-http://localhost:89}
+        # 空=同源 /api（nginx 反代）；勿写死 localhost，否则远程浏览器会打本机
+        VITE_GATEWAY: "${VITE_GATEWAY:-}"
     container_name: acoj-pc
     restart: unless-stopped
     depends_on:
@@ -325,13 +327,13 @@ services:
     networks: [acoj]
 
   admin:
-    image: ${ADMIN_IMAGE:-ghcr.io/jiangbyte/acoj-admin:latest}
+    image: ${ADMIN_IMAGE:-registry.cn-beijing.aliyuncs.com/jiangbytecr/acoj-admin:latest}
     pull_policy: ${PULL_POLICY:-build}
     build:
       context: ./app-admin
       dockerfile: Dockerfile
       args:
-        VITE_GATEWAY: ${VITE_GATEWAY:-http://localhost:89}
+        VITE_GATEWAY: "${VITE_GATEWAY:-}"
     container_name: acoj-admin
     restart: unless-stopped
     depends_on:

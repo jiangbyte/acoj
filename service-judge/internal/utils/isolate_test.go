@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -82,5 +83,42 @@ func TestBuildIsolatePlanAllowsCloneWhenOff(t *testing.T) {
 	}
 	if plan.Mode != "clone" {
 		t.Fatalf("mode=%s want clone", plan.Mode)
+	}
+}
+
+// 降权必须走 Credential，禁止依赖 root 下 bwrap --uid 假映射。
+func TestBuildBwrapPlanDropsViaCredential(t *testing.T) {
+	old := lookPath
+	t.Cleanup(func() { lookPath = old })
+	lookPath = func(file string) (string, error) { return "/usr/bin/bwrap", nil }
+
+	root := t.TempDir()
+	plan, err := buildBwrapPlan([]string{"/bin/true"}, root, root, config.SandboxConfig{
+		DisableNetwork: true,
+		DropPrivileges: true,
+		Uid:            65534,
+		Gid:            65534,
+	}, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := strings.Join(plan.Argv, " ")
+	if strings.Contains(joined, "--uid") || strings.Contains(joined, "--gid ") || strings.Contains(joined, " --gid") {
+		t.Fatalf("must not use bwrap --uid/--gid: %s", joined)
+	}
+	if !strings.Contains(joined, "--cap-drop") {
+		t.Fatalf("expected --cap-drop ALL: %s", joined)
+	}
+	if os.Geteuid() != 0 {
+		t.Skip("Credential 路径需 root（容器内评测进程）")
+	}
+	if plan.Attr == nil || plan.Attr.Credential == nil {
+		t.Fatal("expected SysProcAttr.Credential for real host privilege drop")
+	}
+	if plan.Attr.Credential.Uid != 65534 || plan.Attr.Credential.Gid != 65534 {
+		t.Fatalf("credential=%+v", plan.Attr.Credential)
+	}
+	if !strings.Contains(joined, "--unshare-user") {
+		t.Fatalf("expected --unshare-user: %s", joined)
 	}
 }

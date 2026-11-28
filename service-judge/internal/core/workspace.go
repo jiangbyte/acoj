@@ -112,7 +112,7 @@ func (w *Workspace) buildErrorResponse(message string, status string) *mq.JudgeR
 	}
 }
 
-// createDirs 创建目录；若启用降权则以配置 Uid/Gid 属主，避免 nobody 无法写编译产物。
+// createDirs 创建目录；降权时 chown 到 Uid/Gid，配合宿主真实 setuid（非 bwrap 假 --uid）。
 func (w *Workspace) createDirs() error {
 	dirs := []string{w.RootPath, w.SourcePath, w.BuildPath, w.RunsPath}
 	for _, dir := range dirs {

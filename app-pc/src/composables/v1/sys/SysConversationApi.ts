@@ -4,8 +4,8 @@ import { request as $alova } from '@/utils'
   * Implementation details.
  */
 export function useSysConversationFetch() {
-  const gateway = import.meta.env.VITE_GATEWAY
-  const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
+  const gateway = import.meta.env.VITE_GATEWAY || ''
+  const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT || ''
   const pathPrefix = `${context}/api/v1/`
   const table = 'sys/conversation'
 

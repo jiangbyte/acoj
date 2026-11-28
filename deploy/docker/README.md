@@ -36,15 +36,15 @@ cp .env.example .env
    the same as Nacos Server 2.5. Compose therefore uses a real namespace ID
    (default `8fee08f3-44ea-4e26-a9b5-530c582330a3`).
 
-## GHCR images
+## App images（阿里云 ACR，公开拉取）
 
 | Image | Path |
 |---|---|
-| business API | `ghcr.io/jiangbyte/acoj-service-system` |
-| judge | `ghcr.io/jiangbyte/acoj-service-judge` |
-| similarity | `ghcr.io/jiangbyte/acoj-service-similarity` |
-| PC | `ghcr.io/jiangbyte/acoj-pc` |
-| Admin | `ghcr.io/jiangbyte/acoj-admin` |
+| business API | `registry.cn-beijing.aliyuncs.com/jiangbytecr/acoj-service-system` |
+| judge | `registry.cn-beijing.aliyuncs.com/jiangbytecr/acoj-service-judge` |
+| similarity | `registry.cn-beijing.aliyuncs.com/jiangbytecr/acoj-service-similarity` |
+| PC | `registry.cn-beijing.aliyuncs.com/jiangbytecr/acoj-pc` |
+| Admin | `registry.cn-beijing.aliyuncs.com/jiangbytecr/acoj-admin` |
 
 日常在本地构建并推送：
 
@@ -53,18 +53,16 @@ make docker-build TAG=latest
 make docker-push TAG=latest
 ```
 
-Pull into Compose by setting image vars in `.env` (see `.env.example`), then:
+公开仓库，拉取无需登录。在 `.env` 配好镜像变量后（见 `.env.example`）：
 
 ```bash
 docker compose pull
 docker compose up -d
 ```
 
-Private packages need `docker login ghcr.io`（`read:packages`；推送用 `packages:write`）。
-
 ## Start
 
-应用镜像统一使用 GHCR 命名（`ghcr.io/jiangbyte/acoj-*`）。本地先构建再启动（`PULL_POLICY=build` 不会拉远程）：
+应用镜像统一使用阿里云 ACR（`registry.cn-beijing.aliyuncs.com/jiangbytecr/acoj-*`）。本地可先构建再启动（`PULL_POLICY=build` 不会拉远程）：
 
 ```bash
 cp .env.example .env   # 若还没有
@@ -78,10 +76,9 @@ make docker-push TAG=latest
 # 或: docker compose push
 ```
 
-别人机器拉取已推送镜像时，设 `PULL_POLICY=missing`（或 `always`）后：
+别人机器直接拉公开镜像（无需 login），建议 `PULL_POLICY=missing`（或 `always`）：
 
 ```bash
-docker login ghcr.io
 docker compose pull
 docker compose up -d
 ```
@@ -108,6 +105,19 @@ ensures the Compose namespace exists, then publishes configs under `DEFAULT_GROU
 | Similarity | http://localhost:8882 |
 | PC | http://localhost:80 |
 | Admin | http://localhost:81 |
+
+## Frontend API（生产）
+
+`VITE_GATEWAY` **默认留空**。浏览器访问 PC/Admin 时请求同源 `/api/...`，由容器内 nginx 反代到 Compose 服务 `service-system:89`。
+
+因此用公网 IP / 域名打开前端即可，**不要**再把网关写死成 `http://localhost:89`（远程用户浏览器会打到自己的本机）。
+
+重建前端镜像：
+
+```bash
+make docker-build TAG=latest   # 或: docker compose build pc admin
+make docker-push TAG=latest
+```
 
 ## Config layout
 

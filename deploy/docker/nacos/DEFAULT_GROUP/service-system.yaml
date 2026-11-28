@@ -7,7 +7,7 @@ spring:
 #          temperature: 0.4
 #          model: gemma3:1b
     dashscope:
-      api-key: sk-657727dba46b44cbb76e5c3369045e85
+      api-key: sk-ws-H.XMDYPDD.sXfU.MEUCIQD6TEcUfhk460HiNGUzs75CarDdwttjET0fBVaBks18YwIgV7rygRAR8gM-82HR0je2ti_Q1QeQ11neLJrAka3v7PA
       chat:
         options:
           model: qwen-plus

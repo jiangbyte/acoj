@@ -4,7 +4,8 @@ import adapterFetch from 'alova/fetch'
 import { createDiscreteApi } from 'naive-ui'
 import { useTokenStore } from '@/stores'
 
-const gateway = import.meta.env.VITE_GATEWAY
+// 生产镜像默认空串：走当前页面同源，由 nginx 反代 /api
+const gateway = import.meta.env.VITE_GATEWAY || ''
 
 // Message toast
 const { message } = createDiscreteApi(['message'])

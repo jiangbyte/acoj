@@ -71,19 +71,26 @@ The judge host also needs language runtimes (e.g. `g++`, JDK, Python3, Go). See 
 
 Exact image tags for Docker Compose are listed in `deploy/docker/README.md`.
 
-Published app images（本地 `make docker-build` / `make docker-push` → GHCR）：
+Published app images（本地 `make docker-build` / `make docker-push` → 阿里云 ACR）：
 
 | Image | Registry |
 | --- | --- |
-| service-system | `ghcr.io/jiangbyte/acoj-service-system` |
-| service-judge | `ghcr.io/jiangbyte/acoj-service-judge` |
-| service-similarity | `ghcr.io/jiangbyte/acoj-service-similarity` |
-| app-pc | `ghcr.io/jiangbyte/acoj-pc` |
-| app-admin | `ghcr.io/jiangbyte/acoj-admin` |
+| service-system | `registry.cn-beijing.aliyuncs.com/jiangbytecr/acoj-service-system` |
+| service-judge | `registry.cn-beijing.aliyuncs.com/jiangbytecr/acoj-service-judge` |
+| service-similarity | `registry.cn-beijing.aliyuncs.com/jiangbytecr/acoj-service-similarity` |
+| app-pc | `registry.cn-beijing.aliyuncs.com/jiangbytecr/acoj-pc` |
+| app-admin | `registry.cn-beijing.aliyuncs.com/jiangbytecr/acoj-admin` |
 
 ```bash
 make docker-build TAG=latest   # local build
-make docker-push TAG=latest    # push to ghcr.io (needs packages:write)
+make docker-push TAG=latest    # push to Aliyun ACR
+```
+
+镜像仓库公开拉取，无需 `docker login`：
+
+```bash
+docker compose pull
+docker compose up -d
 ```
 
 ## Quick Start (local)
@@ -190,7 +197,9 @@ pnpm install
 pnpm dev
 ```
 
-Point `VITE_GATEWAY` in `app-admin/.env.dev` and `app-pc/.env.dev` at the business API (locally usually `http://localhost:89`).
+Local Vite: point `VITE_GATEWAY` in `app-admin/.env.dev` and `app-pc/.env.dev` at the API (usually `http://localhost:89`).
+
+Docker production images leave `VITE_GATEWAY` empty so the browser calls same-origin `/api/...`; nginx in the `pc`/`admin` containers proxies to `service-system:89` (works with any host/IP, no localhost bake-in).
 
 See: [app-admin/README.md](app-admin/README.md), [app-pc/README.md](app-pc/README.md).
 

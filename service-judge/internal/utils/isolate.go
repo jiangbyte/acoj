@@ -22,7 +22,7 @@ type IsolatePlan struct {
 	Argv []string
 	Attr *syscall.SysProcAttr
 	// Dir 非空时作为 cmd.Dir（非 bwrap 回退路径）。
-	Dir string
+	Dir  string
 	Mode string // bwrap | clone
 }
 
@@ -101,22 +101,32 @@ func buildBwrapPlan(argv []string, rootAbs, workAbs string, cfg config.SandboxCo
 		"--setenv", "GOCACHE", "/tmp/go-cache",
 		"--setenv", "GOTMPDIR", "/tmp",
 		"--setenv", "GOROOT", "/usr/local/go",
+		// 1. 目录 jail 内再卸掉能力，避免保留宿主 CAP
+		"--cap-drop", "ALL",
 	}
 	if cfg.DisableNetwork {
 		bwrapArgs = append(bwrapArgs, "--unshare-net")
 	}
-	if cfg.DropPrivileges && os.Geteuid() == 0 {
-		bwrapArgs = append(bwrapArgs,
-			"--uid", fmt.Sprintf("%d", cfg.Uid),
-			"--gid", fmt.Sprintf("%d", cfg.Gid),
-		)
+	dropPriv := cfg.DropPrivileges && os.Geteuid() == 0
+	if dropPriv {
+		// 2. 先以 nobody 身份启动 bwrap（SysProcAttr.Credential），再进 user ns；
+		//    禁止 root 下 --uid（会把 ns uid 映回宿主 root，假降权）。
+		bwrapArgs = append(bwrapArgs, "--unshare-user")
 	}
 	bwrapArgs = append(bwrapArgs, "--")
 	bwrapArgs = append(bwrapArgs, rewritten...)
 
 	attr := &syscall.SysProcAttr{Setpgid: true}
 	attachCgroup(attr, cgroupFD)
-	logx.Infof("sandbox isolate=bwrap netOff=%v dropPriv=%v root=%s", cfg.DisableNetwork, cfg.DropPrivileges && os.Geteuid() == 0, rootAbs)
+	if dropPriv {
+		attr.Credential = &syscall.Credential{
+			Uid:         cfg.Uid,
+			Gid:         cfg.Gid,
+			NoSetGroups: true,
+		}
+	}
+	logx.Infof("sandbox isolate=bwrap netOff=%v dropPriv=%v uid=%d root=%s",
+		cfg.DisableNetwork, dropPriv, cfg.Uid, rootAbs)
 	return &IsolatePlan{Argv: bwrapArgs, Attr: attr, Mode: "bwrap"}, nil
 }
 
@@ -128,8 +138,9 @@ func buildClonePlan(argv []string, workAbs string, cfg config.SandboxConfig, cgr
 	}
 	if cfg.DropPrivileges && os.Geteuid() == 0 {
 		attr.Credential = &syscall.Credential{
-			Uid: cfg.Uid,
-			Gid: cfg.Gid,
+			Uid:         cfg.Uid,
+			Gid:         cfg.Gid,
+			NoSetGroups: true,
 		}
 	}
 	logx.Infof("sandbox isolate=clone netOff=%v dropPriv=%v dir=%s", cfg.DisableNetwork, attr.Credential != nil, workAbs)
